@@ -174,7 +174,7 @@ const NavBar = ({ onBookAppointment }) => {
       </div>
 
       {/* CTA */}
-      <button onClick={onBookAppointment} className="btn-primary">
+      <button onClick={onBookAppointment} className="btn-primary" style={{padding:"5px 14px",height:"36px",fontSize:"0.75rem"}}>
         Book Appointment
       </button>
     </nav>
@@ -205,7 +205,7 @@ const HeroSection = ({ onBookAppointment }) => (
     </p>
 
     {/* CTA */}
-    <button onClick={onBookAppointment} className="btn-large">
+    <button onClick={onBookAppointment} className="btn-large" style={{width:"auto",padding:"10px 28px",height:"44px",fontSize:"0.9rem"}}>
       Book Appointment
     </button>
   </section>
