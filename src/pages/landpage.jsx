@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 /* ─── Inline SVG icons ─── */
 const ScissorsIcon = () => (
@@ -80,7 +81,7 @@ const LogoMark = () => (
 );
 
 /* ─── NavBar ─── */
-const NavBar = () => (
+const NavBar = ({ onBookAppointment }) => (
   <nav style={{
     position:"fixed",top:0,left:0,right:0,zIndex:50,
     background:"#0a0908",
@@ -111,6 +112,7 @@ const NavBar = () => (
       fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"0.85rem",
       border:"none",borderRadius:8,cursor:"pointer",transition:"all 0.3s ease",
     }}
+      onClick={onBookAppointment}
       onMouseEnter={e=>{e.target.style.background="#c47f18"; e.target.style.transform="scale(1.05)"; e.target.style.boxShadow="0 4px 12px rgba(221,144,29,0.3)"}}
       onMouseLeave={e=>{e.target.style.background="#dd901d"; e.target.style.transform="scale(1)"; e.target.style.boxShadow="none"}}
     >Book Appointment</button>
@@ -118,7 +120,7 @@ const NavBar = () => (
 );
 
 /* ─── Hero ─── */
-const HeroSection = () => (
+const HeroSection = ({ onBookAppointment }) => (
   <section style={{
     background:"#0a0908",
     minHeight:"auto",
@@ -162,6 +164,7 @@ const HeroSection = () => (
       fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"0.95rem",
       border:"none",borderRadius:8,cursor:"pointer",transition:"all 0.3s ease",
     }}
+      onClick={onBookAppointment}
       onMouseEnter={e=>{e.target.style.background="#c47f18"; e.target.style.transform="scale(1.08) translateY(-2px)"; e.target.style.boxShadow="0 8px 20px rgba(221,144,29,0.4)"}}
       onMouseLeave={e=>{e.target.style.background="#dd901d"; e.target.style.transform="scale(1) translateY(0)"; e.target.style.boxShadow="none"}}
     >Book Appointment</button>
@@ -332,6 +335,12 @@ const FooterSection = () => (
 );
 
 export default function App() {
+  const navigate = useNavigate();
+  
+  const handleBookAppointment = () => {
+    navigate("/register");
+  };
+
   return (
     <>
       <style>{`
@@ -348,8 +357,8 @@ export default function App() {
         }
       `}</style>
       <div style={{background:"#0a0908",minHeight:"100vh",width:"100%",zoom:"150%",transformOrigin:"top left"}}>
-        <NavBar/>
-        <HeroSection/>
+        <NavBar onBookAppointment={handleBookAppointment}/>
+        <HeroSection onBookAppointment={handleBookAppointment}/>
         <HowItWorksSection/>
         <ServicesSection/>
         <FooterSection/>
