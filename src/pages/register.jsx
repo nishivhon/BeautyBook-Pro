@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Otp } from "../components/modal/otp";
 
 /** Logo scissors mark */
 const LogoMark = () => (
@@ -112,6 +113,8 @@ export const Register = () => {
   const [usePhone, setUsePhone] = useState(true);
   const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors]     = useState({});
+  const [showOTP, setShowOTP]   = useState(false);
+  const [formData, setFormData] = useState(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -147,15 +150,31 @@ export const Register = () => {
 
     setErrors(newErrors);
 
-    // If no errors, handle submit
+    // If no errors, show OTP modal
     if (Object.keys(newErrors).length === 0) {
-      console.log("Form submitted:", { fullName, email, phone, useEmail, usePhone, rememberMe });
-      // handle submit here
+      setFormData({ fullName, email, phone, useEmail, usePhone, rememberMe });
+      setShowOTP(true);
     }
   };
 
   const handleBack = () => {
     navigate("/");
+  };
+
+  const handleOTPVerified = (otp) => {
+    console.log("OTP Verified:", otp);
+    console.log("Form submitted successfully:", formData);
+    // You can now proceed with registration or navigate to a success page
+    setShowOTP(false);
+    // Reset form after successful verification
+    setFullName("");
+    setEmail("");
+    setPhone("");
+    setFormData(null);
+  };
+
+  const handleOTPClose = () => {
+    setShowOTP(false);
   };
 
   return (
@@ -323,6 +342,14 @@ export const Register = () => {
           Book appointments and enjoy a seamless salon experience—no waiting in line.
         </p>
       </div>
+
+      {/* OTP Modal */}
+      {showOTP && (
+        <Otp 
+          onClose={handleOTPClose} 
+          onVerified={handleOTPVerified}
+        />
+      )}
 
     </div>
   );

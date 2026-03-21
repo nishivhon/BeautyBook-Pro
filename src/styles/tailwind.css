@@ -46,7 +46,10 @@
 
 /* ── Component Styles ── */
 @layer components {
-  /* Navigation */
+
+  /* ─────────────────────────────────────
+     Navigation
+  ───────────────────────────────────── */
   .navbar {
     position: fixed;
     top: 0;
@@ -79,6 +82,9 @@
     transform: translateY(-2px);
   }
 
+  /* ─────────────────────────────────────
+     Buttons
+  ───────────────────────────────────── */
   .btn-primary {
     padding: 9px 20px;
     background: var(--color-amber);
@@ -137,7 +143,9 @@
     color: var(--color-white);
   }
 
-  /* Hero Section */
+  /* ─────────────────────────────────────
+     Hero Section
+  ───────────────────────────────────── */
   .hero-section {
     display: flex;
     flex-direction: column;
@@ -191,7 +199,9 @@
     font-size: 0.95rem;
   }
 
-  /* How It Works Section */
+  /* ─────────────────────────────────────
+     How It Works Section
+  ───────────────────────────────────── */
   .howitworks-section {
     background: var(--bg-secondary);
     padding: 40px 40px;
@@ -259,7 +269,9 @@
     font-size: 0.82rem;
   }
 
-  /* Services Section */
+  /* ─────────────────────────────────────
+     Services Section
+  ───────────────────────────────────── */
   .services-section {
     background: var(--bg-dark);
     padding: 40px 40px;
@@ -304,7 +316,9 @@
     color: var(--color-tan);
   }
 
-  /* Footer */
+  /* ─────────────────────────────────────
+     Footer
+  ───────────────────────────────────── */
   .footer {
     background: var(--bg-footer);
     border-top: 1px solid rgba(221, 144, 29, 0.08);
@@ -365,7 +379,9 @@
     margin: 0;
   }
 
-  /* Register Form Styles */
+  /* ─────────────────────────────────────
+     Register Form
+  ───────────────────────────────────── */
   .register-container {
     display: flex;
     min-height: 100vh;
@@ -503,7 +519,6 @@
     color: var(--color-white);
   }
 
-  /* Logo */
   .logo-badge {
     display: flex;
     align-items: center;
@@ -580,5 +595,298 @@
     line-height: 1.6;
     max-width: 380px;
   }
+
+  /* ─────────────────────────────────────
+     OTP Modal
+  ───────────────────────────────────── */
+
+  /* Full-screen backdrop */
+  .otp-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+    animation: fade-in 0.2s ease forwards;
+  }
+
+  /* Modal box */
+  .otp-modal {
+    width: 100%;
+    max-width: 560px;
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid rgba(221, 144, 29, 0.15);
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(221, 144, 29, 0.08);
+    animation: fade-up 0.25s ease forwards;
+  }
+
+  /* Modal header bar */
+  .otp-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 70px;
+    background: var(--bg-darker);
+    border-bottom: 1px solid rgba(221, 144, 29, 0.1);
+    position: relative;
+  }
+
+  .otp-header-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: var(--color-white);
+    text-align: center;
+    letter-spacing: -0.01em;
+  }
+
+  /* Close (×) button in header */
+  .otp-close-btn {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border-tan);
+    cursor: pointer;
+    background: none;
+    color: var(--color-tan);
+    font-size: 1.1rem;
+    line-height: 1;
+    transition: all 0.2s;
+  }
+
+  .otp-close-btn:hover {
+    border-color: var(--color-amber);
+    color: var(--color-white);
+    background: rgba(221, 144, 29, 0.1);
+  }
+
+  /* Modal body padding */
+  .otp-body {
+    padding: 32px 40px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Instruction text above field */
+  .otp-instruction {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.88rem;
+    color: var(--color-tan);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .otp-instruction strong {
+    color: var(--color-white);
+    font-weight: 600;
+  }
+
+  /* OTP field box — reuses .field-box style but with card bg */
+  .otp-field-box {
+    width: 100%;
+    padding: 14px 17px;
+    border: 1px dashed rgba(152, 143, 129, 0.5);
+    border-radius: 10px;
+    background: var(--bg-darker);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.2s;
+  }
+
+  .otp-field-box:focus-within {
+    border-color: rgba(221, 144, 29, 0.6);
+  }
+
+  .otp-field-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.72rem;
+    color: var(--color-tan);
+    letter-spacing: 0.04em;
+  }
+
+  /* Inner dark input pill */
+  .otp-input-wrap {
+    position: relative;
+    width: 100%;
+    height: 42px;
+  }
+
+  .otp-input-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    background: #231d1a;
+    border-radius: 10px;
+    padding-left: 14px;
+    gap: 10px;
+  }
+
+  .otp-input {
+    flex: 1;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 1.1rem;
+    color: var(--color-white);
+    letter-spacing: 0.25em;
+  }
+
+  .otp-input::placeholder {
+    color: rgba(152, 143, 129, 0.5);
+    letter-spacing: 0.2em;
+    font-size: 1rem;
+  }
+
+  /* Meta row: remaining time + resend */
+  .otp-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2px;
+  }
+
+  .otp-meta-left,
+  .otp-meta-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .otp-meta-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.8rem;
+    color: var(--color-white);
+  }
+
+  .otp-timer {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--color-amber);
+    min-width: 44px;
+  }
+
+  .otp-timer--expired {
+    color: #e05252;
+  }
+
+  .otp-resend-btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--color-amber);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s, opacity 0.2s;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .otp-resend-btn:hover:not(:disabled) {
+    color: var(--color-amber-dark);
+  }
+
+  .otp-resend-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    text-decoration: none;
+  }
+
+  /* Action buttons row */
+  .otp-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 4px;
+  }
+
+  /* Cancel — white outline */
+  .otp-btn-cancel {
+    flex: 1;
+    height: 48px;
+    border: 1.5px solid var(--color-white);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-white);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .otp-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.7);
+  }
+
+  .otp-btn-cancel:active {
+    transform: scale(0.98);
+  }
+
+  /* Verify — amber fill */
+  .otp-btn-verify {
+    flex: 1;
+    height: 48px;
+    border: none;
+    border-radius: 10px;
+    background: var(--color-amber);
+    color: var(--color-black);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .otp-btn-verify:hover {
+    background: var(--color-amber-dark);
+    transform: scale(1.02) translateY(-1px);
+    box-shadow: 0 6px 18px rgba(221, 144, 29, 0.35);
+  }
+
+  .otp-btn-verify:active {
+    transform: scale(0.98);
+  }
+
+  .otp-btn-verify:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
 }
 
+/* ── Keyframe animations (used by otp-overlay / otp-modal) ── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
