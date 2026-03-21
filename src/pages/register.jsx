@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Otp } from "../components/modal/otp";
+import { AppointmentForm } from "../components/modal/appointment/phase_one";
 
 /** Logo scissors mark */
 const LogoMark = () => (
@@ -115,6 +116,8 @@ export const Register = () => {
   const [errors, setErrors]     = useState({});
   const [showOTP, setShowOTP]   = useState(false);
   const [formData, setFormData] = useState(null);
+  const [showAppointment, setShowAppointment] = useState(false);
+  const [appointmentData, setAppointmentData] = useState(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -164,17 +167,37 @@ export const Register = () => {
   const handleOTPVerified = (otp) => {
     console.log("OTP Verified:", otp);
     console.log("Form submitted successfully:", formData);
-    // You can now proceed with registration or navigate to a success page
+    // Close OTP modal and show appointment booking modal
     setShowOTP(false);
-    // Reset form after successful verification
-    setFullName("");
-    setEmail("");
-    setPhone("");
-    setFormData(null);
+    setShowAppointment(true);
   };
 
   const handleOTPClose = () => {
     setShowOTP(false);
+  };
+
+  const handleAppointmentBack = () => {
+    setShowAppointment(false);
+    setFormData(null);
+    // Reset form
+    setFullName("");
+    setEmail("");
+    setPhone("");
+  };
+
+  const handleAppointmentContinue = (appointmentDetails) => {
+    console.log("Appointment scheduled:", appointmentDetails);
+    console.log("User data:", formData);
+    // Combine registration and appointment data
+    const completeData = { ...formData, appointment: appointmentDetails };
+    setAppointmentData(completeData);
+    // Close appointment modal and complete registration
+    setShowAppointment(false);
+    // Reset form after successful completion
+    setFullName("");
+    setEmail("");
+    setPhone("");
+    setFormData(null);
   };
 
   return (
@@ -349,6 +372,25 @@ export const Register = () => {
           onClose={handleOTPClose} 
           onVerified={handleOTPVerified}
         />
+      )}
+
+      {/* Appointment Booking Modal */}
+      {showAppointment && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 101,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backdropFilter: "blur(3px)",
+          backgroundColor: "rgba(0,0,0,0.72)"
+        }}>
+          <AppointmentForm
+            onBack={handleAppointmentBack}
+            onContinue={handleAppointmentContinue}
+          />
+        </div>
       )}
 
     </div>
