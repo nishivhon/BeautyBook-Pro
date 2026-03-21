@@ -190,6 +190,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                   fontFamily: "'Inter', sans-serif",
                   fontSize: "0.95rem",
                   fontWeight: "600",
+                  animation: "fade-up 0.3s ease forwards",
                 }}>
                   {new Date(manualDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 </div>
@@ -343,6 +344,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                   fontFamily: "'Inter', sans-serif",
                   fontSize: "0.95rem",
                   fontWeight: "600",
+                  animation: "fade-up 0.3s ease forwards",
                 }}>
                   {manualTime}
                 </div>
