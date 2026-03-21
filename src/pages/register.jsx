@@ -132,7 +132,6 @@ const ToggleRow = ({ label, checked, onToggle }) => (
       fontWeight: 400,
       fontSize: "0.95rem",
       color: "#988f81",
-      flex: 1,
     }}>{label}</span>
     <button
       type="button"
@@ -167,21 +166,52 @@ export const Register = () => {
   };
 
   return (
-    <div style={{
-      display: "flex",
-      minHeight: "100vh",
-      background: "#0c0b09",
-      fontFamily: "'Inter', sans-serif",
-    }}>
+    <>
+      <style>{`
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        html, body {
+          width: 100%;
+          height: 100%;
+          margin: 0;
+          padding: 0;
+        }
+        #root {
+          width: 100%;
+          height: 100%;
+        }
+      `}</style>
+      <div style={{
+        display: "flex",
+        minHeight: "100vh",
+        width: "100%",
+        background: "#0c0b09",
+        fontFamily: "'Inter', sans-serif",
+      }}>
 
       {/* ── LEFT PANEL ── */}
       <div style={{
         flex: "0 0 50%",
         display: "flex",
         flexDirection: "column",
-        padding: "60px 0 60px 80px",
-        maxWidth: 600,
+        padding: "60px 0 60px 0",
+        justifyContent: "flex-start",
+        alignItems: "center",
       }}>
+
+        {/* Content wrapper */}
+        <div style={{
+          width: "100%",
+          maxWidth: 520,
+          paddingLeft: 60,
+          paddingRight: 40,
+          display: "flex",
+          flexDirection: "column",
+          gap: 22,
+        }}>
 
         {/* Back button */}
         <button
@@ -241,7 +271,7 @@ export const Register = () => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 426 }}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 22, width: "100%" }}>
 
           {/* NAME */}
           <FieldBox label="Name">
@@ -331,6 +361,7 @@ export const Register = () => {
           </div>
 
         </form>
+        </div>
       </div>
 
       {/* ── RIGHT PANEL ── */}
@@ -384,6 +415,7 @@ export const Register = () => {
       </div>
 
     </div>
+    </>
   );
 };
 
