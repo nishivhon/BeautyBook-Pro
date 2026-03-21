@@ -159,7 +159,21 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
 
         {/* ── Date picker ── */}
         <div className="appt-picker-group">
-          <div className="appt-picker-label" style={{cursor: "pointer"}} onClick={() => setShowDateInput(!showDateInput)}>
+          <div 
+            className="appt-picker-label" 
+            style={{cursor: "pointer"}}
+            onClick={() => setShowDateInput(!showDateInput)}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#dd901d";
+              const svgs = e.currentTarget.querySelectorAll('svg');
+              svgs.forEach(svg => svg.style.stroke = "#dd901d");
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "white";
+              const svgs = e.currentTarget.querySelectorAll('svg');
+              svgs.forEach(svg => svg.style.stroke = "white");
+            }}
+          >
             <CalendarSmIcon />
             <span>Select Date</span>
           </div>
@@ -220,7 +234,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                 value={manualDate}
                 onChange={(e) => setManualDate(e.target.value)}
                 style={{
-                  flex: 1,
+                  width: "180px",
                   padding: "10px 14px",
                   background: "#231d1a",
                   border: "1px dashed rgba(152,143,129,0.5)",
@@ -228,6 +242,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                   color: "white",
                   fontFamily: "'Inter', sans-serif",
                   fontSize: "0.95rem",
+                  boxSizing: "border-box",
                 }}
               />
               <button
@@ -237,10 +252,27 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                   background: "#dd901d",
                   color: "black",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "12px",
                   cursor: "pointer",
                   fontWeight: "700",
                   fontSize: "0.85rem",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = "#c47f18";
+                  e.target.style.transform = "translateY(-1px)";
+                  e.target.style.boxShadow = "0 6px 20px rgba(221,144,29,0.35)";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = "#dd901d";
+                  e.target.style.transform = "translateY(0)";
+                  e.target.style.boxShadow = "none";
+                }}
+                onMouseDown={(e) => {
+                  e.target.style.transform = "scale(0.99)";
+                }}
+                onMouseUp={(e) => {
+                  e.target.style.transform = "translateY(-1px)";
                 }}
               >
                 Set
@@ -255,10 +287,21 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                   background: "transparent",
                   color: "#988f81",
                   border: "1px solid #988f81",
-                  borderRadius: "8px",
+                  borderRadius: "12px",
                   cursor: "pointer",
                   fontWeight: "600",
                   fontSize: "0.85rem",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = "rgba(152,143,129,0.1)";
+                  e.target.style.borderColor = "#b8aaa0";
+                  e.target.style.color = "#d4c7bb";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = "transparent";
+                  e.target.style.borderColor = "#988f81";
+                  e.target.style.color = "#988f81";
                 }}
               >
                 Cancel
@@ -269,7 +312,21 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
 
         {/* ── Time picker ── */}
         <div className="appt-picker-group">
-          <div className="appt-picker-label" style={{cursor: "pointer"}} onClick={() => setShowTimeInput(!showTimeInput)}>
+          <div 
+            className="appt-picker-label" 
+            style={{cursor: "pointer"}}
+            onClick={() => setShowTimeInput(!showTimeInput)}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#dd901d";
+              const svgs = e.currentTarget.querySelectorAll('svg');
+              svgs.forEach(svg => svg.style.stroke = "#dd901d");
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "white";
+              const svgs = e.currentTarget.querySelectorAll('svg');
+              svgs.forEach(svg => svg.style.stroke = "white");
+            }}
+          >
             <ClockSmIcon />
             <span>Select Time</span>
           </div>
@@ -328,7 +385,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                 value={manualTime}
                 onChange={(e) => setManualTime(e.target.value)}
                 style={{
-                  flex: 1,
+                  width: "180px",
                   padding: "10px 14px",
                   background: "#231d1a",
                   border: "1px dashed rgba(152,143,129,0.5)",
@@ -336,6 +393,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                   color: "white",
                   fontFamily: "'Inter', sans-serif",
                   fontSize: "0.95rem",
+                  boxSizing: "border-box",
                 }}
               />
               <button
@@ -345,10 +403,27 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                   background: "#dd901d",
                   color: "black",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "12px",
                   cursor: "pointer",
                   fontWeight: "700",
                   fontSize: "0.85rem",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = "#c47f18";
+                  e.target.style.transform = "translateY(-1px)";
+                  e.target.style.boxShadow = "0 6px 20px rgba(221,144,29,0.35)";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = "#dd901d";
+                  e.target.style.transform = "translateY(0)";
+                  e.target.style.boxShadow = "none";
+                }}
+                onMouseDown={(e) => {
+                  e.target.style.transform = "scale(0.99)";
+                }}
+                onMouseUp={(e) => {
+                  e.target.style.transform = "translateY(-1px)";
                 }}
               >
                 Set
@@ -363,10 +438,21 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                   background: "transparent",
                   color: "#988f81",
                   border: "1px solid #988f81",
-                  borderRadius: "8px",
+                  borderRadius: "12px",
                   cursor: "pointer",
                   fontWeight: "600",
                   fontSize: "0.85rem",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = "rgba(152,143,129,0.1)";
+                  e.target.style.borderColor = "#b8aaa0";
+                  e.target.style.color = "#d4c7bb";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = "transparent";
+                  e.target.style.borderColor = "#988f81";
+                  e.target.style.color = "#988f81";
                 }}
               >
                 Cancel
