@@ -148,19 +148,13 @@ const NavBar = ({ onBookAppointment }) => {
   };
 
   return (
-    <nav style={{
-      position:"fixed",top:0,left:0,right:0,zIndex:50,
-      background:"#0a0908",
-      borderBottom:"1px solid rgba(221,144,29,0.1)",
-      height:52,display:"flex",alignItems:"center",
-      padding:"0 40px",justifyContent:"space-between",
-    }}>
+    <nav className="navbar">
       {/* Logo */}
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <div style={{width:38,height:38,background:"#dd901d",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div className="logo-badge">
           <LogoMark/>
         </div>
-        <span style={{fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"1rem",color:"#f5f1eb"}}>
+        <span className="brand-name">
           BeautyBook Pro
         </span>
       </div>
@@ -173,69 +167,37 @@ const NavBar = ({ onBookAppointment }) => {
           {label:"How It Works",id:"howitworks"},
           {label:"About",      id:"about"},
         ].map(item => (
-          <button key={item.id} onClick={() => scrollToSection(item.id)} style={{
-            padding:"6px 14px",color:"#988f81",
-            fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"0.85rem",
-            background:"none",border:"none",cursor:"pointer",transition:"color 0.2s, transform 0.2s",
-          }}
-            onMouseEnter={e=>{e.target.style.color="#dd901d";e.target.style.transform="translateY(-2px)"}}
-            onMouseLeave={e=>{e.target.style.color="#988f81";e.target.style.transform="translateY(0)"}}
-          >{item.label}</button>
+          <button key={item.id} onClick={() => scrollToSection(item.id)} className="nav-link">
+            {item.label}
+          </button>
         ))}
       </div>
 
       {/* CTA */}
-      <button onClick={onBookAppointment} style={{
-        padding:"9px 20px",background:"#dd901d",color:"#000",
-        fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"0.85rem",
-        border:"none",borderRadius:8,cursor:"pointer",transition:"all 0.2s",
-      }}
-        onMouseEnter={e=>{e.target.style.background="#c47f18";e.target.style.transform="scale(1.05)"}}
-        onMouseLeave={e=>{e.target.style.background="#dd901d";e.target.style.transform="scale(1)"}}
-      >Book Appointment</button>
+      <button onClick={onBookAppointment} className="btn-primary">
+        Book Appointment
+      </button>
     </nav>
   );
 };
 
 const HeroSection = ({ onBookAppointment }) => (
-  <section id="home" style={{
-    background:"#0a0908",
-    marginTop:52,
-    display:"flex",flexDirection:"column",
-    alignItems:"center",justifyContent:"center",
-    textAlign:"center",
-    padding:"40px 20px 50px",
-  }}>
+  <section id="home" className="hero-section">
     {/* Badge */}
-    <div style={{
-      display:"inline-flex",alignItems:"center",
-      padding:"5px 22px",borderRadius:30,
-      border:"1px solid #dd901d",
-      background:"rgba(221,144,29,0.1)",
-      marginBottom:28,
-    }}>
-      <span style={{fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:"0.72rem",color:"#dd901d",letterSpacing:"0.08em"}}>
+    <div className="hero-badge">
+      <span>
         DIGITAL APPOINTMENT SYSTEM
       </span>
     </div>
 
     {/* Headline */}
-    <h1 style={{
-      fontFamily:"'Georgia','Times New Roman',serif",
-      fontWeight:700,fontSize:"clamp(2rem,4.5vw,3.2rem)",
-      color:"#fff",lineHeight:1.1,
-      margin:"0 0 22px",maxWidth:760,
-    }}>
+    <h1 className="hero-title">
       Skip The&nbsp;&nbsp;Wait,{" "}
-      <span style={{color:"#dd901d"}}>Book Your Style</span>
+      <span className="accent">Book Your Style</span>
     </h1>
 
     {/* Sub-copy */}
-    <p style={{
-      fontFamily:"'Inter',sans-serif",fontWeight:400,
-      fontSize:"0.95rem",color:"#988f81",
-      lineHeight:1.7,maxWidth:580,margin:"0 0 32px",
-    }}>
+    <p className="hero-text">
       A digital appointment and customer management system for barbershops,
       hair salons, and spas.<br/>
       Book appointments online, reduce wait times, and experience seamless,
@@ -243,15 +205,9 @@ const HeroSection = ({ onBookAppointment }) => (
     </p>
 
     {/* CTA */}
-    <button onClick={onBookAppointment} style={{
-      padding:"12px 36px",
-      background:"#dd901d",color:"#000",
-      fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"0.95rem",
-      border:"none",borderRadius:8,cursor:"pointer",transition:"all 0.2s",
-    }}
-      onMouseEnter={e=>{e.target.style.background="#c47f18";e.target.style.transform="scale(1.05) translateY(-2px)"}}
-      onMouseLeave={e=>{e.target.style.background="#dd901d";e.target.style.transform="scale(1) translateY(0)"}}
-    >Book Appointment</button>
+    <button onClick={onBookAppointment} className="btn-large">
+      Book Appointment
+    </button>
   </section>
 );
 
@@ -262,46 +218,19 @@ const HowItWorksSection = () => {
     {icon:<CheckCircleIcon/>,title:"Enjoy Service",  desc:"Arrive on time and skip the traditional waiting queue"},
   ];
   return (
-    <section id="howitworks" style={{background:"#14110f",padding:"40px 40px"}}>
-      <h2 style={{
-        textAlign:"center",
-        fontFamily:"'Georgia','Times New Roman',serif",
-        fontWeight:700,fontSize:"1.9rem",color:"#fff",
-        margin:"0 0 10px",
-      }}>How BeautyBook Pro Works</h2>
-      <p style={{
-        textAlign:"center",color:"#988f81",
-        fontFamily:"'Inter',sans-serif",fontSize:"0.95rem",
-        margin:"0 0 36px",
-      }}>Simple, efficient digital booking appointment for modern salon businesses</p>
+    <section id="howitworks" className="howitworks-section">
+      <h2 className="section-title">How BeautyBook Pro Works</h2>
+      <p className="section-subtitle">Simple, efficient digital booking appointment for modern salon businesses</p>
 
       <div style={{
         display:"grid",gridTemplateColumns:"repeat(3,1fr)",
         gap:18,maxWidth:860,margin:"0 auto",
       }}>
         {steps.map((s,i) => (
-          <div key={i} style={{
-            background:"#14110f",borderRadius:9,
-            border:"1px solid rgba(152,143,129,0.35)",
-            padding:"16px 16px 20px",
-            transition:"all 0.3s ease",cursor:"pointer",
-          }}
-            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-8px) scale(1.02)";e.currentTarget.style.boxShadow="0 12px 24px rgba(221,144,29,0.2)";e.currentTarget.style.borderColor="#dd901d"}}
-            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0) scale(1)";e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor="rgba(152,143,129,0.35)"}}
-          >
-            <div style={{
-              width:52,height:52,background:"#dd901d",
-              borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",
-              padding:11,marginBottom:14,
-            }}>{s.icon}</div>
-            <div style={{
-              fontFamily:"'Georgia','Times New Roman',serif",
-              fontWeight:700,fontSize:"1.05rem",color:"#fff",marginBottom:6,
-            }}>{s.title}</div>
-            <p style={{
-              fontFamily:"'Inter',sans-serif",fontWeight:200,
-              fontSize:"0.82rem",color:"#988f81",margin:0,lineHeight:1.5,
-            }}>{s.desc}</p>
+          <div key={i} className="step-card">
+            <div className="icon-box">{s.icon}</div>
+            <div className="step-title">{s.title}</div>
+            <p className="step-desc">{s.desc}</p>
           </div>
         ))}
       </div>
@@ -310,29 +239,19 @@ const HowItWorksSection = () => {
 };
 
 const SvcCard = ({icon,title,items}) => (
-  <div style={{
-    background:"#060605",borderRadius:9,
-    border:"1px solid rgba(152,143,129,0.3)",
-    padding:"16px",transition:"all 0.3s ease",cursor:"pointer",
-  }}
-    onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-6px) scale(1.02)";e.currentTarget.style.boxShadow="0 10px 20px rgba(221,144,29,0.15)";e.currentTarget.style.borderColor="rgba(221,144,29,0.6)"}}
-    onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0) scale(1)";e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor="rgba(152,143,129,0.3)"}}
-  >
+  <div className="service-card">
     <div style={{
       width:50,height:50,background:"#dd901d",
       borderRadius:14,padding:10,
       display:"flex",alignItems:"center",justifyContent:"center",
       marginBottom:10,
     }}>{icon}</div>
-    <div style={{
-      fontFamily:"'Georgia','Times New Roman',serif",
-      fontWeight:700,fontSize:"1rem",color:"#fff",marginBottom:8,
-    }}>{title}</div>
-    <div style={{display:"flex",flexDirection:"column",gap:4}}>
+    <div className="service-title">{title}</div>
+    <div className="service-items">
       {items.map((l,i) => (
-        <div key={i} style={{display:"flex",alignItems:"center",gap:7}}>
+        <div key={i} className="service-item">
           <CheckItem/>
-          <span style={{fontFamily:"'Inter',sans-serif",fontWeight:200,fontSize:"0.78rem",color:"#988f81"}}>{l}</span>
+          <span>{l}</span>
         </div>
       ))}
     </div>
@@ -350,18 +269,9 @@ const ServicesSection = () => {
     {icon:<StarIcon/>,     title:"Premium Services",   items:["Bridal Package","Couple's Massage","Hair & Glow Combo","VIP Lounge Experience"]},
   ];
   return (
-    <section id="services" style={{background:"#0a0908",padding:"40px 40px"}}>
-      <h2 style={{
-        textAlign:"center",
-        fontFamily:"'Georgia','Times New Roman',serif",
-        fontWeight:700,fontSize:"1.9rem",color:"#fff",
-        margin:"0 0 10px",
-      }}>Our Services</h2>
-      <p style={{
-        textAlign:"center",color:"#988f81",
-        fontFamily:"'Inter',sans-serif",fontSize:"0.95rem",
-        margin:"0 0 32px",
-      }}>Professional grooming services tailored to your style</p>
+    <section id="services" className="services-section">
+      <h2 className="section-title">Our Services</h2>
+      <p className="section-subtitle">Professional grooming services tailored to your style</p>
 
       <div style={{maxWidth:860,margin:"0 auto",display:"flex",flexDirection:"column",gap:18}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:18}}>
@@ -376,27 +286,23 @@ const ServicesSection = () => {
 };
 
 const FooterSection = () => (
-  <footer id="about" style={{
-    background:"#050504",
-    borderTop:"1px solid rgba(221,144,29,0.08)",
-    padding:"20px 40px 16px",
-  }}>
+  <footer id="about" className="footer">
     <div style={{maxWidth:860,margin:"0 auto"}}>
       {/* Contact row */}
-      <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:18,marginBottom:14}}>
-        <span style={{fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"0.95rem",color:"#fff",minWidth:78}}>
+      <div className="footer-row">
+        <span className="footer-label">
           Contact us
         </span>
         {["Canvas city, Abc st., 245 lot B","(02) 123-4567","beautybookpro@gmail.com","Mon-Fri: 8:00 AM - 5:00 PM"].map((t,i) => (
-          <span key={i} style={{fontFamily:"'Inter',sans-serif",fontWeight:200,fontSize:"0.75rem",color:"rgba(255,255,255,0.6)"}}>
+          <span key={i} className="footer-text">
             {t}
           </span>
         ))}
       </div>
 
       {/* Follow row */}
-      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:18}}>
-        <span style={{fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"0.95rem",color:"#fff",minWidth:78}}>
+      <div className="footer-row">
+        <span className="footer-label">
           Follow us
         </span>
         {[
@@ -412,25 +318,13 @@ const FooterSection = () => (
             <circle cx="17.5" cy="6.5" r="1.2" fill="white"/>
           </svg>,
         ].map((ic,i) => (
-          <div key={i} style={{
-            width:28,height:28,borderRadius:7,
-            border:"1px solid rgba(152,143,129,0.3)",
-            display:"flex",alignItems:"center",justifyContent:"center",
-            cursor:"pointer",transition:"all 0.3s ease",
-          }}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor="#dd901d";e.currentTarget.style.transform="scale(1.15) rotate(5deg)"}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(152,143,129,0.3)";e.currentTarget.style.transform="scale(1) rotate(0deg)"}}
-          >{ic}</div>
+          <div key={i} className="social-icon">{ic}</div>
         ))}
       </div>
 
       {/* Divider + copyright */}
-      <div style={{borderTop:"1px solid rgba(152,143,129,0.15)",paddingTop:12}}>
-        <p style={{
-          textAlign:"center",
-          fontFamily:"'Inter',sans-serif",fontWeight:200,
-          fontSize:"0.7rem",color:"rgba(255,255,255,0.35)",margin:0,
-        }}>
+      <div className="footer-divider">
+        <p className="copyright">
           © 2025 BeautyBook Pro. All rights reserved. |Polytechnic University of the Philippines Institute of Technology
         </p>
       </div>
@@ -443,18 +337,12 @@ export default function App() {
   const handleBook = () => navigate("/register");
 
   return (
-    <>
-      <style>{`
-        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-        html, body { width:100%; height:100%; }
-      `}</style>
-      <div style={{background:"#0a0908",minHeight:"100vh",width:"100%",zoom:"125%",transformOrigin:"top left"}}>
-        <NavBar onBookAppointment={handleBook}/>
-        <HeroSection onBookAppointment={handleBook}/>
-        <HowItWorksSection/>
-        <ServicesSection/>
-        <FooterSection/>
-      </div>
-    </>
+    <div style={{background:"#0a0908",minHeight:"100vh",width:"100%",zoom:"125%",transformOrigin:"top left"}}>
+      <NavBar onBookAppointment={handleBook}/>
+      <HeroSection onBookAppointment={handleBook}/>
+      <HowItWorksSection/>
+      <ServicesSection/>
+      <FooterSection/>
+    </div>
   );
 }

@@ -63,57 +63,23 @@ const CheckboxChecked = () => (
 
 /** Dashed-border field wrapper */
 const FieldBox = ({ label, children }) => (
-  <div style={{
-    width: "100%",
-    border: "1px dashed rgba(152,143,129,0.5)",
-    borderRadius: 8,
-    padding: "12px 17px",
-    background: "#0c0b09",
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-  }}>
-    <span style={{
-      fontFamily: "'Inter', sans-serif",
-      fontWeight: 400,
-      fontSize: "0.72rem",
-      color: "#988f81",
-      letterSpacing: "0.06em",
-      textTransform: "uppercase",
-    }}>{label}</span>
+  <div className="field-box">
+    <span className="field-label">{label}</span>
     {children}
   </div>
 );
 
 /** Dark inner input row with left icon */
 const InputRow = ({ icon, placeholder, type = "text", value, onChange }) => (
-  <div style={{ position: "relative", width: "100%", height: 40 }}>
-    <div style={{
-      position: "absolute", inset: 0,
-      background: "#231d1a",
-      borderRadius: 10,
-      display: "flex",
-      alignItems: "center",
-      paddingLeft: 14,
-      gap: 10,
-    }}>
+  <div className="input-row">
+    <div className="input-wrapper">
       {icon}
       <input
         type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        style={{
-          flex: 1,
-          background: "transparent",
-          border: "none",
-          outline: "none",
-          fontFamily: "'Inter', sans-serif",
-          fontWeight: 200,
-          fontSize: "0.95rem",
-          color: "#fff",
-          letterSpacing: 0,
-        }}
+        className="input-field"
       />
     </div>
   </div>
@@ -121,22 +87,12 @@ const InputRow = ({ icon, placeholder, type = "text", value, onChange }) => (
 
 /** Toggle row: label + checkbox */
 const ToggleRow = ({ label, checked, onToggle }) => (
-  <div style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    width: "100%",
-  }}>
-    <span style={{
-      fontFamily: "'Inter', sans-serif",
-      fontWeight: 400,
-      fontSize: "0.95rem",
-      color: "#988f81",
-    }}>{label}</span>
+  <div className="toggle-row">
+    <span className="toggle-label">{label}</span>
     <button
       type="button"
       onClick={onToggle}
-      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
+      className="checkbox-btn"
       aria-pressed={checked}
     >
       {checked ? <CheckboxChecked /> : <CheckboxEmpty />}
@@ -203,68 +159,19 @@ export const Register = () => {
   };
 
   return (
-    <>
-      <style>{`
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        html, body {
-          width: 100%;
-          height: 100%;
-          margin: 0;
-          padding: 0;
-        }
-        #root {
-          width: 100%;
-          height: 100%;
-        }
-      `}</style>
-      <div style={{
-        display: "flex",
-        minHeight: "100vh",
-        width: "100%",
-        background: "#0c0b09",
-        fontFamily: "'Inter', sans-serif",
-      }}>
+    <div className="register-container">
 
       {/* ── LEFT PANEL ── */}
-      <div style={{
-        flex: "0 0 50%",
-        display: "flex",
-        flexDirection: "column",
-        padding: "60px 0 60px 0",
-        justifyContent: "flex-start",
-        alignItems: "center",
-      }}>
+      <div className="register-left">
 
         {/* Content wrapper */}
-        <div style={{
-          width: "100%",
-          maxWidth: 520,
-          paddingLeft: 60,
-          paddingRight: 40,
-          display: "flex",
-          flexDirection: "column",
-          gap: 22,
-        }}>
+        <div className="form-wrapper">
 
         {/* Back button */}
         <button
           type="button"
           onClick={handleBack}
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 6,
-            color: "#988f81",
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 400, fontSize: "1rem",
-            padding: 0, marginBottom: 40,
-            width: "fit-content",
-          }}
-          onMouseEnter={e => e.currentTarget.style.color = "#fff"}
-          onMouseLeave={e => e.currentTarget.style.color = "#988f81"}
+          className="btn-back"
         >
           <svg viewBox="0 0 16 16" fill="none" style={{ width: 16, height: 16 }}>
             <path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -282,33 +189,19 @@ export const Register = () => {
           }}>
             <LogoMark />
           </div>
-          <span style={{
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 700, fontSize: "1.1rem",
-            color: "#f5f1eb",
-          }}>BeautyBook Pro</span>
+          <span className="brand-name">BeautyBook Pro</span>
         </div>
 
         {/* Heading */}
-        <div style={{ marginBottom: 36 }}>
-          <h1 style={{
-            fontFamily: "'Georgia','Times New Roman',serif",
-            fontWeight: 700, fontSize: "1.9rem",
-            color: "#fff", margin: "0 0 10px",
-            lineHeight: 1.2,
-          }}>Let's Get You Started!</h1>
-          <p style={{
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 400, fontSize: "0.95rem",
-            color: "#988f81", margin: 0,
-            lineHeight: 1.6, maxWidth: 380,
-          }}>
+        <div className="form-heading">
+          <h1 className="form-title">Let's Get You Started!</h1>
+          <p className="form-subtitle">
             Enter your details below to book appointments and enjoy seamless, personalized service.
           </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 22, width: "100%" }}>
+        <form onSubmit={handleSubmit} className="form-body">
 
           {/* NAME */}
           <FieldBox label="Name">
@@ -319,7 +212,7 @@ export const Register = () => {
               value={fullName}
               onChange={e => setFullName(e.target.value)}
             />
-            {errors.fullName && <span style={{ color: "#dd901d", fontSize: "0.75rem", marginTop: "-8px" }}>{errors.fullName}</span>}
+            {errors.fullName && <span className="error-text">{errors.fullName}</span>}
           </FieldBox>
 
           {/* USE EMAIL TOGGLE */}
@@ -345,7 +238,7 @@ export const Register = () => {
               value={email}
               onChange={e => setEmail(e.target.value)}
             />
-            {errors.email && <span style={{ color: "#dd901d", fontSize: "0.75rem", marginTop: "-8px" }}>{errors.email}</span>}
+            {errors.email && <span className="error-text">{errors.email}</span>}
           </FieldBox>
 
           {/* USE PHONE TOGGLE */}
@@ -361,7 +254,7 @@ export const Register = () => {
               }
             }}
           />
-          {errors.notification && <span style={{ color: "#dd901d", fontSize: "0.75rem" }}>{errors.notification}</span>}
+          {errors.notification && <span className="error-text">{errors.notification}</span>}
 
           {/* PHONE NUMBER */}
           <FieldBox label="Phone Number">
@@ -377,46 +270,30 @@ export const Register = () => {
                 }
               }}
             />
-            {errors.phone && <span style={{ color: "#dd901d", fontSize: "0.75rem", marginTop: "-8px" }}>{errors.phone}</span>}
+            {errors.phone && <span className="error-text">{errors.phone}</span>}
           </FieldBox>
 
           {/* CONFIRM BUTTON + REMEMBER ME */}
           <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8 }}>
             <button
               type="submit"
-              style={{
-                width: "100%", height: 48,
-                background: "#dd901d",
-                border: "none", borderRadius: 8,
-                cursor: "pointer",
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 700, fontSize: "0.95rem",
-                color: "#000",
-                transition: "background 0.18s",
-              }}
-              onMouseEnter={e => e.target.style.background = "#c47f18"}
-              onMouseLeave={e => e.target.style.background = "#dd901d"}
+              className="btn-large"
+              style={{ width: "100%" }}
             >
               Confirm
             </button>
 
             {/* Remember Me */}
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-            }}>
+            <div className="checkbox-section">
               <button
                 type="button"
                 onClick={() => setRememberMe(v => !v)}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
+                className="checkbox-btn"
                 aria-pressed={rememberMe}
               >
                 {rememberMe ? <CheckboxChecked /> : <CheckboxEmpty />}
               </button>
-              <span style={{
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 400, fontSize: "0.8rem",
-                color: "#fff",
-              }}>Remember Me?</span>
+              <span className="remember-text">Remember Me?</span>
             </div>
           </div>
 
@@ -425,27 +302,10 @@ export const Register = () => {
       </div>
 
       {/* ── RIGHT PANEL ── */}
-      <div style={{
-        flex: "0 0 50%",
-        background: "rgba(221,144,29,0.15)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "column",
-        gap: 28,
-        padding: "40px 60px",
-        textAlign: "center",
-      }}>
+      <div className="register-right">
 
         {/* Big amber circle with scissors */}
-        <div style={{
-          width: 150, height: 150,
-          background: "#dd901d",
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}>
+        <div className="right-panel-circle">
           {/* Large scissors for the panel */}
           <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 60, height: 60 }}>
             <circle cx="14" cy="40" r="9" stroke="#1a1208" strokeWidth="3" fill="none" />
@@ -457,25 +317,14 @@ export const Register = () => {
           </svg>
         </div>
 
-        <h2 style={{
-          fontFamily: "'Georgia','Times New Roman',serif",
-          fontWeight: 700, fontSize: "2rem",
-          color: "#fff", margin: 0,
-          lineHeight: 1.2, maxWidth: 400,
-        }}>Digital Appointment System</h2>
+        <h2 className="right-panel-title">Digital Appointment System</h2>
 
-        <p style={{
-          fontFamily: "'Inter', sans-serif",
-          fontWeight: 400, fontSize: "1rem",
-          color: "#988f81", margin: 0,
-          lineHeight: 1.6, maxWidth: 380,
-        }}>
+        <p className="right-panel-text">
           Book appointments and enjoy a seamless salon experience—no waiting in line.
         </p>
       </div>
 
     </div>
-    </>
   );
 };
 
