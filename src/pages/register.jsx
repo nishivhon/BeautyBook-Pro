@@ -179,8 +179,8 @@ export const Register = () => {
     if (usePhone) {
       if (!phone.trim()) {
         newErrors.phone = "Phone number is required";
-      } else if (phone.length < 10) {
-        newErrors.phone = "Phone number should be at least 10 digits";
+      } else if (phone.length !== 11) {
+        newErrors.phone = "Phone number should be 11 digits";
       }
     }
 
@@ -370,7 +370,12 @@ export const Register = () => {
               placeholder="# ### ### ####"
               type="tel"
               value={phone}
-              onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
+              onChange={e => {
+                const numericOnly = e.target.value.replace(/[^0-9]/g, "");
+                if (numericOnly.length <= 11) {
+                  setPhone(numericOnly);
+                }
+              }}
             />
             {errors.phone && <span style={{ color: "#dd901d", fontSize: "0.75rem", marginTop: "-8px" }}>{errors.phone}</span>}
           </FieldBox>

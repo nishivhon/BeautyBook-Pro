@@ -81,47 +81,63 @@ const LogoMark = () => (
 );
 
 /* ─── NavBar ─── */
-const NavBar = ({ onBookAppointment }) => (
-  <nav style={{
-    position:"fixed",top:0,left:0,right:0,zIndex:50,
-    background:"#0a0908",
-    borderBottom:"1px solid rgba(221,144,29,0.1)",
-    height:52,display:"flex",alignItems:"center",
-    padding:"0 40px",justifyContent:"space-between",
-  }}>
-    <div style={{display:"flex",alignItems:"center",gap:8}}>
-      <div style={{width:38,height:38,background:"#dd901d",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <LogoMark/>
+const NavBar = ({ onBookAppointment }) => {
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      const navbarHeight = 52;
+      const elementPosition = element.getBoundingClientRect().top + window.scrollY - navbarHeight;
+      window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <nav style={{
+      position:"fixed",top:0,left:0,right:0,zIndex:50,
+      background:"#0a0908",
+      borderBottom:"1px solid rgba(221,144,29,0.1)",
+      height:52,display:"flex",alignItems:"center",
+      padding:"0 40px",justifyContent:"space-between",
+    }}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <div style={{width:38,height:38,background:"#dd901d",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <LogoMark/>
+        </div>
+        <span style={{fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"1rem",color:"#f5f1eb"}}>BeautyBook Pro</span>
       </div>
-      <span style={{fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"1rem",color:"#f5f1eb"}}>BeautyBook Pro</span>
-    </div>
-    <div style={{display:"flex",alignItems:"center",gap:2}}>
-      {["Home","Services","Queue Status","About"].map(item=>(
-        <a key={item} href="#" style={{
-          padding:"6px 14px",color:"#988f81",
-          fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"0.85rem",
-          textDecoration:"none",transition:"all 0.3s ease",
-        }}
-          onMouseEnter={e=>{e.target.style.color="#dd901d"; e.target.style.transform="translateY(-2px)"}}
-          onMouseLeave={e=>{e.target.style.color="#988f81"; e.target.style.transform="translateY(0)"}}
-        >{item}</a>
-      ))}
-    </div>
-    <button style={{
-      padding:"9px 20px",background:"#dd901d",color:"#000",
-      fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"0.85rem",
-      border:"none",borderRadius:8,cursor:"pointer",transition:"all 0.3s ease",
-    }}
-      onClick={onBookAppointment}
-      onMouseEnter={e=>{e.target.style.background="#c47f18"; e.target.style.transform="scale(1.05)"; e.target.style.boxShadow="0 4px 12px rgba(221,144,29,0.3)"}}
-      onMouseLeave={e=>{e.target.style.background="#dd901d"; e.target.style.transform="scale(1)"; e.target.style.boxShadow="none"}}
-    >Book Appointment</button>
-  </nav>
-);
+      <div style={{display:"flex",alignItems:"center",gap:2}}>
+        {[
+          {label:"Home",id:"home"},
+          {label:"Services",id:"services"},
+          {label:"How It Works",id:"howitworks"},
+          {label:"About",id:"about"}
+        ].map(item=>(
+          <button key={item.id} onClick={() => scrollToSection(item.id)} style={{
+            padding:"6px 14px",color:"#988f81",
+            fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"0.85rem",
+            background:"none",border:"none",cursor:"pointer",transition:"all 0.3s ease",
+          }}
+            onMouseEnter={e=>{e.target.style.color="#dd901d"; e.target.style.transform="translateY(-2px)"}}
+            onMouseLeave={e=>{e.target.style.color="#988f81"; e.target.style.transform="translateY(0)"}}
+          >{item.label}</button>
+        ))}
+      </div>
+      <button style={{
+        padding:"9px 20px",background:"#dd901d",color:"#000",
+        fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"0.85rem",
+        border:"none",borderRadius:8,cursor:"pointer",transition:"all 0.3s ease",
+      }}
+        onClick={onBookAppointment}
+        onMouseEnter={e=>{e.target.style.background="#c47f18"; e.target.style.transform="scale(1.05)"; e.target.style.boxShadow="0 4px 12px rgba(221,144,29,0.3)"}}
+        onMouseLeave={e=>{e.target.style.background="#dd901d"; e.target.style.transform="scale(1)"; e.target.style.boxShadow="none"}}
+      >Book Appointment</button>
+    </nav>
+  );
+};
 
 /* ─── Hero ─── */
 const HeroSection = ({ onBookAppointment }) => (
-  <section style={{
+  <section id="home" style={{
     background:"#0a0908",
     minHeight:"auto",
     marginTop:52,
@@ -179,7 +195,7 @@ const HowItWorksSection = () => {
     {icon:<CheckCircleIcon/>,title:"Enjoy Service",desc:"Arrive on time and skip the traditional waiting queue"},
   ];
   return (
-    <section style={{background:"#14110f",padding:"40px 40px"}}>
+    <section id="howitworks" style={{background:"#14110f",padding:"40px 40px"}}>
       <h2 style={{
         textAlign:"center",
         fontFamily:"'Georgia','Times New Roman',serif",
@@ -267,7 +283,7 @@ const ServicesSection = () => {
     {icon:<StarIcon/>,title:"Premium Services",items:["Bridal Package","Couple's Massage","Hair & Glow Combo","VIP Lounge Experience"]},
   ];
   return (
-    <section style={{background:"#0a0908",padding:"40px 40px"}}>
+    <section id="services" style={{background:"#0a0908",padding:"40px 40px"}}>
       <h2 style={{
         textAlign:"center",
         fontFamily:"'Georgia','Times New Roman',serif",
@@ -293,7 +309,7 @@ const ServicesSection = () => {
 
 /* ─── Footer ─── */
 const FooterSection = () => (
-  <footer style={{
+  <footer id="about" style={{
     background:"#050504",
     borderTop:"1px solid rgba(221,144,29,0.08)",
     padding:"20px 40px 16px",
