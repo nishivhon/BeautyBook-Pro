@@ -111,7 +111,7 @@ const InputRow = ({ icon, placeholder, type = "text", value, onChange }) => (
           fontFamily: "'Inter', sans-serif",
           fontWeight: 200,
           fontSize: "0.95rem",
-          color: "rgba(152,143,129,0.6)",
+          color: "#fff",
           letterSpacing: 0,
         }}
       />
@@ -155,10 +155,47 @@ export const Register = () => {
   const [useEmail, setUseEmail] = useState(false);
   const [usePhone, setUsePhone] = useState(true);
   const [rememberMe, setRememberMe] = useState(true);
+  const [errors, setErrors]     = useState({});
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // handle submit
+    const newErrors = {};
+
+    // Validate full name
+    if (!fullName.trim()) {
+      newErrors.fullName = "Full name is required";
+    }
+
+    // Validate email if selected
+    if (useEmail) {
+      if (!email.trim()) {
+        newErrors.email = "Email is required";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        newErrors.email = "Please enter a valid email";
+      }
+    }
+
+    // Validate phone if selected
+    if (usePhone) {
+      if (!phone.trim()) {
+        newErrors.phone = "Phone number is required";
+      } else if (phone.length < 10) {
+        newErrors.phone = "Phone number should be at least 10 digits";
+      }
+    }
+
+    // Check if at least one notification method is selected
+    if (!useEmail && !usePhone) {
+      newErrors.notification = "Please select at least one notification method";
+    }
+
+    setErrors(newErrors);
+
+    // If no errors, handle submit
+    if (Object.keys(newErrors).length === 0) {
+      console.log("Form submitted:", { fullName, email, phone, useEmail, usePhone, rememberMe });
+      // handle submit here
+    }
   };
 
   const handleBack = () => {
@@ -282,13 +319,21 @@ export const Register = () => {
               value={fullName}
               onChange={e => setFullName(e.target.value)}
             />
+            {errors.fullName && <span style={{ color: "#dd901d", fontSize: "0.75rem", marginTop: "-8px" }}>{errors.fullName}</span>}
           </FieldBox>
 
           {/* USE EMAIL TOGGLE */}
           <ToggleRow
             label="Use Email for Notification:"
             checked={useEmail}
-            onToggle={() => setUseEmail(v => !v)}
+            onToggle={() => {
+              if (useEmail) {
+                setUseEmail(false);
+              } else {
+                setUseEmail(true);
+                setUsePhone(false);
+              }
+            }}
           />
 
           {/* EMAIL ADDRESS */}
@@ -300,14 +345,23 @@ export const Register = () => {
               value={email}
               onChange={e => setEmail(e.target.value)}
             />
+            {errors.email && <span style={{ color: "#dd901d", fontSize: "0.75rem", marginTop: "-8px" }}>{errors.email}</span>}
           </FieldBox>
 
           {/* USE PHONE TOGGLE */}
           <ToggleRow
             label="Use Phone No. for Notification:"
             checked={usePhone}
-            onToggle={() => setUsePhone(v => !v)}
+            onToggle={() => {
+              if (usePhone) {
+                setUsePhone(false);
+              } else {
+                setUsePhone(true);
+                setUseEmail(false);
+              }
+            }}
           />
+          {errors.notification && <span style={{ color: "#dd901d", fontSize: "0.75rem" }}>{errors.notification}</span>}
 
           {/* PHONE NUMBER */}
           <FieldBox label="Phone Number">
@@ -316,8 +370,9 @@ export const Register = () => {
               placeholder="# ### ### ####"
               type="tel"
               value={phone}
-              onChange={e => setPhone(e.target.value)}
+              onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
             />
+            {errors.phone && <span style={{ color: "#dd901d", fontSize: "0.75rem", marginTop: "-8px" }}>{errors.phone}</span>}
           </FieldBox>
 
           {/* CONFIRM BUTTON + REMEMBER ME */}
