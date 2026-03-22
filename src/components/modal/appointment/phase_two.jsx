@@ -124,7 +124,7 @@ const ProgressIndicator = ({ currentStep = 2 }) => (
 );
 
 /* ── Service card ── */
-const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal }) => (
+const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, selectedHairServicesCount = 0 }) => (
   <button
     className={`appt-svc-card${isSelected ? " selected" : ""}`}
     onClick={() => {
@@ -140,6 +140,7 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal }) => (
     aria-pressed={isSelected}
     style={{
       transition: "all 0.3s ease",
+      position: "relative",
     }}
     onMouseEnter={(e) => {
       if (!isSelected) {
@@ -166,6 +167,28 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal }) => (
     </div>
     <p className="appt-svc-title">{service.title}</p>
     <p className="appt-svc-desc">{service.desc}</p>
+    
+    {/* Service count badge for Hair Services */}
+    {service.id === 1 && isSelected && selectedHairServicesCount > 0 && (
+      <div style={{
+        position: "absolute",
+        top: "8px",
+        right: "8px",
+        background: "var(--color-amber)",
+        color: "var(--color-black)",
+        borderRadius: "50%",
+        width: "28px",
+        height: "28px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "0.85rem",
+        fontWeight: "700",
+        fontFamily: "Inter, sans-serif",
+      }}>
+        {selectedHairServicesCount}
+      </div>
+    )}
   </button>
 );
 
@@ -186,7 +209,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
   };
 
   if (showHairModal) {
-    return <HairServicesModal onBack={() => setShowHairModal(false)} onContinue={handleHairContinue} />;
+    return <HairServicesModal onBack={() => setShowHairModal(false)} onContinue={handleHairContinue} initialSelected={selectedHairServices.map((s) => s.id)} />;
   }
 
   return (
@@ -210,6 +233,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
               isSelected={selectedService === svc.id}
               onSelect={setSelectedService}
               onOpenHairModal={() => setShowHairModal(true)}
+              selectedHairServicesCount={svc.id === 1 ? selectedHairServices.length : 0}
             />
           ))}
         </div>

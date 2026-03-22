@@ -120,8 +120,8 @@ const ServiceRow = ({ service, isSelected, onSelect }) => (
   </button>
 );
 
-export const HairServicesModal = ({ onBack, onContinue }) => {
-  const [selected, setSelected] = useState([]); // Array for multiple selections
+export const HairServicesModal = ({ onBack, onContinue, initialSelected = [] }) => {
+  const [selected, setSelected] = useState(initialSelected); // Array for multiple selections, initialized with previous selections
 
   const handleSelectService = (serviceId, isDeselect) => {
     if (isDeselect) {
