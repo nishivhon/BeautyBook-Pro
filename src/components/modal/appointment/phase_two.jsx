@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { HairServicesModal } from "./services/haircut_service";
 import { NailServicesModal } from "./services/nail_service";
+import { SkincareServicesModal } from "./services/skin_care_service";
 import { ConfirmationDialog } from "../confirmation_dialog";
 
 /* Hair Services — broom/brush icon */
@@ -126,7 +127,7 @@ const ProgressIndicator = ({ currentStep = 2 }) => (
 );
 
 /* ── Service card ── */
-const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNailModal, selectedHairServicesCount = 0, selectedNailServicesCount = 0 }) => (
+const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNailModal, onOpenSkincareModal, selectedHairServicesCount = 0, selectedNailServicesCount = 0, selectedSkincareServicesCount = 0 }) => (
   <button
     className={`appt-svc-card${isSelected ? " selected" : ""}`}
     onClick={() => {
@@ -136,6 +137,9 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNai
       } else if (service.id === 2) {
         // Nail Services — open the nail services modal
         onOpenNailModal();
+      } else if (service.id === 3) {
+        // Skincare Services — open the skincare services modal
+        onOpenSkincareModal();
       } else {
         // For other services, toggle selection
         onSelect(service.id);
@@ -215,6 +219,28 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNai
         {selectedNailServicesCount}
       </div>
     )}
+    
+    {/* Service count badge for Skincare Services */}
+    {service.id === 3 && isSelected && selectedSkincareServicesCount > 0 && (
+      <div style={{
+        position: "absolute",
+        top: "8px",
+        right: "8px",
+        background: "var(--color-amber)",
+        color: "var(--color-black)",
+        borderRadius: "50%",
+        width: "28px",
+        height: "28px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "0.85rem",
+        fontWeight: "700",
+        fontFamily: "Inter, sans-serif",
+      }}>
+        {selectedSkincareServicesCount}
+      </div>
+    )}
   </button>
 );
 
@@ -222,10 +248,13 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
   const [selectedServices, setSelectedServices] = useState([]); // Array to allow multiple selections
   const [showHairModal, setShowHairModal] = useState(false);
   const [showNailModal, setShowNailModal] = useState(false);
+  const [showSkincareModal, setShowSkincareModal] = useState(false);
   const [selectedHairServices, setSelectedHairServices] = useState([]);
   const [selectedNailServices, setSelectedNailServices] = useState([]);
+  const [selectedSkincareServices, setSelectedSkincareServices] = useState([]);
   const [hasVisitedHairModal, setHasVisitedHairModal] = useState(false); // Track if hair modal has been visited
   const [hasVisitedNailModal, setHasVisitedNailModal] = useState(false); // Track if nail modal has been visited
+  const [hasVisitedSkincareModal, setHasVisitedSkincareModal] = useState(false); // Track if skincare modal has been visited
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const handleSelectService = (serviceId) => {
@@ -262,8 +291,8 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
 
   const handleNailContinue = (data) => {
     // When user continues/saves from nail services modal
-    setSelectedNailServices(data.services); // Store the selected nail services
-    setHasVisitedNailModal(true); // Mark as visited
+    setSelectedNailServices(data.services);
+    setHasVisitedNailModal(true);
     
     // Add Nail Services ID only if there are services selected, otherwise remove it
     if (data.services.length > 0) {
@@ -271,11 +300,27 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
         setSelectedServices([...selectedServices, 2]);
       }
     } else {
-      // Remove Nail Services ID if all services are deselected
       setSelectedServices(selectedServices.filter((id) => id !== 2));
     }
     
-    setShowNailModal(false); // Return to phase_two
+    setShowNailModal(false);
+  };
+
+  const handleSkincareeContinue = (data) => {
+    // When user continues/saves from skincare services modal
+    setSelectedSkincareServices(data.services);
+    setHasVisitedSkincareModal(true);
+    
+    // Add Skincare Services ID only if there are services selected, otherwise remove it
+    if (data.services.length > 0) {
+      if (!selectedServices.includes(3)) {
+        setSelectedServices([...selectedServices, 3]);
+      }
+    } else {
+      setSelectedServices(selectedServices.filter((id) => id !== 3));
+    }
+    
+    setShowSkincareModal(false);
   };
 
   if (showHairModal) {
@@ -284,6 +329,10 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
 
   if (showNailModal) {
     return <NailServicesModal onBack={() => setShowNailModal(false)} onContinue={handleNailContinue} initialSelected={selectedNailServices.map((s) => s.id)} isUpdating={hasVisitedNailModal} />;
+  }
+
+  if (showSkincareModal) {
+    return <SkincareServicesModal onBack={() => setShowSkincareModal(false)} onContinue={handleSkincareeContinue} initialSelected={selectedSkincareServices.map((s) => s.id)} isUpdating={hasVisitedSkincareModal} />;
   }
 
   return (
@@ -308,8 +357,10 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
               onSelect={handleSelectService}
               onOpenHairModal={() => setShowHairModal(true)}
               onOpenNailModal={() => setShowNailModal(true)}
+              onOpenSkincareModal={() => setShowSkincareModal(true)}
               selectedHairServicesCount={svc.id === 1 ? selectedHairServices.length : 0}
               selectedNailServicesCount={svc.id === 2 ? selectedNailServices.length : 0}
+              selectedSkincareServicesCount={svc.id === 3 ? selectedSkincareServices.length : 0}
             />
           ))}
         </div>
@@ -317,7 +368,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
 
       {/* ── Footer CTA ── */}
       <div className="appt-footer">
-        {selectedServices.length < 2 && (
+        {selectedServices.length < 1 && (
           <p style={{
             color: "#ff6b6b",
             fontSize: "0.85rem",
@@ -325,7 +376,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
             textAlign: "center",
             fontWeight: "500",
           }}>
-            Please select at least 2 services
+            Please select a service
           </p>
         )}
         <div style={{ display: "flex", gap: "12px", width: "100%" }}>
@@ -356,11 +407,11 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
           <button
             className="appt-continue-btn"
             onClick={handleContinue}
-            disabled={selectedServices.length < 2}
+            disabled={selectedServices.length < 1}
             style={{
               flex: 1,
-              opacity: selectedServices.length >= 2 ? 1 : 0.5,
-              cursor: selectedServices.length >= 2 ? "pointer" : "not-allowed",
+              opacity: selectedServices.length >= 1 ? 1 : 0.5,
+              cursor: selectedServices.length >= 1 ? "pointer" : "not-allowed",
             }}
           >
             Continue →
