@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { HairServicesModal } from "./services/haircut_service";
+import { NailServicesModal } from "./services/nail_service";
 
 /* Hair Services — broom/brush icon */
 const HairIcon = () => (
@@ -124,13 +125,16 @@ const ProgressIndicator = ({ currentStep = 2 }) => (
 );
 
 /* ── Service card ── */
-const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, selectedHairServicesCount = 0 }) => (
+const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNailModal, selectedHairServicesCount = 0, selectedNailServicesCount = 0 }) => (
   <button
     className={`appt-svc-card${isSelected ? " selected" : ""}`}
     onClick={() => {
       if (service.id === 1) {
         // Hair Services — open the hair services modal
         onOpenHairModal();
+      } else if (service.id === 2) {
+        // Nail Services — open the nail services modal
+        onOpenNailModal();
       } else if (isSelected) {
         onSelect(null); // Deselect if already selected
       } else {
@@ -189,13 +193,37 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, selectedH
         {selectedHairServicesCount}
       </div>
     )}
+    
+    {/* Service count badge for Nail Services */}
+    {service.id === 2 && isSelected && selectedNailServicesCount > 0 && (
+      <div style={{
+        position: "absolute",
+        top: "8px",
+        right: "8px",
+        background: "var(--color-amber)",
+        color: "var(--color-black)",
+        borderRadius: "50%",
+        width: "28px",
+        height: "28px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "0.85rem",
+        fontWeight: "700",
+        fontFamily: "Inter, sans-serif",
+      }}>
+        {selectedNailServicesCount}
+      </div>
+    )}
   </button>
 );
 
 export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
   const [selectedService, setSelectedService] = useState(null);
   const [showHairModal, setShowHairModal] = useState(false);
+  const [showNailModal, setShowNailModal] = useState(false);
   const [selectedHairServices, setSelectedHairServices] = useState([]);
+  const [selectedNailServices, setSelectedNailServices] = useState([]);
 
   const handleContinue = () => {
     onContinue?.({ service: SERVICES.find((s) => s.id === selectedService), selectedHairServices });
@@ -208,8 +236,19 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
     setShowHairModal(false); // Return to phase_two (don't call onContinue yet)
   };
 
+  const handleNailContinue = (data) => {
+    // When user continues from nail services modal, just close and return to phase_two
+    setSelectedService(2); // Nail Services ID
+    setSelectedNailServices(data.services); // Store the selected nail services
+    setShowNailModal(false); // Return to phase_two (don't call onContinue yet)
+  };
+
   if (showHairModal) {
     return <HairServicesModal onBack={() => setShowHairModal(false)} onContinue={handleHairContinue} initialSelected={selectedHairServices.map((s) => s.id)} />;
+  }
+
+  if (showNailModal) {
+    return <NailServicesModal onBack={() => setShowNailModal(false)} onContinue={handleNailContinue} initialSelected={selectedNailServices.map((s) => s.id)} />;
   }
 
   return (
@@ -233,7 +272,9 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
               isSelected={selectedService === svc.id}
               onSelect={setSelectedService}
               onOpenHairModal={() => setShowHairModal(true)}
+              onOpenNailModal={() => setShowNailModal(true)}
               selectedHairServicesCount={svc.id === 1 ? selectedHairServices.length : 0}
+              selectedNailServicesCount={svc.id === 2 ? selectedNailServices.length : 0}
             />
           ))}
         </div>
