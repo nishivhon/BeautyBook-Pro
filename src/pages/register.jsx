@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Otp } from "../components/modal/otp";
 import { AppointmentForm } from "../components/modal/appointment/phase_one";
+import { AppointmentFormPhase2 } from "../components/modal/appointment/phase_two";
 
 /** Logo scissors mark */
 const LogoMark = () => (
@@ -59,10 +60,6 @@ const CheckboxChecked = () => (
   </svg>
 );
 
-/* ─────────────────────────────────────────
-   Sub-components
-───────────────────────────────────────── */
-
 /** Dashed-border field wrapper */
 const FieldBox = ({ label, children }) => (
   <div className="field-box">
@@ -102,9 +99,6 @@ const ToggleRow = ({ label, checked, onToggle }) => (
   </div>
 );
 
-/* ─────────────────────────────────────────
-   Main Register component
-───────────────────────────────────────── */
 export const Register = () => {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
@@ -118,6 +112,7 @@ export const Register = () => {
   const [formData, setFormData] = useState(null);
   const [showAppointment, setShowAppointment] = useState(false);
   const [appointmentData, setAppointmentData] = useState(null);
+  const [appointmentPhase, setAppointmentPhase] = useState(1);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -186,18 +181,27 @@ export const Register = () => {
   };
 
   const handleAppointmentContinue = (appointmentDetails) => {
-    console.log("Appointment scheduled:", appointmentDetails);
+    console.log("Phase 1 data:", appointmentDetails);
+    // Move to phase 2
+    setAppointmentData({ ...appointmentData, schedule: appointmentDetails });
+    setAppointmentPhase(2);
+  };
+
+  const handlePhase2Continue = (phase2Details) => {
+    console.log("Phase 2 data:", phase2Details);
     console.log("User data:", formData);
-    // Combine registration and appointment data
-    const completeData = { ...formData, appointment: appointmentDetails };
+    const completeData = { ...formData, appointment: { ...appointmentData?.schedule, ...phase2Details } };
     setAppointmentData(completeData);
-    // Close appointment modal and complete registration
     setShowAppointment(false);
-    // Reset form after successful completion
+    setAppointmentPhase(1);
     setFullName("");
     setEmail("");
     setPhone("");
     setFormData(null);
+  };
+
+  const handleAppointmentBackPhase2 = () => {
+    setAppointmentPhase(1);
   };
 
   return (
@@ -386,10 +390,17 @@ export const Register = () => {
           backdropFilter: "blur(3px)",
           backgroundColor: "rgba(0,0,0,0.72)"
         }}>
-          <AppointmentForm
-            onBack={handleAppointmentBack}
-            onContinue={handleAppointmentContinue}
-          />
+          {appointmentPhase === 1 ? (
+            <AppointmentForm
+              onBack={handleAppointmentBack}
+              onContinue={handleAppointmentContinue}
+            />
+          ) : (
+            <AppointmentFormPhase2
+              onBack={handleAppointmentBackPhase2}
+              onContinue={handlePhase2Continue}
+            />
+          )}
         </div>
       )}
 

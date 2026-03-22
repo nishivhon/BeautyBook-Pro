@@ -4,18 +4,18 @@
 
 /* ── CSS Variables ── */
 :root {
-  --bg-dark:        #0a0908;
-  --bg-darker:      #0c0b09;
-  --bg-card:        #060605;
-  --bg-footer:      #050504;
-  --bg-secondary:   #14110f;
-  --color-amber:    #dd901d;
+  --bg-dark:          #0a0908;
+  --bg-darker:        #0c0b09;
+  --bg-card:          #060605;
+  --bg-footer:        #050504;
+  --bg-secondary:     #14110f;
+  --color-amber:      #dd901d;
   --color-amber-dark: #c47f18;
-  --color-tan:      #988f81;
-  --color-white:    #fff;
-  --color-black:    #000;
-  --color-light:    #f5f1eb;
-  --border-tan:     rgba(152, 143, 129, 0.3);
+  --color-tan:        #988f81;
+  --color-white:      #fff;
+  --color-black:      #000;
+  --color-light:      #f5f1eb;
+  --border-tan:       rgba(152, 143, 129, 0.3);
   --border-tan-light: rgba(152, 143, 129, 0.35);
 }
 
@@ -106,16 +106,14 @@
     font-family: 'Georgia','Times New Roman',serif; font-weight: 700;
     font-size: clamp(2rem,4.5vw,3.2rem); color: var(--color-white);
     line-height: 1.1; margin: 0 0 22px; max-width: 760px;
-    animation: fade-up 0.8s ease 0.2s forwards;
-    opacity: 0;
+    animation: fade-up 0.8s ease 0.2s forwards; opacity: 0;
   }
   .hero-title .accent { color: var(--color-amber); }
   .hero-text {
     color: var(--color-tan); line-height: 1.7; max-width: 580px;
     margin: 0 0 32px; font-family: 'Inter', sans-serif;
     font-weight: 400; font-size: 0.95rem;
-    animation: fade-up 0.8s ease 0.4s forwards;
-    opacity: 0;
+    animation: fade-up 0.8s ease 0.4s forwards; opacity: 0;
   }
 
   /* ─────────────────────────────────────
@@ -139,11 +137,7 @@
   .step-card:nth-child(2) { animation-delay: 0.2s; }
   .step-card:nth-child(3) { animation-delay: 0.3s; }
   .step-card:nth-child(4) { animation-delay: 0.4s; }
-  .step-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 12px 24px rgba(221,144,29,0.2);
-    border-color: var(--color-amber);
-  }
+  .step-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 12px 24px rgba(221,144,29,0.2); border-color: var(--color-amber); }
   .icon-box {
     display: flex; align-items: center; justify-content: center;
     width: 52px; height: 52px; padding: 11px; margin-bottom: 14px;
@@ -160,7 +154,7 @@
   }
 
   /* ─────────────────────────────────────
-     Services Section
+     Services Section (landing page)
   ───────────────────────────────────── */
   .services-section { background: var(--bg-dark); padding: 40px; }
   .service-card {
@@ -174,11 +168,7 @@
   .service-card:nth-child(4) { animation-delay: 0.4s; }
   .service-card:nth-child(5) { animation-delay: 0.5s; }
   .service-card:nth-child(6) { animation-delay: 0.6s; }
-  .service-card:hover {
-    transform: translateY(-6px) scale(1.02);
-    box-shadow: 0 10px 20px rgba(221,144,29,0.15);
-    border-color: rgba(221,144,29,0.6);
-  }
+  .service-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 10px 20px rgba(221,144,29,0.15); border-color: rgba(221,144,29,0.6); }
   .service-title {
     font-family: 'Georgia','Times New Roman',serif; font-weight: 700;
     font-size: 1rem; color: var(--color-white); margin-bottom: 8px;
@@ -193,25 +183,14 @@
   /* ─────────────────────────────────────
      Footer
   ───────────────────────────────────── */
-  .footer {
-    background: var(--bg-footer);
-    border-top: 1px solid rgba(221,144,29,0.08);
-    padding: 20px 40px 16px;
-  }
+  .footer { background: var(--bg-footer); border-top: 1px solid rgba(221,144,29,0.08); padding: 20px 40px 16px; }
   .footer-row { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-bottom: 14px; }
   .footer-label { font-weight: 700; font-size: 0.95rem; color: var(--color-white); min-width: 78px; font-family: 'Inter', sans-serif; }
   .footer-text { font-family: 'Inter', sans-serif; font-weight: 200; font-size: 0.75rem; color: rgba(255,255,255,0.6); }
-  .social-icon {
-    display: flex; align-items: center; justify-content: center;
-    width: 28px; height: 28px; border-radius: 7px;
-    border: 1px solid var(--border-tan); cursor: pointer; transition: all 0.3s ease;
-  }
+  .social-icon { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border-tan); cursor: pointer; transition: all 0.3s ease; }
   .social-icon:hover { border-color: var(--color-amber); transform: scale(1.15) rotate(5deg); }
   .footer-divider { border-top: 1px solid rgba(152,143,129,0.15); padding-top: 12px; }
-  .copyright {
-    text-align: center; font-family: 'Inter', sans-serif;
-    font-weight: 200; font-size: 0.7rem; color: rgba(255,255,255,0.35); margin: 0;
-  }
+  .copyright { text-align: center; font-family: 'Inter', sans-serif; font-weight: 200; font-size: 0.7rem; color: rgba(255,255,255,0.35); margin: 0; }
 
   /* ─────────────────────────────────────
      Register Form
@@ -283,11 +262,10 @@
   .otp-btn-verify:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
   /* ─────────────────────────────────────
-     Appointment Booking Form — Phase 1
-     (full-screen page: 800 × 500 min)
+     Appointment Booking Form — Shared
+     (phases 1–4 share the same shell)
   ───────────────────────────────────── */
 
-  /* Root wrapper — fills the modal/page shell */
   .appt-root {
     display: flex;
     flex-direction: column;
@@ -295,7 +273,7 @@
     max-width: 900px;
     min-width: 800px;
     min-height: 500px;
-    background: var(--bg-card);       /* #060605 */
+    background: var(--bg-card);
     font-family: 'Inter', sans-serif;
     border-radius: 16px;
     border: 1px solid rgba(221,144,29,0.15);
@@ -304,7 +282,7 @@
     animation: fade-up 0.25s ease forwards;
   }
 
-  /* ── Header bar ── */
+  /* ── Shared header ── */
   .appt-header {
     display: flex;
     align-items: center;
@@ -312,7 +290,7 @@
     height: 60px;
     flex-shrink: 0;
     padding: 0 40px;
-    background: var(--bg-dark);        /* #0a0908 */
+    background: var(--bg-dark);
     border-bottom: 1px solid rgba(221,144,29,0.1);
   }
 
@@ -340,10 +318,9 @@
     color: var(--color-white);
     text-align: center;
     flex: 1;
-    /* matches wireframe — "Book Appointment" centred */
   }
 
-  /* ── Progress indicator bar ── */
+  /* ── Shared progress bar ── */
   .appt-progress {
     display: flex;
     flex-direction: column;
@@ -356,7 +333,6 @@
     border-bottom: 1px solid rgba(221,144,29,0.1);
   }
 
-  /* row of circles + connectors */
   .appt-progress-track {
     display: flex;
     align-items: center;
@@ -368,7 +344,7 @@
     align-items: center;
   }
 
-  /* step circle — inactive */
+  /* inactive circle */
   .appt-step-circle {
     display: flex;
     align-items: center;
@@ -385,28 +361,39 @@
     transition: background 0.25s, color 0.25s;
   }
 
-  /* active step — amber fill, black number */
+  /* active step — amber, black number */
   .appt-step-circle.active {
     background: var(--color-amber);
     color: var(--color-black);
     font-weight: 700;
   }
 
-  /* connector line between circles */
+  /* completed step — amber tint, amber checkmark */
+  .appt-step-circle.done {
+    background: var(--color-amber);
+    color: var(--color-black);
+    font-weight: 700;
+  }
+
+  /* connector — default gray */
   .appt-step-line {
     width: 52px;
     height: 2px;
     background: rgba(152,143,129,0.25);
     flex-shrink: 0;
+    transition: background 0.3s;
   }
 
-  /* labels row below circles */
+  /* connector after completed step — amber */
+  .appt-step-line.done {
+    background: var(--color-amber);
+  }
+
+  /* labels */
   .appt-progress-labels {
     display: flex;
     align-items: center;
     width: 360px;
-    /* align each label under its circle */
-    padding: 0;
     gap: 0;
   }
 
@@ -420,16 +407,18 @@
     transition: color 0.25s;
   }
 
-  .appt-step-label:last-child {
-    width: 90px;
-  }
-
   .appt-step-label.active {
     color: var(--color-amber);
     font-weight: 600;
   }
 
-  /* ── Scrollable body content ── */
+  /* completed step label also amber */
+  .appt-step-label.done {
+    color: var(--color-amber);
+    font-weight: 500;
+  }
+
+  /* ── Shared scrollable body ── */
   .appt-body {
     flex: 1;
     overflow-y: auto;
@@ -441,12 +430,7 @@
     scrollbar-color: rgba(152,143,129,0.2) transparent;
   }
 
-  /* "Select Date & Time" heading block */
-  .appt-section-heading {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
+  .appt-section-heading { display: flex; flex-direction: column; gap: 4px; }
 
   .appt-section-title {
     font-family: 'Georgia', 'Times New Roman', serif;
@@ -462,14 +446,9 @@
     color: var(--color-tan);
   }
 
-  /* "Select Date" / "Select Time" picker group */
-  .appt-picker-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+  /* ── Phase 1: Date / Time pickers ── */
+  .appt-picker-group { display: flex; flex-direction: column; gap: 10px; }
 
-  /* label row: icon + text */
   .appt-picker-label {
     display: flex;
     align-items: center;
@@ -480,19 +459,13 @@
     color: var(--color-white);
   }
 
-  /* ── Date cards ── */
-  .appt-date-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
+  .appt-date-row { display: flex; align-items: center; gap: 14px; }
 
   .appt-date-card {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    /* match wireframe card proportions */
     width: 90px;
     height: 72px;
     border-radius: 9px;
@@ -506,9 +479,9 @@
   }
 
   .appt-date-card:nth-of-type(1) { animation-delay: 0.05s; }
-  .appt-date-card:nth-of-type(2) { animation-delay: 0.1s; }
+  .appt-date-card:nth-of-type(2) { animation-delay: 0.10s; }
   .appt-date-card:nth-of-type(3) { animation-delay: 0.15s; }
-  .appt-date-card:nth-of-type(4) { animation-delay: 0.2s; }
+  .appt-date-card:nth-of-type(4) { animation-delay: 0.20s; }
   .appt-date-card:nth-of-type(5) { animation-delay: 0.25s; }
 
   .appt-date-card:hover:not(.selected) {
@@ -517,60 +490,25 @@
     transform: translateY(-3px);
   }
 
-  .appt-date-card.selected {
-    background: var(--color-amber);
-    border-color: var(--color-amber);
-  }
+  .appt-date-card.selected { background: var(--color-amber); border-color: var(--color-amber); }
 
-  /* inner text pieces */
-  .appt-date-day {
-    font-family: 'Inter', sans-serif;
-    font-weight: 200;
-    font-size: 0.62rem;
-    color: var(--color-tan);
-    text-align: center;
-  }
+  .appt-date-day  { font-family: 'Inter', sans-serif; font-weight: 200; font-size: 0.62rem; color: var(--color-tan); text-align: center; }
+  .appt-date-num  { font-family: 'Georgia','Times New Roman',serif; font-weight: 700; font-size: 1rem; color: var(--color-white); text-align: center; line-height: 1.1; }
+  .appt-date-slots { font-family: 'Inter', sans-serif; font-weight: 400; font-size: 0.62rem; color: var(--color-amber); text-align: center; }
 
-  .appt-date-num {
-    font-family: 'Georgia', 'Times New Roman', serif;
-    font-weight: 700;
-    font-size: 1rem;
-    color: var(--color-white);
-    text-align: center;
-    line-height: 1.1;
-  }
-
-  .appt-date-slots {
-    font-family: 'Inter', sans-serif;
-    font-weight: 400;
-    font-size: 0.62rem;
-    color: var(--color-amber);
-    text-align: center;
-  }
-
-  /* flip all text to black when selected */
   .appt-date-card.selected .appt-date-day,
   .appt-date-card.selected .appt-date-num,
-  .appt-date-card.selected .appt-date-slots {
-    color: var(--color-black);
-  }
+  .appt-date-card.selected .appt-date-slots { color: var(--color-black); }
 
-  /* ── Time chips ── */
-  .appt-time-grid {
-    display: flex;
-    flex-wrap: wrap;
-    /* 5 chips per row as in wireframe */
-    gap: 6px 8px;
-  }
+  .appt-time-grid { display: flex; flex-wrap: wrap; gap: 6px 8px; }
 
   .appt-time-chip {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* wide enough to fit "10:30 AM" comfortably */
     width: 112px;
     height: 32px;
-    border-radius: 20px;             /* pill shape from wireframe */
+    border-radius: 20px;
     border: 1px solid rgba(152,143,129,0.4);
     background: transparent;
     color: var(--color-tan);
@@ -582,16 +520,16 @@
     animation: fade-up 0.4s ease both;
   }
 
-  .appt-time-chip:nth-of-type(1) { animation-delay: 0.05s; }
-  .appt-time-chip:nth-of-type(2) { animation-delay: 0.1s; }
-  .appt-time-chip:nth-of-type(3) { animation-delay: 0.15s; }
-  .appt-time-chip:nth-of-type(4) { animation-delay: 0.2s; }
-  .appt-time-chip:nth-of-type(5) { animation-delay: 0.25s; }
-  .appt-time-chip:nth-of-type(6) { animation-delay: 0.3s; }
-  .appt-time-chip:nth-of-type(7) { animation-delay: 0.35s; }
-  .appt-time-chip:nth-of-type(8) { animation-delay: 0.4s; }
-  .appt-time-chip:nth-of-type(9) { animation-delay: 0.45s; }
-  .appt-time-chip:nth-of-type(10) { animation-delay: 0.5s; }
+  .appt-time-chip:nth-of-type(1)  { animation-delay: 0.05s; }
+  .appt-time-chip:nth-of-type(2)  { animation-delay: 0.10s; }
+  .appt-time-chip:nth-of-type(3)  { animation-delay: 0.15s; }
+  .appt-time-chip:nth-of-type(4)  { animation-delay: 0.20s; }
+  .appt-time-chip:nth-of-type(5)  { animation-delay: 0.25s; }
+  .appt-time-chip:nth-of-type(6)  { animation-delay: 0.30s; }
+  .appt-time-chip:nth-of-type(7)  { animation-delay: 0.35s; }
+  .appt-time-chip:nth-of-type(8)  { animation-delay: 0.40s; }
+  .appt-time-chip:nth-of-type(9)  { animation-delay: 0.45s; }
+  .appt-time-chip:nth-of-type(10) { animation-delay: 0.50s; }
 
   .appt-time-chip:hover:not(.selected) {
     border-color: rgba(221,144,29,0.55);
@@ -607,7 +545,83 @@
     font-weight: 700;
   }
 
-  /* ── Sticky footer with Continue button ── */
+  /* ── Phase 2: Service selection grid ── */
+
+  /* auto-grid: fills 3 per row, 5th card starts a new row left-aligned */
+  .appt-svc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+
+  /* individual service card */
+  .appt-svc-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px 12px 16px;
+    background: var(--bg-card);
+    border-radius: 9px;
+    border: 1px solid rgba(152,143,129,0.5);
+    cursor: pointer;
+    gap: 10px;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    animation: fade-up 0.5s ease both;
+    text-align: center;
+  }
+
+  .appt-svc-card:nth-of-type(1) { animation-delay: 0.05s; }
+  .appt-svc-card:nth-of-type(2) { animation-delay: 0.10s; }
+  .appt-svc-card:nth-of-type(3) { animation-delay: 0.15s; }
+  .appt-svc-card:nth-of-type(4) { animation-delay: 0.20s; }
+  .appt-svc-card:nth-of-type(5) { animation-delay: 0.25s; }
+
+  .appt-svc-card:hover:not(.selected) {
+    border-color: rgba(221,144,29,0.6);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(221,144,29,0.12);
+  }
+
+  /* selected state — amber border glow */
+  .appt-svc-card.selected {
+    border-color: var(--color-amber);
+    box-shadow: 0 0 0 2px rgba(221,144,29,0.3);
+  }
+
+  /* amber circle containing the icon */
+  .appt-svc-icon-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color-amber);
+    flex-shrink: 0;
+  }
+
+  /* service card title */
+  .appt-svc-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--color-white);
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  /* service card description */
+  .appt-svc-desc {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.62rem;
+    color: var(--color-tan);
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* ── Shared sticky footer ── */
   .appt-footer {
     flex-shrink: 0;
     padding: 14px 40px 20px;
@@ -622,7 +636,7 @@
     width: 100%;
     height: 52px;
     border: none;
-    border-radius: 12px;             /* rounded rect from wireframe */
+    border-radius: 12px;
     background: var(--color-amber);
     color: var(--color-black);
     font-family: 'Inter', sans-serif;
@@ -632,15 +646,13 @@
     transition: all 0.3s ease;
   }
 
-  .appt-continue-btn:hover:not(:disabled) {
+  .appt-continue-btn:hover {
     background: var(--color-amber-dark);
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(221,144,29,0.4);
   }
 
-  .appt-continue-btn:active:not(:disabled) {
-    transform: scale(0.98);
-  }
+  .appt-continue-btn:active { transform: scale(0.98); }
 }
 
 /* ── Keyframes ── */
@@ -676,20 +688,20 @@
 
 @keyframes bounce-gentle {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  50%       { transform: translateY(-8px); }
 }
 
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 0 0 rgba(221,144,29,0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(221,144,29,0); }
+  50%       { box-shadow: 0 0 0 8px rgba(221,144,29,0); }
 }
 
 @keyframes shimmer {
-  0% { background-position: -1000px 0; }
+  0%   { background-position: -1000px 0; }
   100% { background-position: 1000px 0; }
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-12px); }
+  50%       { transform: translateY(-12px); }
 }
