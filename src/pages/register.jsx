@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Otp } from "../components/modal/otp";
 import { AppointmentForm } from "../components/modal/appointment/phase_one";
 import { AppointmentFormPhase2 } from "../components/modal/appointment/phase_two";
+import { ConfirmationDialog } from "../components/modal/confirmation_dialog";
+import { Toast } from "../components/toast";
 
 /** Logo scissors mark */
 const LogoMark = () => (
@@ -113,6 +115,9 @@ export const Register = () => {
   const [showAppointment, setShowAppointment] = useState(false);
   const [appointmentData, setAppointmentData] = useState(null);
   const [appointmentPhase, setAppointmentPhase] = useState(1);
+  const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -171,13 +176,20 @@ export const Register = () => {
     setShowOTP(false);
   };
 
-  const handleAppointmentBack = () => {
+  const handleCancelBooking = () => {
+    // Show toast message and navigate to landpage
     setShowAppointment(false);
+    setAppointmentPhase(1);
     setFormData(null);
-    // Reset form
     setFullName("");
     setEmail("");
     setPhone("");
+    setToastMessage("Booking cancelled");
+    setShowToast(true);
+    // Give toast time to be visible before navigation
+    setTimeout(() => {
+      navigate("/");
+    }, 1200);
   };
 
   const handleAppointmentContinue = (appointmentDetails) => {
@@ -202,6 +214,13 @@ export const Register = () => {
 
   const handleAppointmentBackPhase2 = () => {
     setAppointmentPhase(1);
+  };
+
+  const handleBackdropClick = (e) => {
+    // Only trigger if clicking directly on the backdrop (not a child element)
+    if (e.target === e.currentTarget) {
+      setShowBackdropConfirm(true);
+    }
   };
 
   return (
@@ -380,29 +399,55 @@ export const Register = () => {
 
       {/* Appointment Booking Modal */}
       {showAppointment && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 101,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backdropFilter: "blur(3px)",
-          backgroundColor: "rgba(0,0,0,0.72)"
-        }}>
+        <div 
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 101,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backdropFilter: "blur(3px)",
+            backgroundColor: "rgba(0,0,0,0.72)"
+          }}
+          onClick={handleBackdropClick}
+        >
           {appointmentPhase === 1 ? (
             <AppointmentForm
-              onBack={handleAppointmentBack}
+              onBack={handleCancelBooking}
               onContinue={handleAppointmentContinue}
             />
           ) : (
             <AppointmentFormPhase2
               onBack={handleAppointmentBackPhase2}
               onContinue={handlePhase2Continue}
+              onCancel={handleCancelBooking}
             />
           )}
         </div>
       )}
+
+      {/* Backdrop Click Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showBackdropConfirm}
+        title="Cancel Booking?"
+        message="Are you sure you want to cancel? Your booking progress will be lost."
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        onConfirm={() => {
+          setShowBackdropConfirm(false);
+          handleCancelBooking();
+        }}
+        onCancel={() => setShowBackdropConfirm(false)}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        isVisible={showToast}
+        message={toastMessage}
+        type="info"
+        duration={1200}
+      />
 
     </div>
   );

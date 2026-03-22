@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { HairServicesModal } from "./services/haircut_service";
 import { NailServicesModal } from "./services/nail_service";
+import { ConfirmationDialog } from "../confirmation_dialog";
 
 /* Hair Services — broom/brush icon */
 const HairIcon = () => (
@@ -217,7 +218,7 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNai
   </button>
 );
 
-export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
+export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
   const [selectedServices, setSelectedServices] = useState([]); // Array to allow multiple selections
   const [showHairModal, setShowHairModal] = useState(false);
   const [showNailModal, setShowNailModal] = useState(false);
@@ -225,6 +226,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
   const [selectedNailServices, setSelectedNailServices] = useState([]);
   const [hasVisitedHairModal, setHasVisitedHairModal] = useState(false); // Track if hair modal has been visited
   const [hasVisitedNailModal, setHasVisitedNailModal] = useState(false); // Track if nail modal has been visited
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const handleSelectService = (serviceId) => {
     if (selectedServices.includes(serviceId)) {
@@ -326,18 +328,59 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
             Please select at least 2 services
           </p>
         )}
-        <button
-          className="appt-continue-btn"
-          onClick={handleContinue}
-          disabled={selectedServices.length < 2}
-          style={{
-            opacity: selectedServices.length >= 2 ? 1 : 0.5,
-            cursor: selectedServices.length >= 2 ? "pointer" : "not-allowed",
-          }}
-        >
-          Continue →
-        </button>
+        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+          <button
+            onClick={() => setShowCancelConfirm(true)}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              background: "transparent",
+              color: "#dd901d",
+              border: "1.5px solid #dd901d",
+              borderRadius: "12px",
+              fontSize: "0.95rem",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontFamily: "Inter, sans-serif",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "rgba(221,144,29,0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "transparent";
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            className="appt-continue-btn"
+            onClick={handleContinue}
+            disabled={selectedServices.length < 2}
+            style={{
+              flex: 1,
+              opacity: selectedServices.length >= 2 ? 1 : 0.5,
+              cursor: selectedServices.length >= 2 ? "pointer" : "not-allowed",
+            }}
+          >
+            Continue →
+          </button>
+        </div>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showCancelConfirm}
+        title="Cancel Booking?"
+        message="Are you sure you want to cancel? Your booking progress will be lost."
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        onConfirm={() => {
+          setShowCancelConfirm(false);
+          onCancel?.();
+        }}
+        onCancel={() => setShowCancelConfirm(false)}
+      />
     </div>
   );
 };

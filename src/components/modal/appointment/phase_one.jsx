@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ConfirmationDialog } from "../confirmation_dialog";
 
 const CalendarSmIcon = () => (
   <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" width={18} height={18}>
@@ -41,9 +42,9 @@ const STEPS = [
 ];
 
 /* ── Header ── */
-const BookingHeader = ({ onBack }) => (
+const BookingHeader = ({ onBack, onBackClick }) => (
   <header className="appt-header">
-    <button className="appt-back-btn" onClick={onBack}>
+    <button className="appt-back-btn" onClick={onBackClick || onBack}>
       <svg viewBox="0 0 16 16" fill="none" width={16} height={16}>
         <path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
@@ -87,6 +88,11 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
   const [showTimeInput, setShowTimeInput] = useState(false);
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("");
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  const handleBackClick = () => {
+    setShowCancelConfirm(true);
+  };
 
   const handleContinue = () => {
     onContinue?.({
@@ -145,7 +151,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
   return (
     <div className="appt-root">
 
-      <BookingHeader onBack={onBack} />
+      <BookingHeader onBack={onBack} onBackClick={handleBackClick} />
       <ProgressIndicator currentStep={1} />
 
       {/* ── Scrollable body ── */}
@@ -478,18 +484,59 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
             {getValidationMessage()}
           </p>
         )}
-        <button 
-          className="appt-continue-btn" 
-          onClick={handleContinue}
-          disabled={!isFormValid}
-          style={{
-            opacity: isFormValid ? 1 : 0.5,
-            cursor: isFormValid ? "pointer" : "not-allowed",
-          }}
-        >
-          Continue →
-        </button>
+        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+          <button
+            onClick={() => setShowCancelConfirm(true)}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              background: "transparent",
+              color: "#dd901d",
+              border: "1.5px solid #dd901d",
+              borderRadius: "12px",
+              fontSize: "0.95rem",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontFamily: "Inter, sans-serif",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "rgba(221,144,29,0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "transparent";
+            }}
+          >
+            Cancel
+          </button>
+          <button 
+            className="appt-continue-btn" 
+            onClick={handleContinue}
+            disabled={!isFormValid}
+            style={{
+              flex: 1,
+              opacity: isFormValid ? 1 : 0.5,
+              cursor: isFormValid ? "pointer" : "not-allowed",
+            }}
+          >
+            Continue →
+          </button>
+        </div>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showCancelConfirm}
+        title="Cancel Booking?"
+        message="Are you sure you want to cancel? Your scheduling progress will be lost."
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        onConfirm={() => {
+          setShowCancelConfirm(false);
+          onBack?.();
+        }}
+        onCancel={() => setShowCancelConfirm(false)}
+      />
 
     </div>
   );

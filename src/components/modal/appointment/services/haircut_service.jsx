@@ -190,17 +190,44 @@ export const HairServicesModal = ({ onBack, onContinue, initialSelected = [], is
             Please select at least one service
           </p>
         )}
-        <button
-          className="appt-continue-btn"
-          onClick={handleContinue}
-          disabled={selected.length === 0 && !isUpdating}
-          style={{
-            opacity: selected.length > 0 || isUpdating ? 1 : 0.5,
-            cursor: selected.length > 0 || isUpdating ? "pointer" : "not-allowed",
-          }}
-        >
-          {isUpdating ? "Save" : "Continue"} →
-        </button>
+        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+          <button
+            onClick={onBack}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              background: "transparent",
+              color: "#dd901d",
+              border: "1.5px solid #dd901d",
+              borderRadius: "12px",
+              fontSize: "0.95rem",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontFamily: "Inter, sans-serif",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "rgba(221,144,29,0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "transparent";
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            className="appt-continue-btn"
+            onClick={handleContinue}
+            disabled={selected.length === 0 && !isUpdating}
+            style={{
+              flex: 1,
+              opacity: selected.length > 0 || isUpdating ? 1 : 0.5,
+              cursor: selected.length > 0 || isUpdating ? "pointer" : "not-allowed",
+            }}
+          >
+            {isUpdating ? "Save" : "Continue"} →
+          </button>
+        </div>
       </div>
 
     </div>
