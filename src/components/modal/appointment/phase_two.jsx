@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HairServicesModal } from "./services/haircut_service";
 
 /* Hair Services — broom/brush icon */
 const HairIcon = () => (
@@ -123,11 +124,14 @@ const ProgressIndicator = ({ currentStep = 2 }) => (
 );
 
 /* ── Service card ── */
-const ServiceCard = ({ service, isSelected, onSelect }) => (
+const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal }) => (
   <button
     className={`appt-svc-card${isSelected ? " selected" : ""}`}
     onClick={() => {
-      if (isSelected) {
+      if (service.id === 1) {
+        // Hair Services — open the hair services modal
+        onOpenHairModal();
+      } else if (isSelected) {
         onSelect(null); // Deselect if already selected
       } else {
         onSelect(service.id); // Select if not selected
@@ -167,10 +171,23 @@ const ServiceCard = ({ service, isSelected, onSelect }) => (
 
 export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
   const [selectedService, setSelectedService] = useState(null);
+  const [showHairModal, setShowHairModal] = useState(false);
+  const [selectedHairServices, setSelectedHairServices] = useState([]);
 
   const handleContinue = () => {
-    onContinue?.({ service: SERVICES.find((s) => s.id === selectedService) });
+    onContinue?.({ service: SERVICES.find((s) => s.id === selectedService), selectedHairServices });
   };
+
+  const handleHairContinue = (data) => {
+    // When user continues from hair services modal, just close and return to phase_two
+    setSelectedService(1); // Hair Services ID
+    setSelectedHairServices(data.services); // Store the selected hair services
+    setShowHairModal(false); // Return to phase_two (don't call onContinue yet)
+  };
+
+  if (showHairModal) {
+    return <HairServicesModal onBack={() => setShowHairModal(false)} onContinue={handleHairContinue} />;
+  }
 
   return (
     <div className="appt-root">
@@ -192,6 +209,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
               service={svc}
               isSelected={selectedService === svc.id}
               onSelect={setSelectedService}
+              onOpenHairModal={() => setShowHairModal(true)}
             />
           ))}
         </div>
