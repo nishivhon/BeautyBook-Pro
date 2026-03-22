@@ -3,6 +3,7 @@ import { HairServicesModal } from "./services/haircut_service";
 import { NailServicesModal } from "./services/nail_service";
 import { SkincareServicesModal } from "./services/skin_care_service";
 import { MassageServicesModal } from "./services/massage_service";
+import { PremiumServicesModal } from "./services/premium_service";
 import { ConfirmationDialog } from "../confirmation_dialog";
 
 /* Hair Services — broom/brush icon */
@@ -128,7 +129,7 @@ const ProgressIndicator = ({ currentStep = 2 }) => (
 );
 
 /* ── Service card ── */
-const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNailModal, onOpenSkincareModal, onOpenMassageModal, selectedHairServicesCount = 0, selectedNailServicesCount = 0, selectedSkincareServicesCount = 0, selectedMassageServicesCount = 0 }) => (
+const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNailModal, onOpenSkincareModal, onOpenMassageModal, onOpenPremiumModal, selectedHairServicesCount = 0, selectedNailServicesCount = 0, selectedSkincareServicesCount = 0, selectedMassageServicesCount = 0, selectedPremiumServicesCount = 0 }) => (
   <button
     className={`appt-svc-card${isSelected ? " selected" : ""}`}
     onClick={() => {
@@ -144,6 +145,9 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNai
       } else if (service.id === 4) {
         // Massage Services — open the massage services modal
         onOpenMassageModal();
+      } else if (service.id === 5) {
+        // Premium Services — open the premium services modal
+        onOpenPremiumModal();
       } else {
         // For other services, toggle selection
         onSelect(service.id);
@@ -246,6 +250,28 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNai
       </div>
     )}
     
+    {/* Service count badge for Premium Services */}
+    {service.id === 5 && isSelected && selectedPremiumServicesCount > 0 && (
+      <div style={{
+        position: "absolute",
+        top: "8px",
+        right: "8px",
+        background: "var(--color-amber)",
+        color: "var(--color-black)",
+        borderRadius: "50%",
+        width: "28px",
+        height: "28px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "0.85rem",
+        fontWeight: "700",
+        fontFamily: "Inter, sans-serif",
+      }}>
+        {selectedPremiumServicesCount}
+      </div>
+    )}
+
     {/* Service count badge for Massage Services */}
     {service.id === 4 && isSelected && selectedMassageServicesCount > 0 && (
       <div style={{
@@ -276,14 +302,17 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
   const [showNailModal, setShowNailModal] = useState(false);
   const [showSkincareModal, setShowSkincareModal] = useState(false);
   const [showMassageModal, setShowMassageModal] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [selectedHairServices, setSelectedHairServices] = useState([]);
   const [selectedNailServices, setSelectedNailServices] = useState([]);
   const [selectedSkincareServices, setSelectedSkincareServices] = useState([]);
   const [selectedMassageServices, setSelectedMassageServices] = useState([]);
+  const [selectedPremiumServices, setSelectedPremiumServices] = useState([]);
   const [hasVisitedHairModal, setHasVisitedHairModal] = useState(false); // Track if hair modal has been visited
   const [hasVisitedNailModal, setHasVisitedNailModal] = useState(false); // Track if nail modal has been visited
   const [hasVisitedSkincareModal, setHasVisitedSkincareModal] = useState(false); // Track if skincare modal has been visited
   const [hasVisitedMassageModal, setHasVisitedMassageModal] = useState(false); // Track if massage modal has been visited
+  const [hasVisitedPremiumModal, setHasVisitedPremiumModal] = useState(false); // Track if premium modal has been visited
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const handleSelectService = (serviceId) => {
@@ -369,6 +398,23 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
     setShowMassageModal(false);
   };
 
+  const handlePremiumContinue = (data) => {
+    // When user continues/saves from premium services modal
+    setSelectedPremiumServices(data.services);
+    setHasVisitedPremiumModal(true);
+    
+    // Add Premium Services ID only if there are services selected, otherwise remove it
+    if (data.services.length > 0) {
+      if (!selectedServices.includes(5)) {
+        setSelectedServices([...selectedServices, 5]);
+      }
+    } else {
+      setSelectedServices(selectedServices.filter((id) => id !== 5));
+    }
+    
+    setShowPremiumModal(false);
+  };
+
   if (showHairModal) {
     return <HairServicesModal onBack={() => setShowHairModal(false)} onContinue={handleHairContinue} initialSelected={selectedHairServices.map((s) => s.id)} isUpdating={hasVisitedHairModal} />;
   }
@@ -383,6 +429,10 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
 
   if (showMassageModal) {
     return <MassageServicesModal onBack={() => setShowMassageModal(false)} onContinue={handleMassageContinue} initialSelected={selectedMassageServices.map((s) => s.id)} isUpdating={hasVisitedMassageModal} />;
+  }
+
+  if (showPremiumModal) {
+    return <PremiumServicesModal onBack={() => setShowPremiumModal(false)} onContinue={handlePremiumContinue} initialSelected={selectedPremiumServices.map((s) => s.id)} isUpdating={hasVisitedPremiumModal} />;
   }
 
   return (
@@ -409,10 +459,12 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
               onOpenNailModal={() => setShowNailModal(true)}
               onOpenSkincareModal={() => setShowSkincareModal(true)}
               onOpenMassageModal={() => setShowMassageModal(true)}
+              onOpenPremiumModal={() => setShowPremiumModal(true)}
               selectedHairServicesCount={svc.id === 1 ? selectedHairServices.length : 0}
               selectedNailServicesCount={svc.id === 2 ? selectedNailServices.length : 0}
               selectedSkincareServicesCount={svc.id === 3 ? selectedSkincareServices.length : 0}
               selectedMassageServicesCount={svc.id === 4 ? selectedMassageServices.length : 0}
+              selectedPremiumServicesCount={svc.id === 5 ? selectedPremiumServices.length : 0}
             />
           ))}
         </div>
