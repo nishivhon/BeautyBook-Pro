@@ -48,11 +48,11 @@ const STEPS = [
 ══════════════════════════════════════════ */
 
 /* ── Header — "Nail Services" title ── */
-const ServiceHeader = ({ title, onBack }) => (
+const ServiceHeader = ({ title, onBack, isSaving = false }) => (
   <header className="appt-header">
     <button className="appt-back-btn" onClick={onBack} aria-label="Go back">
       <BackArrowIcon />
-      Back
+      {isSaving ? "Back" : "Back"}
     </button>
     <h1 className="appt-header-title">{title}</h1>
     {/* invisible mirror keeps title centred */}
@@ -132,8 +132,15 @@ const ServiceRow = ({ service, isSelected, onSelect }) => (
 /* ══════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════ */
-export const NailServicesModal = ({ onBack, onContinue, initialSelected = [] }) => {
+export const NailServicesModal = ({ onBack, onContinue, initialSelected = [], isUpdating = false }) => {
   const [selected, setSelected] = useState(initialSelected); // Array for multiple selections, initialized with previous selections
+
+  const handleBack = () => {
+    // Auto-save when clicking back
+    const selectedServices = NAIL_SERVICES.filter((s) => selected.includes(s.id));
+    onContinue?.({ services: selectedServices });
+    onBack?.();
+  };
 
   const handleSelectService = (serviceId, isDeselect) => {
     if (isDeselect) {
@@ -146,9 +153,10 @@ export const NailServicesModal = ({ onBack, onContinue, initialSelected = [] }) 
   };
 
   const handleContinue = () => {
-    // Validation: at least one service must be selected
-    if (selected.length === 0) {
-      return; // Prevent continue if nothing selected
+    // Allow save on subsequent visits even with no selections
+    // Only validate on first visit (when isUpdating is false)
+    if (selected.length === 0 && !isUpdating) {
+      return; // Prevent continue if nothing selected on first visit
     }
 
     const selectedServices = NAIL_SERVICES.filter((s) => selected.includes(s.id));
@@ -158,7 +166,7 @@ export const NailServicesModal = ({ onBack, onContinue, initialSelected = [] }) 
   return (
     <div className="appt-root">
 
-      <ServiceHeader title="Nail Services" onBack={onBack} />
+      <ServiceHeader title="Nail Services" onBack={handleBack} isSaving={isUpdating} />
       <ProgressIndicator currentStep={2} />
 
       {/* ── Scrollable body ── */}
@@ -182,7 +190,7 @@ export const NailServicesModal = ({ onBack, onContinue, initialSelected = [] }) 
 
       {/* ── Footer CTA ── */}
       <div className="appt-footer">
-        {selected.length === 0 && (
+        {selected.length === 0 && !isUpdating && (
           <p style={{
             color: "#ff6b6b",
             fontSize: "0.85rem",
@@ -196,13 +204,13 @@ export const NailServicesModal = ({ onBack, onContinue, initialSelected = [] }) 
         <button
           className="appt-continue-btn"
           onClick={handleContinue}
-          disabled={selected.length === 0}
+          disabled={selected.length === 0 && !isUpdating}
           style={{
-            opacity: selected.length > 0 ? 1 : 0.5,
-            cursor: selected.length > 0 ? "pointer" : "not-allowed",
+            opacity: selected.length > 0 || isUpdating ? 1 : 0.5,
+            cursor: selected.length > 0 || isUpdating ? "pointer" : "not-allowed",
           }}
         >
-          Continue →
+          {isUpdating ? "Save" : "Continue"} →
         </button>
       </div>
 

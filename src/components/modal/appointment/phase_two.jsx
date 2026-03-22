@@ -135,10 +135,9 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNai
       } else if (service.id === 2) {
         // Nail Services — open the nail services modal
         onOpenNailModal();
-      } else if (isSelected) {
-        onSelect(null); // Deselect if already selected
       } else {
-        onSelect(service.id); // Select if not selected
+        // For other services, toggle selection
+        onSelect(service.id);
       }
     }}
     aria-pressed={isSelected}
@@ -219,36 +218,70 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNai
 );
 
 export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]); // Array to allow multiple selections
   const [showHairModal, setShowHairModal] = useState(false);
   const [showNailModal, setShowNailModal] = useState(false);
   const [selectedHairServices, setSelectedHairServices] = useState([]);
   const [selectedNailServices, setSelectedNailServices] = useState([]);
+  const [hasVisitedHairModal, setHasVisitedHairModal] = useState(false); // Track if hair modal has been visited
+  const [hasVisitedNailModal, setHasVisitedNailModal] = useState(false); // Track if nail modal has been visited
+
+  const handleSelectService = (serviceId) => {
+    if (selectedServices.includes(serviceId)) {
+      // Remove from selected
+      setSelectedServices(selectedServices.filter((id) => id !== serviceId));
+    } else {
+      // Add to selected
+      setSelectedServices([...selectedServices, serviceId]);
+    }
+  };
 
   const handleContinue = () => {
-    onContinue?.({ service: SERVICES.find((s) => s.id === selectedService), selectedHairServices });
+    onContinue?.({ services: SERVICES.filter((s) => selectedServices.includes(s.id)), selectedHairServices, selectedNailServices });
   };
 
   const handleHairContinue = (data) => {
-    // When user continues from hair services modal, just close and return to phase_two
-    setSelectedService(1); // Hair Services ID
+    // When user continues/saves from hair services modal
     setSelectedHairServices(data.services); // Store the selected hair services
-    setShowHairModal(false); // Return to phase_two (don't call onContinue yet)
+    setHasVisitedHairModal(true); // Mark as visited
+    
+    // Add Hair Services ID only if there are services selected, otherwise remove it
+    if (data.services.length > 0) {
+      if (!selectedServices.includes(1)) {
+        setSelectedServices([...selectedServices, 1]);
+      }
+    } else {
+      // Remove Hair Services ID if all services are deselected
+      setSelectedServices(selectedServices.filter((id) => id !== 1));
+    }
+    
+    setShowHairModal(false); // Return to phase_two
   };
 
   const handleNailContinue = (data) => {
-    // When user continues from nail services modal, just close and return to phase_two
-    setSelectedService(2); // Nail Services ID
+    // When user continues/saves from nail services modal
     setSelectedNailServices(data.services); // Store the selected nail services
-    setShowNailModal(false); // Return to phase_two (don't call onContinue yet)
+    setHasVisitedNailModal(true); // Mark as visited
+    
+    // Add Nail Services ID only if there are services selected, otherwise remove it
+    if (data.services.length > 0) {
+      if (!selectedServices.includes(2)) {
+        setSelectedServices([...selectedServices, 2]);
+      }
+    } else {
+      // Remove Nail Services ID if all services are deselected
+      setSelectedServices(selectedServices.filter((id) => id !== 2));
+    }
+    
+    setShowNailModal(false); // Return to phase_two
   };
 
   if (showHairModal) {
-    return <HairServicesModal onBack={() => setShowHairModal(false)} onContinue={handleHairContinue} initialSelected={selectedHairServices.map((s) => s.id)} />;
+    return <HairServicesModal onBack={() => setShowHairModal(false)} onContinue={handleHairContinue} initialSelected={selectedHairServices.map((s) => s.id)} isUpdating={hasVisitedHairModal} />;
   }
 
   if (showNailModal) {
-    return <NailServicesModal onBack={() => setShowNailModal(false)} onContinue={handleNailContinue} initialSelected={selectedNailServices.map((s) => s.id)} />;
+    return <NailServicesModal onBack={() => setShowNailModal(false)} onContinue={handleNailContinue} initialSelected={selectedNailServices.map((s) => s.id)} isUpdating={hasVisitedNailModal} />;
   }
 
   return (
@@ -269,8 +302,8 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
             <ServiceCard
               key={svc.id}
               service={svc}
-              isSelected={selectedService === svc.id}
-              onSelect={setSelectedService}
+              isSelected={selectedServices.includes(svc.id)}
+              onSelect={handleSelectService}
               onOpenHairModal={() => setShowHairModal(true)}
               onOpenNailModal={() => setShowNailModal(true)}
               selectedHairServicesCount={svc.id === 1 ? selectedHairServices.length : 0}
@@ -282,7 +315,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
 
       {/* ── Footer CTA ── */}
       <div className="appt-footer">
-        {!selectedService && (
+        {selectedServices.length < 2 && (
           <p style={{
             color: "#ff6b6b",
             fontSize: "0.85rem",
@@ -290,16 +323,16 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue }) => {
             textAlign: "center",
             fontWeight: "500",
           }}>
-            Please select a service
+            Please select at least 2 services
           </p>
         )}
         <button
           className="appt-continue-btn"
           onClick={handleContinue}
-          disabled={!selectedService}
+          disabled={selectedServices.length < 2}
           style={{
-            opacity: selectedService ? 1 : 0.5,
-            cursor: selectedService ? "pointer" : "not-allowed",
+            opacity: selectedServices.length >= 2 ? 1 : 0.5,
+            cursor: selectedServices.length >= 2 ? "pointer" : "not-allowed",
           }}
         >
           Continue →
