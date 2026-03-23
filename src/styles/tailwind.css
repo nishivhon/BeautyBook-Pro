@@ -936,6 +936,7 @@
     flex-direction: column;
     gap: 3px;
     min-width: 0;
+    text-align: left;
   }
 
   .svc-list-title {
