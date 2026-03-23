@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Otp } from "../components/modal/otp";
 import { AppointmentForm } from "../components/modal/appointment/phase_one";
 import { AppointmentFormPhase2 } from "../components/modal/appointment/phase_two";
+import { AppointmentFormPhase3 } from "../components/modal/appointment/phase_three";
 import { ConfirmationDialog } from "../components/modal/confirmation_dialog";
 import { Toast } from "../components/toast";
 
@@ -201,8 +202,15 @@ export const Register = () => {
 
   const handlePhase2Continue = (phase2Details) => {
     console.log("Phase 2 data:", phase2Details);
+    // Move to phase 3
+    setAppointmentData({ ...appointmentData, services: phase2Details });
+    setAppointmentPhase(3);
+  };
+
+  const handlePhase3Continue = (phase3Details) => {
+    console.log("Phase 3 data:", phase3Details);
     console.log("User data:", formData);
-    const completeData = { ...formData, appointment: { ...appointmentData?.schedule, ...phase2Details } };
+    const completeData = { ...formData, appointment: { ...appointmentData?.schedule, ...appointmentData?.services, ...phase3Details } };
     setAppointmentData(completeData);
     setShowAppointment(false);
     setAppointmentPhase(1);
@@ -210,6 +218,10 @@ export const Register = () => {
     setEmail("");
     setPhone("");
     setFormData(null);
+  };
+
+  const handleAppointmentBackPhase3 = () => {
+    setAppointmentPhase(2);
   };
 
   const handleAppointmentBackPhase2 = () => {
@@ -417,11 +429,16 @@ export const Register = () => {
               onBack={handleCancelBooking}
               onContinue={handleAppointmentContinue}
             />
-          ) : (
+          ) : appointmentPhase === 2 ? (
             <AppointmentFormPhase2
               onBack={handleAppointmentBackPhase2}
               onContinue={handlePhase2Continue}
               onCancel={handleCancelBooking}
+            />
+          ) : (
+            <AppointmentFormPhase3
+              onBack={handleAppointmentBackPhase3}
+              onContinue={handlePhase3Continue}
             />
           )}
         </div>
