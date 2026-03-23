@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ConfirmationDialog } from "../confirmation_dialog";
 
 /* ══════════════════════════════════════════
    INLINE SVG ICONS
@@ -147,7 +148,7 @@ const ProgressIndicator = ({ currentStep = 3 }) => (
 const AnyRow = ({ isSelected, onSelect }) => (
   <button
     className={`stylist-row${isSelected ? " selected" : ""}`}
-    onClick={() => onSelect("any")}
+    onClick={() => onSelect(isSelected ? null : "any")}
     aria-pressed={isSelected}
   >
     <div className="stylist-row-left">
@@ -168,7 +169,7 @@ const AnyRow = ({ isSelected, onSelect }) => (
 const StylistRow = ({ stylist, isSelected, onSelect }) => (
   <button
     className={`stylist-row${isSelected ? " selected" : ""}${stylist.unavailable ? " unavailable" : ""}`}
-    onClick={() => !stylist.unavailable && onSelect(stylist.id)}
+    onClick={() => !stylist.unavailable && onSelect(isSelected ? null : stylist.id)}
     disabled={stylist.unavailable}
     aria-pressed={isSelected}
     aria-disabled={stylist.unavailable}
@@ -199,17 +200,26 @@ const StylistRow = ({ stylist, isSelected, onSelect }) => (
 /* ══════════════════════════════════════════
    MAIN COMPONENT — Phase 3
 ══════════════════════════════════════════ */
-export const AppointmentFormPhase3 = ({ onBack, onContinue }) => {
+export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
   const [selected, setSelected] = useState(null);
+  const [showConfirmCancel, setShowConfirmCancel] = useState(false);
 
   const handleContinue = () => {
     onContinue?.({ stylist: STYLISTS.find((s) => s.id === selected) });
   };
 
+  const handleBack = () => {
+    onBack?.({ stylist: STYLISTS.find((s) => s.id === selected) });
+  };
+
+  const handleCancelClick = () => {
+    setShowConfirmCancel(true);
+  };
+
   return (
     <div className="appt-root">
 
-      <BookingHeader onBack={onBack} />
+      <BookingHeader onBack={handleBack} />
       <ProgressIndicator currentStep={3} />
 
       {/* ── Scrollable body ── */}
@@ -235,10 +245,59 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue }) => {
 
       {/* ── Footer CTA ── */}
       <div className="appt-footer">
-        <button className="appt-continue-btn" onClick={handleContinue}>
-          Continue →
-        </button>
+        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+          <button
+            onClick={handleCancelClick}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              background: "transparent",
+              color: "#dd901d",
+              border: "1.5px solid #dd901d",
+              borderRadius: "12px",
+              fontSize: "0.95rem",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontFamily: "Inter, sans-serif",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "rgba(221,144,29,0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "transparent";
+            }}
+          >
+            Cancel
+          </button>
+          <button 
+            className="appt-continue-btn" 
+            onClick={handleContinue}
+            disabled={selected === null}
+            style={{
+              flex: 1,
+              opacity: selected !== null ? 1 : 0.5,
+              cursor: selected !== null ? "pointer" : "not-allowed",
+            }}
+          >
+            Continue →
+          </button>
+        </div>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showConfirmCancel}
+        title="Cancel Booking?"
+        message="Are you sure you want to cancel? Your booking progress will be lost."
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        onConfirm={() => {
+          setShowConfirmCancel(false);
+          onCancel?.();
+        }}
+        onCancel={() => setShowConfirmCancel(false)}
+      />
 
     </div>
   );

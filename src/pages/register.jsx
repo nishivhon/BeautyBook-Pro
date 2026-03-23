@@ -220,7 +220,10 @@ export const Register = () => {
     setFormData(null);
   };
 
-  const handleAppointmentBackPhase3 = () => {
+  const handleAppointmentBackPhase3 = (phase3Details) => {
+    // Preserve the stylist selection from phase 3
+    setAppointmentData({ ...appointmentData, stylist: phase3Details?.stylist });
+    // Go back to phase 2 with preserved service selection
     setAppointmentPhase(2);
   };
 
@@ -434,11 +437,13 @@ export const Register = () => {
               onBack={handleAppointmentBackPhase2}
               onContinue={handlePhase2Continue}
               onCancel={handleCancelBooking}
+              initialData={appointmentData?.services}
             />
           ) : (
             <AppointmentFormPhase3
               onBack={handleAppointmentBackPhase3}
               onContinue={handlePhase3Continue}
+              onCancel={handleCancelBooking}
             />
           )}
         </div>

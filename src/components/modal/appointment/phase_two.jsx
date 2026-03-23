@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HairServicesModal } from "./services/haircut_service";
 import { NailServicesModal } from "./services/nail_service";
 import { SkincareServicesModal } from "./services/skin_care_service";
@@ -296,7 +296,7 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNai
   </button>
 );
 
-export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
+export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialData }) => {
   const [selectedServices, setSelectedServices] = useState([]); // Array to allow multiple selections
   const [showHairModal, setShowHairModal] = useState(false);
   const [showNailModal, setShowNailModal] = useState(false);
@@ -314,6 +314,30 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel }) => {
   const [hasVisitedMassageModal, setHasVisitedMassageModal] = useState(false); // Track if massage modal has been visited
   const [hasVisitedPremiumModal, setHasVisitedPremiumModal] = useState(false); // Track if premium modal has been visited
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // Initialize state with previously selected services when component mounts or initialData changes
+  useEffect(() => {
+    if (initialData?.services) {
+      const serviceIds = initialData.services.map(s => s.id);
+      setSelectedServices(serviceIds);
+    }
+    if (initialData?.selectedHairServices) {
+      setSelectedHairServices(initialData.selectedHairServices);
+    }
+    if (initialData?.selectedNailServices) {
+      setSelectedNailServices(initialData.selectedNailServices);
+    }
+    if (initialData?.selectedSkincareServices) {
+      setSelectedSkincareServices(initialData.selectedSkincareServices);
+    }
+    if (initialData?.selectedMassageServices) {
+      setSelectedMassageServices(initialData.selectedMassageServices);
+    }
+    if (initialData?.selectedPremiumServices) {
+      setSelectedPremiumServices(initialData.selectedPremiumServices);
+    }
+  }, [initialData]);
+
 
   const handleSelectService = (serviceId) => {
     if (selectedServices.includes(serviceId)) {
