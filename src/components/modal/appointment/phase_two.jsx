@@ -350,7 +350,14 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   };
 
   const handleContinue = () => {
-    onContinue?.({ services: SERVICES.filter((s) => selectedServices.includes(s.id)), selectedHairServices, selectedNailServices });
+    onContinue?.({ 
+      services: SERVICES.filter((s) => selectedServices.includes(s.id)), 
+      selectedHairServices, 
+      selectedNailServices,
+      selectedSkincareServices,
+      selectedMassageServices,
+      selectedPremiumServices
+    });
   };
 
   const handleHairContinue = (data) => {

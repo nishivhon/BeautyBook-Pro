@@ -1407,6 +1407,181 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+
+  /* ─────────────────────────────────────
+     Phase 4 — Confirmation Summary
+  ───────────────────────────────────── */
+
+  .confirm-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    background: rgba(12, 10, 9, 0.4);
+    border-radius: 12px;
+    border: 1px solid rgba(221, 144, 29, 0.2);
+  }
+
+  /* Service row — top section */
+  .confirm-service-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .confirm-service-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .confirm-svc-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: var(--color-amber);
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .confirm-svc-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .confirm-svc-name {
+    display: block;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--color-white);
+  }
+
+  .confirm-svc-duration {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.75rem;
+    color: var(--color-tan);
+  }
+
+  .confirm-svc-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .confirm-svc-datetime {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.78rem;
+    color: var(--color-white);
+    text-align: right;
+  }
+
+  .confirm-svc-price {
+    display: block;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-amber);
+    text-align: right;
+  }
+
+  /* Contact details section */
+  .confirm-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .confirm-detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 0;
+  }
+
+  .confirm-detail-row svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .confirm-detail-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .confirm-detail-label {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.72rem;
+    color: var(--color-tan);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .confirm-detail-value {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--color-white);
+    word-break: break-word;
+  }
+
+  /* Bottom row — ref pill + reminder */
+  .confirm-bottom-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 8px;
+  }
+
+  .confirm-ref-pill {
+    display: inline-block;
+    padding: 8px 14px;
+    background: rgba(221, 144, 29, 0.15);
+    border: 1px solid rgba(221, 144, 29, 0.3);
+    border-radius: 20px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--color-amber);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    align-self: flex-start;
+  }
+
+  .confirm-reminder-box {
+    padding: 12px 14px;
+    background: rgba(221, 144, 29, 0.08);
+    border-left: 3px solid var(--color-amber);
+    border-radius: 6px;
+  }
+
+  .confirm-reminder-text {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.78rem;
+    color: var(--color-tan);
+    line-height: 1.5;
+    margin: 0;
+  }
 }
 
 

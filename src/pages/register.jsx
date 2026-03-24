@@ -4,6 +4,7 @@ import { Otp } from "../components/modal/otp";
 import { AppointmentForm } from "../components/modal/appointment/phase_one";
 import { AppointmentFormPhase2 } from "../components/modal/appointment/phase_two";
 import { AppointmentFormPhase3 } from "../components/modal/appointment/phase_three";
+import { AppointmentFormPhase4 } from "../components/modal/appointment/phase_four";
 import { ConfirmationDialog } from "../components/modal/confirmation_dialog";
 import { Toast } from "../components/toast";
 
@@ -209,15 +210,9 @@ export const Register = () => {
 
   const handlePhase3Continue = (phase3Details) => {
     console.log("Phase 3 data:", phase3Details);
-    console.log("User data:", formData);
-    const completeData = { ...formData, appointment: { ...appointmentData?.schedule, ...appointmentData?.services, ...phase3Details } };
-    setAppointmentData(completeData);
-    setShowAppointment(false);
-    setAppointmentPhase(1);
-    setFullName("");
-    setEmail("");
-    setPhone("");
-    setFormData(null);
+    // Move to phase 4 (confirmation)
+    setAppointmentData({ ...appointmentData, stylist: phase3Details });
+    setAppointmentPhase(4);
   };
 
   const handleAppointmentBackPhase3 = (phase3Details) => {
@@ -231,11 +226,84 @@ export const Register = () => {
     setAppointmentPhase(1);
   };
 
+  const handleAppointmentBackPhase4 = () => {
+    setAppointmentPhase(3);
+  };
+
+  const handlePhase4Confirm = () => {
+    console.log("Booking confirmed:", appointmentData);
+    console.log("User data:", formData);
+    const completeData = { ...formData, appointment: appointmentData };
+    setAppointmentData(completeData);
+    setShowAppointment(false);
+    setAppointmentPhase(1);
+    setFullName("");
+    setEmail("");
+    setPhone("");
+    setFormData(null);
+  };
+
   const handleBackdropClick = (e) => {
     // Only trigger if clicking directly on the backdrop (not a child element)
     if (e.target === e.currentTarget) {
       setShowBackdropConfirm(true);
     }
+  };
+
+  // Format booking data for phase 4
+  const getFormattedBooking = () => {
+    const stylistName = appointmentData?.stylist?.name || "Any Available Stylist";
+    const scheduleInfo = appointmentData?.schedule;
+    const dateTime = scheduleInfo?.dateTime || `${scheduleInfo?.date?.date || "Not Selected"} | ${scheduleInfo?.time || "N/A"}`;
+    
+    // Extract individual selected services from all categories
+    let allServices = [];
+    const servicesData = appointmentData?.services;
+    
+    if (servicesData) {
+      // Collect all individual selected services from each category
+      const selectedArrays = [
+        servicesData.selectedHairServices,
+        servicesData.selectedNailServices,
+        servicesData.selectedSkincareServices,
+        servicesData.selectedMassageServices,
+        servicesData.selectedPremiumServices
+      ];
+      
+      selectedArrays.forEach(arr => {
+        if (Array.isArray(arr) && arr.length > 0) {
+          allServices = allServices.concat(arr);
+        }
+      });
+      
+      // If no individual services found, try to get from main services array
+      if (allServices.length === 0) {
+        if (Array.isArray(servicesData)) {
+          allServices = servicesData;
+        } else if (servicesData.services && Array.isArray(servicesData.services)) {
+          allServices = servicesData.services;
+        }
+      }
+    }
+    
+    // Format each service with booking details
+    const formattedServices = allServices.map(serviceInfo => ({
+      title: serviceInfo.title || serviceInfo.name || serviceInfo.service || "Service",
+      duration: serviceInfo.duration || "N/A",
+      price: serviceInfo.price || "N/A",
+      est: serviceInfo.duration || "N/A"
+    }));
+    
+    // Return object with services array and common booking details
+    return {
+      services: formattedServices,
+      dateTime: dateTime,
+      name: formData?.fullName || "",
+      email: formData?.email || "",
+      phone: formData?.phone || "",
+      stylist: stylistName,
+      refNo: "18xxx-xxxx",
+    };
   };
 
   return (
@@ -439,13 +507,19 @@ export const Register = () => {
               onCancel={handleCancelBooking}
               initialData={appointmentData?.services}
             />
-          ) : (
+          ) : appointmentPhase === 3 ? (
             <AppointmentFormPhase3
               onBack={handleAppointmentBackPhase3}
               onContinue={handlePhase3Continue}
               onCancel={handleCancelBooking}
             />
-          )}
+          ) : appointmentPhase === 4 ? (
+            <AppointmentFormPhase4
+              onBack={handleAppointmentBackPhase4}
+              onConfirm={handlePhase4Confirm}
+              booking={getFormattedBooking()}
+            />
+          ) : null}
         </div>
       )}
 
