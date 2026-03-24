@@ -21,17 +21,35 @@ const ClockSmIcon = () => (
   </svg>
 );
 
-const DATE_OPTIONS = [
-  { day: "Today", date: "Dec 8",  slots: 3 },
-  { day: "Tue",   date: "Dec 9",  slots: 8 },
-  { day: "Wed",   date: "Dec 10", slots: 5 },
-  { day: "Thur",  date: "Dec 11", slots: 6 },
-  { day: "Fri",   date: "Dec 12", slots: 4 },
-];
+// Generate date options dynamically based on today's date
+const generateDateOptions = () => {
+  const today = new Date();
+  const dates = [];
+  const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
+  const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  
+  for (let i = 0; i < 5; i++) {
+    const currentDate = new Date(today);
+    currentDate.setDate(today.getDate() + i);
+    
+    const dayLabel = i === 0 ? "Today" : dayLabels[currentDate.getDay()];
+    const dateStr = `${monthLabels[currentDate.getMonth()]} ${currentDate.getDate()}`;
+    
+    dates.push({
+      day: dayLabel,
+      date: dateStr,
+      slots: Math.floor(Math.random() * 8) + 2, // Random slots between 2-9
+    });
+  }
+  
+  return dates;
+};
+
+const DATE_OPTIONS = generateDateOptions();
 
 const TIME_OPTIONS = [
   "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM",
-  "2:00 PM", "2:30 PM", "3:00 PM",  "3:30 PM",  "4:00 PM",
+  "2:00 PM", "2:30 PM", "3:00 PM",  "3:30 PM",  "4:00 PM", "5:00 PM",
 ];
 
 const STEPS = [
@@ -40,6 +58,15 @@ const STEPS = [
   { number: 3, label: "Stylist"  },
   { number: 4, label: "Confirm"  },
 ];
+
+// Convert 24-hour format (HH:MM) to 12-hour format (H:MM AM/PM)
+const convertTo12HourFormat = (time24) => {
+  if (!time24) return "";
+  const [hours, minutes] = time24.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const hours12 = hours % 12 || 12;
+  return `${hours12}:${minutes.toString().padStart(2, "0")} ${period}`;
+};
 
 /* ── Header ── */
 const BookingHeader = ({ onBack, onBackClick }) => (
@@ -352,7 +379,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                   fontWeight: "600",
                   animation: "fade-up 0.3s ease forwards",
                 }}>
-                  {manualTime}
+                  {convertTo12HourFormat(manualTime)}
                 </div>
                 <button
                   onClick={() => {
