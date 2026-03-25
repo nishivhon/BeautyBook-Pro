@@ -353,25 +353,31 @@ const ScheduleRow = ({ stylist, time, client, service, status, dotClass }) => {
 };
 
 /* ── Today's Schedule panel ── */
-const SchedulePanel = ({ date = "Dec 7, 2024" }) => (
-  <div className="live-schedule-panel">
-    <div className="live-schedule-header">
-      <h3 className="live-schedule-title">Today's Schedule</h3>
-      <span className="live-schedule-date">{date}</span>
-    </div>
+const SchedulePanel = ({ date = "Dec 7, 2024" }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
 
-    <div className="live-schedule-list">
-      {SCHEDULE.map((item, i) => (
-        <ScheduleRow key={i} {...item} />
-      ))}
-    </div>
+  return (
+    <div className="live-schedule-panel">
+      <div className="live-schedule-header">
+        <h3 className="live-schedule-title">Today's Schedule</h3>
+        <span className="live-schedule-date">{date}</span>
+      </div>
 
-    <div className="live-schedule-footer">
-      <span className="live-schedule-count">Showing 6 of Schedule</span>
-      <button className="live-schedule-viewall">View All</button>
+      <button 
+        className="live-schedule-toggle-btn"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        {isExpanded ? "See less" : "See more"}
+      </button>
+
+      <div className={isExpanded ? "live-schedule-scroll" : "live-schedule-scroll-limited"}>
+        {SCHEDULE.map((item, i) => (
+          <ScheduleRow key={i} {...item} />
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ── Analytics panel ── */
 const AnalyticsPanel = () => (
