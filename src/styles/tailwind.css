@@ -1169,13 +1169,23 @@
   }
   .appt-continue-btn {
     display: flex; align-items: center; justify-content: center;
-    width: 100%; height: 52px; border: none; border-radius: 12px;
+    flex: 1; height: 52px; border: none; border-radius: 12px;
     background: var(--color-amber); color: var(--color-black);
     font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem;
     cursor: pointer; transition: all 0.3s ease;
   }
   .appt-continue-btn:hover { background: var(--color-amber-dark); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(221,144,29,0.4); }
   .appt-continue-btn:active { transform: scale(0.98); }
+
+  .appt-download-receipt-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    flex: 1; height: 52px; border: 1.5px solid var(--color-amber); border-radius: 12px;
+    background: transparent; color: var(--color-amber);
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.95rem;
+    cursor: pointer; transition: all 0.2s ease;
+  }
+  .appt-download-receipt-btn:hover { background: rgba(221,144,29,0.1); }
+  .appt-download-receipt-btn:active { transform: scale(0.98); }
 
   /* ─────────────────────────────────────
      Phase 1 — Date & Time Selection

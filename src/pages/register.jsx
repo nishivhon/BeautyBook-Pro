@@ -211,7 +211,7 @@ export const Register = () => {
   const handlePhase3Continue = (phase3Details) => {
     console.log("Phase 3 data:", phase3Details);
     // Move to phase 4 (confirmation)
-    setAppointmentData({ ...appointmentData, stylist: phase3Details });
+    setAppointmentData({ ...appointmentData, stylist: phase3Details.stylist });
     setAppointmentPhase(4);
   };
 

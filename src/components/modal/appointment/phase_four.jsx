@@ -57,6 +57,15 @@ const BackArrowIcon = () => (
   </svg>
 );
 
+/* Download/Print icon */
+const DownloadIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={18} height={18} style={{ flexShrink: 0 }}>
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <polyline points="7 10 12 15 17 10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+  </svg>
+);
+
 /* ══════════════════════════════════════════
    DATA — in real app these would be props
 ══════════════════════════════════════════ */
@@ -161,6 +170,221 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
     const mins = parseInt(svc.duration?.toString().match(/\d+/) || 0);
     return sum + mins;
   }, 0);
+
+  /* Generate printable receipt */
+  const handleDownloadReceipt = () => {
+    const receiptHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>BeautyBook Pro - Receipt</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f5f5; 
+            padding: 20px;
+          }
+          .receipt { 
+            max-width: 480px; 
+            margin: 0 auto; 
+            background: #fff; 
+            padding: 32px 24px; 
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 32px; 
+            border-bottom: 2px solid #dd901d;
+            padding-bottom: 16px;
+          }
+          .logo { 
+            font-size: 24px; 
+            font-weight: 700; 
+            color: #1a0f00; 
+            margin-bottom: 4px;
+          }
+          .subtitle { 
+            font-size: 12px; 
+            color: #988f81; 
+          }
+          .section { 
+            margin-bottom: 24px; 
+          }
+          .section-title { 
+            font-size: 11px; 
+            font-weight: 600; 
+            color: #dd901d; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+          }
+          .service-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #1a0f00;
+          }
+          .service-name { flex: 1; }
+          .service-price { 
+            font-weight: 600; 
+            color: #dd901d;
+            margin-left: 8px;
+          }
+          .detail-row { 
+            display: flex; 
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #1a0f00;
+          }
+          .detail-label { 
+            color: #988f81; 
+            font-weight: 500;
+          }
+          .detail-value { 
+            font-weight: 600; 
+          }
+          .divider { 
+            height: 1px; 
+            background: rgba(26,15,0,0.1); 
+            margin: 16px 0;
+          }
+          .total { 
+            display: flex; 
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a0f00;
+            padding: 12px 0;
+            border-top: 2px solid #dd901d;
+            border-bottom: 2px solid #dd901d;
+            margin: 16px 0;
+          }
+          .ref-box { 
+            background: #f9f7f4; 
+            padding: 12px; 
+            border-radius: 8px; 
+            text-align: center;
+            margin: 16px 0;
+          }
+          .ref-label { 
+            font-size: 10px; 
+            color: #988f81; 
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+          }
+          .ref-code { 
+            font-size: 18px; 
+            font-weight: 700; 
+            color: #dd901d; 
+            font-family: 'Courier New', monospace;
+          }
+          .footer { 
+            text-align: center; 
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(26,15,0,0.1);
+            font-size: 11px;
+            color: #988f81;
+            line-height: 1.6;
+          }
+          @media print {
+            body { padding: 0; background: #fff; }
+            .receipt { box-shadow: none; border-radius: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt">
+          <div class="header">
+            <div class="logo">BeautyBook Pro</div>
+            <div class="subtitle">Booking Receipt</div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Services</div>
+            ${services.map(svc => `
+              <div class="service-item">
+                <span class="service-name">${svc.title || svc.name || 'Service'}</span>
+                <span class="service-price">${svc.price || 'N/A'}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="section">
+            <div class="section-title">Appointment Details</div>
+            <div class="detail-row">
+              <span class="detail-label">Date & Time</span>
+              <span class="detail-value">${bookingData?.dateTime || 'Not Selected'}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Duration</span>
+              <span class="detail-value">${totalDuration} mins</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Stylist</span>
+              <span class="detail-value">${bookingData?.stylist || 'N/A'}</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="section">
+            <div class="section-title">Customer Information</div>
+            <div class="detail-row">
+              <span class="detail-label">Name</span>
+              <span class="detail-value">${bookingData?.name || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Email</span>
+              <span class="detail-value">${bookingData?.email || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Phone</span>
+              <span class="detail-value">${bookingData?.phone || 'N/A'}</span>
+            </div>
+          </div>
+
+          <div class="total">
+            <span>Total Amount</span>
+            <span>₱${totalPrice.toFixed(2)}</span>
+          </div>
+
+          <div class="ref-box">
+            <div class="ref-label">Reference Number</div>
+            <div class="ref-code">${bookingData?.refNo || 'N/A'}</div>
+          </div>
+
+          <div class="footer">
+            <p>Please keep this reference number for your records.</p>
+            <p>You will receive a confirmation via email and SMS 15 minutes before your appointment.</p>
+            <p style="margin-top: 12px; color: #dd901d;">Thank you for choosing BeautyBook Pro!</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Create a blob from the HTML
+    const blob = new Blob([receiptHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    // Open print dialog
+    const printWindow = window.open(url, '_blank');
+    if (printWindow) {
+      printWindow.addEventListener('load', () => {
+        printWindow.print();
+      });
+    }
+  };
 
   return (
     <div className="appt-root">
@@ -273,7 +497,14 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
       </div>
 
       {/* ── Footer CTA ── */}
-      <div className="appt-footer">
+      <div className="appt-footer" style={{ display: "flex", gap: "12px" }}>
+        <button 
+          className="appt-download-receipt-btn"
+          onClick={handleDownloadReceipt}
+        >
+          <DownloadIcon />
+          Download Receipt
+        </button>
         <button className="appt-continue-btn" onClick={onConfirm}>
           Confirm
         </button>
