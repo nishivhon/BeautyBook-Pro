@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
 // ═══════════════════════════════════════════════════════════════════
@@ -278,40 +280,44 @@ const QueueItem = ({ type, number, name, service, statusTop, statusSub, showWalk
 };
 
 /* ── Live Queue panel ── */
-const LiveQueuePanel = () => (
-  <div className="live-queue-panel">
-    {/* Header */}
-    <div className="dash-panel-header">
-      <div className="dash-panel-title-row">
-        <h2 className="dash-panel-title">Live Queue</h2>
-        <span className="dash-live-badge">
-          <span className="dash-live-dot" />
-          Live
-        </span>
-      </div>
-      <button className="dash-panel-manage-btn">See less</button>
-    </div>
+const LiveQueuePanel = () => {
+  const [isExpanded, setIsExpanded] = useState(true);
 
-    {/* Sections */}
-    {QUEUE_SECTIONS.map((section, si) => (
-      <div key={si}>
-        <p className="live-section-label">{section.label}</p>
-        <div className="live-queue-group">
-          {section.items.map((item, ii) => (
-            <QueueItem key={ii} {...item} />
-          ))}
+  return (
+    <div className="live-queue-panel">
+      {/* Header */}
+      <div className="dash-panel-header">
+        <div className="dash-panel-title-row">
+          <h2 className="dash-panel-title">Live Queue</h2>
+          <span className="dash-live-badge">
+            <span className="dash-live-dot" />
+            Live
+          </span>
         </div>
+        <button 
+          className="dash-panel-manage-btn"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? "See less" : "See more"}
+        </button>
       </div>
-    ))}
 
-    {/* Footer */}
-    <div className="live-queue-divider" />
-    <div className="live-queue-footer">
-      <span className="live-queue-count">Showing 8 of 8 in queue</span>
-      <button className="live-view-all-btn">View All</button>
+      {/* Sections */}
+      <div className={isExpanded ? "live-queue-scroll" : "live-queue-scroll-limited"}>
+        {QUEUE_SECTIONS.map((section, si) => (
+          <div key={si}>
+            <p className="live-section-label">{section.label}</p>
+            <div className="live-queue-group">
+              {section.items.map((item, ii) => (
+                <QueueItem key={ii} {...item} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ── Single schedule row ── */
 const ScheduleRow = ({ stylist, time, client, service, status, dotClass }) => {

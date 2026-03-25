@@ -3246,6 +3246,118 @@
     margin-top: 16px;
   }
 
+  /* ── Scrollable services container (expanded) ── */
+  .svc-services-scroll {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+  }
+
+  /* Custom scrollbar for services scroll */
+  .svc-services-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .svc-services-scroll::-webkit-scrollbar-track {
+    background: rgba(152, 143, 129, 0.08);
+    border-radius: 10px;
+  }
+
+  .svc-services-scroll::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.6);
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+
+  .svc-services-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--color-amber);
+  }
+
+  /* ── Scrollable services container (collapsed) ── */
+  .svc-services-scroll-limited {
+    max-height: 280px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+  }
+
+  /* Custom scrollbar for limited services scroll */
+  .svc-services-scroll-limited::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .svc-services-scroll-limited::-webkit-scrollbar-track {
+    background: rgba(152, 143, 129, 0.08);
+    border-radius: 10px;
+  }
+
+  .svc-services-scroll-limited::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.6);
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+
+  .svc-services-scroll-limited::-webkit-scrollbar-thumb:hover {
+    background: var(--color-amber);
+  }
+
+  /* ── Scrollable queue container (expanded) ── */
+  .live-queue-scroll {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+  }
+
+  /* Custom scrollbar for queue scroll */
+  .live-queue-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .live-queue-scroll::-webkit-scrollbar-track {
+    background: rgba(152, 143, 129, 0.08);
+    border-radius: 10px;
+  }
+
+  .live-queue-scroll::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.6);
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+
+  .live-queue-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--color-amber);
+  }
+
+  /* ── Scrollable queue container (collapsed) ── */
+  .live-queue-scroll-limited {
+    max-height: 280px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+  }
+
+  /* Custom scrollbar for limited queue scroll */
+  .live-queue-scroll-limited::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .live-queue-scroll-limited::-webkit-scrollbar-track {
+    background: rgba(152, 143, 129, 0.08);
+    border-radius: 10px;
+  }
+
+  .live-queue-scroll-limited::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.6);
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+
+  .live-queue-scroll-limited::-webkit-scrollbar-thumb:hover {
+    background: var(--color-amber);
+  }
+
   /* ═══════════════════════════════════════
      LIVE STATUS PAGE — All Styles
   ═══════════════════════════════════════ */
