@@ -121,7 +121,7 @@ export const validateOperatorCredentials = async (email, password) => {
   try {
     // Mock operator database
     const operators = [
-      { email: 'admin@beautybook.pro', password: 'admin123', role: OPERATOR_ROLES.SUPER_ADMIN },
+      { email: 'admin@beautybook.pro', password: 'admin123', role: OPERATOR_ROLES.ADMIN },
       { email: 'staff@beautybook.pro', password: 'staff123', role: OPERATOR_ROLES.STAFF },
     ];
 

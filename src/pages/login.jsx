@@ -172,9 +172,15 @@ export const LogIn = () => {
         
         // Show success feedback
         setTimeout(() => {
-          // TODO: Redirect to role-specific dashboard
-          // For now, redirect to home - update this when role dashboards are ready
-          navigate("/");
+          // Redirect based on role
+          const roleBasedRoutes = {
+            'admin': '/admin/dashboard',
+            'super admin': '/admin/dashboard',
+            'staff': '/'  // TODO: Create staff dashboard
+          };
+          
+          const redirectPath = roleBasedRoutes[result.data.role?.toLowerCase()] || '/';
+          navigate(redirectPath);
           setLoading(false);
         }, 800);
       } else {
