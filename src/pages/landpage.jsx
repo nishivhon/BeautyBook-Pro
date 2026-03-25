@@ -147,6 +147,8 @@ const NavBar = ({ onBookAppointment }) => {
     }
   };
 
+  const navigate = useNavigate();
+
   return (
     <nav className="navbar">
       {/* Logo */}
