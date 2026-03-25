@@ -30,12 +30,6 @@ const SettingsIcon = ({ size = 15, color = "#fff" }) => (
   </svg>
 );
 
-const ChevronRightIcon = ({ size = 14, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M9 18l6-6-6-6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 const CalendarIcon = ({ size = 20, color = "#dd901d" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <rect x="3" y="4" width="18" height="18" rx="3" stroke={color} strokeWidth="1.8" />
@@ -46,15 +40,6 @@ const CalendarIcon = ({ size = 20, color = "#dd901d" }) => (
   </svg>
 );
 
-const QueueIcon = ({ size = 20, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="9" cy="5" r="2" stroke={color} strokeWidth="1.8" />
-    <circle cx="9" cy="12" r="2" stroke={color} strokeWidth="1.8" />
-    <circle cx="9" cy="19" r="2" stroke={color} strokeWidth="1.8" />
-    <path d="M13 5h8M13 12h8M13 19h8" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-);
-
 const RevenueIcon = ({ size = 20, color = "#dd901d" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <line x1="12" y1="1" x2="12" y2="23" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
@@ -62,38 +47,40 @@ const RevenueIcon = ({ size = 20, color = "#dd901d" }) => (
   </svg>
 );
 
-const ClockIcon = ({ size = 20, color = "#dd901d" }) => (
+const PromoIcon = ({ size = 20, color = "#dd901d" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
-    <path d="M12 6v6l4 2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="7" cy="7" r="1.5" fill={color} />
   </svg>
 );
 
-const CheckCircleIcon = ({ size = 18, color = "#22c55e" }) => (
+const LoyaltyIcon = ({ size = 20, color = "#dd901d" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
-    <path d="M8 12l3 3 5-5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="2" y="5" width="20" height="14" rx="3" stroke={color} strokeWidth="1.8" />
+    <path d="M2 10h20" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="7" cy="15" r="1" fill={color} />
+    <path d="M11 15h6" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
   </svg>
 );
 
-const InProgressIcon = ({ size = 18, color = "#4387ef" }) => (
+const EditIcon = ({ size = 15, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
-    <path d="M12 6v6l4 2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
-const PendingIcon = ({ size = 18, color = "#dd901d" }) => (
+const PlusIcon = ({ size = 16, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
-    <path d="M12 8v4M12 16h.01" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <path d="M12 5v14M5 12h14" stroke={color} strokeWidth="2" strokeLinecap="round" />
   </svg>
 );
 
-const CancelledIcon = ({ size = 18, color = "#ef4444" }) => (
+const DiscountIcon = ({ size = 16, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
-    <path d="M15 9l-6 6M9 9l6 6" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="9" cy="9" r="2" stroke={color} strokeWidth="1.8" />
+    <circle cx="15" cy="15" r="2" stroke={color} strokeWidth="1.8" />
+    <path d="M5 19L19 5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
   </svg>
 );
 
@@ -117,47 +104,44 @@ const DownloadIcon = ({ size = 14, color = "currentColor" }) => (
 // ═══════════════════════════════════════════════════════════════════
 
 const NAV_ITEMS = [
-  { label: "Home",             active: true  },
-  { label: "Services",         active: false },
-  { label: "Queue Live Status",active: false },
-  { label: "Staff Status",     active: false },
+  { label: "Home",              active: false },
+  { label: "Services",          active: true  },
+  { label: "Queue Live Status", active: false },
+  { label: "Staff Status",      active: false },
 ];
 
 const STATS = [
-  { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: "24",      label: "Today's Appointments" },
-  { Icon: QueueIcon,    badge: null,      badgeType: null,    value: "8",       label: "In Queue Now"         },
-  { Icon: RevenueIcon,  badge: "+15%",    badgeType: "green", value: "₱12,450", label: "Revenue Today"        },
-  { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
+  { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: "24",       label: "Today's Appointments" },
+  { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱12,450",  label: "Revenue Today"        },
+  { Icon: ScissorsIcon, badge: null,    badgeType: null,    value: "14",        label: "Promo Bookings Today" },
+  { Icon: LoyaltyIcon,  badge: "+5",    badgeType: "green", value: "12",        label: "Loyalty Cards Activated" },
 ];
 
-const CURRENT_QUEUE = [
-  { name: "Juan Dela Cruz", service: "Haircut • Mike S.",      status: "Now", sub: "In Progress" },
-  { name: "Pedro Santos",   service: "Beard Trim • John D.",   status: "Now", sub: "In Progress" },
-  { name: "Maria Garcia",   service: "Hair Color • Carlos R.", status: "Now", sub: "In Progress" },
-];
-
-const NEXT_QUEUE = [
-  { number: 1, name: "Anna Reyes", service: "Full Service • Mike S.", wait: "20 mins", sub: "Waiting" },
-];
-
-const STAFF = [
-  { initial: "M", name: "Mike Santos",     subStatus: "Serving: Juan D.", dotClass: "dash-staff-status-dot-green", nextTime: "10:30 AM" },
-  { initial: "J", name: "Daniel Smith",    subStatus: "Available",        dotClass: "dash-staff-status-dot-amber", nextTime: "1:00 PM"  },
-  { initial: "C", name: "Antonio Marquez", subStatus: "On Break",         dotClass: "dash-staff-status-dot-gray",  nextTime: "1:30 PM"  },
-];
-
-const SUMMARY = [
-  { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: 16 },
-  { Icon: InProgressIcon,  color: "#4387ef", label: "In Progress", value: 3  },
-  { Icon: PendingIcon,     color: "#dd901d", label: "Pending",     value: 5  },
-  { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: 2  },
+const SERVICE_GROUPS = [
+  {
+    category: "Haircut Services",
+    items: [
+      { name: "Classic Haircut",        meta: "30 mins • Standard cut & style",    available: true,  price: "₱150" },
+      { name: "Premium Haircut & Beard", meta: "60 mins • Cut, beard trim, & hot towel", available: true, price: "₱250" },
+      { name: "Clipper Fade",           meta: "50 mins • Precision fade & styling", available: false, price: "₱180" },
+    ],
+  },
+  {
+    category: "Styling & Color",
+    items: [
+      { name: "Hair Color & Style",     meta: "90 mins • Full color service",      available: true,  price: "₱500" },
+      { name: "Beard Grooming",         meta: "30 mins • Trim, shape, & oil",      available: true,  price: "₱80"  },
+      { name: "Full Service Package",   meta: "120 mins • Hair, beard, & facial",  available: true,  price: "₱350" },
+    ],
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
 // SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-const AdminNavbar = ({ onLogout, onNavigateServices }) => (
+/* ── Navbar ── */
+const AdminNavbar = ({ onLogout, onNavHome }) => (
   <header className="admin-navbar">
     <div className="admin-nav-logo">
       <div className="admin-nav-logo-badge">
@@ -170,7 +154,7 @@ const AdminNavbar = ({ onLogout, onNavigateServices }) => (
       {NAV_ITEMS.map((item) => (
         <button
           key={item.label}
-          onClick={item.label === "Services" ? onNavigateServices : undefined}
+          onClick={item.label === "Home" ? onNavHome : undefined}
           className={`admin-nav-link ${item.active ? "active" : ""}`}
         >
           {item.label}
@@ -191,11 +175,12 @@ const AdminNavbar = ({ onLogout, onNavigateServices }) => (
   </header>
 );
 
+/* ── Page header + stat cards ── */
 const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
   <>
     <div className="dash-page-header">
       <div className="dash-page-title-block">
-        <h1 className="dash-page-title">Admin Dashboard</h1>
+        <h1 className="dash-page-title">Services Management</h1>
         <p className="dash-page-subtitle">BeautyBook Pro · {date}</p>
       </div>
       <div className="dash-page-actions">
@@ -210,7 +195,7 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
       </div>
     </div>
 
-    <div className="dash-stats-row">
+    <div className="svc-stats-row">
       {STATS.map(({ Icon, badge, badgeType, value, label }, i) => (
         <div key={i} className="dash-stat-card">
           <div className="dash-stat-top">
@@ -233,128 +218,85 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
   </>
 );
 
-const LiveQueue = () => (
-  <div className="dash-panel">
-    <div className="dash-panel-header">
-      <div className="dash-panel-title-row">
-        <h2 className="dash-panel-title">Live Queue</h2>
-        <span className="dash-live-badge">
-          <span className="dash-live-dot" />
-          Live
+/* ── Single service item row ── */
+const ServiceItem = ({ name, meta, available, price }) => (
+  <div className="svc-item-row">
+    <div className="svc-item-left">
+      <div className="svc-item-icon-box">
+        <ScissorsIcon size={18} color="#000" />
+      </div>
+      <div className="svc-item-info">
+        <span className="svc-item-name">{name}</span>
+        <span className="svc-item-meta">{meta}</span>
+      </div>
+    </div>
+    <div className="svc-item-right">
+      <div className="svc-item-status-col">
+        <span className={available ? "svc-item-status-available" : "svc-item-status-unavailable"}>
+          {available ? "Available" : "Not Available"}
         </span>
+        <span className="svc-item-price">{price}</span>
       </div>
-    </div>
-
-    <div>
-      <p className="dash-queue-section-label">Current</p>
-      <div className="dash-queue-group">
-        {CURRENT_QUEUE.map((item, i) => (
-          <div key={i} className="dash-queue-row">
-            <div className="dash-queue-left">
-              <div className="dash-queue-icon-box">
-                <ScissorsIcon size={18} color="#000" />
-              </div>
-              <div className="dash-queue-info">
-                <span className="dash-queue-name">{item.name}</span>
-                <span className="dash-queue-service">{item.service}</span>
-              </div>
-            </div>
-            <div className="dash-queue-right">
-              <div className="dash-queue-status-col">
-                <span className="dash-queue-status-now">{item.status}</span>
-                <span className="dash-queue-sub">{item.sub}</span>
-              </div>
-              <div className="dash-queue-chevron">
-                <ChevronRightIcon size={13} color="currentColor" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <div>
-      <p className="dash-queue-section-label">Up Next</p>
-      <div className="dash-queue-group">
-        {NEXT_QUEUE.map((item, i) => (
-          <div key={i} className="dash-queue-row-next">
-            <div className="dash-queue-left">
-              <div className="dash-queue-number-box">{item.number}</div>
-              <div className="dash-queue-info">
-                <span className="dash-queue-name">{item.name}</span>
-                <span className="dash-queue-service">{item.service}</span>
-              </div>
-            </div>
-            <div className="dash-queue-right">
-              <div className="dash-queue-status-col">
-                <span className="dash-queue-status-wait">{item.wait}</span>
-                <span className="dash-queue-sub">{item.sub}</span>
-              </div>
-              <div className="dash-queue-chevron">
-                <ChevronRightIcon size={13} color="currentColor" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <div className="dash-queue-divider" />
-    <div className="dash-queue-footer">
-      <span className="dash-queue-count">Showing 4 of 8 in queue</span>
-      <button className="dash-view-all-btn">View All Queue</button>
+      <button className="svc-item-edit-btn" aria-label="Edit service">
+        <EditIcon size={14} color="currentColor" />
+      </button>
     </div>
   </div>
 );
 
-const StaffStatus = () => (
-  <div className="dash-sidebar-panel">
-    <div className="dash-sidebar-header">
-      <h3 className="dash-sidebar-title">Staff Status</h3>
-      <button className="dash-panel-manage-btn">Manage</button>
+/* ── Services list panel ── */
+const ServicesPanel = () => (
+  <div className="svc-group-panel">
+    <div className="svc-group-header">
+      <h2 className="svc-group-title">{SERVICE_GROUPS[0].category}</h2>
+      <button className="svc-see-less-btn">See less</button>
     </div>
-    <div className="dash-staff-list">
-      {STAFF.map((s, i) => (
-        <div key={i} className="dash-staff-row">
-          <div className="dash-staff-left">
-            <div className="dash-staff-avatar-wrap">
-              <div className="dash-staff-avatar">{s.initial}</div>
-              <span className={`dash-staff-status-dot ${s.dotClass}`} />
-            </div>
-            <div className="dash-staff-info">
-              <span className="dash-staff-name">{s.name}</span>
-              <span className="dash-staff-substatus">{s.subStatus}</span>
-            </div>
-          </div>
-          <div className="dash-staff-right">
-            <span className="dash-staff-next-label">Next:</span>
-            <span className="dash-staff-next-time">{s.nextTime}</span>
-          </div>
-        </div>
+
+    <div className="svc-item-list">
+      {SERVICE_GROUPS[0].items.map((svc, i) => (
+        <ServiceItem key={i} {...svc} />
       ))}
     </div>
-  </div>
-);
 
-const SummaryPanel = () => (
-  <div className="dash-sidebar-panel">
-    <h3 className="dash-sidebar-title">Summary</h3>
-    <div className="dash-summary-list">
-      {SUMMARY.map(({ Icon, color, label, value }, i) => (
-        <div key={i} className="dash-summary-row">
-          <div className="dash-summary-left">
-            <Icon size={18} color={color} />
-            <span className="dash-summary-label">{label}</span>
-          </div>
-          <span className="dash-summary-value">{value}</span>
+    {SERVICE_GROUPS.slice(1).map((group, gi) => (
+      <div key={gi}>
+        <div className="svc-category-divider" />
+        <p className="svc-category-label">{group.category}</p>
+        <div className="svc-item-list">
+          {group.items.map((svc, i) => (
+            <ServiceItem key={i} {...svc} />
+          ))}
         </div>
-      ))}
-    </div>
+      </div>
+    ))}
   </div>
 );
 
+/* ── Quick Actions sidebar ── */
+const QuickActionsPanel = () => (
+  <div className="svc-quick-actions-panel">
+    <h3 className="svc-quick-title">Quick Actions</h3>
+
+    <button className="svc-action-btn-primary">
+      <ScissorsIcon size={16} color="#000" />
+      New Service
+    </button>
+
+    <button className="svc-action-btn-secondary">
+      <PromoIcon size={16} color="currentColor" />
+      Create Promo
+    </button>
+
+    <button className="svc-action-btn-secondary">
+      <DiscountIcon size={16} color="currentColor" />
+      Create Discount
+    </button>
+  </div>
+);
+
+/* ── Analytics sidebar panel ── */
 const AnalyticsPanel = () => (
-  <div className="dash-sidebar-panel">
+  <div className="dash-sidebar-panel svc-analytics-wrap">
     <div className="dash-analytics-header">
       <div className="dash-analytics-icon-box">
         <AnalyticsIcon size={20} color="#000" />
@@ -375,33 +317,32 @@ const AnalyticsPanel = () => (
 // MAIN EXPORT
 // ═══════════════════════════════════════════════════════════════════
 
-export const AdminDashboard = ({ date }) => {
+export const AdminDashboardServices = ({ date }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Clear operator session
     logoutOperator();
-    // Redirect to home
     navigate("/");
   };
 
-  const handleNavigateServices = () => {
-    navigate("/admin/dashboard/services");
+  const handleNavHome = () => {
+    navigate("/admin/dashboard");
   };
 
   return (
     <div className="dash-root">
-      <AdminNavbar onLogout={handleLogout} onNavigateServices={handleNavigateServices} />
+      <AdminNavbar onLogout={handleLogout} onNavHome={handleNavHome} />
 
       <main className="dash-main">
         <PageHeader date={date} />
 
-        <div className="dash-content-grid">
-          <LiveQueue />
+        <div className="svc-page-grid">
+          {/* Left — Services list */}
+          <ServicesPanel />
 
-          <div className="dash-sidebar">
-            <StaffStatus />
-            <SummaryPanel />
+          {/* Right — Quick actions + Analytics */}
+          <div>
+            <QuickActionsPanel />
             <AnalyticsPanel />
           </div>
         </div>
@@ -410,4 +351,4 @@ export const AdminDashboard = ({ date }) => {
   );
 };
 
-export default AdminDashboard;
+export default AdminDashboardServices;
