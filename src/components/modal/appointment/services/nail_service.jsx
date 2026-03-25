@@ -1,10 +1,5 @@
 import { useState } from "react";
 
-
-/* ══════════════════════════════════════════
-   INLINE SVG ICONS
-══════════════════════════════════════════ */
-
 /* Nail polish bottle icon for all nail service rows */
 const NailIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={22} height={22}>
@@ -27,9 +22,6 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-/* ══════════════════════════════════════════
-   DATA
-══════════════════════════════════════════ */
 const NAIL_SERVICES = [
   { id: 1, title: "Manicure",          desc: "Care & beautification for fingernails", price: "₱00.00", estTime: "est time" },
   { id: 2, title: "Pedicure",          desc: "Care & beautification for toenails",    price: "₱00.00", estTime: "est time" },
@@ -43,10 +35,6 @@ const STEPS = [
   { number: 3, label: "Stylist"  },
   { number: 4, label: "Confirm"  },
 ];
-
-/* ══════════════════════════════════════════
-   SUB-COMPONENTS
-══════════════════════════════════════════ */
 
 /* ── Header — "Nail Services" title ── */
 const ServiceHeader = ({ title, onBack, isSaving = false }) => (
@@ -130,9 +118,6 @@ const ServiceRow = ({ service, isSelected, onSelect }) => (
   </button>
 );
 
-/* ══════════════════════════════════════════
-   MAIN COMPONENT
-══════════════════════════════════════════ */
 export const NailServicesModal = ({ onBack, onContinue, initialSelected = [], isUpdating = false }) => {
   const [selected, setSelected] = useState(initialSelected); // Array for multiple selections, initialized with previous selections
 

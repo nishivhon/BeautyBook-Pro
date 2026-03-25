@@ -1,9 +1,5 @@
 import { useState } from "react";
 
-/* ══════════════════════════════════════════
-   INLINE SVG ICONS
-══════════════════════════════════════════ */
-
 /* Diamond / premium icon for all premium service rows */
 const PremiumIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={22} height={22}>
@@ -32,9 +28,6 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-/* ══════════════════════════════════════════
-   DATA
-══════════════════════════════════════════ */
 const PREMIUM_SERVICES = [
   { id: 1, title: "Bridal package",    desc: "Full wedding day beauty",    price: "₱00.00", estTime: "est time" },
   { id: 2, title: "Couple's Massage",  desc: "Relaxation for 2",           price: "₱00.00", estTime: "est time" },
@@ -48,10 +41,6 @@ const STEPS = [
   { number: 3, label: "Stylist"  },
   { number: 4, label: "Confirm"  },
 ];
-
-/* ══════════════════════════════════════════
-   SUB-COMPONENTS
-══════════════════════════════════════════ */
 
 /* ── Header ── */
 const ServiceHeader = ({ title, onBack, isSaving = false }) => (
@@ -133,9 +122,6 @@ const ServiceRow = ({ service, isSelected, onSelect }) => (
   </button>
 );
 
-/* ══════════════════════════════════════════
-   MAIN COMPONENT
-══════════════════════════════════════════ */
 export const PremiumServicesModal = ({ onBack, onContinue, initialSelected = [], isUpdating = false }) => {
   const [selected, setSelected] = useState(initialSelected);
 

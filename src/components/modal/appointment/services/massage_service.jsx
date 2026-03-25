@@ -1,9 +1,5 @@
 import { useState } from "react";
 
-/* ══════════════════════════════════════════
-   INLINE SVG ICONS
-══════════════════════════════════════════ */
-
 /* Massage / hands wave icon for all massage service rows */
 const MassageIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={22} height={22}>
@@ -32,9 +28,6 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-/* ══════════════════════════════════════════
-   DATA
-══════════════════════════════════════════ */
 const MASSAGE_SERVICES = [
   { id: 1, title: "Swedish massage",      desc: "Gently stroke for relaxation",        price: "₱00.00", estTime: "est time" },
   { id: 2, title: "Deep tissue massage",  desc: "Intense pressure for muscle knots",   price: "₱00.00", estTime: "est time" },
@@ -48,10 +41,6 @@ const STEPS = [
   { number: 3, label: "Stylist"  },
   { number: 4, label: "Confirm"  },
 ];
-
-/* ══════════════════════════════════════════
-   SUB-COMPONENTS
-══════════════════════════════════════════ */
 
 /* ── Header ── */
 const ServiceHeader = ({ title, onBack, isSaving = false }) => (
@@ -135,9 +124,6 @@ const ServiceRow = ({ service, isSelected, onSelect }) => (
   </button>
 );
 
-/* ══════════════════════════════════════════
-   MAIN COMPONENT
-══════════════════════════════════════════ */
 export const MassageServicesModal = ({ onBack, onContinue, initialSelected = [], isUpdating = false }) => {
   const [selected, setSelected] = useState(initialSelected); // Array for multiple selections, initialized with previous selections
 

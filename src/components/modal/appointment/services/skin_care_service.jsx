@@ -1,9 +1,5 @@
 import { useState } from "react";
 
-/* ══════════════════════════════════════════
-   INLINE SVG ICONS
-══════════════════════════════════════════ */
-
 /* Skincare / face icon for all skincare service rows */
 const SkincareIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={22} height={22}>
@@ -28,9 +24,6 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-/* ══════════════════════════════════════════
-   DATA
-══════════════════════════════════════════ */
 const SKINCARE_SERVICES = [
   { id: 1, title: "Facial treatment",   desc: "Care & beautification for face & skin",  price: "₱00.00", estTime: "est time" },
   { id: 2, title: "Advance treatment",  desc: "High-tech solutions for skin concerns",  price: "₱00.00", estTime: "est time" },
@@ -44,10 +37,6 @@ const STEPS = [
   { number: 3, label: "Stylist"  },
   { number: 4, label: "Confirm"  },
 ];
-
-/* ══════════════════════════════════════════
-   SUB-COMPONENTS
-══════════════════════════════════════════ */
 
 /* ── Header \u2014 "Skin Care Services" title ── */
 const ServiceHeader = ({ title, onBack, isSaving = false }) => (
@@ -131,9 +120,6 @@ const ServiceRow = ({ service, isSelected, onSelect }) => (
   </button>
 );
 
-/* ══════════════════════════════════════════
-   MAIN COMPONENT
-══════════════════════════════════════════ */
 export const SkincareServicesModal = ({ onBack, onContinue, initialSelected = [], isUpdating = false }) => {
   const [selected, setSelected] = useState(initialSelected); // Array for multiple selections, initialized with previous selections
 
