@@ -119,19 +119,48 @@ const STATS = [
 
 const SERVICE_GROUPS = [
   {
-    category: "Haircut Services",
+    category: "Hair Services",
     items: [
-      { name: "Classic Haircut",        meta: "30 mins • Standard cut & style",    available: true,  price: "₱150" },
-      { name: "Premium Haircut & Beard", meta: "60 mins • Cut, beard trim, & hot towel", available: true, price: "₱250" },
-      { name: "Clipper Fade",           meta: "50 mins • Precision fade & styling", available: false, price: "₱180" },
+      { name: "Hair cuts",          meta: "Classic Haircut with Styling",  available: true,  price: "₱00.00" },
+      { name: "Hair color",         meta: "Full hair color service",       available: true,  price: "₱00.00" },
+      { name: "Hair treatment",     meta: "Full hair color service",       available: true,  price: "₱00.00" },
+      { name: "Beard trimming",     meta: "Trim and beard shaping",        available: true,  price: "₱00.00" },
     ],
   },
   {
-    category: "Styling & Color",
+    category: "Massage Services",
     items: [
-      { name: "Hair Color & Style",     meta: "90 mins • Full color service",      available: true,  price: "₱500" },
-      { name: "Beard Grooming",         meta: "30 mins • Trim, shape, & oil",      available: true,  price: "₱80"  },
-      { name: "Full Service Package",   meta: "120 mins • Hair, beard, & facial",  available: true,  price: "₱350" },
+      { name: "Swedish massage",     meta: "Gently stroke for relaxation",        available: true,  price: "₱00.00" },
+      { name: "Deep tissue massage", meta: "Intense pressure for muscle knots",   available: true,  price: "₱00.00" },
+      { name: "Hot stone massage",   meta: "Heated stones to melt tension",       available: false, price: "₱00.00" },
+      { name: "Foot reflexology",    meta: "Pressure points for overall wellness", available: true,  price: "₱00.00" },
+    ],
+  },
+  {
+    category: "Nail Services",
+    items: [
+      { name: "Manicure",           meta: "Care & beautification for fingernails", available: true,  price: "₱00.00" },
+      { name: "Pedicure",           meta: "Care & beautification for toenails",    available: true,  price: "₱00.00" },
+      { name: "Nail enhancement",   meta: "Artificial nail application",           available: true,  price: "₱00.00" },
+      { name: "Nail art & design",  meta: "Arts & Design for nails",               available: false, price: "₱00.00" },
+    ],
+  },
+  {
+    category: "Skincare Services",
+    items: [
+      { name: "Facial treatment",    meta: "Care & beautification for face & skin", available: true,  price: "₱00.00" },
+      { name: "Advance treatment",   meta: "High-tech solutions for skin concerns",  available: true,  price: "₱00.00" },
+      { name: "Specialized facials", meta: "Targeted care for specific skin needs",  available: true,  price: "₱00.00" },
+      { name: "Body treatment",      meta: "Full-body skincare services",           available: false, price: "₱00.00" },
+    ],
+  },
+  {
+    category: "Premium Services",
+    items: [
+      { name: "Bridal package",    meta: "Full wedding day beauty",    available: true,  price: "₱00.00" },
+      { name: "Couple's Massage",  meta: "Relaxation for 2",           available: true,  price: "₱00.00" },
+      { name: "Hair & glow combo", meta: "Scalp treatment + facial",   available: true,  price: "₱00.00" },
+      { name: "VIP experience",    meta: "Private room + drinks",      available: true,  price: "₱00.00" },
     ],
   },
 ];
@@ -245,32 +274,45 @@ const ServiceItem = ({ name, meta, available, price }) => (
 );
 
 /* ── Services list panel ── */
-const ServicesPanel = () => (
-  <div className="svc-group-panel">
-    <div className="svc-group-header">
-      <h2 className="svc-group-title">{SERVICE_GROUPS[0].category}</h2>
-      <button className="svc-see-less-btn">See less</button>
-    </div>
+const ServicesPanel = () => {
+  const [isExpanded, setIsExpanded] = useState(true);
 
-    <div className="svc-item-list">
-      {SERVICE_GROUPS[0].items.map((svc, i) => (
-        <ServiceItem key={i} {...svc} />
-      ))}
-    </div>
+  // Flatten all services into a single array
+  const allServices = SERVICE_GROUPS.flatMap(group => 
+    group.items.map(item => ({ ...item, category: group.category }))
+  );
 
-    {SERVICE_GROUPS.slice(1).map((group, gi) => (
-      <div key={gi}>
-        <div className="svc-category-divider" />
-        <p className="svc-category-label">{group.category}</p>
-        <div className="svc-item-list">
-          {group.items.map((svc, i) => (
-            <ServiceItem key={i} {...svc} />
-          ))}
-        </div>
+  return (
+    <div className="svc-group-panel">
+      <div className="svc-group-header">
+        <h2 className="svc-group-title">All Services</h2>
+        <button 
+          className="svc-see-less-btn"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? "See less" : "See more"}
+        </button>
       </div>
-    ))}
-  </div>
-);
+
+      <div className={isExpanded ? "svc-services-scroll" : "svc-services-scroll-limited"}>
+        {/* Show all services grouped by category (both expanded and collapsed) */}
+        {SERVICE_GROUPS.map((group, gi) => (
+          <div key={gi}>
+            <p className="svc-category-label">{group.category}</p>
+            <div className="svc-item-list">
+              {group.items.map((svc, i) => (
+                <ServiceItem key={i} {...svc} />
+              ))}
+            </div>
+            {gi < SERVICE_GROUPS.length - 1 && (
+              <div className="svc-category-divider" />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 /* ── Quick Actions sidebar ── */
 const QuickActionsPanel = () => (

@@ -3245,3 +3245,44 @@
   .svc-analytics-wrap {
     margin-top: 16px;
   }
+
+  /* ── Service list scroll containers ── */
+  .svc-services-scroll {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221, 144, 29, 0.4) transparent;
+  }
+
+  .svc-services-scroll-limited {
+    max-height: 280px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221, 144, 29, 0.4) transparent;
+  }
+
+  /* Webkit scrollbar styling for Chrome/Edge/Safari */
+  .svc-services-scroll::-webkit-scrollbar,
+  .svc-services-scroll-limited::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .svc-services-scroll::-webkit-scrollbar-track,
+  .svc-services-scroll-limited::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .svc-services-scroll::-webkit-scrollbar-thumb,
+  .svc-services-scroll-limited::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.4);
+    border-radius: 3px;
+  }
+
+  .svc-services-scroll::-webkit-scrollbar-thumb:hover,
+  .svc-services-scroll-limited::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 0.6);
+  }
