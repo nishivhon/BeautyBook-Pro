@@ -117,10 +117,10 @@ const DownloadIcon = ({ size = 14, color = "currentColor" }) => (
 // ═══════════════════════════════════════════════════════════════════
 
 const NAV_ITEMS = [
-  { label: "Home",             active: true  },
-  { label: "Services",         active: false },
-  { label: "Queue Live Status",active: false },
-  { label: "Staff Status",     active: false },
+  { label: "Home",         active: true  },
+  { label: "Services",     active: false },
+  { label: "Live Status",  active: false },
+  { label: "Staff Status", active: false },
 ];
 
 const STATS = [
@@ -157,44 +157,55 @@ const SUMMARY = [
 // SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-const AdminNavbar = ({ onLogout, onNavigateServices, onNavigateLiveStatus }) => (
-  <header className="admin-navbar">
-    <div className="admin-nav-logo">
-      <div className="admin-nav-logo-badge">
-        <ScissorsIcon size={20} color="#000" />
-      </div>
-      <span className="admin-nav-brand">BeautyBook Pro</span>
-    </div>
+const AdminNavbar = ({ onLogout }) => {
+  const navigate = useNavigate();
 
-    <nav className="admin-nav-links">
-      {NAV_ITEMS.map((item) => {
-        let onClick = undefined;
-        if (item.label === "Services") onClick = onNavigateServices;
-        if (item.label === "Queue Live Status") onClick = onNavigateLiveStatus;
-        return (
+  const handleNavigation = (label) => {
+    if (label === "Home") {
+      navigate("/admin/dashboard");
+    } else if (label === "Services") {
+      navigate("/admin/dashboard/services");
+    } else if (label === "Live Status") {
+      navigate("/admin/dashboard/live-status");
+    } else if (label === "Staff Status") {
+      navigate("/admin/dashboard/staff-status");
+    }
+  };
+
+  return (
+    <header className="admin-navbar">
+      <div className="admin-nav-logo">
+        <div className="admin-nav-logo-badge">
+          <ScissorsIcon size={20} color="#000" />
+        </div>
+        <span className="admin-nav-brand">BeautyBook Pro</span>
+      </div>
+
+      <nav className="admin-nav-links">
+        {NAV_ITEMS.map((item) => (
           <button
             key={item.label}
-            onClick={onClick}
+            onClick={() => handleNavigation(item.label)}
             className={`admin-nav-link ${item.active ? "active" : ""}`}
           >
             {item.label}
           </button>
-        );
-      })}
-    </nav>
+        ))}
+      </nav>
 
-    <div className="admin-nav-right">
-      <div className="admin-nav-user">
-        <div className="admin-nav-avatar">A</div>
-        <span className="admin-nav-username">Administrator</span>
+      <div className="admin-nav-right">
+        <div className="admin-nav-user">
+          <div className="admin-nav-avatar">A</div>
+          <span className="admin-nav-username">Administrator</span>
+        </div>
+        <div className="admin-nav-divider" />
+        <button className="admin-nav-logout" onClick={onLogout}>
+          Log Out
+        </button>
       </div>
-      <div className="admin-nav-divider" />
-      <button className="admin-nav-logout" onClick={onLogout}>
-        Log Out
-      </button>
-    </div>
-  </header>
-);
+    </header>
+  );
+};
 
 const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
   <>
@@ -390,17 +401,9 @@ export const AdminDashboard = ({ date }) => {
     navigate("/");
   };
 
-  const handleNavigateServices = () => {
-    navigate("/admin/dashboard/services");
-  };
-
-  const handleNavigateLiveStatus = () => {
-    navigate("/admin/dashboard/live-status");
-  };
-
   return (
     <div className="dash-root">
-      <AdminNavbar onLogout={handleLogout} onNavigateServices={handleNavigateServices} onNavigateLiveStatus={handleNavigateLiveStatus} />
+      <AdminNavbar onLogout={handleLogout} />
 
       <main className="dash-main">
         <PageHeader date={date} />

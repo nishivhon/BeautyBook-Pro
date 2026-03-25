@@ -104,10 +104,10 @@ const DownloadIcon = ({ size = 14, color = "currentColor" }) => (
 // ═══════════════════════════════════════════════════════════════════
 
 const NAV_ITEMS = [
-  { label: "Home",              active: false },
-  { label: "Services",          active: true  },
-  { label: "Queue Live Status", active: false },
-  { label: "Staff Status",      active: false },
+  { label: "Home",         active: false },
+  { label: "Services",     active: true  },
+  { label: "Live Status",  active: false },
+  { label: "Staff Status", active: false },
 ];
 
 const STATS = [
@@ -170,39 +170,55 @@ const SERVICE_GROUPS = [
 // ═══════════════════════════════════════════════════════════════════
 
 /* ── Navbar ── */
-const AdminNavbar = ({ onLogout, onNavHome }) => (
-  <header className="admin-navbar">
-    <div className="admin-nav-logo">
-      <div className="admin-nav-logo-badge">
-        <ScissorsIcon size={20} color="#000" />
-      </div>
-      <span className="admin-nav-brand">BeautyBook Pro</span>
-    </div>
+const AdminNavbar = ({ onLogout }) => {
+  const navigate = useNavigate();
 
-    <nav className="admin-nav-links">
-      {NAV_ITEMS.map((item) => (
-        <button
-          key={item.label}
-          onClick={item.label === "Home" ? onNavHome : undefined}
-          className={`admin-nav-link ${item.active ? "active" : ""}`}
-        >
-          {item.label}
+  const handleNavigation = (label) => {
+    if (label === "Home") {
+      navigate("/admin/dashboard");
+    } else if (label === "Services") {
+      navigate("/admin/dashboard/services");
+    } else if (label === "Live Status") {
+      navigate("/admin/dashboard/live-status");
+    } else if (label === "Staff Status") {
+      navigate("/admin/dashboard/staff-status");
+    }
+  };
+
+  return (
+    <header className="admin-navbar">
+      <div className="admin-nav-logo">
+        <div className="admin-nav-logo-badge">
+          <ScissorsIcon size={20} color="#000" />
+        </div>
+        <span className="admin-nav-brand">BeautyBook Pro</span>
+      </div>
+
+      <nav className="admin-nav-links">
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.label}
+            onClick={() => handleNavigation(item.label)}
+            className={`admin-nav-link ${item.active ? "active" : ""}`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="admin-nav-right">
+        <div className="admin-nav-user">
+          <div className="admin-nav-avatar">A</div>
+          <span className="admin-nav-username">Administrator</span>
+        </div>
+        <div className="admin-nav-divider" />
+        <button className="admin-nav-logout" onClick={onLogout}>
+          Log Out
         </button>
-      ))}
-    </nav>
-
-    <div className="admin-nav-right">
-      <div className="admin-nav-user">
-        <div className="admin-nav-avatar">A</div>
-        <span className="admin-nav-username">Administrator</span>
       </div>
-      <div className="admin-nav-divider" />
-      <button className="admin-nav-logout" onClick={onLogout}>
-        Log Out
-      </button>
-    </div>
-  </header>
-);
+    </header>
+  );
+};
 
 /* ── Page header + stat cards ── */
 const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
@@ -367,13 +383,9 @@ export const AdminDashboardServices = ({ date }) => {
     navigate("/");
   };
 
-  const handleNavHome = () => {
-    navigate("/admin/dashboard");
-  };
-
   return (
     <div className="dash-root">
-      <AdminNavbar onLogout={handleLogout} onNavHome={handleNavHome} />
+      <AdminNavbar onLogout={handleLogout} />
 
       <main className="dash-main">
         <PageHeader date={date} />
