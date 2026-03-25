@@ -157,7 +157,7 @@ const SUMMARY = [
 // SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-const AdminNavbar = ({ onLogout, onNavigateServices }) => (
+const AdminNavbar = ({ onLogout, onNavigateServices, onNavigateLiveStatus }) => (
   <header className="admin-navbar">
     <div className="admin-nav-logo">
       <div className="admin-nav-logo-badge">
@@ -167,15 +167,20 @@ const AdminNavbar = ({ onLogout, onNavigateServices }) => (
     </div>
 
     <nav className="admin-nav-links">
-      {NAV_ITEMS.map((item) => (
-        <button
-          key={item.label}
-          onClick={item.label === "Services" ? onNavigateServices : undefined}
-          className={`admin-nav-link ${item.active ? "active" : ""}`}
-        >
-          {item.label}
-        </button>
-      ))}
+      {NAV_ITEMS.map((item) => {
+        let onClick = undefined;
+        if (item.label === "Services") onClick = onNavigateServices;
+        if (item.label === "Queue Live Status") onClick = onNavigateLiveStatus;
+        return (
+          <button
+            key={item.label}
+            onClick={onClick}
+            className={`admin-nav-link ${item.active ? "active" : ""}`}
+          >
+            {item.label}
+          </button>
+        );
+      })}
     </nav>
 
     <div className="admin-nav-right">
@@ -389,9 +394,13 @@ export const AdminDashboard = ({ date }) => {
     navigate("/admin/dashboard/services");
   };
 
+  const handleNavigateLiveStatus = () => {
+    navigate("/admin/dashboard/live-status");
+  };
+
   return (
     <div className="dash-root">
-      <AdminNavbar onLogout={handleLogout} onNavigateServices={handleNavigateServices} />
+      <AdminNavbar onLogout={handleLogout} onNavigateServices={handleNavigateServices} onNavigateLiveStatus={handleNavigateLiveStatus} />
 
       <main className="dash-main">
         <PageHeader date={date} />

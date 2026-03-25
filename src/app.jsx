@@ -5,6 +5,7 @@ import { Register } from './pages/register'
 import { LogIn } from './pages/login'
 import { AdminDashboard } from './pages/admin/admin_dashboard'
 import { AdminDashboardServices } from './pages/admin/admin_services_dashboard'
+import { AdminDashboardLiveStatus } from './pages/admin/admin_live_status_dashboard'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function App() {
@@ -27,6 +28,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminDashboardServices />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/dashboard/live-status"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboardLiveStatus />
             </ProtectedRoute>
           }
         />

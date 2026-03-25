@@ -2957,13 +2957,13 @@
     color: var(--color-amber);
   }
 
-/* ─────────────────────────────────────
-   Extra Keyframes
-───────────────────────────────────── */
-@keyframes pulse-green {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
-}
+  /* ─────────────────────────────────────
+     Extra Keyframes
+  ───────────────────────────────────── */
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
 
   /* ═══════════════════════════════════════
      SERVICES PAGE — All Styles
@@ -3246,43 +3246,475 @@
     margin-top: 16px;
   }
 
-  /* ── Service list scroll containers ── */
-  .svc-services-scroll {
-    max-height: 600px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding-right: 6px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(221, 144, 29, 0.4) transparent;
+  /* ═══════════════════════════════════════
+     LIVE STATUS PAGE — All Styles
+  ═══════════════════════════════════════ */
+
+  /* ── Live status content grid ── */
+  .live-page-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 20px;
+    width: 100%;
+    align-items: start;
   }
 
-  .svc-services-scroll-limited {
-    max-height: 280px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding-right: 6px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(221, 144, 29, 0.4) transparent;
+  /* ── Stat cards row (status-specific colors) ── */
+  .live-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    width: 100%;
   }
 
-  /* Webkit scrollbar styling for Chrome/Edge/Safari */
-  .svc-services-scroll::-webkit-scrollbar,
-  .svc-services-scroll-limited::-webkit-scrollbar {
-    width: 6px;
+  /* coloured label under the stat value */
+  .live-stat-label-green    { color: #22c55e; font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 400; margin: 0; }
+  .live-stat-label-blue     { color: #4387ef; font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 400; margin: 0; }
+  .live-stat-label-amber    { color: var(--color-amber); font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 400; margin: 0; }
+  .live-stat-label-red      { color: rgba(239,67,67,0.85); font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 400; margin: 0; }
+
+  /* ── Live queue panel (left) ── */
+  .live-queue-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+    background: rgba(221, 144, 29, 0.04);
+    border-radius: 14px;
+    border: 1px solid rgba(152, 143, 129, 0.5);
+    animation: fade-up 0.4s ease 0.2s both;
   }
 
-  .svc-services-scroll::-webkit-scrollbar-track,
-  .svc-services-scroll-limited::-webkit-scrollbar-track {
-    background: transparent;
+  /* section label (Current / Up Next / On Deck) */
+  .live-section-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.72rem;
+    color: var(--color-tan);
+    text-transform: none;
+    letter-spacing: 0;
+    margin-bottom: 6px;
   }
 
-  .svc-services-scroll::-webkit-scrollbar-thumb,
-  .svc-services-scroll-limited::-webkit-scrollbar-thumb {
-    background: rgba(221, 144, 29, 0.4);
-    border-radius: 3px;
+  .live-queue-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  .svc-services-scroll::-webkit-scrollbar-thumb:hover,
-  .svc-services-scroll-limited::-webkit-scrollbar-thumb:hover {
-    background: rgba(221, 144, 29, 0.6);
+  /* ── Active (In Progress) queue row ── */
+  .live-queue-row-active {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(221, 144, 29, 0.5);
+    background: rgba(221, 144, 29, 0.1);
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .live-queue-row-active:hover {
+    background: rgba(221, 144, 29, 0.16);
+    transform: translateX(3px);
+  }
+
+  /* ── Waiting queue row (Up Next / On Deck) ── */
+  .live-queue-row-waiting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(35, 29, 26, 0.5);
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .live-queue-row-waiting:hover {
+    background: rgba(35, 29, 26, 0.9);
+    transform: translateX(3px);
+  }
+
+  /* ── Cancelled queue row ── */
+  .live-queue-row-cancelled {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(35, 29, 26, 0.5);
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    opacity: 0.8;
+  }
+
+  .live-queue-row-cancelled:hover {
+    background: rgba(35, 29, 26, 0.9);
+    transform: translateX(3px);
+  }
+
+  /* shared left side */
+  .live-queue-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .live-queue-icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--color-amber);
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .live-queue-number-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #231d1a;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--color-tan);
+  }
+
+  .live-queue-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .live-queue-name {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--color-white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .live-queue-service {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.72rem;
+    color: var(--color-tan);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* shared right side */
+  .live-queue-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .live-queue-status-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+  }
+
+  .live-status-now    { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.8rem; color: var(--color-amber); white-space: nowrap; }
+  .live-status-wait   { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.8rem; color: var(--color-white); white-space: nowrap; }
+  .live-status-sub    { font-family: 'Inter', sans-serif; font-weight: 400; font-size: 0.68rem; color: var(--color-tan); white-space: nowrap; }
+  .live-status-red    { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.68rem; color: rgba(239,67,67,0.85); white-space: nowrap; }
+
+  /* Add Walk-in badge */
+  .live-add-walkin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--color-amber);
+    border: none;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.68rem;
+    color: var(--color-black);
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+
+  .live-add-walkin-btn:hover { background: var(--color-amber-dark); }
+
+  /* chevron */
+  .live-queue-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: rgba(152, 143, 129, 0.1);
+    color: var(--color-tan);
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .live-queue-row-active:hover   .live-queue-chevron,
+  .live-queue-row-waiting:hover  .live-queue-chevron,
+  .live-queue-row-cancelled:hover .live-queue-chevron {
+    background: rgba(221, 144, 29, 0.15);
+    color: var(--color-amber);
+  }
+
+  /* divider + footer */
+  .live-queue-divider { width: 100%; height: 1px; background: rgba(152, 143, 129, 0.15); }
+
+  .live-queue-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .live-queue-count {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.8rem;
+    color: var(--color-tan);
+  }
+
+  .live-view-all-btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--color-white);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: color 0.2s;
+  }
+
+  .live-view-all-btn:hover { color: var(--color-amber); }
+
+  /* ── Today's Schedule panel (right) ── */
+  .live-schedule-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
+    background: rgba(221, 144, 29, 0.04);
+    border-radius: 14px;
+    border: 1px solid rgba(152, 143, 129, 0.5);
+    animation: fade-up 0.4s ease 0.3s both;
+  }
+
+  .live-schedule-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .live-schedule-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--color-white);
+    margin: 0;
+  }
+
+  .live-schedule-date {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.78rem;
+    color: var(--color-tan);
+  }
+
+  /* schedule item row */
+  .live-schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .live-schedule-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(35, 29, 26, 0.5);
+    gap: 10px;
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+
+  /* active schedule row (amber tint) */
+  .live-schedule-row-active {
+    background: rgba(221, 144, 29, 0.1);
+    border: 1px solid rgba(221, 144, 29, 0.3);
+  }
+
+  .live-schedule-row:hover,
+  .live-schedule-row-active:hover {
+    background: rgba(35, 29, 26, 0.9);
+  }
+
+  .live-schedule-left {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* stylist column */
+  .live-schedule-stylist {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 90px;
+    flex-shrink: 0;
+  }
+
+  .live-schedule-stylist-name {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--color-white);
+    white-space: nowrap;
+  }
+
+  .live-schedule-time {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.68rem;
+    color: var(--color-tan);
+    white-space: nowrap;
+  }
+
+  /* vertical divider between stylist and client */
+  .live-schedule-divider-v {
+    width: 1px;
+    height: 32px;
+    background: rgba(152, 143, 129, 0.2);
+    flex-shrink: 0;
+    margin: 0 10px;
+  }
+
+  /* client column */
+  .live-schedule-client {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .live-schedule-client-name {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--color-white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .live-schedule-service {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.68rem;
+    color: var(--color-tan);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* status icon on the right */
+  .live-schedule-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: rgba(152, 143, 129, 0.08);
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .live-schedule-icon-btn:hover { background: rgba(221, 144, 29, 0.15); }
+
+  /* status dot next to stylist name */
+  .live-sched-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-right: 6px;
+    margin-top: 2px;
+  }
+
+  .live-sched-dot-green  { background: #22c55e; }
+  .live-sched-dot-amber  { background: var(--color-amber); }
+
+  /* schedule footer */
+  .live-schedule-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px solid rgba(152, 143, 129, 0.12);
+  }
+
+  .live-schedule-count {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.78rem;
+    color: var(--color-tan);
+  }
+
+  .live-schedule-viewall {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: var(--color-white);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+  }
+
+  .live-schedule-viewall:hover { color: var(--color-amber); }
+
+  /* sidebar spacing */
+  .live-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* schedule dot + name inline row */
+  .live-sched-name-row {
+    display: flex;
+    align-items: center;
   }
