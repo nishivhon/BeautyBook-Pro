@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { logoutOperator } from "../../services/operatorAuth";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -423,10 +424,17 @@ const AnalyticsPanel = () => (
 // MAIN EXPORT
 // ═══════════════════════════════════════════════════════════════════
 
-export const AdminDashboardLiveStatus = ({ onLogout, date }) => {
+export const AdminDashboardLiveStatus = ({ date }) => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logoutOperator();
+    navigate("/");
+  };
+
   return (
     <div className="dash-root">
-      <AdminNavbar onLogout={onLogout} />
+      <AdminNavbar onLogout={handleLogout} />
 
       <main className="dash-main">
         <PageHeader date={date} />
