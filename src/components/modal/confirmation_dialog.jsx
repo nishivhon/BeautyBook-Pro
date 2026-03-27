@@ -31,7 +31,7 @@ export const ConfirmationDialog = ({
     <div style={{
       position: "fixed",
       inset: 0,
-      zIndex: 1000,
+      zIndex: 1200,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
