@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Otp } from "../components/modal/otp";
-import { AppointmentForm } from "../components/modal/appointment/phase_one";
+import AppointmentForm from "../components/modal/appointment/phase_one";
 import { AppointmentFormPhase2 } from "../components/modal/appointment/phase_two";
 import { AppointmentFormPhase3 } from "../components/modal/appointment/phase_three";
 import { AppointmentFormPhase4 } from "../components/modal/appointment/phase_four";
@@ -108,18 +107,98 @@ export const Register = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail]       = useState("");
   const [phone, setPhone]       = useState("");
-  const [useEmail, setUseEmail] = useState(false);
-  const [usePhone, setUsePhone] = useState(true);
+  const [useEmail, setUseEmail] = useState(true);
+  const [usePhone, setUsePhone] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors]     = useState({});
-  const [showOTP, setShowOTP]   = useState(false);
-  const [formData, setFormData] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verifiedUser, setVerifiedUser] = useState(null);
   const [showAppointment, setShowAppointment] = useState(false);
+  const [backdropClickEnabled, setBackdropClickEnabled] = useState(false);
   const [appointmentData, setAppointmentData] = useState(null);
   const [appointmentPhase, setAppointmentPhase] = useState(1);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  // Create a wrapper for navigate that logs and blocks for verified users
+  const navigateWithGuard = (path) => {
+    if (verifiedUser !== null && verifiedUser !== undefined && path === "/") {
+      return;
+    }
+    navigate(path);
+  };
+
+  // Check if coming from email link with verified user
+  useEffect(() => {
+    const userData = sessionStorage.getItem("verifiedUser");
+    const sessionUsed = sessionStorage.getItem("sessionUsed");
+    
+    // If session was marked as used AND userData is gone, link is EXPIRED
+    // But if userData still exists, it's just a remount - continue normal flow
+    if (sessionUsed === "true" && !userData) {
+      setSessionExpired(true);
+      setShowAppointment(false);
+      return;
+    }
+    
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        setVerifiedUser(user);
+        
+        // Pre-fill form with verified user data
+        setFullName(user.full_name || "");
+        setEmail(user.email || "");
+        setPhone(user.phone || "");
+        
+        // Auto-show appointment modal for email link users
+        // DO NOT mark as used yet - we'll do that in a separate effect after modal shows
+        setShowAppointment(true);
+      } catch (err) {
+        setVerifiedUser(null);
+      }
+    } else {
+      setVerifiedUser(null);
+    }
+  }, []);
+
+  // SEPARATE EFFECT: Mark session as used AFTER modal is shown
+  useEffect(() => {
+    if (showAppointment && verifiedUser && sessionStorage.getItem("sessionUsed") !== "true") {
+      sessionStorage.setItem("sessionUsed", "true");
+      
+      // Delay enabling backdrop clicks
+      setTimeout(() => {
+        setBackdropClickEnabled(true);
+      }, 500);
+    }
+  }, [showAppointment, verifiedUser]);
+
+  // Track state changes (for debugging if needed)
+  useEffect(() => {
+  }, [verifiedUser, showAppointment, appointmentPhase]);
+
+  // Preserve verified user state in localStorage as backup
+  useEffect(() => {
+    if (verifiedUser && showAppointment) {
+      localStorage.setItem("verifiedUserBackup", JSON.stringify(verifiedUser));
+    }
+  }, [verifiedUser, showAppointment]);
+
+  // On component mount, check if we need to restore from backup
+  // Only restore if this is the same session
+  useEffect(() => {
+    const backup = localStorage.getItem("verifiedUserBackup");
+    const sessionUsed = sessionStorage.getItem("sessionUsed");
+    
+    if (backup && !verifiedUser && sessionUsed === "true") {
+      const user = JSON.parse(backup);
+      setVerifiedUser(user);
+      setShowAppointment(true);
+    }
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -155,61 +234,104 @@ export const Register = () => {
 
     setErrors(newErrors);
 
-    // If no errors, show OTP modal
+    // If no errors, send verification email via Resend
     if (Object.keys(newErrors).length === 0) {
-      setFormData({ fullName, email, phone, useEmail, usePhone, rememberMe });
-      setShowOTP(true);
+      setIsSubmitting(true);
+      
+      fetch(`${import.meta.env.VITE_API_URL}/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email || "",
+          full_name: fullName,
+          phone: phone || ""
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.message) {
+            setToastMessage(`Verification email sent to ${email}. Check your inbox!`);
+            setShowToast(true);
+          setTimeout(() => { setShowToast(false); }, 10000);
+            // Reset form
+            setFullName("");
+            setEmail("");
+            setPhone("");
+            setUseEmail(true);
+            setUsePhone(false);
+            setTimeout(() => {
+              if (verifiedUser === null || verifiedUser === undefined) {
+                navigateWithGuard("/");
+              }
+            }, 2000);
+          } else {
+            setToastMessage(data.error || "Failed to send verification email");
+            setShowToast(true);
+          }
+        })
+        .catch(err => {
+          setToastMessage("Error sending verification email");
+          setShowToast(true);
+        })
+        .finally(() => setIsSubmitting(false));
     }
   };
 
   const handleBack = () => {
-    navigate("/");
-  };
-
-  const handleOTPVerified = (otp) => {
-    console.log("OTP Verified:", otp);
-    console.log("Form submitted successfully:", formData);
-    // Close OTP modal and show appointment booking modal
-    setShowOTP(false);
-    setShowAppointment(true);
-  };
-
-  const handleOTPClose = () => {
-    setShowOTP(false);
+    if (verifiedUser !== null && verifiedUser !== undefined) {
+      return;
+    }
+    navigateWithGuard("/");
   };
 
   const handleCancelBooking = () => {
-    // Show toast message and navigate to landpage
+    // If verified user cancels booking, INVALIDATE THE SESSION - One-time use enforcement
+    if (verifiedUser !== null && verifiedUser !== undefined) {
+      setShowAppointment(false);
+      setBackdropClickEnabled(false);
+      setAppointmentPhase(1);
+      setSessionExpired(true);
+      
+      // Clear everything - session is now invalid
+      sessionStorage.removeItem("verifiedUser");
+      sessionStorage.removeItem("sessionUsed");
+      localStorage.removeItem("verifiedUserBackup");
+      setVerifiedUser(null);
+      
+      return; // FORCE EXIT
+    }
+    
+    // NON-VERIFIED USER PATH ONLY REACHES HERE
     setShowAppointment(false);
+    setBackdropClickEnabled(false);
     setAppointmentPhase(1);
-    setFormData(null);
     setFullName("");
     setEmail("");
     setPhone("");
-    setToastMessage("Booking cancelled");
-    setShowToast(true);
-    // Give toast time to be visible before navigation
+    setUseEmail(true);
+    setUsePhone(false);
     setTimeout(() => {
-      navigate("/");
+      if (verifiedUser === null || verifiedUser === undefined) {
+        sessionStorage.removeItem("verifiedUser");
+        localStorage.removeItem("verifiedUserBackup");
+        navigateWithGuard("/");
+      }
     }, 1200);
   };
 
   const handleAppointmentContinue = (appointmentDetails) => {
-    console.log("Phase 1 data:", appointmentDetails);
     // Move to phase 2
     setAppointmentData({ ...appointmentData, schedule: appointmentDetails });
     setAppointmentPhase(2);
   };
 
   const handlePhase2Continue = (phase2Details) => {
-    console.log("Phase 2 data:", phase2Details);
     // Move to phase 3
     setAppointmentData({ ...appointmentData, services: phase2Details });
     setAppointmentPhase(3);
   };
 
   const handlePhase3Continue = (phase3Details) => {
-    console.log("Phase 3 data:", phase3Details);
     // Move to phase 4 (confirmation)
     setAppointmentData({ ...appointmentData, stylist: phase3Details.stylist });
     setAppointmentPhase(4);
@@ -231,21 +353,53 @@ export const Register = () => {
   };
 
   const handlePhase4Confirm = () => {
-    console.log("Booking confirmed:", appointmentData);
-    console.log("User data:", formData);
-    const completeData = { ...formData, appointment: appointmentData };
-    setAppointmentData(completeData);
+    // If verified user, process booking
+    if (verifiedUser !== null && verifiedUser !== undefined) {
+      setShowAppointment(false);
+      setBackdropClickEnabled(false);
+      setAppointmentPhase(1);
+      
+      // BOOKING COMPLETE - Clear session and prevent future use of this link
+      setTimeout(() => {
+        sessionStorage.removeItem("verifiedUser");
+        sessionStorage.removeItem("sessionUsed");
+        localStorage.removeItem("verifiedUserBackup");
+      }, 2500);
+      
+      setToastMessage("✅ Appointment booked successfully! Your email link has been used.");
+      setShowToast(true);
+      setTimeout(() => { setShowToast(false); }, 3000);
+      return; // FORCE EXIT - NOTHING BELOW THIS RUNS
+    }
+    
+    // NON-VERIFIED USER PATH ONLY REACHES HERE
     setShowAppointment(false);
+    setBackdropClickEnabled(false);
     setAppointmentPhase(1);
     setFullName("");
     setEmail("");
     setPhone("");
-    setFormData(null);
+    setUseEmail(true);
+    setUsePhone(false);
+    setToastMessage("Appointment booked successfully!");
+    setShowToast(true);
+    setTimeout(() => {
+      if (verifiedUser === null || verifiedUser === undefined) {
+        sessionStorage.removeItem("verifiedUser");
+        localStorage.removeItem("verifiedUserBackup");
+        navigateWithGuard("/");
+      }
+    }, 2000);
   };
 
   const handleBackdropClick = (e) => {
-    // Only trigger if clicking directly on the backdrop (not a child element)
-    if (e.target === e.currentTarget) {
+    // Completely disable backdrop clicks for verified users
+    if (verifiedUser && Object.keys(verifiedUser).length > 0) {
+      return; // Ignore all backdrop clicks for verified users
+    }
+    
+    // Only allow backdrop clicks for non-verified users if enabled
+    if (e.target === e.currentTarget && backdropClickEnabled) {
       setShowBackdropConfirm(true);
     }
   };
@@ -312,20 +466,73 @@ export const Register = () => {
       {/* ── LEFT PANEL ── */}
       <div className="register-left">
 
-        {/* Content wrapper */}
-        <div className="form-wrapper">
+        {/* Session Expired Modal */}
+        {sessionExpired && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backdropFilter: "blur(3px)",
+            backgroundColor: "rgba(0,0,0,0.72)"
+          }}>
+            <div style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "40px",
+              maxWidth: "400px",
+              textAlign: "center",
+              boxShadow: "0 10px 40px rgba(0,0,0,0.2)"
+            }}>
+              <h2 style={{ fontSize: "24px", fontWeight: "700", marginBottom: "12px", color: "#1a1208" }}>
+                Booking Link Expired
+              </h2>
+              <p style={{ fontSize: "14px", color: "#666", marginBottom: "20px", lineHeight: "1.6" }}>
+                The appointment link has already been used or cancelled.
+              </p>
+              <p style={{ fontSize: "13px", color: "#999", marginBottom: "24px" }}>
+                To book another appointment, please register again to receive a new link.
+              </p>
+              <button
+                onClick={() => setSessionExpired(false)}
+                style={{
+                  background: "#dd901d",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "10px 20px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontSize: "14px"
+                }}
+              >
+                OK, Take Me Back
+              </button>
+            </div>
+          </div>
+        )}
 
-        {/* Back button */}
-        <button
-          type="button"
-          onClick={handleBack}
-          className="btn-back"
-        >
-          <svg viewBox="0 0 16 16" fill="none" style={{ width: 16, height: 16 }}>
-            <path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Back
-        </button>
+        {/* Content wrapper */}
+        <div className="form-wrapper" style={{ pointerEvents: (verifiedUser && showAppointment) || sessionExpired ? "none" : "auto", opacity: (verifiedUser && showAppointment) || sessionExpired ? 0.5 : 1 }}>
+
+        {/* Back button - hidden for verified users with active appointment */}
+        {!verifiedUser && (
+          <button
+            type="button"
+            onClick={handleBack}
+            className="btn-back"
+          >
+            <svg viewBox="0 0 16 16" fill="none" style={{ width: 16, height: 16 }}>
+              <path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Back
+          </button>
+        )}
 
         {/* Logo + Brand */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
@@ -427,8 +634,9 @@ export const Register = () => {
               type="submit"
               className="btn-large"
               style={{ width: "100%" }}
+              disabled={isSubmitting}
             >
-              Confirm
+              {isSubmitting ? "Sending verification email..." : "Confirm"}
             </button>
 
             {/* Remember Me */}
@@ -472,14 +680,6 @@ export const Register = () => {
         </p>
       </div>
 
-      {/* OTP Modal */}
-      {showOTP && (
-        <Otp 
-          onClose={handleOTPClose} 
-          onVerified={handleOTPVerified}
-        />
-      )}
-
       {/* Appointment Booking Modal */}
       {showAppointment && (
         <div 
@@ -495,13 +695,14 @@ export const Register = () => {
           }}
           onClick={handleBackdropClick}
         >
+
           {appointmentPhase === 1 ? (
             <AppointmentForm
               onBack={handleCancelBooking}
               onContinue={handleAppointmentContinue}
             />
           ) : appointmentPhase === 2 ? (
-            <AppointmentFormPhase2
+            <AppointmentFormPhase2 
               onBack={handleAppointmentBackPhase2}
               onContinue={handlePhase2Continue}
               onCancel={handleCancelBooking}
