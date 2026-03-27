@@ -231,41 +231,94 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
 );
 
 /* ── Staff List panel ── */
-const StaffListPanel = () => (
-  <div className="staff-list-panel">
-    <div className="staff-list-header">
-      <h2 className="staff-list-title">Staff List</h2>
-      <div className="staff-list-header-right">
-        <button className="staff-filter-btn" aria-label="Filter">
-          <FilterIcon size={15} color="currentColor" />
-        </button>
-        <button className="staff-see-less-btn">See less</button>
+const StaffListPanel = () => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState(null);
+
+  const statuses = ["Available", "In Service", "On Break", "Off Today"];
+
+  const filteredStaff = selectedFilter 
+    ? STAFF.filter(s => s.status === selectedFilter)
+    : STAFF;
+
+  const handleFilterSelect = (status) => {
+    setSelectedFilter(selectedFilter === status ? null : status);
+    setFilterOpen(false);
+  };
+
+  return (
+    <div className="staff-list-panel">
+      <div className="staff-list-header">
+        <h2 className="staff-list-title">Staff List</h2>
+        <div className="staff-list-header-right">
+          <div className="staff-filter-container">
+            <button 
+              className="staff-filter-btn" 
+              aria-label="Filter"
+              onClick={() => setFilterOpen(!filterOpen)}
+            >
+              <FilterIcon size={15} color="currentColor" />
+            </button>
+            {filterOpen && (
+              <div className="staff-filter-dropdown">
+                {statuses.map((status) => (
+                  <button
+                    key={status}
+                    className={`staff-filter-option ${selectedFilter === status ? "active" : ""}`}
+                    onClick={() => handleFilterSelect(status)}
+                  >
+                    {status}
+                  </button>
+                ))}
+                {selectedFilter && (
+                  <button
+                    className="staff-filter-clear"
+                    onClick={() => setSelectedFilter(null)}
+                  >
+                    Clear Filter
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          <button 
+            className="staff-see-less-btn"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? "See less" : "See more"}
+          </button>
+        </div>
+      </div>
+
+      <div className={isExpanded ? "staff-member-scroll" : "staff-member-scroll-limited"}>
+        {filteredStaff.length > 0 ? (
+          filteredStaff.map((s, i) => (
+            <div key={i} className="staff-member-row">
+              <div className="staff-member-left">
+                <div className="staff-member-avatar">{s.initial}</div>
+                <span className="staff-member-name">{s.name}</span>
+              </div>
+              <div className="staff-member-right">
+                <div className="staff-member-status-col">
+                  <span className={s.statusClass}>{s.status}</span>
+                  <span className="staff-member-sub">{s.subStatus}</span>
+                </div>
+                <div className="staff-member-chevron">
+                  <ChevronRightIcon size={13} color="currentColor" />
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="staff-no-results">
+            <p>No staff found with this status</p>
+          </div>
+        )}
       </div>
     </div>
-
-    <div className="staff-member-list">
-      {STAFF.map((s, i) => (
-        <div key={i} className="staff-member-row">
-          <div className="staff-member-left">
-            <div className="staff-member-avatar">{s.initial}</div>
-            <span className="staff-member-name">{s.name}</span>
-          </div>
-          <div className="staff-member-right">
-            <div className="staff-member-status-col">
-              <span className={s.statusClass}>{s.status}</span>
-              <span className="staff-member-sub">{s.subStatus}</span>
-            </div>
-            <div className="staff-member-chevron">
-              <ChevronRightIcon size={13} color="currentColor" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    <div className="staff-list-divider" />
-  </div>
-);
+  );
+};
 
 /* ── Quick Actions panel ── */
 const QuickActionsPanel = () => (
