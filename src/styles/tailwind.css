@@ -1178,8 +1178,8 @@
   .appt-section-sub   { font-family: 'Inter', sans-serif; font-weight: 400; font-size: 0.78rem; color: var(--color-tan); }
 
   .appt-footer {
-    display: flex; gap: 16px;
-    flex-shrink: 0; padding: 14px 40px 20px;
+    display: flex; flex-direction: column; gap: 12px;
+    flex-shrink: 0; padding: 16px 40px 20px;
     background: var(--bg-card);
     border-top: 1px solid rgba(152,143,129,0.1);
   }
@@ -4746,7 +4746,7 @@
     padding: 12px 14px;
     border-radius: 10px;
     background: rgba(14, 13, 11, 0.8);
-    border: 1px solid rgba(152, 143, 129, 0.4);
+    border: 2px solid rgba(152, 143, 129, 0.4);
     font-family: 'Inter', sans-serif;
     font-size: 0.95rem;
     color: var(--color-light);
@@ -4762,39 +4762,62 @@
     background: rgba(14, 13, 11, 0.9);
     border-color: var(--color-amber);
     box-shadow: 0 0 0 3px rgba(221, 144, 29, 0.15);
+    outline: none;
   }
 
   .walkin-input.error {
-    border-color: #ef4444;
-    background: rgba(14, 13, 11, 0.9);
+    border-color: #dc2626;
+    background: rgba(220, 38, 38, 0.08);
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
   }
 
   .walkin-input.error:focus {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
   }
 
   .walkin-error {
     color: #ef4444;
     font-size: 0.85rem;
-    font-weight: 500;
+    font-weight: 600;
     margin-top: 8px;
+    padding: 10px 12px;
     display: flex;
     align-items: center;
     gap: 6px;
     font-family: 'Inter', sans-serif;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    animation: shake 0.3s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
   }
 
   .service-error {
     color: #ef4444;
     font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 0px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    animation: shake 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .service-success {
+    color: #22c55e;
+    font-size: 0.8rem;
     font-weight: 500;
-    margin-top: 16px;
-    padding: 12px 14px;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 10px;
+    margin-top: 12px;
     text-align: center;
     font-family: 'Inter', sans-serif;
   }

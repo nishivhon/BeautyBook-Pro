@@ -349,14 +349,7 @@ const ServiceSelectionModal = ({ isOpen, categoryId, categoryLabel, services, se
           <div className="appt-footer">
             <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "12px" }}>
               {selectedInCategory.length === 0 && !isUpdating && (
-                <p style={{
-                  color: "#ef4444",
-                  fontSize: "0.85rem",
-                  textAlign: "center",
-                  fontWeight: "500",
-                }}>
-                  Please select at least one service
-                </p>
+                <p className="service-error"> Please select at least one service</p>
               )}
               <div style={{ display: "flex", gap: "12px" }}>
                 <button className="appt-cancel-btn" onClick={handleCancelClick}>
@@ -985,7 +978,14 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
                     aria-describedby={nameError && nameTouched ? "name-error" : undefined}
                   />
                   {nameError && nameTouched && (
-                    <p id="name-error" className="walkin-error">{nameError}</p>
+                    <p id="name-error" className="walkin-error">
+                      ⚠️ {nameError}
+                    </p>
+                  )}
+                  {!nameError && nameTouched && (
+                    <p style={{ fontSize: "0.8rem", color: "#22c55e", margin: "4px 0 0 0", fontWeight: "500" }}>
+                      ✓ Name is valid
+                    </p>
                   )}
                 </div>
               </div>
@@ -1006,9 +1006,6 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
                     />
                   ))}
                 </div>
-                {serviceError && serviceTouched && (
-                  <p className="service-error">{serviceError}</p>
-                )}
               </div>
             )}
 
@@ -1028,11 +1025,6 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
                     />
                   ))}
                 </div>
-                {stylistTouched && stylistError && (
-                  <div className="service-error">
-                    {stylistError}
-                  </div>
-                )}
               </div>
             )}
 
@@ -1109,47 +1101,47 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
                     <div className="confirm-ref-pill">
                       Ref. No.: {receiptData.id}
                     </div>
-                    <div className="confirm-reminder-box">
-                      <p className="confirm-reminder-text">
-                        Walk-in received and queued for<br/>
-                        the next available stylist
-                      </p>
-                    </div>
+  
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="appt-footer" style={{ display: "flex", gap: "12px" }}>
-            {step === 4 && (
-              <button 
-                className="appt-download-receipt-btn"
-                onClick={handleDownloadReceipt}
-                title="Download receipt as PDF"
-              >
-                <DownloadIcon />
-                Download Receipt
-              </button>
+          <div className="appt-footer" style={{ display: "flex", flexDirection: "column", gap: step === 2 && selectedServices.length === 0 ? "6px" : "12px" }}>
+            {step === 2 && selectedServices.length === 0 && (
+              <p className="service-error"> Please select one service</p>
             )}
-            {step !== 4 && (
+            <div style={{ display: "flex", flexDirection: "row", gap: "12px" }}>
+              {step === 4 && (
+                <button 
+                  className="appt-download-receipt-btn"
+                  onClick={handleDownloadReceipt}
+                  title="Download receipt as PDF"
+                >
+                  <DownloadIcon />
+                  Download Receipt
+                </button>
+              )}
+              {step !== 4 && (
+                <button 
+                  className="appt-cancel-btn"
+                  onClick={handleCancelClick}
+                  title="Cancel and close"
+                >
+                  Cancel
+                </button>
+              )}
               <button 
-                className="appt-cancel-btn"
-                onClick={handleCancelClick}
-                title="Cancel and close"
+                className="appt-continue-btn" 
+                onClick={step === 4 ? handleConfirm : handleContinue}
+                disabled={(step === 1 && (!!nameError || !walkInName.trim())) || (step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)}
+                style={((step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)) ? { opacity: 0.5, cursor: "not-allowed" } : { opacity: 1 }}
+                title={step === 4 ? "Confirm walk-in appointment" : step === 1 && !!nameError ? nameError : step === 2 && selectedServices.length === 0 ? "Please select at least one service" : step === 3 && !selectedStylist ? "Please select a stylist" : "Continue to next step"}
               >
-                Cancel
+                {step === 4 ? "Confirm" : "Continue"}
               </button>
-            )}
-            <button 
-              className="appt-continue-btn" 
-              onClick={step === 4 ? handleConfirm : handleContinue}
-              disabled={(step === 1 && (!!nameError || !walkInName.trim())) || (step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)}
-              style={((step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)) ? { opacity: 0.5, cursor: "not-allowed" } : { opacity: 1 }}
-              title={step === 4 ? "Confirm walk-in appointment" : step === 1 && !!nameError ? nameError : step === 2 && selectedServices.length === 0 ? "Please select at least one service" : step === 3 && !selectedStylist ? "Please select a stylist" : "Continue to next step"}
-            >
-              {step === 4 ? "Confirm" : "Continue"}
-            </button>
+            </div>
           </div>
         </div>
       </div>
