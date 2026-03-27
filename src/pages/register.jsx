@@ -200,6 +200,8 @@ export const Register = () => {
     }
   }, []);
 
+
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const newErrors = {};
@@ -321,25 +323,34 @@ export const Register = () => {
 
   const handleAppointmentContinue = (appointmentDetails) => {
     // Move to phase 2
-    setAppointmentData({ ...appointmentData, schedule: appointmentDetails });
+    setAppointmentData(appointmentData ? { ...appointmentData, schedule: appointmentDetails } : { schedule: appointmentDetails });
     setAppointmentPhase(2);
   };
 
   const handlePhase2Continue = (phase2Details) => {
     // Move to phase 3
-    setAppointmentData({ ...appointmentData, services: phase2Details });
+    setAppointmentData(appointmentData ? { ...appointmentData, services: phase2Details } : { services: phase2Details });
     setAppointmentPhase(3);
   };
 
   const handlePhase3Continue = (phase3Details) => {
+    // Safety check - if no stylist selected, return
+    if (!phase3Details || !phase3Details.stylist) {
+      setShowToast(true);
+      setToastMessage("Please select a stylist to continue");
+      return;
+    }
+    
     // Move to phase 4 (confirmation)
-    setAppointmentData({ ...appointmentData, stylist: phase3Details.stylist });
+    const updatedData = appointmentData ? { ...appointmentData, stylist: phase3Details.stylist } : { stylist: phase3Details.stylist };
+    setAppointmentData(updatedData);
     setAppointmentPhase(4);
   };
 
   const handleAppointmentBackPhase3 = (phase3Details) => {
     // Preserve the stylist selection from phase 3
-    setAppointmentData({ ...appointmentData, stylist: phase3Details?.stylist });
+    const updatedData = appointmentData ? { ...appointmentData, stylist: phase3Details?.stylist } : { stylist: phase3Details?.stylist };
+    setAppointmentData(updatedData);
     // Go back to phase 2 with preserved service selection
     setAppointmentPhase(2);
   };
@@ -406,58 +417,71 @@ export const Register = () => {
 
   // Format booking data for phase 4
   const getFormattedBooking = () => {
-    const stylistName = appointmentData?.stylist?.name || "Any Available Stylist";
-    const scheduleInfo = appointmentData?.schedule;
-    const dateTime = scheduleInfo?.dateTime || `${scheduleInfo?.date?.date || "Not Selected"} | ${scheduleInfo?.time || "N/A"}`;
-    
-    // Extract individual selected services from all categories
-    let allServices = [];
-    const servicesData = appointmentData?.services;
-    
-    if (servicesData) {
-      // Collect all individual selected services from each category
-      const selectedArrays = [
-        servicesData.selectedHairServices,
-        servicesData.selectedNailServices,
-        servicesData.selectedSkincareServices,
-        servicesData.selectedMassageServices,
-        servicesData.selectedPremiumServices
-      ];
+    try {
+      const stylistName = appointmentData?.stylist?.name || "Any Available Stylist";
+      const scheduleInfo = appointmentData?.schedule;
+      const dateTime = scheduleInfo?.dateTime || `${scheduleInfo?.date?.date || "Not Selected"} | ${scheduleInfo?.time || "N/A"}`;
       
-      selectedArrays.forEach(arr => {
-        if (Array.isArray(arr) && arr.length > 0) {
-          allServices = allServices.concat(arr);
-        }
-      });
+      // Extract individual selected services from all categories
+      let allServices = [];
+      const servicesData = appointmentData?.services;
       
-      // If no individual services found, try to get from main services array
-      if (allServices.length === 0) {
-        if (Array.isArray(servicesData)) {
-          allServices = servicesData;
-        } else if (servicesData.services && Array.isArray(servicesData.services)) {
-          allServices = servicesData.services;
+      if (servicesData) {
+        // Collect all individual selected services from each category
+        const selectedArrays = [
+          servicesData.selectedHairServices,
+          servicesData.selectedNailServices,
+          servicesData.selectedSkincareServices,
+          servicesData.selectedMassageServices,
+          servicesData.selectedPremiumServices
+        ];
+        
+        selectedArrays.forEach(arr => {
+          if (Array.isArray(arr) && arr.length > 0) {
+            allServices = allServices.concat(arr);
+          }
+        });
+        
+        // If no individual services found, try to get from main services array
+        if (allServices.length === 0) {
+          if (Array.isArray(servicesData)) {
+            allServices = servicesData;
+          } else if (servicesData.services && Array.isArray(servicesData.services)) {
+            allServices = servicesData.services;
+          }
         }
       }
+      
+      // Format each service with booking details
+      const formattedServices = allServices.map(serviceInfo => ({
+        title: serviceInfo.title || serviceInfo.name || serviceInfo.service || "Service",
+        duration: serviceInfo.duration || "N/A",
+        price: serviceInfo.price || "N/A",
+        est: serviceInfo.duration || "N/A"
+      }));
+      
+      // Return object with services array and common booking details
+      return {
+        services: formattedServices,
+        dateTime: dateTime,
+        name: fullName || "",
+        email: email || "",
+        phone: phone || "",
+        stylist: stylistName,
+        refNo: "18xxx-xxxx",
+      };
+    } catch (error) {
+      // Fallback if something goes wrong
+      return {
+        services: [],
+        dateTime: "Not Selected",
+        name: fullName || "",
+        email: email || "",
+        phone: phone || "",
+        stylist: "Any Available Stylist",
+        refNo: "18xxx-xxxx",
+      };
     }
-    
-    // Format each service with booking details
-    const formattedServices = allServices.map(serviceInfo => ({
-      title: serviceInfo.title || serviceInfo.name || serviceInfo.service || "Service",
-      duration: serviceInfo.duration || "N/A",
-      price: serviceInfo.price || "N/A",
-      est: serviceInfo.duration || "N/A"
-    }));
-    
-    // Return object with services array and common booking details
-    return {
-      services: formattedServices,
-      dateTime: dateTime,
-      name: formData?.fullName || "",
-      email: formData?.email || "",
-      phone: formData?.phone || "",
-      stylist: stylistName,
-      refNo: "18xxx-xxxx",
-    };
   };
 
   return (

@@ -152,6 +152,11 @@ const Divider = () => (
    MAIN COMPONENT — Phase 4
 ══════════════════════════════════════════ */
 export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) => {
+  // Safety check: if booking is missing, return null
+  if (!booking) {
+    return <div style={{ padding: "20px", textAlign: "center", color: "#988f81" }}>Loading booking details...</div>;
+  }
+
   // Handle both array (old format) and object (new format) for backward compatibility
   const isArrayFormat = Array.isArray(booking);
   const services = isArrayFormat ? booking : (booking?.services || []);
@@ -161,15 +166,15 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
   const mainService = services[0] || {};
   
   // Calculate total price and duration from all services
-  const totalPrice = services.reduce((sum, svc) => {
-    const price = parseFloat(svc.price?.toString().replace(/[^0-9.]/g, '') || 0);
+  const totalPrice = Array.isArray(services) && services.length > 0 ? services.reduce((sum, svc) => {
+    const price = parseFloat(svc?.price?.toString().replace(/[^0-9.]/g, '') || 0);
     return sum + price;
-  }, 0);
+  }, 0) : 0;
   
-  const totalDuration = services.reduce((sum, svc) => {
-    const mins = parseInt(svc.duration?.toString().match(/\d+/) || 0);
+  const totalDuration = Array.isArray(services) && services.length > 0 ? services.reduce((sum, svc) => {
+    const mins = parseInt(svc?.duration?.toString().match(/\d+/) || 0);
     return sum + mins;
-  }, 0);
+  }, 0) : 0;
 
   /* Generate printable receipt */
   const handleDownloadReceipt = () => {
