@@ -1097,6 +1097,21 @@
      Appointment Booking — Shared Shell
      (phases 1–4)
   ───────────────────────────────────── */
+  .appt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 9, 8, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    backdrop-filter: blur(2px);
+    padding: 20px;
+  }
+
   .appt-root {
     display: flex; flex-direction: column;
     width: 100%; max-width: 900px; min-width: 800px; height: 600px;
@@ -1163,19 +1178,41 @@
   .appt-section-sub   { font-family: 'Inter', sans-serif; font-weight: 400; font-size: 0.78rem; color: var(--color-tan); }
 
   .appt-footer {
+    display: flex; gap: 16px;
     flex-shrink: 0; padding: 14px 40px 20px;
     background: var(--bg-card);
     border-top: 1px solid rgba(152,143,129,0.1);
   }
+  .appt-cancel-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    flex: 1; height: 52px; border: 1.5px solid var(--color-tan); border-radius: 12px;
+    background: transparent; color: var(--color-tan);
+    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem;
+    cursor: pointer; transition: all 0.3s ease;
+  }
+  .appt-cancel-btn:hover { background: rgba(152,143,129,0.1); border-color: var(--color-white); color: var(--color-white); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(152,143,129,0.2); }
+  .appt-cancel-btn:active { transform: scale(0.98); }
+
+  .appt-download-receipt-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    flex: 1; height: 52px; border: 1.5px solid var(--color-amber); border-radius: 12px;
+    background: transparent; color: var(--color-amber);
+    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem;
+    cursor: pointer; transition: all 0.3s ease;
+  }
+  .appt-download-receipt-btn:hover { background: rgba(221,144,29,0.1); border-color: var(--color-amber-dark); color: var(--color-amber-dark); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(221,144,29,0.2); }
+  .appt-download-receipt-btn:active { transform: scale(0.98); }
+
   .appt-continue-btn {
     display: flex; align-items: center; justify-content: center;
-    width: 100%; height: 52px; border: none; border-radius: 12px;
+    flex: 1; height: 52px; border: none; border-radius: 12px;
     background: var(--color-amber); color: var(--color-black);
     font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem;
     cursor: pointer; transition: all 0.3s ease;
   }
-  .appt-continue-btn:hover { background: var(--color-amber-dark); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(221,144,29,0.4); }
-  .appt-continue-btn:active { transform: scale(0.98); }
+  .appt-continue-btn:hover:not(:disabled) { background: var(--color-amber-dark); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(221,144,29,0.4); }
+  .appt-continue-btn:active:not(:disabled) { transform: scale(0.98); }
+  .appt-continue-btn:disabled { background: rgba(221,144,29,0.4); color: rgba(26,15,0,0.5); cursor: not-allowed; opacity: 0.6; }
 
   /* ─────────────────────────────────────
      Phase 1 — Date & Time Selection
@@ -3513,6 +3550,36 @@
 
   .live-add-walkin-btn:hover { background: var(--color-amber-dark); }
 
+  /* Add Walk-in button (small in header) */
+  .live-add-walkin-btn-small {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: var(--color-amber);
+    border: none;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--color-black);
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .live-add-walkin-btn-small:hover {
+    background: rgb(221, 144, 29);
+  }
+
+  /* Button container for side-by-side layout */
+  .dash-panel-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
   /* chevron */
   .live-queue-chevron {
     display: flex;
@@ -4302,4 +4369,424 @@
     border-color: rgba(221, 144, 29, 0.5);
     background: rgba(221, 144, 29, 0.07);
     color: var(--color-amber);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Add Walk-in Modal Styles
+     ═══════════════════════════════════════════════════════════════════ */
+
+  .walkin-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+
+  .walkin-modal-content {
+    background: var(--bg-dark);
+    border: 1px solid rgba(152, 143, 129, 0.3);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 450px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    animation: modal-fade-in 0.3s ease;
+  }
+
+  @keyframes modal-fade-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .walkin-modal-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: var(--color-white);
+    margin: 0 0 24px 0;
+  }
+
+  /* ── Form Styles ── */
+  .walkin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .walkin-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .walkin-form-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-light);
+  }
+
+  .walkin-form-input,
+  .walkin-form-select {
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(152, 143, 129, 0.08);
+    border: 1px solid rgba(152, 143, 129, 0.3);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    color: var(--color-light);
+    transition: all 0.2s;
+  }
+
+  .walkin-form-input:focus,
+  .walkin-form-select:focus {
+    background: rgba(152, 143, 129, 0.12);
+    border-color: rgba(221, 144, 29, 0.5);
+    box-shadow: 0 0 0 3px rgba(221, 144, 29, 0.1);
+  }
+
+  .walkin-form-select option {
+    background: var(--bg-secondary);
+    color: var(--color-light);
+  }
+
+  /* ── Receipt Styles ── */
+  .walkin-receipt {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .walkin-receipt-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--color-white);
+    margin: 0;
+    text-align: center;
+  }
+
+  .walkin-receipt-divider {
+    height: 1px;
+    background: rgba(152, 143, 129, 0.3);
+  }
+
+  .walkin-receipt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(152, 143, 129, 0.15);
+  }
+
+  .walkin-receipt-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--color-tan);
+  }
+
+  .walkin-receipt-value {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-light);
+    text-align: right;
+    max-width: 50%;
+    word-wrap: break-word;
+  }
+
+  .walkin-receipt-price {
+    color: var(--color-amber);
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  /* ── Modal Buttons ── */
+  .walkin-modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+  }
+
+  .walkin-modal-btn {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .walkin-modal-cancel {
+    background: rgba(152, 143, 129, 0.15);
+    color: var(--color-tan);
+    border: 1px solid rgba(152, 143, 129, 0.3);
+  }
+
+  .walkin-modal-cancel:hover {
+    background: rgba(152, 143, 129, 0.25);
+  }
+
+  .walkin-modal-submit {
+    background: var(--color-amber);
+    color: var(--color-black);
+    border: none;
+  }
+
+  .walkin-modal-submit:hover {
+    background: rgb(221, 144, 29);
+    transform: translateY(-2px);
+  }
+
+  .walkin-modal-confirm {
+    background: var(--color-amber);
+    color: var(--color-black);
+    border: none;
+  }
+
+  .walkin-modal-confirm:hover {
+    background: rgb(221, 144, 29);
+    transform: translateY(-2px);
+  }
+
+  /* ╔═══════════════════════════════════════ 
+     ║  ADD WALK-IN MODAL - Refactored
+     ╚═══════════════════════════════════════ */
+
+  /* ── Name Input Group ── */
+  .walkin-name-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .walkin-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-light);
+  }
+
+  .walkin-input {
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(14, 13, 11, 0.8);
+    border: 1px solid rgba(152, 143, 129, 0.4);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    color: var(--color-light);
+    caret-color: var(--color-amber);
+    transition: all 0.2s;
+  }
+
+  .walkin-input::placeholder {
+    color: rgba(152, 143, 129, 0.6);
+  }
+
+  .walkin-input:focus {
+    background: rgba(14, 13, 11, 0.9);
+    border-color: var(--color-amber);
+    box-shadow: 0 0 0 3px rgba(221, 144, 29, 0.15);
+  }
+
+  .walkin-input.error {
+    border-color: #ef4444;
+    background: rgba(14, 13, 11, 0.9);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+  }
+
+  .walkin-input.error:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+  }
+
+  .walkin-error {
+    color: #ef4444;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .service-error {
+    color: #ef4444;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ── Categories Grid ── */
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .category-btn {
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(152, 143, 129, 0.08);
+    border: 2px solid rgba(152, 143, 129, 0.15);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--color-tan);
+  }
+
+  .category-btn:hover {
+    background: rgba(152, 143, 129, 0.12);
+    border-color: rgba(152, 143, 129, 0.3);
+  }
+
+  .category-btn.selected {
+    background: rgba(221, 144, 29, 0.15);
+    border-color: var(--color-amber);
+    color: var(--color-light);
+  }
+
+  .category-icon {
+    font-size: 24px;
+  }
+
+  .category-label {
+    display: block;
+  }
+
+  /* ── Stylists Grid ── */
+  .stylists-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .stylist-btn {
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(152, 143, 129, 0.08);
+    border: 2px solid rgba(152, 143, 129, 0.15);
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--color-tan);
+    transition: all 0.15s;
+  }
+
+  .stylist-btn:hover {
+    background: rgba(152, 143, 129, 0.12);
+    border-color: rgba(152, 143, 129, 0.3);
+  }
+
+  .stylist-btn.selected {
+    background: var(--color-amber);
+    border-color: var(--color-amber);
+    color: var(--color-black);
+    font-weight: 600;
+  }
+
+  /* ── Receipt Section ── */
+  .receipt-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .receipt-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 10px;
+    background: rgba(152, 143, 129, 0.06);
+    border: 1px solid rgba(152, 143, 129, 0.2);
+  }
+
+  .receipt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+  }
+
+  .receipt-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--color-tan);
+  }
+
+  .receipt-value {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-light);
+    text-align: right;
+    max-width: 50%;
+    word-break: break-word;
+  }
+
+  .receipt-divider {
+    height: 1px;
+    background: rgba(152, 143, 129, 0.2);
+  }
+
+  /* ── Section Headings ── */
+  .appt-section-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .appt-section-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--color-white);
+    margin: 0;
+  }
+
+  .appt-section-sub {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.85rem;
+    color: var(--color-tan);
+    margin: 0;
   }

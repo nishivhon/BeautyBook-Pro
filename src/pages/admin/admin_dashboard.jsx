@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { AddWalkInModal } from "../../components/modal/add_walkin";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -33,6 +34,12 @@ const SettingsIcon = ({ size = 15, color = "#fff" }) => (
 const ChevronRightIcon = ({ size = 14, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <path d="M9 18l6-6-6-6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const PlusIcon = ({ size = 16, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M12 5v14M5 12h14" stroke={color} strokeWidth="2" strokeLinecap="round" />
   </svg>
 );
 
@@ -249,7 +256,7 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
   </>
 );
 
-const LiveQueue = () => {
+const LiveQueue = ({ onOpenWalkInModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   const QUEUE_SECTIONS = [
@@ -325,12 +332,21 @@ const LiveQueue = () => {
             Live
           </span>
         </div>
-        <button 
-          className="dash-panel-manage-btn"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {isExpanded ? "See less" : "See more"}
-        </button>
+        <div className="dash-panel-buttons">
+          <button 
+            className="live-add-walkin-btn-small"
+            onClick={onOpenWalkInModal}
+          >
+            <PlusIcon size={10} color="#000" />
+            Add Walk-in
+          </button>
+          <button 
+            className="dash-panel-manage-btn"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? "See less" : "See more"}
+          </button>
+        </div>
       </div>
 
       {/* Sections */}
@@ -420,12 +436,19 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboard = ({ date }) => {
   const navigate = useNavigate();
+  const [showWalkInModal, setShowWalkInModal] = useState(false);
 
   const handleLogout = () => {
     // Clear operator session
     logoutOperator();
     // Redirect to home
     navigate("/");
+  };
+
+  const handleAddWalkIn = (walkInData) => {
+    console.log("Walk-in added:", walkInData);
+    // Here you can integrate with your API or state management
+    // For now, just logging the data
   };
 
   return (
@@ -436,7 +459,7 @@ export const AdminDashboard = ({ date }) => {
         <PageHeader date={date} />
 
         <div className="dash-content-grid">
-          <LiveQueue />
+          <LiveQueue onOpenWalkInModal={() => setShowWalkInModal(true)} />
 
           <div className="dash-sidebar">
             <StaffStatus />
@@ -445,6 +468,12 @@ export const AdminDashboard = ({ date }) => {
           </div>
         </div>
       </main>
+
+      <AddWalkInModal 
+        isOpen={showWalkInModal}
+        onClose={() => setShowWalkInModal(false)}
+        onSubmit={handleAddWalkIn}
+      />
     </div>
   );
 };

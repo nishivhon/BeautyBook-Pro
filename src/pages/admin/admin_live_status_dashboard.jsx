@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { AddWalkInModal } from "../../components/modal/add_walkin";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -140,7 +141,7 @@ const QUEUE_SECTIONS = [
     label: "Up Next",
     items: [
       { type: "waiting",   number: 1, name: "Anna Reyes",   service: "Full Service • Mike S.",     statusTop: "20 mins", statusSub: "Waiting"   },
-      { type: "cancelled", number: 2, name: "Miguel Torres",service: "Haircut • Available Stylist", statusTop: null,      statusSub: "Cancelled", showWalkin: true },
+      { type: "cancelled", number: 2, name: "Miguel Torres",service: "Haircut • Available Stylist", statusTop: null,      statusSub: "Cancelled" },
       { type: "waiting",   number: 3, name: "James Wilson",  service: "Beard Trim • Carlos R.",    statusTop: "35 mins", statusSub: "Waiting"   },
     ],
   },
@@ -148,7 +149,7 @@ const QUEUE_SECTIONS = [
     label: "On Deck",
     items: [
       { type: "waiting",   number: 4, name: "Sofia Rivera", service: "Full Service • Mike S.",  statusTop: "1hr 10 mins", statusSub: "Waiting"   },
-      { type: "cancelled", number: 5, name: "Leo Cruz",     service: "Haircut • John D.",       statusTop: null,          statusSub: "Cancelled", showWalkin: true },
+      { type: "cancelled", number: 5, name: "Leo Cruz",     service: "Haircut • John D.",       statusTop: null,          statusSub: "Cancelled" },
     ],
   },
 ];
@@ -255,7 +256,7 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ type, number, name, service, statusTop, statusSub, showWalkin }) => {
+const QueueItem = ({ type, number, name, service, statusTop, statusSub }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -279,20 +280,10 @@ const QueueItem = ({ type, number, name, service, statusTop, statusSub, showWalk
       </div>
 
       <div className="live-queue-right">
-        {showWalkin ? (
-          <div className="live-queue-status-col">
-            <button className="live-add-walkin-btn">
-              <PlusIcon size={10} color="#000" />
-              Add Walk-in
-            </button>
-            <span className="live-status-red">{statusSub}</span>
-          </div>
-        ) : (
-          <div className="live-queue-status-col">
-            <span className={isActive ? "live-status-now" : "live-status-wait"}>{statusTop}</span>
-            <span className="live-status-sub">{statusSub}</span>
-          </div>
-        )}
+        <div className="live-queue-status-col">
+          <span className={isActive ? "live-status-now" : isCancelled ? "live-status-red" : "live-status-wait"}>{statusTop}</span>
+          <span className={isCancelled ? "live-status-red" : "live-status-sub"}>{statusSub}</span>
+        </div>
         <div className="live-queue-chevron">
           <ChevronRightIcon size={13} color="currentColor" />
         </div>
@@ -301,8 +292,10 @@ const QueueItem = ({ type, number, name, service, statusTop, statusSub, showWalk
   );
 };
 
+
+
 /* ── Live Queue panel ── */
-const LiveQueuePanel = () => {
+const LiveQueuePanel = ({ onOpenWalkInModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
@@ -316,12 +309,22 @@ const LiveQueuePanel = () => {
             Live
           </span>
         </div>
-        <button 
-          className="dash-panel-manage-btn"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {isExpanded ? "See less" : "See more"}
-        </button>
+        <div className="dash-panel-buttons">
+          <button 
+            className="live-add-walkin-btn-small"
+            onClick={onOpenWalkInModal}
+            title="Add a walk-in customer"
+          >
+            <PlusIcon size={10} color="#000" />
+            Add Walk-in
+          </button>
+          <button 
+            className="dash-panel-manage-btn"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? "See less" : "See more"}
+          </button>
+        </div>
       </div>
 
       {/* Sections */}
@@ -427,10 +430,17 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardLiveStatus = ({ date }) => {
   const navigate = useNavigate();
+  const [showWalkInModal, setShowWalkInModal] = useState(false);
 
   const handleLogout = () => {
     logoutOperator();
     navigate("/");
+  };
+
+  const handleAddWalkIn = (walkInData) => {
+    console.log("Walk-in added:", walkInData);
+    // Here you can integrate with your API or state management
+    // For now, just logging the data
   };
 
   return (
@@ -442,7 +452,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
 
         <div className="live-page-grid">
           {/* Left — Live Queue */}
-          <LiveQueuePanel />
+          <LiveQueuePanel onOpenWalkInModal={() => setShowWalkInModal(true)} />
 
           {/* Right — Schedule + Analytics */}
           <div className="live-sidebar">
@@ -451,6 +461,13 @@ export const AdminDashboardLiveStatus = ({ date }) => {
           </div>
         </div>
       </main>
+
+      {/* Walk-in Modal - Rendered at page level for proper positioning */}
+      <AddWalkInModal 
+        isOpen={showWalkInModal}
+        onClose={() => setShowWalkInModal(false)}
+        onSubmit={handleAddWalkIn}
+      />
     </div>
   );
 };
