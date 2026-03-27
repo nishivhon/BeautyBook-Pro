@@ -249,79 +249,106 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
   </>
 );
 
-const LiveQueue = () => (
-  <div className="dash-panel">
-    <div className="dash-panel-header">
-      <div className="dash-panel-title-row">
-        <h2 className="dash-panel-title">Live Queue</h2>
-        <span className="dash-live-badge">
-          <span className="dash-live-dot" />
-          Live
-        </span>
-      </div>
-    </div>
+const LiveQueue = () => {
+  const [isExpanded, setIsExpanded] = useState(true);
 
-    <div>
-      <p className="dash-queue-section-label">Current</p>
-      <div className="dash-queue-group">
-        {CURRENT_QUEUE.map((item, i) => (
-          <div key={i} className="dash-queue-row">
-            <div className="dash-queue-left">
-              <div className="dash-queue-icon-box">
-                <ScissorsIcon size={18} color="#000" />
-              </div>
-              <div className="dash-queue-info">
-                <span className="dash-queue-name">{item.name}</span>
-                <span className="dash-queue-service">{item.service}</span>
-              </div>
+  const QUEUE_SECTIONS = [
+    {
+      label: "Current",
+      items: [
+        { type: "active", name: "Juan Dela Cruz", service: "Haircut • Mike S.",        statusTop: "Now",      statusSub: "In Progress" },
+        { type: "active", name: "Pedro Santos",   service: "Beard Trim • John D.",    statusTop: "Now",      statusSub: "In Progress" },
+        { type: "active", name: "Maria Garcia",   service: "Hair Color • Carlos R.",  statusTop: "Now",      statusSub: "In Progress" },
+      ],
+    },
+    {
+      label: "Up Next",
+      items: [
+        { type: "waiting",   number: 1, name: "Anna Reyes",   service: "Full Service • Mike S.",     statusTop: "20 mins", statusSub: "Waiting"   },
+        { type: "cancelled", number: 2, name: "Miguel Torres",service: "Haircut • Available Stylist", statusTop: null,      statusSub: "Cancelled" },
+        { type: "waiting",   number: 3, name: "James Wilson",  service: "Beard Trim • Carlos R.",    statusTop: "35 mins", statusSub: "Waiting"   },
+      ],
+    },
+    {
+      label: "On Deck",
+      items: [
+        { type: "waiting",   number: 4, name: "Sofia Rivera", service: "Full Service • Mike S.",  statusTop: "1hr 10 mins", statusSub: "Waiting"   },
+        { type: "cancelled", number: 5, name: "Leo Cruz",     service: "Haircut • John D.",       statusTop: null,          statusSub: "Cancelled" },
+      ],
+    },
+  ];
+
+  const QueueItem = ({ type, number, name, service, statusTop, statusSub }) => {
+    const isActive = type === "active";
+    const isCancelled = type === "cancelled";
+    const rowClass = isActive ? "live-queue-row-active"
+                   : isCancelled ? "live-queue-row-cancelled"
+                   : "live-queue-row-waiting";
+
+    return (
+      <div className={rowClass}>
+        <div className="live-queue-left">
+          {isActive ? (
+            <div className="live-queue-icon-box">
+              <ScissorsIcon size={17} color="#000" />
             </div>
-            <div className="dash-queue-right">
-              <div className="dash-queue-status-col">
-                <span className="dash-queue-status-now">{item.status}</span>
-                <span className="dash-queue-sub">{item.sub}</span>
-              </div>
-              <div className="dash-queue-chevron">
-                <ChevronRightIcon size={13} color="currentColor" />
-              </div>
+          ) : (
+            <div className="live-queue-number-box">{number}</div>
+          )}
+          <div className="live-queue-info">
+            <span className="live-queue-name">{name}</span>
+            <span className="live-queue-service">{service}</span>
+          </div>
+        </div>
+
+        <div className="live-queue-right">
+          <div className="live-queue-status-col">
+            <span className={isActive ? "live-status-now" : isCancelled ? "live-status-red" : "live-status-wait"}>{statusTop}</span>
+            <span className={isCancelled ? "live-status-red" : "live-status-sub"}>{statusSub}</span>
+          </div>
+          <div className="live-queue-chevron">
+            <ChevronRightIcon size={13} color="currentColor" />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="live-queue-panel">
+      {/* Header */}
+      <div className="dash-panel-header">
+        <div className="dash-panel-title-row">
+          <h2 className="dash-panel-title">Live Queue</h2>
+          <span className="dash-live-badge">
+            <span className="dash-live-dot" />
+            Live
+          </span>
+        </div>
+        <button 
+          className="dash-panel-manage-btn"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? "See less" : "See more"}
+        </button>
+      </div>
+
+      {/* Sections */}
+      <div className={isExpanded ? "live-queue-scroll" : "live-queue-scroll-limited"}>
+        {QUEUE_SECTIONS.map((section, si) => (
+          <div key={si}>
+            <p className="live-section-label">{section.label}</p>
+            <div className="live-queue-group">
+              {section.items.map((item, ii) => (
+                <QueueItem key={ii} {...item} />
+              ))}
             </div>
           </div>
         ))}
       </div>
     </div>
-
-    <div>
-      <p className="dash-queue-section-label">Up Next</p>
-      <div className="dash-queue-group">
-        {NEXT_QUEUE.map((item, i) => (
-          <div key={i} className="dash-queue-row-next">
-            <div className="dash-queue-left">
-              <div className="dash-queue-number-box">{item.number}</div>
-              <div className="dash-queue-info">
-                <span className="dash-queue-name">{item.name}</span>
-                <span className="dash-queue-service">{item.service}</span>
-              </div>
-            </div>
-            <div className="dash-queue-right">
-              <div className="dash-queue-status-col">
-                <span className="dash-queue-status-wait">{item.wait}</span>
-                <span className="dash-queue-sub">{item.sub}</span>
-              </div>
-              <div className="dash-queue-chevron">
-                <ChevronRightIcon size={13} color="currentColor" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <div className="dash-queue-divider" />
-    <div className="dash-queue-footer">
-      <span className="dash-queue-count">Showing 4 of 8 in queue</span>
-      <button className="dash-view-all-btn">View All Queue</button>
-    </div>
-  </div>
-);
+  );
+};
 
 const StaffStatus = () => (
   <div className="dash-sidebar-panel">
