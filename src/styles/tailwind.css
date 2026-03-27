@@ -3021,6 +3021,59 @@
     color: var(--color-amber);
   }
 
+  /* ── Services scroll containers ── */
+  .svc-services-scroll {
+    max-height: 700px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .svc-services-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .svc-services-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .svc-services-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-amber);
+    border-radius: 3px;
+  }
+
+  .svc-services-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgb(221, 144, 29);
+  }
+
+  .svc-services-scroll-limited {
+    max-height: 320px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .svc-services-scroll-limited::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .svc-services-scroll-limited::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .svc-services-scroll-limited::-webkit-scrollbar-thumb {
+    background: var(--color-amber);
+    border-radius: 3px;
+  }
+
+  .svc-services-scroll-limited::-webkit-scrollbar-thumb:hover {
+    background: rgb(221, 144, 29);
+  }
+
   /* ── Service category divider ── */
   .svc-category-divider {
     width: 100%;
@@ -3511,6 +3564,59 @@
 
   .live-view-all-btn:hover { color: var(--color-amber); }
 
+  /* ── Live Queue scroll containers ── */
+  .live-queue-scroll {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .live-queue-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .live-queue-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .live-queue-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-amber);
+    border-radius: 3px;
+  }
+
+  .live-queue-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgb(221, 144, 29);
+  }
+
+  .live-queue-scroll-limited {
+    max-height: 280px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .live-queue-scroll-limited::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .live-queue-scroll-limited::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .live-queue-scroll-limited::-webkit-scrollbar-thumb {
+    background: var(--color-amber);
+    border-radius: 3px;
+  }
+
+  .live-queue-scroll-limited::-webkit-scrollbar-thumb:hover {
+    background: rgb(221, 144, 29);
+  }
+
   /* ── Today's Schedule panel (right) ── */
   .live-schedule-panel {
     display: flex;
@@ -3527,7 +3633,15 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     margin-bottom: 4px;
+  }
+
+  .live-schedule-header > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
   }
 
   .live-schedule-title {
@@ -3544,6 +3658,20 @@
     font-size: 0.78rem;
     color: var(--color-tan);
   }
+
+  .live-schedule-toggle-btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--color-tan);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+  }
+
+  .live-schedule-toggle-btn:hover { color: var(--color-amber); }
 
   /* schedule item row */
   .live-schedule-list {
@@ -3662,6 +3790,59 @@
   }
 
   .live-schedule-icon-btn:hover { background: rgba(221, 144, 29, 0.15); }
+
+  /* ── Schedule scroll containers ── */
+  .live-schedule-scroll {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .live-schedule-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .live-schedule-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .live-schedule-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-amber);
+    border-radius: 3px;
+  }
+
+  .live-schedule-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgb(221, 144, 29);
+  }
+
+  .live-schedule-scroll-limited {
+    max-height: 160px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .live-schedule-scroll-limited::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .live-schedule-scroll-limited::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .live-schedule-scroll-limited::-webkit-scrollbar-thumb {
+    background: var(--color-amber);
+    border-radius: 3px;
+  }
+
+  .live-schedule-scroll-limited::-webkit-scrollbar-thumb:hover {
+    background: rgb(221, 144, 29);
+  }
 
   /* status dot next to stylist name */
   .live-sched-dot {

@@ -381,16 +381,17 @@ const SchedulePanel = ({ date = "Dec 7, 2024" }) => {
   return (
     <div className="live-schedule-panel">
       <div className="live-schedule-header">
-        <h3 className="live-schedule-title">Today's Schedule</h3>
-        <span className="live-schedule-date">{date}</span>
+        <div>
+          <h3 className="live-schedule-title">Today's Schedule</h3>
+          <span className="live-schedule-date">{date}</span>
+        </div>
+        <button 
+          className="live-schedule-toggle-btn"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? "See less" : "See more"}
+        </button>
       </div>
-
-      <button 
-        className="live-schedule-toggle-btn"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        {isExpanded ? "See less" : "See more"}
-      </button>
 
       <div className={isExpanded ? "live-schedule-scroll" : "live-schedule-scroll-limited"}>
         {SCHEDULE.map((item, i) => (
