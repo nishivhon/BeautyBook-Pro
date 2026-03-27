@@ -6,6 +6,7 @@ import { LogIn } from './pages/login'
 import { AdminDashboard } from './pages/admin/admin_dashboard'
 import { AdminDashboardServices } from './pages/admin/admin_services_dashboard'
 import { AdminDashboardLiveStatus } from './pages/admin/admin_live_status_dashboard'
+import { AdminDashboardStaffStatus } from './pages/admin/admin_staff_status_dashboard'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function App() {
@@ -36,6 +37,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminDashboardLiveStatus />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/dashboard/staff-status"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboardStaffStatus />
             </ProtectedRoute>
           }
         />
