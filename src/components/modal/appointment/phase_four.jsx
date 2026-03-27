@@ -502,7 +502,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
       </div>
 
       {/* ── Footer CTA ── */}
-      <div className="appt-footer" style={{ display: "flex", gap: "12px" }}>
+      <div className="appt-footer" style={{ display: "flex", flexDirection: "row", gap: "12px" }}>
         <button 
           className="appt-download-receipt-btn"
           onClick={handleDownloadReceipt}

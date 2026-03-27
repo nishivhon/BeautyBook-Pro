@@ -258,66 +258,222 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
 
 const LiveQueue = ({ onOpenWalkInModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [expandedItemId, setExpandedItemId] = useState(null);
 
   const QUEUE_SECTIONS = [
     {
       label: "Current",
       items: [
-        { type: "active", name: "Juan Dela Cruz", service: "Haircut • Mike S.",        statusTop: "Now",      statusSub: "In Progress" },
-        { type: "active", name: "Pedro Santos",   service: "Beard Trim • John D.",    statusTop: "Now",      statusSub: "In Progress" },
-        { type: "active", name: "Maria Garcia",   service: "Hair Color • Carlos R.",  statusTop: "Now",      statusSub: "In Progress" },
+        { 
+          id: 1,
+          type: "active", 
+          name: "Juan Dela Cruz", 
+          service: "Haircut • Mike S.",      
+          statusTop: "Now", 
+          statusSub: "In Progress",
+          details: {
+            serviceSelected: "Hair cuts",
+            currentService: "Hair cuts",
+            startTime: "10:15 AM",
+            estimatedTime: "30 mins"
+          }
+        },
+        { 
+          id: 2,
+          type: "active", 
+          name: "Pedro Santos",   
+          service: "Beard Trim • John D.",   
+          statusTop: "Now", 
+          statusSub: "In Progress",
+          details: {
+            serviceSelected: "Beard trimming",
+            currentService: "Beard trimming",
+            startTime: "10:20 AM",
+            estimatedTime: "25 mins"
+          }
+        },
+        { 
+          id: 3,
+          type: "active", 
+          name: "Maria Garcia",   
+          service: "Hair Color • Carlos R.",  
+          statusTop: "Now", 
+          statusSub: "In Progress",
+          details: {
+            serviceSelected: "Hair color",
+            currentService: "Hair color",
+            startTime: "10:00 AM",
+            estimatedTime: "60 mins"
+          }
+        },
       ],
     },
     {
       label: "Up Next",
       items: [
-        { type: "waiting",   number: 1, name: "Anna Reyes",   service: "Full Service • Mike S.",     statusTop: "20 mins", statusSub: "Waiting"   },
-        { type: "cancelled", number: 2, name: "Miguel Torres",service: "Haircut • Available Stylist", statusTop: null,      statusSub: "Cancelled" },
-        { type: "waiting",   number: 3, name: "James Wilson",  service: "Beard Trim • Carlos R.",    statusTop: "35 mins", statusSub: "Waiting"   },
+        { 
+          id: 4,
+          type: "waiting",   
+          number: 1, 
+          name: "Anna Reyes",   
+          service: "Full Service • Mike S.",     
+          statusTop: "20 mins", 
+          statusSub: "Waiting",
+          details: {
+            serviceSelected: "Hair cuts, Hair color",
+            currentService: "Pending",
+            startTime: "10:45 AM",
+            estimatedTime: "90 mins"
+          }
+        },
+        { 
+          id: 5,
+          type: "cancelled", 
+          number: 2, 
+          name: "Miguel Torres",
+          service: "Haircut • Available Stylist", 
+          statusTop: null,      
+          statusSub: "Cancelled",
+          details: {
+            serviceSelected: "Hair cuts",
+            currentService: "Cancelled",
+            startTime: "N/A",
+            estimatedTime: "N/A"
+          }
+        },
+        { 
+          id: 6,
+          type: "waiting",   
+          number: 3, 
+          name: "James Wilson",  
+          service: "Beard Trim • Carlos R.",    
+          statusTop: "35 mins", 
+          statusSub: "Waiting",
+          details: {
+            serviceSelected: "Beard trimming",
+            currentService: "Pending",
+            startTime: "11:00 AM",
+            estimatedTime: "25 mins"
+          }
+        },
       ],
     },
     {
       label: "On Deck",
       items: [
-        { type: "waiting",   number: 4, name: "Sofia Rivera", service: "Full Service • Mike S.",  statusTop: "1hr 10 mins", statusSub: "Waiting"   },
-        { type: "cancelled", number: 5, name: "Leo Cruz",     service: "Haircut • John D.",       statusTop: null,          statusSub: "Cancelled" },
+        { 
+          id: 7,
+          type: "waiting",   
+          number: 4, 
+          name: "Sofia Rivera", 
+          service: "Full Service • Mike S.",  
+          statusTop: "1hr 10 mins", 
+          statusSub: "Waiting",
+          details: {
+            serviceSelected: "Manicure, Pedicure",
+            currentService: "Pending",
+            startTime: "11:30 AM",
+            estimatedTime: "120 mins"
+          }
+        },
+        { 
+          id: 8,
+          type: "cancelled", 
+          number: 5, 
+          name: "Leo Cruz",     
+          service: "Haircut • John D.",       
+          statusTop: null,          
+          statusSub: "Cancelled",
+          details: {
+            serviceSelected: "Hair cuts",
+            currentService: "Cancelled",
+            startTime: "N/A",
+            estimatedTime: "N/A"
+          }
+        },
       ],
     },
   ];
 
-  const QueueItem = ({ type, number, name, service, statusTop, statusSub }) => {
+  const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details }) => {
     const isActive = type === "active";
     const isCancelled = type === "cancelled";
     const rowClass = isActive ? "live-queue-row-active"
                    : isCancelled ? "live-queue-row-cancelled"
                    : "live-queue-row-waiting";
+    const isItemExpanded = expandedItemId === id;
+
+    const handleChevronClick = () => {
+      setExpandedItemId(isItemExpanded ? null : id);
+    };
 
     return (
-      <div className={rowClass}>
-        <div className="live-queue-left">
-          {isActive ? (
-            <div className="live-queue-icon-box">
-              <ScissorsIcon size={17} color="#000" />
+      <>
+        <div className={rowClass}>
+          <div className="live-queue-left">
+            {isActive ? (
+              <div className="live-queue-icon-box">
+                <ScissorsIcon size={17} color="#000" />
+              </div>
+            ) : (
+              <div className="live-queue-number-box">{number}</div>
+            )}
+            <div className="live-queue-info">
+              <span className="live-queue-name">{name}</span>
+              <span className="live-queue-service">{service}</span>
             </div>
-          ) : (
-            <div className="live-queue-number-box">{number}</div>
-          )}
-          <div className="live-queue-info">
-            <span className="live-queue-name">{name}</span>
-            <span className="live-queue-service">{service}</span>
+          </div>
+
+          <div className="live-queue-right">
+            <div className="live-queue-status-col">
+              <span className={isActive ? "live-status-now" : isCancelled ? "live-status-red" : "live-status-wait"}>{statusTop}</span>
+              <span className={isCancelled ? "live-status-red" : "live-status-sub"}>{statusSub}</span>
+            </div>
+            <button 
+              className="live-queue-chevron"
+              onClick={handleChevronClick}
+              style={{
+                transform: isItemExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                transition: "transform 0.3s ease"
+              }}
+            >
+              <ChevronRightIcon size={13} color="currentColor" />
+            </button>
           </div>
         </div>
 
-        <div className="live-queue-right">
-          <div className="live-queue-status-col">
-            <span className={isActive ? "live-status-now" : isCancelled ? "live-status-red" : "live-status-wait"}>{statusTop}</span>
-            <span className={isCancelled ? "live-status-red" : "live-status-sub"}>{statusSub}</span>
+        {isItemExpanded && (
+          <div style={{
+            padding: "12px 16px",
+            backgroundColor: "rgba(26, 15, 0, 0.15)",
+            borderLeft: "3px solid #dd901d",
+            marginBottom: "8px",
+            borderRadius: "0 8px 8px 0"
+          }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div>
+                <span style={{ fontSize: "12px", color: "#dd901d", fontWeight: "600", display: "block", marginBottom: "4px", fontFamily: "Inter, sans-serif" }}>Service Selected</span>
+                <span style={{ fontSize: "14px", color: "#f5f5f5", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>{details.serviceSelected}</span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: "12px", color: "#dd901d", fontWeight: "600", display: "block", marginBottom: "4px", fontFamily: "Inter, sans-serif" }}>Current Service</span>
+                <span style={{ fontSize: "14px", color: "#f5f5f5", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>{details.currentService}</span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: "12px", color: "#dd901d", fontWeight: "600", display: "block", marginBottom: "4px", fontFamily: "Inter, sans-serif" }}>Starting Time</span>
+                <span style={{ fontSize: "14px", color: "#f5f5f5", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>{details.startTime}</span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: "12px", color: "#dd901d", fontWeight: "600", display: "block", marginBottom: "4px", fontFamily: "Inter, sans-serif" }}>Estimated Time</span>
+                <span style={{ fontSize: "14px", color: "#f5f5f5", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>{details.estimatedTime}</span>
+              </div>
+            </div>
           </div>
-          <div className="live-queue-chevron">
-            <ChevronRightIcon size={13} color="currentColor" />
-          </div>
-        </div>
-      </div>
+        )}
+      </>
     );
   };
 
@@ -366,12 +522,19 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
   );
 };
 
-const StaffStatus = () => (
-  <div className="dash-sidebar-panel">
-    <div className="dash-sidebar-header">
-      <h3 className="dash-sidebar-title">Staff Status</h3>
-      <button className="dash-panel-manage-btn">Manage</button>
-    </div>
+const StaffStatus = () => {
+  const navigate = useNavigate();
+
+  const handleManageClick = () => {
+    navigate("/admin/dashboard/staff-status");
+  };
+
+  return (
+    <div className="dash-sidebar-panel">
+      <div className="dash-sidebar-header">
+        <h3 className="dash-sidebar-title">Staff Status</h3>
+        <button className="dash-panel-manage-btn" onClick={handleManageClick}>Manage</button>
+      </div>
     <div className="dash-staff-list">
       {STAFF.map((s, i) => (
         <div key={i} className="dash-staff-row">
@@ -393,7 +556,8 @@ const StaffStatus = () => (
       ))}
     </div>
   </div>
-);
+  );
+};
 
 const SummaryPanel = () => (
   <div className="dash-sidebar-panel">
@@ -459,7 +623,9 @@ export const AdminDashboard = ({ date }) => {
         <PageHeader date={date} />
 
         <div className="dash-content-grid">
-          <LiveQueue onOpenWalkInModal={() => setShowWalkInModal(true)} />
+          <LiveQueue 
+            onOpenWalkInModal={() => setShowWalkInModal(true)}
+          />
 
           <div className="dash-sidebar">
             <StaffStatus />
