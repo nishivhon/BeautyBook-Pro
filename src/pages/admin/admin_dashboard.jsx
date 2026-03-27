@@ -366,12 +366,19 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
   );
 };
 
-const StaffStatus = () => (
-  <div className="dash-sidebar-panel">
-    <div className="dash-sidebar-header">
-      <h3 className="dash-sidebar-title">Staff Status</h3>
-      <button className="dash-panel-manage-btn">Manage</button>
-    </div>
+const StaffStatus = () => {
+  const navigate = useNavigate();
+
+  const handleManageClick = () => {
+    navigate("/admin/dashboard/staff-status");
+  };
+
+  return (
+    <div className="dash-sidebar-panel">
+      <div className="dash-sidebar-header">
+        <h3 className="dash-sidebar-title">Staff Status</h3>
+        <button className="dash-panel-manage-btn" onClick={handleManageClick}>Manage</button>
+      </div>
     <div className="dash-staff-list">
       {STAFF.map((s, i) => (
         <div key={i} className="dash-staff-row">
@@ -393,7 +400,8 @@ const StaffStatus = () => (
       ))}
     </div>
   </div>
-);
+  );
+};
 
 const SummaryPanel = () => (
   <div className="dash-sidebar-panel">
