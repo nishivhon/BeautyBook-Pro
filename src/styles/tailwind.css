@@ -1215,6 +1215,161 @@
   .appt-continue-btn:disabled { background: rgba(221,144,29,0.4); color: rgba(26,15,0,0.5); cursor: not-allowed; opacity: 0.6; }
 
   /* ─────────────────────────────────────
+     Service Details Modal — Compact View
+  ───────────────────────────────────── */
+  .service-details-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 9, 8, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+    padding: 20px;
+  }
+
+  .service-details-modal {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 240px;
+    padding: 0;
+    background: var(--bg-card);
+    font-family: 'Inter', sans-serif;
+    border-radius: 12px;
+    border: 1px solid rgba(221, 144, 29, 0.15);
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    animation: fade-up 0.25s ease forwards;
+  }
+
+  .service-details-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    flex-shrink: 0;
+    background: var(--bg-dark);
+    border-bottom: 1px solid rgba(221, 144, 29, 0.1);
+  }
+
+  .service-details-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--color-white);
+    text-align: center;
+    flex: 1;
+  }
+
+  .service-details-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-white);
+    font-size: 12px;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    transition: opacity 0.2s;
+  }
+
+  .service-details-close-btn:hover {
+    opacity: 0.75;
+  }
+
+  .service-details-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 10px;
+    padding-bottom: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(152, 143, 129, 0.2) transparent;
+  }
+
+  .service-details-section-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--color-white);
+    margin-bottom: 6px;
+  }
+
+  .service-details-detail-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-bottom: 1px solid rgba(152, 143, 129, 0.3);
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+  }
+
+  .service-details-detail-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .service-details-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    color: #ccc;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .service-details-value {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--color-white);
+  }
+
+  .service-details-footer {
+    padding: 6px 10px;
+    flex-shrink: 0;
+    background: var(--bg-dark);
+    border-top: 1px solid rgba(221, 144, 29, 0.1);
+  }
+
+  .service-details-close-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+    background: var(--color-amber);
+    color: var(--color-black);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .service-details-close-button:hover {
+    background: var(--color-amber-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(221, 144, 29, 0.4);
+  }
+
+  .service-details-close-button:active {
+    transform: scale(0.98);
+  }
+
+  /* ─────────────────────────────────────
      Phase 1 — Date & Time Selection
   ───────────────────────────────────── */
   .appt-picker-group {
