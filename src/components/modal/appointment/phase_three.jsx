@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConfirmationDialog } from "../confirmation_dialog";
+import { supabase } from "../../../services/supabase";
 
 /* ══════════════════════════════════════════
    INLINE SVG ICONS
@@ -20,61 +21,26 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-/* Star — used inline for ratings */
-const StarIcon = ({ muted = false }) => (
-  <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width={11} height={11} style={{ flexShrink: 0 }}>
-    <path
-      d="M6 1l1.2 3.6H11L8.1 6.8l1.1 3.4L6 8.2l-3.2 2 1.1-3.4L1 4.6h3.8z"
-      fill={muted ? "rgba(221,144,29,0.5)" : "#dd901d"}
-    />
-  </svg>
-);
-
 /* ══════════════════════════════════════════
-   DATA
+   DATA & CONSTANTS
 ══════════════════════════════════════════ */
-const STYLISTS = [
-  {
-    id: "any",
-    isAny: true,
-    initial: null,
-    name: "Any available stylist",
-    specialty: "First available stylist will be assigned",
-    rating: null,
-    reviews: null,
-    unavailable: false,
-  },
-  {
-    id: "mike",
-    isAny: false,
-    initial: "M",
-    name: "Mike Santos",
-    specialty: "Fades & Modern cuts",
-    rating: "4.9",
-    reviews: "124 reviews",
-    unavailable: false,
-  },
-  {
-    id: "john",
-    isAny: false,
-    initial: "J",
-    name: "John Dela Cruz",
-    specialty: "Classic styles",
-    rating: "4.7",
-    reviews: "89 reviews",
-    unavailable: false,
-  },
-  {
-    id: "carlos",
-    isAny: false,
-    initial: "C",
-    name: "Carlos Reyes",
-    specialty: "Beard Expert",
-    rating: "4.8",
-    reviews: "156 reviews",
-    unavailable: true,
-  },
-];
+const ANY_STYLIST = {
+  id: "any",
+  isAny: true,
+  initial: null,
+  name: "Any available stylist",
+  unavailable: false,
+};
+
+// Transform database staff record to component format
+const transformStaffToStylist = (staff) => ({
+  id: staff.id,
+  isAny: false,
+  initial: staff.names?.charAt(0)?.toUpperCase() || "?",
+  name: staff.names,
+  status: staff.status, // Pass the actual status
+  unavailable: staff.status !== "avail", // unavailable if not "avail"
+});
 
 const STEPS = [
   { number: 1, label: "Schedule" },
@@ -158,44 +124,36 @@ const AnyRow = ({ isSelected, onSelect }) => (
       </div>
       <div className="stylist-text">
         <span className="stylist-name">Any available stylist</span>
-        <span className="stylist-specialty">First available stylist will be assigned</span>
       </div>
     </div>
-    {/* no rating column for "any" row */}
   </button>
 );
 
 /* ── Named stylist row ── */
-const StylistRow = ({ stylist, isSelected, onSelect }) => (
-  <button
-    className={`stylist-row${isSelected ? " selected" : ""}${stylist.unavailable ? " unavailable" : ""}`}
-    onClick={() => !stylist.unavailable && onSelect(isSelected ? null : stylist.id)}
-    disabled={stylist.unavailable}
-    aria-pressed={isSelected}
-    aria-disabled={stylist.unavailable}
-  >
-    <div className="stylist-row-left">
-      {/* initial avatar circle */}
-      <div className={`stylist-avatar${stylist.unavailable ? " muted" : ""}`}>
-        <span className="stylist-initial">{stylist.initial}</span>
+const StylistRow = ({ stylist, isSelected, onSelect }) => {
+  const statusLabel = stylist.status === "no slots" ? "No Slots" : "Unavailable";
+  
+  return (
+    <button
+      className={`stylist-row${isSelected ? " selected" : ""}${stylist.unavailable ? " unavailable" : ""}`}
+      onClick={() => !stylist.unavailable && onSelect(isSelected ? null : stylist.id)}
+      disabled={stylist.unavailable}
+      aria-pressed={isSelected}
+      aria-disabled={stylist.unavailable}
+    >
+      <div className="stylist-row-left">
+        {/* initial avatar circle */}
+        <div className={`stylist-avatar${stylist.unavailable ? " muted" : ""}`}>
+          <span className="stylist-initial">{stylist.initial}</span>
+        </div>
+        <div className="stylist-text">
+          <span className={`stylist-name${stylist.unavailable ? " muted" : ""}`}>{stylist.name}</span>
+          {stylist.unavailable && <span className="stylist-unavailable-tag">{statusLabel}</span>}
+        </div>
       </div>
-      <div className="stylist-text">
-        <span className={`stylist-name${stylist.unavailable ? " muted" : ""}`}>{stylist.name}</span>
-        <span className={`stylist-specialty${stylist.unavailable ? " muted" : ""}`}>{stylist.specialty}</span>
-      </div>
-    </div>
-
-    {/* right: rating + reviews + unavailable badge */}
-    <div className="stylist-rating-col">
-      <div className="stylist-rating-row">
-        <StarIcon muted={stylist.unavailable} />
-        <span className={`stylist-rating${stylist.unavailable ? " muted" : ""}`}>{stylist.rating}</span>
-      </div>
-      <span className={`stylist-reviews${stylist.unavailable ? " muted" : ""}`}>{stylist.reviews}</span>
-      {stylist.unavailable && <span className="stylist-unavailable-tag">Unavailable</span>}
-    </div>
-  </button>
-);
+    </button>
+  );
+};
 
 /* ══════════════════════════════════════════
    MAIN COMPONENT — Phase 3
@@ -203,13 +161,51 @@ const StylistRow = ({ stylist, isSelected, onSelect }) => (
 export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
   const [selected, setSelected] = useState(null);
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
+  const [stylists, setStylists] = useState([ANY_STYLIST]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch staffs from database on component mount
+  useEffect(() => {
+    const fetchStylists = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const { data, error: fetchError } = await supabase
+          .from('staffs')
+          .select('*');
+        
+        if (fetchError) {
+          throw fetchError;
+        }
+        
+        // Transform database records and add "Any available" option
+        const transformedStylists = [
+          ANY_STYLIST,
+          ...(data || []).map(transformStaffToStylist)
+        ];
+        
+        setStylists(transformedStylists);
+      } catch (err) {
+        console.error('Error fetching stylists:', err);
+        setError(err.message);
+        // Fallback to just "Any available" if fetch fails
+        setStylists([ANY_STYLIST]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStylists();
+  }, []);
 
   const handleContinue = () => {
-    onContinue?.({ stylist: STYLISTS.find((s) => s.id === selected) });
+    onContinue?.({ stylist: stylists.find((s) => s.id === selected) });
   };
 
   const handleBack = () => {
-    onBack?.({ stylist: STYLISTS.find((s) => s.id === selected) });
+    onBack?.({ stylist: stylists.find((s) => s.id === selected) });
   };
 
   const handleCancelClick = () => {
@@ -229,18 +225,44 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
           <p className="appt-section-sub">Pick your preferred stylist or choose &quot;Any Available&quot;</p>
         </div>
 
+        {/* Loading state */}
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666' }}>
+            Loading stylists...
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '20px', 
+            color: '#d00',
+            background: '#fee',
+            borderRadius: '8px',
+            margin: '20px'
+          }}>
+            Error loading stylists. Please try again.
+          </div>
+        )}
+
         {/* stylist list */}
-        <div className="stylist-list">
-          <AnyRow isSelected={selected === "any"} onSelect={setSelected} />
-          {STYLISTS.filter((s) => !s.isAny).map((stylist) => (
-            <StylistRow
-              key={stylist.id}
-              stylist={stylist}
-              isSelected={selected === stylist.id}
-              onSelect={setSelected}
-            />
-          ))}
-        </div>
+        {!loading && (
+          <div className="stylist-list">
+            <AnyRow isSelected={selected === "any"} onSelect={setSelected} />
+            {stylists
+              .filter((s) => !s.isAny)
+              .sort((a, b) => a.unavailable - b.unavailable)
+              .map((stylist) => (
+                <StylistRow
+                  key={stylist.id}
+                  stylist={stylist}
+                  isSelected={selected === stylist.id}
+                  onSelect={setSelected}
+                />
+              ))}
+          </div>
+        )}
       </div>
 
       {/* ── Footer CTA ── */}
