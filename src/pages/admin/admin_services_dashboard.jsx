@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { EditServiceModal } from "../../components/modal/edit_service";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -264,7 +265,7 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
 );
 
 /* ── Single service item row ── */
-const ServiceItem = ({ name, meta, available, price }) => (
+const ServiceItem = ({ name, meta, available, price, onEdit }) => (
   <div className="svc-item-row">
     <div className="svc-item-left">
       <div className="svc-item-icon-box">
@@ -282,7 +283,11 @@ const ServiceItem = ({ name, meta, available, price }) => (
         </span>
         <span className="svc-item-price">{price}</span>
       </div>
-      <button className="svc-item-edit-btn" aria-label="Edit service">
+      <button 
+        className="svc-item-edit-btn" 
+        aria-label="Edit service"
+        onClick={() => onEdit({ name, meta, available, price })}
+      >
         <EditIcon size={14} color="currentColor" />
       </button>
     </div>
@@ -290,13 +295,8 @@ const ServiceItem = ({ name, meta, available, price }) => (
 );
 
 /* ── Services list panel ── */
-const ServicesPanel = () => {
+const ServicesPanel = ({ onEditService }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-
-  // Flatten all services into a single array
-  const allServices = SERVICE_GROUPS.flatMap(group => 
-    group.items.map(item => ({ ...item, category: group.category }))
-  );
 
   return (
     <div className="svc-group-panel">
@@ -317,7 +317,11 @@ const ServicesPanel = () => {
             <p className="svc-category-label">{group.category}</p>
             <div className="svc-item-list">
               {group.items.map((svc, i) => (
-                <ServiceItem key={i} {...svc} />
+                <ServiceItem 
+                  key={i} 
+                  {...svc} 
+                  onEdit={onEditService}
+                />
               ))}
             </div>
             {gi < SERVICE_GROUPS.length - 1 && (
@@ -377,10 +381,25 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardServices = ({ date }) => {
   const navigate = useNavigate();
+  const [editingService, setEditingService] = useState(null);
 
   const handleLogout = () => {
     logoutOperator();
     navigate("/");
+  };
+
+  const handleEditService = (service) => {
+    setEditingService(service);
+  };
+
+  const handleSaveService = (formData) => {
+    console.log("Service saved:", formData);
+    // Here you can integrate with your API to save the service
+    setEditingService(null);
+  };
+
+  const handleCloseModal = () => {
+    setEditingService(null);
   };
 
   return (
@@ -392,7 +411,7 @@ export const AdminDashboardServices = ({ date }) => {
 
         <div className="svc-page-grid">
           {/* Left — Services list */}
-          <ServicesPanel />
+          <ServicesPanel onEditService={handleEditService} />
 
           {/* Right — Quick actions + Analytics */}
           <div>
@@ -401,6 +420,14 @@ export const AdminDashboardServices = ({ date }) => {
           </div>
         </div>
       </main>
+
+      {/* Edit Service Modal - Rendered at page level */}
+      <EditServiceModal 
+        isOpen={editingService !== null}
+        service={editingService}
+        onClose={handleCloseModal}
+        onSave={handleSaveService}
+      />
     </div>
   );
 };
