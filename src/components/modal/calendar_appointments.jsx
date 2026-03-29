@@ -169,7 +169,8 @@ export const CalendarAppointmentsModal = ({ isOpen, onClose }) => {
       justifyContent: "center",
       zIndex: 1000,
       fontFamily: "Inter, sans-serif"
-    }}>
+    }}
+    onClick={onClose}>
       <div style={{
         backgroundColor: "#1a1a1a",
         borderRadius: "12px",
@@ -181,7 +182,8 @@ export const CalendarAppointmentsModal = ({ isOpen, onClose }) => {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden"
-      }}>
+      }}
+      onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
         <div style={{
           display: "flex",

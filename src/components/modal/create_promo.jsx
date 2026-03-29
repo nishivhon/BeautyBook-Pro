@@ -85,7 +85,8 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
       justifyContent: "center",
       zIndex: 1000,
       fontFamily: "Inter, sans-serif"
-    }}>
+    }}
+    onClick={onClose}>
       <div style={{
         backgroundColor: "#1a1a1a",
         borderRadius: "12px",
@@ -94,7 +95,8 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
         maxWidth: "500px",
         boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
         border: "1px solid rgba(221, 144, 29, 0.2)"
-      }}>
+      }}
+      onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
         <div style={{
           display: "flex",

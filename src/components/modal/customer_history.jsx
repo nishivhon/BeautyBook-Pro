@@ -146,7 +146,8 @@ export const CustomerHistoryModal = ({ isOpen, onClose }) => {
       justifyContent: "center",
       zIndex: 1000,
       fontFamily: "Inter, sans-serif"
-    }}>
+    }}
+    onClick={onClose}>
       <div style={{
         backgroundColor: "#1a1a1a",
         borderRadius: "12px",
@@ -158,7 +159,8 @@ export const CustomerHistoryModal = ({ isOpen, onClose }) => {
         border: "1px solid rgba(221, 144, 29, 0.2)",
         display: "flex",
         flexDirection: "column"
-      }}>
+      }}
+      onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
         <div style={{
           display: "flex",
