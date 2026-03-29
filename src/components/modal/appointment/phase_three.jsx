@@ -172,6 +172,14 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
         setLoading(true);
         setError(null);
         
+        // If supabase is not configured, just use fallback
+        if (!supabase) {
+          console.warn('Supabase not configured. Using "Any available" stylist only.');
+          setStylists([ANY_STYLIST]);
+          setLoading(false);
+          return;
+        }
+        
         const { data, error: fetchError } = await supabase
           .from('staffs')
           .select('*');
