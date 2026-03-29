@@ -8,6 +8,7 @@ import { AdminDashboard } from './pages/admin/admin_dashboard'
 import { AdminDashboardServices } from './pages/admin/admin_services_dashboard'
 import { AdminDashboardLiveStatus } from './pages/admin/admin_live_status_dashboard'
 import { AdminDashboardStaffStatus } from './pages/admin/admin_staff_status_dashboard'
+import SuperAdminDashboard from './pages/superadmin/super_admin_dashboard'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function App() {
@@ -47,6 +48,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminDashboardStaffStatus />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/dashboard"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminDashboard />
             </ProtectedRoute>
           }
         />

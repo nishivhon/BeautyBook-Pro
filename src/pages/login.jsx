@@ -125,6 +125,7 @@ export const LogIn = () => {
   const [loading,  setLoading]  = useState(false);
   const [errors,   setErrors]   = useState({});
   const [unauthorized, setUnauthorized] = useState(false);
+  const [userRole, setUserRole] = useState("admin");
 
   useEffect(() => {
     // Check if magic link is valid
@@ -141,6 +142,9 @@ export const LogIn = () => {
     const linkInfo = getMagicLinkInfo(magicToken);
     if (linkInfo?.email) {
       setEmail(linkInfo.email);
+    }
+    if (linkInfo?.role) {
+      setUserRole(linkInfo.role);
     }
 
     setMounted(true);
@@ -175,7 +179,7 @@ export const LogIn = () => {
           // Redirect based on role
           const roleBasedRoutes = {
             'admin': '/admin/dashboard',
-            'super admin': '/admin/dashboard',
+            'super admin': '/superadmin/dashboard',
             'staff': '/'  // TODO: Create staff dashboard
           };
           
@@ -280,7 +284,9 @@ export const LogIn = () => {
           <div className="login-heading-block">
             <div className="login-portal-badge">
               <span className="login-portal-badge-dot" />
-              <span className="login-portal-badge-text">Admin Portal</span>
+              <span className="login-portal-badge-text">
+                {userRole === 'super admin' ? 'SUPER ADMIN PORTAL' : userRole === 'admin' ? 'ADMIN PORTAL' : 'STAFF PORTAL'}
+              </span>
             </div>
             <h1 className="login-title">Welcome Back</h1>
             <p className="login-subtitle">

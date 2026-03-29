@@ -69,19 +69,27 @@ export const getEmailFromToken = (token) => {
  */
 export const TEMPORARY_MAGIC_LINKS = [
   {
-    token: 'YWRtaW5AYmVhdXR5Ym9vay5wcm98MTc0NTYwMDAwMDB8YWJjZGVmMTIz',
+    token: 'YWRtaW5AYmVhdXR5Ym9vay5wcm98MTc3NDc5OTUxMjQyN3xhYmNkZWYxMjN4eXo',
     email: 'admin@beautybook.pro',
-    role: 'super admin',
-    createdAt: new Date(2026, 2, 25),
-    expiresAt: new Date(2026, 3, 25),
-    description: '🔐 Super Admin Test Link'
+    role: 'admin',
+    createdAt: new Date(),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    description: '🔐 Admin Test Link'
   },
   {
-    token: 'c3RhZmZAYmVhdXR5Ym9vay5wcm98MTc0NTYwMDAwMDB8eHl6OTg3NjU0',
+    token: 'c3VwZXJhZG1pbkBiZWF1dHlib29rLnByb3wxNzc0Nzk5NTEyNDI3fHN1cGVyYWRtaW40NTZ4eXo',
+    email: 'superadmin@beautybook.pro',
+    role: 'super admin',
+    createdAt: new Date(),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    description: '👑 Super Admin Test Link'
+  },
+  {
+    token: 'c3RhZmZAYmVhdXR5Ym9vay5wcm98MTc3NDc5OTUxMjQyN3x4eXo5ODc2NTRhYmM',
     email: 'staff@beautybook.pro',
     role: 'staff',
-    createdAt: new Date(2026, 2, 25),
-    expiresAt: new Date(2026, 3, 25),
+    createdAt: new Date(),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     description: '✂️ Staff Test Link'
   }
 ];
