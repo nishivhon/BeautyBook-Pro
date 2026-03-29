@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ConfirmationDialog } from "../confirmation_dialog";
-import { supabase } from "../../../services/supabase";
+import { fetchStaffWithAnyOption } from "../../../services/staffApi";
 
 /* ══════════════════════════════════════════
    INLINE SVG ICONS
@@ -32,14 +32,14 @@ const ANY_STYLIST = {
   unavailable: false,
 };
 
-// Transform database staff record to component format
+// Transform API staff record to component format
 const transformStaffToStylist = (staff) => ({
   id: staff.id,
   isAny: false,
   initial: staff.names?.charAt(0)?.toUpperCase() || "?",
   name: staff.names,
-  status: staff.status, // Pass the actual status
-  unavailable: staff.status !== "avail", // unavailable if not "avail"
+  status: staff.status,
+  unavailable: staff.unavailable, // API already calculates this
 });
 
 const STEPS = [
@@ -165,33 +165,19 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch staffs from database on component mount
+  // Fetch staff from API on component mount
   useEffect(() => {
     const fetchStylists = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // If supabase is not configured, just use fallback
-        if (!supabase) {
-          console.warn('Supabase not configured. Using "Any available" stylist only.');
-          setStylists([ANY_STYLIST]);
-          setLoading(false);
-          return;
-        }
+        const response = await fetchStaffWithAnyOption();
         
-        const { data, error: fetchError } = await supabase
-          .from('staffs')
-          .select('*');
-        
-        if (fetchError) {
-          throw fetchError;
-        }
-        
-        // Transform database records and add "Any available" option
+        // Build stylists array with "Any available" option first
         const transformedStylists = [
-          ANY_STYLIST,
-          ...(data || []).map(transformStaffToStylist)
+          response.any,
+          ...(response.staff || []).map(transformStaffToStylist)
         ];
         
         setStylists(transformedStylists);

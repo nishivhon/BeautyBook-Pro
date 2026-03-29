@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /* Massage / hands wave icon for all massage service rows */
 const MassageIcon = () => (
@@ -28,12 +28,13 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-const MASSAGE_SERVICES = [
-  { id: 1, title: "Swedish massage",      desc: "Gently stroke for relaxation",        price: "₱00.00", estTime: "est time" },
-  { id: 2, title: "Deep tissue massage",  desc: "Intense pressure for muscle knots",   price: "₱00.00", estTime: "est time" },
-  { id: 3, title: "Hot stone massage",    desc: "Heated stones to melt tension",       price: "₱00.00", estTime: "est time" },
-  { id: 4, title: "Foot reflexology",     desc: "Pressure points for overall wellness", price: "₱00.00", estTime: "est time" },
-];
+const formatService = (service) => ({
+  id: service.id,
+  title: service.service_name,
+  desc: service.description,
+  price: `₱${parseFloat(service.price).toFixed(2)}`,
+  estTime: `${service.est_time} min`,
+});
 
 const STEPS = [
   { number: 1, label: "Schedule" },
@@ -125,33 +126,54 @@ const ServiceRow = ({ service, isSelected, onSelect }) => (
 );
 
 export const MassageServicesModal = ({ onBack, onContinue, initialSelected = [], isUpdating = false }) => {
-  const [selected, setSelected] = useState(initialSelected); // Array for multiple selections, initialized with previous selections
+  const [selected, setSelected] = useState(initialSelected);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/services/category/Massage%20Services');
+        if (!response.ok) {
+          throw new Error('Failed to fetch services');
+        }
+        const data = await response.json();
+        setServices(data.map(formatService));
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching massage services:', err);
+        setError(err.message);
+        setServices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   const handleBack = () => {
-    // Auto-save when clicking back
-    const selectedServices = MASSAGE_SERVICES.filter((s) => selected.includes(s.id));
+    const selectedServices = services.filter((s) => selected.includes(s.id));
     onContinue?.({ services: selectedServices });
     onBack?.();
   };
 
   const handleSelectService = (serviceId, isDeselect) => {
     if (isDeselect) {
-      // Remove from selected
       setSelected(selected.filter((id) => id !== serviceId));
     } else {
-      // Add to selected
       setSelected([...selected, serviceId]);
     }
   };
 
   const handleContinue = () => {
-    // Allow save on subsequent visits even with no selections
-    // Only validate on first visit (when isUpdating is false)
     if (selected.length === 0 && !isUpdating) {
-      return; // Prevent continue if nothing selected on first visit
+      return;
     }
 
-    const selectedServices = MASSAGE_SERVICES.filter((s) => selected.includes(s.id));
+    const selectedServices = services.filter((s) => selected.includes(s.id));
     onContinue?.({ services: selectedServices });
   };
 
@@ -167,16 +189,33 @@ export const MassageServicesModal = ({ onBack, onContinue, initialSelected = [],
           <p className="appt-section-sub">Select one or more services you&apos;d like to book</p>
         </div>
 
-        <div className="svc-list">
-          {MASSAGE_SERVICES.map((svc) => (
-            <ServiceRow
-              key={svc.id}
-              service={svc}
-              isSelected={selected.includes(svc.id)}
-              onSelect={handleSelectService}
-            />
-          ))}
-        </div>
+        {/* Loading state */}
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+            Loading services...
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#ff6b6b' }}>
+            Error loading services: {error}
+          </div>
+        )}
+
+        {/* service list */}
+        {!loading && !error && (
+          <div className="svc-list">
+            {services.map((svc) => (
+              <ServiceRow
+                key={svc.id}
+                service={svc}
+                isSelected={selected.includes(svc.id)}
+                onSelect={handleSelectService}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="appt-footer">
@@ -219,7 +258,7 @@ export const MassageServicesModal = ({ onBack, onContinue, initialSelected = [],
           <button
             className="appt-continue-btn"
             onClick={handleContinue}
-            disabled={selected.length === 0 && !isUpdating}
+            disabled={selected.length === 0 && !isUpdating || loading}
             style={{
               flex: 1,
               opacity: selected.length > 0 || isUpdating ? 1 : 0.5,

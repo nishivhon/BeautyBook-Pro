@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import appointmentRoutes from './routes/appointments.js';
 import serviceRoutes from './routes/services.js';
+import staffRoutes from './routes/staffs.js';
 import userRoutes from './routes/users.js';
 import authRoutes from './routes/auth.js';
 
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api/staffs', staffRoutes);
 app.use('/api/users', userRoutes);
 
 // Health check endpoint

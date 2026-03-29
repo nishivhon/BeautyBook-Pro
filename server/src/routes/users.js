@@ -1,80 +1,53 @@
 import express from 'express';
-import pool from '../db.js';
+import { getAllUsers, getUserById, getUserByEmail } from '../services/userService.js';
 
 const router = express.Router();
 
 // Get all users
 router.get('/', async (req, res) => {
   try {
-    const connection = await pool.getConnection();
-    const [users] = await connection.query('SELECT * FROM users ORDER BY created_at DESC');
-    connection.release();
+    console.log('[Users] Fetching all users');
+    const users = await getAllUsers();
     res.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Failed to fetch users' });
+    console.error('[Users] Error fetching all users:', error.message);
+    res.status(500).json({ error: 'Failed to fetch users', details: error.message });
   }
 });
 
 // Get user by ID
 router.get('/:id', async (req, res) => {
   try {
-    const connection = await pool.getConnection();
-    const [users] = await connection.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
-    connection.release();
-
-    if (users.length === 0) {
+    console.log(`[Users] Fetching user ID: ${req.params.id}`);
+    const user = await getUserById(req.params.id);
+    
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json(users[0]);
+    res.json(user);
   } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Failed to fetch user' });
+    console.error('[Users] Error fetching user by ID:', error.message);
+    res.status(500).json({ error: 'Failed to fetch user', details: error.message });
   }
 });
 
-// Create new user
-router.post('/', async (req, res) => {
-  const { name, email, phone } = req.body;
-
-  if (!email || !phone) {
-    return res.status(400).json({ error: 'Email and phone are required' });
-  }
-
+// Get user by email
+router.get('/search/email', async (req, res) => {
   try {
-    const connection = await pool.getConnection();
-    const [result] = await connection.query(
-      'INSERT INTO users (name, email, phone, created_at) VALUES (?, ?, ?, NOW())',
-      [name || null, email, phone]
-    );
-    connection.release();
-
-    res.status(201).json({
-      id: result.insertId,
-      message: 'User created successfully'
-    });
+    const email = req.query.email;
+    if (!email) {
+      return res.status(400).json({ error: 'Email query parameter required' });
+    }
+    console.log(`[Users] Fetching user by email: ${email}`);
+    const user = await getUserByEmail(email);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(user);
   } catch (error) {
-    console.error('Error creating user:', error);
-    res.status(500).json({ error: 'Failed to create user' });
-  }
-});
-
-// Update user
-router.put('/:id', async (req, res) => {
-  const { name, email, phone } = req.body;
-
-  try {
-    const connection = await pool.getConnection();
-    await connection.query(
-      'UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?',
-      [name, email, phone, req.params.id]
-    );
-    connection.release();
-
-    res.json({ message: 'User updated successfully' });
-  } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Failed to update user' });
+    console.error('[Users] Error fetching user by email:', error.message);
+    res.status(500).json({ error: 'Failed to fetch user', details: error.message });
   }
 });
 

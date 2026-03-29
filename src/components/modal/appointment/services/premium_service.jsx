@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /* Diamond / premium icon for all premium service rows */
 const PremiumIcon = () => (
@@ -28,12 +28,13 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-const PREMIUM_SERVICES = [
-  { id: 1, title: "Bridal package",    desc: "Full wedding day beauty",    price: "₱00.00", estTime: "est time" },
-  { id: 2, title: "Couple's Massage",  desc: "Relaxation for 2",           price: "₱00.00", estTime: "est time" },
-  { id: 3, title: "Hair & glow combo", desc: "Scalp treatment + facial",   price: "₱00.00", estTime: "est time" },
-  { id: 4, title: "VIP experience",    desc: "Private room + drinks",      price: "₱00.00", estTime: "est time" },
-];
+const formatService = (service) => ({
+  id: service.id,
+  title: service.service_name,
+  desc: service.description,
+  price: `₱${parseFloat(service.price).toFixed(2)}`,
+  estTime: `${service.est_time} min`,
+});
 
 const STEPS = [
   { number: 1, label: "Schedule" },
@@ -124,9 +125,35 @@ const ServiceRow = ({ service, isSelected, onSelect }) => (
 
 export const PremiumServicesModal = ({ onBack, onContinue, initialSelected = [], isUpdating = false }) => {
   const [selected, setSelected] = useState(initialSelected);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/services/category/Premium%20Services');
+        if (!response.ok) {
+          throw new Error('Failed to fetch services');
+        }
+        const data = await response.json();
+        setServices(data.map(formatService));
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching premium services:', err);
+        setError(err.message);
+        setServices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   const handleBack = () => {
-    const selectedServices = PREMIUM_SERVICES.filter((s) => selected.includes(s.id));
+    const selectedServices = services.filter((s) => selected.includes(s.id));
     onContinue?.({ services: selectedServices });
     onBack?.();
   };
@@ -140,7 +167,7 @@ export const PremiumServicesModal = ({ onBack, onContinue, initialSelected = [],
   };
 
   const handleContinue = () => {
-    const selectedServices = PREMIUM_SERVICES.filter((s) => selected.includes(s.id));
+    const selectedServices = services.filter((s) => selected.includes(s.id));
     onContinue?.({ services: selectedServices });
     onBack?.();
   };
@@ -159,27 +186,46 @@ export const PremiumServicesModal = ({ onBack, onContinue, initialSelected = [],
           <p className="appt-section-sub">Select a service you&apos;d like to book</p>
         </div>
 
-        <div className="svc-list">
-          {PREMIUM_SERVICES.map((svc) => (
-            <ServiceRow
-              key={svc.id}
-              service={svc}
-              isSelected={selected.includes(svc.id)}
-              onSelect={handleSelectService}
-            />
-          ))}
-        </div>
+        {/* Loading state */}
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+            Loading services...
+          </div>
+        )}
 
-        {hasValidation && (
-          <p style={{
-            color: "#ff6b6b",
-            fontSize: "0.85rem",
-            marginBottom: "10px",
-            textAlign: "center",
-            fontWeight: "500",
-          }}>
-            Please select at least one service
-          </p>
+        {/* Error state */}
+        {error && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#ff6b6b' }}>
+            Error loading services: {error}
+          </div>
+        )}
+
+        {/* service list */}
+        {!loading && !error && (
+          <>
+            <div className="svc-list">
+              {services.map((svc) => (
+                <ServiceRow
+                  key={svc.id}
+                  service={svc}
+                  isSelected={selected.includes(svc.id)}
+                  onSelect={handleSelectService}
+                />
+              ))}
+            </div>
+
+            {hasValidation && (
+              <p style={{
+                color: "#ff6b6b",
+                fontSize: "0.85rem",
+                marginBottom: "10px",
+                textAlign: "center",
+                fontWeight: "500",
+              }}>
+                Please select at least one service
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -209,7 +255,7 @@ export const PremiumServicesModal = ({ onBack, onContinue, initialSelected = [],
           >
             Cancel
           </button>
-          <button className="appt-continue-btn" onClick={handleContinue} disabled={hasValidation} style={{ flex: 1 }}>
+          <button className="appt-continue-btn" onClick={handleContinue} disabled={hasValidation || loading} style={{ flex: 1 }}>
             {isUpdating ? "Save" : "Continue"} →
           </button>
         </div>
