@@ -258,42 +258,135 @@ const NAV_ITEMS = [
   { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
-const METRICS = [
+// ─── Metrics Carousel Data ────────────────────────────────────────────────
+
+const METRICS_SETS = [
   {
-    id: 1,
-    icon: <CalendarIcon />,
-    value: "24",
-    label: "Today's Appointments",
-    badge: { text: "+3", type: "green" },
+    id: "page1",
+    name: "Metrics",
+    cards: [
+      {
+        icon: <CalendarIcon />,
+        value: "24",
+        label: "Today's Appointments",
+        badge: { text: "+3", type: "green" },
+      },
+      {
+        icon: <QueueIcon />,
+        value: "8",
+        label: "In Queue Now",
+        badge: null,
+      },
+      {
+        icon: <RevenueIcon />,
+        value: "₱12,450",
+        label: "Revenue Today",
+        badge: { text: "+15%", type: "green" },
+      },
+      {
+        icon: <ClockIcon />,
+        value: "18 mins",
+        label: "Avg. Waiting Time",
+        badge: { text: "-5mins", type: "blue" },
+      },
+    ],
   },
   {
-    id: 2,
-    icon: <QueueIcon />,
-    value: "8",
-    label: "In Queue Now",
-    badge: null,
+    id: "page2",
+    name: "Metrics",
+    cards: [
+      {
+        icon: <ScissorsIcon />,
+        value: "14",
+        label: "Promo Bookings Today",
+        badge: null,
+      },
+      {
+        icon: <CalendarIcon />,
+        value: "12",
+        label: "Loyalty Cards Activated",
+        badge: { text: "+5", type: "green" },
+      },
+      {
+        icon: <CalendarIcon />,
+        value: "16",
+        label: "Completed",
+        badge: null,
+      },
+      {
+        icon: <QueueIcon />,
+        value: "3",
+        label: "In Progress",
+        badge: null,
+      },
+    ],
   },
   {
-    id: 3,
-    icon: <RevenueIcon />,
-    value: "₱12,450",
-    label: "Revenue Today",
-    badge: { text: "+15%", type: "green" },
-  },
-  {
-    id: 4,
-    icon: <ClockIcon />,
-    value: "18 mins",
-    label: "Avg. Waiting Time",
-    badge: { text: "-5mins", type: "blue" },
+    id: "page3",
+    name: "Metrics",
+    cards: [
+      {
+        icon: <ClockIcon />,
+        value: "5",
+        label: "Pending",
+        badge: null,
+      },
+      {
+        icon: <RevenueIcon />,
+        value: "2",
+        label: "Cancelled",
+        badge: null,
+      },
+      {
+        icon: <CalendarIcon />,
+        value: "24",
+        label: "Today's Appointments",
+        badge: { text: "+3", type: "green" },
+      },
+      {
+        icon: <QueueIcon />,
+        value: "8",
+        label: "In Queue Now",
+        badge: null,
+      },
+    ],
   },
 ];
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Analytics Carousel Data ──────────────────────────────────────────────
+
+const ANALYTICS_CARDS = [
+  {
+    id: "dashboard",
+    title: "Dashboard Analytics",
+    subtitle: "View Detailed Reports",
+    stats: [
+      { label: "Completed Today", value: "18", color: "#22c55e" },
+      { label: "Cancelled", value: "3", color: "rgba(239,67,67,0.85)" },
+      { label: "Pending", value: "6", color: "var(--color-amber)" },
+      { label: "Peak Hour", value: "2 PM", color: "var(--color-white)" },
+    ],
+  },
+
+  {
+    id: "live-status",
+    title: "Live Status Analytics",
+    subtitle: "Real-time Insights",
+    stats: [
+      { label: "Staff Online", value: "8/12", color: "#22c55e" },
+      { label: "Avg Response Time", value: "2.3 min", color: "var(--color-amber)" },
+      { label: "Customer Satisfaction", value: "96%", color: "#fbbf24" },
+      { label: "Active Sessions", value: "24", color: "var(--color-white)" },
+    ],
+  },
+];
 
 export default function SuperAdminDashboard() {
   const [activeNav, setActiveNav] = useState("dashboard");
   const [mounted, setMounted] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [metricsIndex, setMetricsIndex] = useState(0);
+  const [analyticsIndex, setAnalyticsIndex] = useState(0);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -309,28 +402,58 @@ export default function SuperAdminDashboard() {
     year: "numeric",
   });
 
+  // Metrics carousel handlers
+  const handlePrevMetrics = () => {
+    setMetricsIndex((prev) => (prev === 0 ? METRICS_SETS.length - 1 : prev - 1));
+  };
+
+  const handleNextMetrics = () => {
+    setMetricsIndex((prev) => (prev === METRICS_SETS.length - 1 ? 0 : prev + 1));
+  };
+
+  const currentMetrics = METRICS_SETS[metricsIndex];
+
+  // Analytics carousel handlers
+  const handlePrevAnalytics = () => {
+    setAnalyticsIndex((prev) => (prev === 0 ? ANALYTICS_CARDS.length - 1 : prev - 1));
+  };
+
+  const handleNextAnalytics = () => {
+    setAnalyticsIndex((prev) => (prev === ANALYTICS_CARDS.length - 1 ? 0 : prev + 1));
+  };
+
+  const currentAnalytics = ANALYTICS_CARDS[analyticsIndex];
+
   return (
     <div className="super-admin-container">
 
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className="super-admin-sidebar" style={{
+      <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
         opacity: mounted ? 1 : 0,
         transform: mounted ? "translateX(0)" : "translateX(-16px)",
         transition: "all 0.5s ease"
       }}>
-        {/* Logo */}
+        {/* Logo + Toggle */}
         <div className="sidebar-logo-section">
-          <div className="logo-badge">
-            <LogoIcon />
-          </div>
-          <span className="brand-name">BeautyBook Pro</span>
+          <button 
+            onClick={() => setSidebarExpanded(!sidebarExpanded)}
+            className="logo-toggle-btn"
+            title="Toggle sidebar"
+          >
+            <div className="logo-badge">
+              <LogoIcon />
+            </div>
+          </button>
+          {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
         </div>
 
         {/* Admin pill */}
-        <div className="admin-badge-pill">
-          <div className="admin-badge-circle">S</div>
-          <span className="admin-badge-text">Super Administrator</span>
-        </div>
+        {sidebarExpanded && (
+          <div className="admin-badge-pill">
+            <div className="admin-badge-circle">S</div>
+            <span className="admin-badge-text">Super Administrator</span>
+          </div>
+        )}
 
         {/* Nav items */}
         <nav className="sidebar-nav">
@@ -341,9 +464,10 @@ export default function SuperAdminDashboard() {
                 key={item.id}
                 onClick={() => setActiveNav(item.id)}
                 className={`nav-button ${isActive ? "active" : ""}`}
+                title={item.label}
               >
                 <item.icon color={isActive ? "#000" : "currentColor"} />
-                {item.label}
+                {sidebarExpanded && <span>{item.label}</span>}
               </button>
             );
           })}
@@ -351,9 +475,9 @@ export default function SuperAdminDashboard() {
 
         {/* Log Out */}
         <div className="sidebar-logout-section">
-          <button className="logout-button">
+          <button className="logout-button" title="Log out">
             <LogOutIcon />
-            Log Out
+            {sidebarExpanded && <span>Log Out</span>}
           </button>
         </div>
       </aside>
@@ -385,34 +509,81 @@ export default function SuperAdminDashboard() {
         {/* Scrollable body */}
         <main className="dashboard-main">
 
-          {/* ── Metrics Cards ── */}
-          <div className="dash-stats-row">
-            {METRICS.map((m, idx) => (
-              <div
-                key={m.id}
-                className="dash-stat-card"
-                style={{ animationDelay: `${0.08 + idx * 0.07}s` }}
-              >
-                <div className="dash-stat-top">
-                  <div className="dash-stat-icon-box">{m.icon}</div>
-                  {m.badge && (
-                    <span
-                      className={`dash-stat-badge ${
-                        m.badge.type === "green"
-                          ? "dash-stat-badge-green"
-                          : "dash-stat-badge-blue"
-                      }`}
-                    >
-                      {m.badge.text}
-                    </span>
-                  )}
+          {/* ── Metrics Cards with Carousel ── */}
+          <div className="dash-stats-carousel-container">
+            {/* Carousel Header - Title Only */}
+            <div className="dash-stats-carousel-header">
+              <h3 className="dash-stats-set-title">{currentMetrics.name}</h3>
+            </div>
+
+            {/* Metrics Cards */}
+            <div className="dash-stats-row">
+              {currentMetrics.cards.map((m, idx) => (
+                <div
+                  key={`${metricsIndex}-${idx}`}
+                  className="dash-stat-card"
+                  style={{ animationDelay: `${0.08 + idx * 0.07}s` }}
+                >
+                  <div className="dash-stat-top">
+                    <div className="dash-stat-icon-box">{m.icon}</div>
+                    {m.badge && (
+                      <span
+                        className={`dash-stat-badge ${
+                          m.badge.type === "green"
+                            ? "dash-stat-badge-green"
+                            : "dash-stat-badge-blue"
+                        }`}
+                      >
+                        {m.badge.text}
+                      </span>
+                    )}
+                  </div>
+                  <div className="dash-stat-bottom">
+                    <p className="dash-stat-value">{m.value}</p>
+                    <p className="dash-stat-label">{m.label}</p>
+                  </div>
                 </div>
-                <div className="dash-stat-bottom">
-                  <p className="dash-stat-value">{m.value}</p>
-                  <p className="dash-stat-label">{m.label}</p>
+              ))}
+            </div>
+
+            {/* Carousel Navigation - Bottom */}
+            <div className="dash-stats-carousel-bottom">
+              <div className="dash-stats-carousel-nav">
+                <button
+                  onClick={handlePrevMetrics}
+                  className="stats-carousel-btn"
+                  title="Previous metrics"
+                  aria-label="Previous"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+
+                {/* Carousel Dots */}
+                <div className="dash-stats-carousel-dots">
+                  {METRICS_SETS.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setMetricsIndex(idx)}
+                      className={`stats-carousel-dot ${idx === metricsIndex ? "active" : ""}`}
+                      title={`View ${METRICS_SETS[idx].name}`}
+                    />
+                  ))}
                 </div>
+
+                <button
+                  onClick={handleNextMetrics}
+                  className="stats-carousel-btn"
+                  title="Next metrics"
+                  aria-label="Next"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
               </div>
-            ))}
+            </div>
           </div>
 
           {/* ── Chart + Analytics row ── */}
@@ -434,14 +605,14 @@ export default function SuperAdminDashboard() {
 
             {/* Analytics Card */}
             <div className="analytics-card">
-              {/* Icon + label */}
+              {/* Header */}
               <div className="dash-analytics-header">
                 <div className="dash-analytics-icon-box">
                   <AnalyticsIcon />
                 </div>
                 <div className="dash-analytics-text">
-                  <p className="dash-analytics-title">Analytics</p>
-                  <p className="dash-analytics-sub">View Detailed Reports</p>
+                  <p className="dash-analytics-title">{currentAnalytics.title}</p>
+                  <p className="dash-analytics-sub">{currentAnalytics.subtitle}</p>
                 </div>
               </div>
 
@@ -450,12 +621,7 @@ export default function SuperAdminDashboard() {
 
               {/* Quick stats */}
               <div className="analytics-stats">
-                {[
-                  { label: "Completed Today", value: "18", color: "#22c55e" },
-                  { label: "Cancelled", value: "3", color: "rgba(239,67,67,0.85)" },
-                  { label: "Pending", value: "6", color: "var(--color-amber)" },
-                  { label: "Peak Hour", value: "2 PM", color: "var(--color-white)" },
-                ].map((stat) => (
+                {currentAnalytics.stats.map((stat) => (
                   <div key={stat.label} className="stat-row">
                     <span className="stat-label">{stat.label}</span>
                     <span className="stat-value" style={{ color: stat.color }}>

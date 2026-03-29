@@ -3171,6 +3171,11 @@
     background: var(--bg-darker);
     border-right: 1px solid rgba(221, 144, 29, 0.12);
     overflow-y: auto;
+    transition: width 0.3s ease;
+  }
+
+  aside.super-admin-sidebar.collapsed {
+    width: 80px;
   }
 
   /* Logo Section */
@@ -3179,8 +3184,32 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 24px;
+    padding: 20px 16px;
     border-bottom: 1px solid rgba(221, 144, 29, 0.1);
+    transition: padding 0.3s ease;
+    height: 80px;
+    box-sizing: border-box;
+  }
+
+  aside.super-admin-sidebar.collapsed .sidebar-logo-section {
+    padding: 16px;
+    justify-content: center;
+  }
+
+  /* Logo Toggle Button */
+  .logo-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s ease;
+  }
+
+  .logo-toggle-btn:hover .logo-badge {
+    transform: scale(1.05);
   }
 
   .logo-badge {
@@ -3192,6 +3221,7 @@
     background: var(--color-amber);
     border-radius: 10px;
     flex-shrink: 0;
+    transition: all 0.2s ease;
   }
 
   .logo-badge svg {
@@ -3206,6 +3236,11 @@
     font-size: 16px;
     color: var(--color-light);
     line-height: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  aside.super-admin-sidebar.collapsed .brand-name {
+    display: none;
   }
 
   /* Admin Badge Pill */
@@ -3213,8 +3248,13 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 24px;
-    margin: 8px 0 0 0;
+    padding: 12px 16px;
+    margin: 12px 0 0 0;
+    transition: all 0.3s ease;
+  }
+
+  aside.super-admin-sidebar.collapsed .admin-badge-pill {
+    display: none;
   }
 
   .admin-badge-circle {
@@ -3245,8 +3285,13 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 12px;
+    padding: 12px 16px;
     flex: 1;
+    transition: padding 0.3s ease;
+  }
+
+  aside.super-admin-sidebar.collapsed .sidebar-nav {
+    padding: 12px 8px;
   }
 
   .nav-button {
@@ -3254,7 +3299,7 @@
     align-items: center;
     gap: 14px;
     width: 100%;
-    padding: 14px 20px;
+    padding: 12px 16px;
     border-radius: 12px;
     border: 1px solid rgba(152, 143, 129, 0.35);
     background: transparent;
@@ -3266,6 +3311,12 @@
     transition: all 0.2s ease;
     text-align: left;
     white-space: nowrap;
+    overflow: hidden;
+  }
+
+  aside.super-admin-sidebar.collapsed .nav-button {
+    padding: 14px;
+    justify-content: center;
   }
 
   .nav-button:hover {
@@ -3287,10 +3338,23 @@
     flex-shrink: 0;
   }
 
+  .nav-button span {
+    transition: opacity 0.3s ease;
+  }
+
+  aside.super-admin-sidebar.collapsed .nav-button span {
+    display: none;
+  }
+
   /* Sidebar Logout */
   .sidebar-logout-section {
-    padding: 12px;
+    padding: 12px 16px;
     border-top: 1px solid rgba(221, 144, 29, 0.1);
+    transition: padding 0.3s ease;
+  }
+
+  aside.super-admin-sidebar.collapsed .sidebar-logout-section {
+    padding: 12px 8px;
   }
 
   button.logout-button,
@@ -3299,7 +3363,7 @@
     align-items: center;
     gap: 12px;
     width: 100%;
-    padding: 12px 20px;
+    padding: 12px 16px;
     border-radius: 12px;
     border: 1px solid rgba(152, 143, 129, 0.35);
     background: transparent;
@@ -3311,10 +3375,23 @@
     transition: all 0.2s ease;
   }
 
+  aside.super-admin-sidebar.collapsed .logout-button {
+    padding: 12px;
+    justify-content: center;
+  }
+
   .logout-button:hover {
     border-color: rgba(221, 144, 29, 0.4);
     color: var(--color-white);
     background: rgba(221, 144, 29, 0.04);
+  }
+
+  .logout-button span {
+    transition: opacity 0.3s ease;
+  }
+
+  aside.super-admin-sidebar.collapsed .logout-button span {
+    display: none;
   }
 
   /* ── Main Content Area ── */
@@ -3331,11 +3408,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 40px;
+    padding: 13px 40px;
     background: var(--bg-dark);
     border-bottom: 1px solid rgba(221, 144, 29, 0.1);
     gap: 40px;
     flex-shrink: 0;
+    height: 80px;
+    box-sizing: border-box;
   }
 
   .header-title-section {
@@ -3380,6 +3459,106 @@
     overflow-y: auto;
     padding: 32px;
     gap: 24px;
+  }
+
+  /* Metrics Carousel Container */
+  .dash-stats-carousel-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .dash-stats-carousel-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+  }
+
+  .dash-stats-set-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--color-white);
+    margin: 0;
+  }
+
+  /* Carousel Bottom - Navigation and Dots */
+  .dash-stats-carousel-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dash-stats-carousel-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .stats-carousel-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid rgba(152, 143, 129, 0.3);
+    background: transparent;
+    color: var(--color-tan);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .stats-carousel-btn:hover {
+    background: rgba(221, 144, 29, 0.1);
+    border-color: rgba(221, 144, 29, 0.6);
+    color: var(--color-amber);
+  }
+
+  .stats-carousel-btn:active {
+    transform: scale(0.95);
+  }
+
+  .stats-carousel-indicator {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--color-tan);
+    font-weight: 600;
+    min-width: 40px;
+    text-align: center;
+  }
+
+  /* Carousel Dots for Metrics */
+  .dash-stats-carousel-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .stats-carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(152, 143, 129, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+  }
+
+  .stats-carousel-dot:hover {
+    background: rgba(152, 143, 129, 0.6);
+  }
+
+  .stats-carousel-dot.active {
+    width: 20px;
+    border-radius: 4px;
+    background: var(--color-amber);
   }
 
   /* Metrics Grid */
@@ -3525,6 +3704,7 @@
     border: 1px solid rgba(152, 143, 129, 0.5);
     border-radius: 15px;
     flex-shrink: 0;
+    margin-left: 24px;
   }
 
   .dash-analytics-header {
@@ -3636,6 +3816,8 @@
     background: rgba(221, 144, 29, 0.08);
     color: var(--color-amber);
   }
+
+
 
 /* ─────────────────────────────────────
    Extra Keyframes
