@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import CustomerHistoryModal from "../../components/modal/customer_history";
+import CalendarAppointmentsModal from "../../components/modal/calendar_appointments";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -531,7 +532,7 @@ const StaffListPanel = () => {
 };
 
 /* ── Quick Actions panel ── */
-const QuickActionsPanel = ({ onCustomerHistory }) => (
+const QuickActionsPanel = ({ onCustomerHistory, onCalendar }) => (
   <div className="staff-quick-panel">
     <h3 className="staff-quick-title">Quick Actions</h3>
     <button 
@@ -541,7 +542,10 @@ const QuickActionsPanel = ({ onCustomerHistory }) => (
       <CustomerHistoryIcon size={17} color="#000" />
       Customer History
     </button>
-    <button className="staff-action-btn-secondary">
+    <button 
+      className="staff-action-btn-secondary"
+      onClick={onCalendar}
+    >
       <CalendarIcon size={17} color="currentColor" />
       Calendar
     </button>
@@ -574,6 +578,7 @@ const AnalyticsPanel = () => (
 export const AdminDashboardStaffStatus = ({ date }) => {
   const navigate = useNavigate();
   const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleLogout = () => {
     logoutOperator();
@@ -593,7 +598,10 @@ export const AdminDashboardStaffStatus = ({ date }) => {
 
           {/* Right — Quick Actions + Analytics */}
           <div className="staff-sidebar">
-            <QuickActionsPanel onCustomerHistory={() => setIsCustomerHistoryOpen(true)} />
+            <QuickActionsPanel 
+              onCustomerHistory={() => setIsCustomerHistoryOpen(true)}
+              onCalendar={() => setIsCalendarOpen(true)}
+            />
             <AnalyticsPanel />
           </div>
         </div>
@@ -603,6 +611,12 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       <CustomerHistoryModal 
         isOpen={isCustomerHistoryOpen} 
         onClose={() => setIsCustomerHistoryOpen(false)} 
+      />
+
+      {/* Calendar Appointments Modal */}
+      <CalendarAppointmentsModal 
+        isOpen={isCalendarOpen} 
+        onClose={() => setIsCalendarOpen(false)} 
       />
     </div>
   );
