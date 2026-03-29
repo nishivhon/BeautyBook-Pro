@@ -14,13 +14,17 @@ const CloseIcon = ({ size = 20, color = "currentColor" }) => (
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 
-export const EditServiceModal = ({ isOpen, service, onClose, onSave }) => {
-  const [formData, setFormData] = useState({ name: "", meta: "", available: true, price: "" });
+export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, categories = [] }) => {
+  const [formData, setFormData] = useState({ name: "", meta: "", available: true, price: "", category: "" });
+  const [isNewCategory, setIsNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   // Sync form data when service changes
   useEffect(() => {
     if (service) {
       setFormData(service);
+      setIsNewCategory(false);
+      setNewCategoryName("");
     }
   }, [service, isOpen]);
 
@@ -28,15 +32,47 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleCategoryChange = (value) => {
+    if (value === "new") {
+      setIsNewCategory(true);
+      setFormData(prev => ({ ...prev, category: "" }));
+    } else {
+      setIsNewCategory(false);
+      setNewCategoryName("");
+      setFormData(prev => ({ ...prev, category: value }));
+    }
+  };
+
+  const handleNewCategoryChange = (value) => {
+    setNewCategoryName(value);
+    setFormData(prev => ({ ...prev, category: value }));
+  };
+
   const handleSave = () => {
     onSave(formData);
-    setFormData({ name: "", meta: "", available: true, price: "" });
+    setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+    setIsNewCategory(false);
+    setNewCategoryName("");
   };
 
   const handleCancel = () => {
-    setFormData({ name: "", meta: "", available: true, price: "" });
+    setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+    setIsNewCategory(false);
+    setNewCategoryName("");
     onClose();
   };
+
+  const handleRemove = () => {
+    if (onRemove && service) {
+      onRemove(service);
+      setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+      setIsNewCategory(false);
+      setNewCategoryName("");
+    }
+  };
+
+  const isCreating = service?._isNew === true;
+  const modalTitle = isCreating ? "Add New Service" : "Edit Service";
 
   if (!isOpen) return null;
 
@@ -75,7 +111,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave }) => {
             fontWeight: "700",
             color: "#f5f5f5",
             margin: 0
-          }}>Edit Service</h2>
+          }}>{modalTitle}</h2>
           <button
             onClick={handleCancel}
             style={{
@@ -127,6 +163,75 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave }) => {
               onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
             />
           </div>
+
+          {/* Category */}
+          <div>
+            <label style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: "600",
+              color: "#dd901d",
+              marginBottom: "8px"
+            }}>Category</label>
+            <select
+              value={isNewCategory ? "new" : formData.category}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                backgroundColor: "rgba(26, 15, 0, 0.5)",
+                border: "1px solid rgba(221, 144, 29, 0.3)",
+                borderRadius: "8px",
+                color: "#f5f5f5",
+                fontSize: "14px",
+                fontFamily: "Inter, sans-serif",
+                boxSizing: "border-box",
+                transition: "border-color 0.2s ease",
+                cursor: "pointer"
+              }}
+              onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
+              onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
+            >
+              <option value="">Select a category</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+              <option value="new">+ Create New Category</option>
+            </select>
+          </div>
+
+          {/* New Category Input (shown when creating new category) */}
+          {isNewCategory && (
+            <div>
+              <label style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: "600",
+                color: "#dd901d",
+                marginBottom: "8px"
+              }}>New Category Name</label>
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => handleNewCategoryChange(e.target.value)}
+                placeholder="Enter new category name"
+                style={{
+                  width: "100%",
+                  padding: "12px 16px",
+                  backgroundColor: "rgba(26, 15, 0, 0.5)",
+                  border: "1px solid rgba(221, 144, 29, 0.3)",
+                  borderRadius: "8px",
+                  color: "#f5f5f5",
+                  fontSize: "14px",
+                  fontFamily: "Inter, sans-serif",
+                  boxSizing: "border-box",
+                  transition: "border-color 0.2s ease"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
+                onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
+              />
+            </div>
+          )}
 
           {/* Description */}
           <div>
@@ -193,36 +298,72 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave }) => {
           <div style={{
             display: "flex",
             alignItems: "center",
-            gap: "12px"
+            gap: "12px",
+            justifyContent: "space-between"
           }}>
-            <label style={{
-              fontSize: "13px",
-              fontWeight: "600",
-              color: "#dd901d"
-            }}>Status</label>
-            <button
-              onClick={() => handleFormChange("available", !formData.available)}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: formData.available ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)",
-                border: `1px solid ${formData.available ? "#22c55e" : "#ef4444"}`,
-                borderRadius: "6px",
-                color: formData.available ? "#22c55e" : "#ef4444",
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px"
+            }}>
+              <label style={{
                 fontSize: "13px",
                 fontWeight: "600",
-                cursor: "pointer",
-                fontFamily: "Inter, sans-serif",
-                transition: "all 0.2s ease"
-              }}
-              onMouseOver={(e) => {
-                e.target.style.opacity = "0.8";
-              }}
-              onMouseOut={(e) => {
-                e.target.style.opacity = "1";
-              }}
-            >
-              {formData.available ? "Available" : "Not Available"}
-            </button>
+                color: "#dd901d"
+              }}>Status</label>
+              <button
+                onClick={() => handleFormChange("available", !formData.available)}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: formData.available ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)",
+                  border: `1px solid ${formData.available ? "#22c55e" : "#ef4444"}`,
+                  borderRadius: "6px",
+                  color: formData.available ? "#22c55e" : "#ef4444",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontFamily: "Inter, sans-serif",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.opacity = "0.8";
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.opacity = "1";
+                }}
+              >
+                {formData.available ? "Available" : "Not Available"}
+              </button>
+            </div>
+
+            {/* Remove button - only shown when editing */}
+            {!isCreating && (
+              <button
+                onClick={handleRemove}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "rgba(239, 68, 68, 0.2)",
+                  border: "1px solid #ef4444",
+                  color: "#ef4444",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontFamily: "Inter, sans-serif",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = "rgba(239, 68, 68, 0.3)";
+                  e.target.style.borderColor = "#dc2626";
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = "rgba(239, 68, 68, 0.2)";
+                  e.target.style.borderColor = "#ef4444";
+                }}
+              >
+                Remove Service
+              </button>
+            )}
           </div>
         </div>
 
@@ -274,7 +415,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave }) => {
             onMouseOver={(e) => e.target.style.backgroundColor = "#e6a326"}
             onMouseOut={(e) => e.target.style.backgroundColor = "#dd901d"}
           >
-            Save Changes
+            {isCreating ? "Add Service" : "Save Changes"}
           </button>
         </div>
       </div>

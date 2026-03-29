@@ -335,11 +335,14 @@ const ServicesPanel = ({ onEditService }) => {
 };
 
 /* ── Quick Actions sidebar ── */
-const QuickActionsPanel = () => (
+const QuickActionsPanel = ({ onNewService }) => (
   <div className="svc-quick-actions-panel">
     <h3 className="svc-quick-title">Quick Actions</h3>
 
-    <button className="svc-action-btn-primary">
+    <button 
+      className="svc-action-btn-primary"
+      onClick={onNewService}
+    >
       <ScissorsIcon size={16} color="#000" />
       New Service
     </button>
@@ -383,18 +386,44 @@ export const AdminDashboardServices = ({ date }) => {
   const navigate = useNavigate();
   const [editingService, setEditingService] = useState(null);
 
+  // Extract category names from SERVICE_GROUPS
+  const categories = SERVICE_GROUPS.map(group => group.category);
+
   const handleLogout = () => {
     logoutOperator();
     navigate("/");
   };
 
   const handleEditService = (service) => {
-    setEditingService(service);
+    setEditingService({ ...service, _isNew: false });
+  };
+
+  const handleNewService = () => {
+    setEditingService({ 
+      name: "", 
+      meta: "", 
+      available: true, 
+      price: "",
+      category: "",
+      _isNew: true 
+    });
   };
 
   const handleSaveService = (formData) => {
-    console.log("Service saved:", formData);
-    // Here you can integrate with your API to save the service
+    const { _isNew, ...serviceData } = formData;
+    if (_isNew) {
+      console.log("New service created:", serviceData);
+      // Here you can integrate with your API to create the service
+    } else {
+      console.log("Service updated:", serviceData);
+      // Here you can integrate with your API to update the service
+    }
+    setEditingService(null);
+  };
+
+  const handleRemoveService = (service) => {
+    console.log("Service removed:", service);
+    // Here you can integrate with your API to delete the service
     setEditingService(null);
   };
 
@@ -415,7 +444,7 @@ export const AdminDashboardServices = ({ date }) => {
 
           {/* Right — Quick actions + Analytics */}
           <div>
-            <QuickActionsPanel />
+            <QuickActionsPanel onNewService={handleNewService} />
             <AnalyticsPanel />
           </div>
         </div>
@@ -425,8 +454,10 @@ export const AdminDashboardServices = ({ date }) => {
       <EditServiceModal 
         isOpen={editingService !== null}
         service={editingService}
+        categories={categories}
         onClose={handleCloseModal}
         onSave={handleSaveService}
+        onRemove={handleRemoveService}
       />
     </div>
   );
