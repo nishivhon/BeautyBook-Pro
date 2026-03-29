@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import CustomerHistoryModal from "../../components/modal/customer_history";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -530,10 +531,13 @@ const StaffListPanel = () => {
 };
 
 /* ── Quick Actions panel ── */
-const QuickActionsPanel = () => (
+const QuickActionsPanel = ({ onCustomerHistory }) => (
   <div className="staff-quick-panel">
     <h3 className="staff-quick-title">Quick Actions</h3>
-    <button className="staff-action-btn-primary">
+    <button 
+      className="staff-action-btn-primary"
+      onClick={onCustomerHistory}
+    >
       <CustomerHistoryIcon size={17} color="#000" />
       Customer History
     </button>
@@ -569,6 +573,7 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardStaffStatus = ({ date }) => {
   const navigate = useNavigate();
+  const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
 
   const handleLogout = () => {
     logoutOperator();
@@ -588,11 +593,17 @@ export const AdminDashboardStaffStatus = ({ date }) => {
 
           {/* Right — Quick Actions + Analytics */}
           <div className="staff-sidebar">
-            <QuickActionsPanel />
+            <QuickActionsPanel onCustomerHistory={() => setIsCustomerHistoryOpen(true)} />
             <AnalyticsPanel />
           </div>
         </div>
       </main>
+
+      {/* Customer History Modal */}
+      <CustomerHistoryModal 
+        isOpen={isCustomerHistoryOpen} 
+        onClose={() => setIsCustomerHistoryOpen(false)} 
+      />
     </div>
   );
 };
