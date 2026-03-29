@@ -30,12 +30,6 @@ Then switch to the development branch:
 git checkout development
 ```
 
-Or use the shorthand:
-
-```
-git checkout -b development origin/development
-```
-
 ### Switching Between Branches
 
 Switch from main to development:
@@ -54,41 +48,4 @@ git checkout main
 
 ```
 git branch -a
-```
-
-Local branches will be listed without prefix. Remote branches will have "remotes/origin/" prefix.
-
-## Key Differences
-
-| Aspect | main | development |
-|--------|------|-------------|
-| Status | Production-ready | In active development |
-| Stability | Stable and tested | May have experimental code |
-| Deployment | Deployed to production | Deployed to staging |
-| Merge Requirements | Requires PR review | Requires PR review |
-| Usage | End users | Developers and QA |
-
-## Workflow
-
-1. Start on development branch for new features
-2. Create feature branches from development
-3. Submit pull requests to development for review
-4. Once stable, create PR from development to main
-5. main branch is used for production releases
-
-## Common Commands
-
-Push current branch to remote:
-```
-git push origin [branch-name]
-```
-
-Pull latest changes:
-```
-git pull origin [branch-name]
-```
-
-Create and switch to new branch:
-```
-git checkout -b [new-branch-name]
 ```
