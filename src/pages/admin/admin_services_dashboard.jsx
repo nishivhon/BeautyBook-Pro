@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { EditServiceModal } from "../../components/modal/edit_service";
+import { CreatePromoModal } from "../../components/modal/create_promo";
+import { CreateDiscountModal } from "../../components/modal/create_discount";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -335,7 +337,7 @@ const ServicesPanel = ({ onEditService }) => {
 };
 
 /* ── Quick Actions sidebar ── */
-const QuickActionsPanel = ({ onNewService }) => (
+const QuickActionsPanel = ({ onNewService, onCreatePromo, onCreateDiscount }) => (
   <div className="svc-quick-actions-panel">
     <h3 className="svc-quick-title">Quick Actions</h3>
 
@@ -347,12 +349,18 @@ const QuickActionsPanel = ({ onNewService }) => (
       New Service
     </button>
 
-    <button className="svc-action-btn-secondary">
+    <button 
+      className="svc-action-btn-secondary"
+      onClick={onCreatePromo}
+    >
       <PromoIcon size={16} color="currentColor" />
       Create Promo
     </button>
 
-    <button className="svc-action-btn-secondary">
+    <button 
+      className="svc-action-btn-secondary"
+      onClick={onCreateDiscount}
+    >
       <DiscountIcon size={16} color="currentColor" />
       Create Discount
     </button>
@@ -385,6 +393,8 @@ const AnalyticsPanel = () => (
 export const AdminDashboardServices = ({ date }) => {
   const navigate = useNavigate();
   const [editingService, setEditingService] = useState(null);
+  const [isCreatingPromo, setIsCreatingPromo] = useState(false);
+  const [isCreatingDiscount, setIsCreatingDiscount] = useState(false);
 
   // Extract category names from SERVICE_GROUPS
   const categories = SERVICE_GROUPS.map(group => group.category);
@@ -431,6 +441,34 @@ export const AdminDashboardServices = ({ date }) => {
     setEditingService(null);
   };
 
+  const handleCreatePromo = () => {
+    setIsCreatingPromo(true);
+  };
+
+  const handleClosePromoModal = () => {
+    setIsCreatingPromo(false);
+  };
+
+  const handleSavePromo = (formData) => {
+    console.log("Promo created:", formData);
+    // Here you can integrate with your API to create the promo
+    setIsCreatingPromo(false);
+  };
+
+  const handleCreateDiscount = () => {
+    setIsCreatingDiscount(true);
+  };
+
+  const handleCloseDiscountModal = () => {
+    setIsCreatingDiscount(false);
+  };
+
+  const handleSaveDiscount = (formData) => {
+    console.log("Discount created:", formData);
+    // Here you can integrate with your API to create the discount
+    setIsCreatingDiscount(false);
+  };
+
   return (
     <div className="dash-root">
       <AdminNavbar onLogout={handleLogout} />
@@ -444,7 +482,11 @@ export const AdminDashboardServices = ({ date }) => {
 
           {/* Right — Quick actions + Analytics */}
           <div>
-            <QuickActionsPanel onNewService={handleNewService} />
+            <QuickActionsPanel 
+              onNewService={handleNewService} 
+              onCreatePromo={handleCreatePromo}
+              onCreateDiscount={handleCreateDiscount}
+            />
             <AnalyticsPanel />
           </div>
         </div>
@@ -458,6 +500,20 @@ export const AdminDashboardServices = ({ date }) => {
         onClose={handleCloseModal}
         onSave={handleSaveService}
         onRemove={handleRemoveService}
+      />
+
+      {/* Create Promo Modal - Rendered at page level */}
+      <CreatePromoModal 
+        isOpen={isCreatingPromo}
+        onClose={handleClosePromoModal}
+        onSave={handleSavePromo}
+      />
+
+      {/* Create Discount Modal - Rendered at page level */}
+      <CreateDiscountModal 
+        isOpen={isCreatingDiscount}
+        onClose={handleCloseDiscountModal}
+        onSave={handleSaveDiscount}
       />
     </div>
   );
