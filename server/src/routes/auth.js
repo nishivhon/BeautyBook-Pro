@@ -34,9 +34,12 @@ router.post('/signup', async (req, res) => {
     // Generate magic link URL
     const magicLink = `${process.env.FRONTEND_URL}/auth/callback?token=${magicToken}&email=${encodeURIComponent(email)}&full_name=${encodeURIComponent(full_name)}&phone=${encodeURIComponent(phone || '')}`;
 
+    console.log('🔑 Resend API Key exists:', !!process.env.RESEND_API_KEY);
+    console.log('📧 Attempting to send email to:', email);
+
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'Verify <onboarding@resend.dev>',
       to: email,
       subject: 'Verify Your Email - BeautyBook',
       html: `
@@ -56,7 +59,8 @@ router.post('/signup', async (req, res) => {
       `
     });
 
-    console.log('Email sent successfully:', emailResponse);
+    console.log('✅ Email sent successfully, Response ID:', emailResponse.id);
+    console.log('📦 Full Resend Response:', emailResponse);
 
     res.status(200).json({
       message: 'Verification email sent. Check your inbox!',

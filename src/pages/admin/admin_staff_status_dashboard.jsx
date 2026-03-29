@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import CustomerHistoryModal from "../../components/modal/customer_history";
+import CalendarAppointmentsModal from "../../components/modal/calendar_appointments";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -132,11 +134,66 @@ const STATS = [
 
 // statusClass maps to CSS class names defined in index.css
 const STAFF = [
-  { initial: "A", name: "Antonio Marquez", status: "On Break",   statusClass: "staff-status-amber", subStatus: "No Client Yet"            },
-  { initial: "C", name: "Carlos Reyes",    status: "In Service", statusClass: "staff-status-blue",  subStatus: "Serving: Maria Garcia"    },
-  { initial: "D", name: "Daniel Smith",    status: "Available",  statusClass: "staff-status-green", subStatus: "No Client Yet"            },
-  { initial: "J", name: "John Dela Cruz",  status: "In Service", statusClass: "staff-status-blue",  subStatus: "Serving: Pedro Santos"    },
-  { initial: "M", name: "Mike Santos",     status: "In Service", statusClass: "staff-status-blue",  subStatus: "Serving: Juan Dela Cruz"  },
+  { initial: "A", name: "Antonio Marquez", status: "On Break",   statusClass: "staff-status-amber", subStatus: "No Client Yet", 
+    details: {
+      currentClient: "None",
+      startOfService: "—",
+      serviceDone: "—",
+      timeOfBreak: "2:30 PM - 3:00 PM",
+      timeOfClockIn: "9:00 AM",
+      upNextClient: "Sarah Johnson",
+      noOfClientToday: 4,
+      availableForWalkIn: false
+    }
+  },
+  { initial: "C", name: "Carlos Reyes",    status: "In Service", statusClass: "staff-status-blue",  subStatus: "Serving: Maria Garcia", 
+    details: {
+      currentClient: "Maria Garcia",
+      startOfService: "1:45 PM",
+      serviceDone: "Hair Color",
+      timeOfBreak: "—",
+      timeOfClockIn: "8:30 AM",
+      upNextClient: "Roberto Silva",
+      noOfClientToday: 3,
+      availableForWalkIn: false
+    }
+  },
+  { initial: "D", name: "Daniel Smith",    status: "Available",  statusClass: "staff-status-green", subStatus: "No Client Yet", 
+    details: {
+      currentClient: "None",
+      startOfService: "—",
+      serviceDone: "—",
+      timeOfBreak: "—",
+      timeOfClockIn: "10:00 AM",
+      upNextClient: "None",
+      noOfClientToday: 2,
+      availableForWalkIn: true
+    }
+  },
+  { initial: "J", name: "John Dela Cruz",  status: "In Service", statusClass: "staff-status-blue",  subStatus: "Serving: Pedro Santos", 
+    details: {
+      currentClient: "Pedro Santos",
+      startOfService: "2:00 PM",
+      serviceDone: "Massage Service",
+      timeOfBreak: "—",
+      timeOfClockIn: "9:30 AM",
+      upNextClient: "Angela Martinez",
+      noOfClientToday: 5,
+      availableForWalkIn: false
+    }
+  },
+  { initial: "M", name: "Mike Santos",     status: "In Service", statusClass: "staff-status-blue",  subStatus: "Serving: Juan Dela Cruz", 
+    details: {
+      currentClient: "Juan Dela Cruz",
+      startOfService: "1:30 PM",
+      serviceDone: "Nail Service",
+      timeOfBreak: "—",
+      timeOfClockIn: "8:00 AM",
+      upNextClient: "Maria Fernandez",
+      noOfClientToday: 6,
+      availableForWalkIn: false
+    }
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -235,6 +292,7 @@ const StaffListPanel = () => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(null);
+  const [expandedStaff, setExpandedStaff] = useState(null);
 
   const statuses = ["Available", "In Service", "On Break", "Off Today"];
 
@@ -245,6 +303,10 @@ const StaffListPanel = () => {
   const handleFilterSelect = (status) => {
     setSelectedFilter(selectedFilter === status ? null : status);
     setFilterOpen(false);
+  };
+
+  const handleStaffToggle = (staffName) => {
+    setExpandedStaff(expandedStaff === staffName ? null : staffName);
   };
 
   return (
@@ -294,20 +356,169 @@ const StaffListPanel = () => {
       <div className={isExpanded ? "staff-member-scroll" : "staff-member-scroll-limited"}>
         {filteredStaff.length > 0 ? (
           filteredStaff.map((s, i) => (
-            <div key={i} className="staff-member-row">
-              <div className="staff-member-left">
-                <div className="staff-member-avatar">{s.initial}</div>
-                <span className="staff-member-name">{s.name}</span>
-              </div>
-              <div className="staff-member-right">
-                <div className="staff-member-status-col">
-                  <span className={s.statusClass}>{s.status}</span>
-                  <span className="staff-member-sub">{s.subStatus}</span>
+            <div key={i}>
+              <div className="staff-member-row">
+                <div className="staff-member-left">
+                  <div className="staff-member-avatar">{s.initial}</div>
+                  <span className="staff-member-name">{s.name}</span>
                 </div>
-                <div className="staff-member-chevron">
-                  <ChevronRightIcon size={13} color="currentColor" />
+                <div className="staff-member-right">
+                  <div className="staff-member-status-col">
+                    <span className={s.statusClass}>{s.status}</span>
+                    <span className="staff-member-sub">{s.subStatus}</span>
+                  </div>
+                  <button 
+                    className="staff-member-chevron"
+                    onClick={() => handleStaffToggle(s.name)}
+                    aria-label="View staff details"
+                  >
+                    <ChevronRightIcon size={13} color="currentColor" />
+                  </button>
                 </div>
               </div>
+
+              {/* Expanded Staff Details */}
+              {expandedStaff === s.name && (
+                <div style={{
+                  backgroundColor: "rgba(221, 144, 29, 0.05)",
+                  borderLeft: "3px solid #dd901d",
+                  padding: "16px",
+                  marginTop: "8px",
+                  borderRadius: "6px",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "16px 24px"
+                }}>
+                  <div>
+                    <p style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#dd901d",
+                      marginBottom: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>Current Client</p>
+                    <p style={{
+                      fontSize: "14px",
+                      color: "#f5f5f5",
+                      margin: "0"
+                    }}>{s.details.currentClient}</p>
+                  </div>
+
+                  <div>
+                    <p style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#dd901d",
+                      marginBottom: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>Start of Service</p>
+                    <p style={{
+                      fontSize: "14px",
+                      color: "#f5f5f5",
+                      margin: "0"
+                    }}>{s.details.startOfService}</p>
+                  </div>
+
+                  <div>
+                    <p style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#dd901d",
+                      marginBottom: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>Service Done</p>
+                    <p style={{
+                      fontSize: "14px",
+                      color: "#f5f5f5",
+                      margin: "0"
+                    }}>{s.details.serviceDone}</p>
+                  </div>
+
+                  <div>
+                    <p style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#dd901d",
+                      marginBottom: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>Time of Break</p>
+                    <p style={{
+                      fontSize: "14px",
+                      color: "#f5f5f5",
+                      margin: "0"
+                    }}>{s.details.timeOfBreak}</p>
+                  </div>
+
+                  <div>
+                    <p style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#dd901d",
+                      marginBottom: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>Time of Clock In</p>
+                    <p style={{
+                      fontSize: "14px",
+                      color: "#f5f5f5",
+                      margin: "0"
+                    }}>{s.details.timeOfClockIn}</p>
+                  </div>
+
+                  <div>
+                    <p style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#dd901d",
+                      marginBottom: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>Up Next Client</p>
+                    <p style={{
+                      fontSize: "14px",
+                      color: "#f5f5f5",
+                      margin: "0"
+                    }}>{s.details.upNextClient}</p>
+                  </div>
+
+                  <div>
+                    <p style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#dd901d",
+                      marginBottom: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>No. of Client Today</p>
+                    <p style={{
+                      fontSize: "14px",
+                      color: "#f5f5f5",
+                      margin: "0"
+                    }}>{s.details.noOfClientToday}</p>
+                  </div>
+
+                  <div>
+                    <p style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#dd901d",
+                      marginBottom: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>Available for Walk-In</p>
+                    <p style={{
+                      fontSize: "14px",
+                      color: s.details.availableForWalkIn ? "#22c55e" : "#ef4444",
+                      margin: "0",
+                      fontWeight: "600"
+                    }}>{s.details.availableForWalkIn ? "Yes" : "No"}</p>
+                  </div>
+                </div>
+              )}
             </div>
           ))
         ) : (
@@ -321,14 +532,20 @@ const StaffListPanel = () => {
 };
 
 /* ── Quick Actions panel ── */
-const QuickActionsPanel = () => (
+const QuickActionsPanel = ({ onCustomerHistory, onCalendar }) => (
   <div className="staff-quick-panel">
     <h3 className="staff-quick-title">Quick Actions</h3>
-    <button className="staff-action-btn-primary">
+    <button 
+      className="staff-action-btn-primary"
+      onClick={onCustomerHistory}
+    >
       <CustomerHistoryIcon size={17} color="#000" />
       Customer History
     </button>
-    <button className="staff-action-btn-secondary">
+    <button 
+      className="staff-action-btn-secondary"
+      onClick={onCalendar}
+    >
       <CalendarIcon size={17} color="currentColor" />
       Calendar
     </button>
@@ -360,6 +577,8 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardStaffStatus = ({ date }) => {
   const navigate = useNavigate();
+  const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleLogout = () => {
     logoutOperator();
@@ -379,11 +598,26 @@ export const AdminDashboardStaffStatus = ({ date }) => {
 
           {/* Right — Quick Actions + Analytics */}
           <div className="staff-sidebar">
-            <QuickActionsPanel />
+            <QuickActionsPanel 
+              onCustomerHistory={() => setIsCustomerHistoryOpen(true)}
+              onCalendar={() => setIsCalendarOpen(true)}
+            />
             <AnalyticsPanel />
           </div>
         </div>
       </main>
+
+      {/* Customer History Modal */}
+      <CustomerHistoryModal 
+        isOpen={isCustomerHistoryOpen} 
+        onClose={() => setIsCustomerHistoryOpen(false)} 
+      />
+
+      {/* Calendar Appointments Modal */}
+      <CalendarAppointmentsModal 
+        isOpen={isCalendarOpen} 
+        onClose={() => setIsCalendarOpen(false)} 
+      />
     </div>
   );
 };

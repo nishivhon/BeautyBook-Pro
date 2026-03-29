@@ -256,7 +256,7 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle }) => {
+const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -265,6 +265,12 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
   const handleChevronClick = () => {
     onExpandToggle(id);
+  };
+
+  const handleCompleteService = () => {
+    if (onCompleteService) {
+      onCompleteService(id, name, service);
+    }
   };
 
   return (
@@ -330,6 +336,34 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
               <span style={{ fontSize: "12px", color: "#dd901d", fontWeight: "600", display: "block", marginBottom: "4px", fontFamily: "Inter, sans-serif" }}>Estimated Time</span>
               <span style={{ fontSize: "14px", color: "#f5f5f5", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>{details.estimatedTime}</span>
             </div>
+
+            {isActive && (
+              <button
+                onClick={handleCompleteService}
+                style={{
+                  marginTop: "8px",
+                  padding: "10px 16px",
+                  backgroundColor: "#22c55e",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontFamily: "Inter, sans-serif",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  transition: "background-color 0.2s ease"
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = "#16a34a"}
+                onMouseOut={(e) => e.target.style.backgroundColor = "#22c55e"}
+              >
+                <CheckCircleIcon size={16} color="#fff" />
+                Complete Service
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -346,6 +380,13 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
 
   const handleExpandToggle = (id) => {
     setExpandedItemId(expandedItemId === id ? null : id);
+  };
+
+  const handleCompleteService = (itemId, customerName, service) => {
+    console.log(`Service completed for ${customerName}: ${service}`);
+    // Here you can integrate with your API to mark the service as complete
+    // For now, just logging the data
+    // You could also remove the item from the queue or update its status
   };
 
   return (
@@ -389,6 +430,7 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
                   {...item}
                   isExpanded={expandedItemId === item.id}
                   onExpandToggle={handleExpandToggle}
+                  onCompleteService={handleCompleteService}
                 />
               ))}
             </div>
