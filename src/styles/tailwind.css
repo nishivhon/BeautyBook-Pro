@@ -3156,9 +3156,12 @@
   /* ── Root Container ── */
   .super-admin-container {
     display: flex;
-    width: 100%;
+    width: calc(100vw - 340px);
     min-height: 100vh;
     background: var(--bg-dark);
+    margin-left: 340px;
+    transition: all 0.3s ease;
+    overflow-x: hidden;
   }
 
   /* ── Sidebar ── */
@@ -3166,16 +3169,31 @@
     display: flex;
     flex-direction: column;
     width: 340px;
-    min-height: 100vh;
+    height: 100vh;
     flex-shrink: 0;
+    position: fixed;
+    left: 0;
+    top: 0;
     background: var(--bg-darker);
     border-right: 1px solid rgba(221, 144, 29, 0.12);
     overflow-y: auto;
     transition: width 0.3s ease;
+    z-index: 1000;
   }
 
   aside.super-admin-sidebar.collapsed {
     width: 80px;
+  }
+
+  /* Adjust container for fixed sidebar */
+  .super-admin-container:has(> aside.super-admin-sidebar:not(.collapsed)) {
+    margin-left: 340px;
+    width: calc(100vw - 340px);
+  }
+
+  .super-admin-container:has(> aside.super-admin-sidebar.collapsed) {
+    margin-left: 80px;
+    width: calc(100vw - 80px);
   }
 
   /* Logo Section */
@@ -3400,6 +3418,9 @@
     flex-direction: column;
     flex: 1;
     overflow: hidden;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
   }
 
   /* Header */
@@ -3457,8 +3478,27 @@
     flex-direction: column;
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 32px;
     gap: 24px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  main.dashboard-main::-webkit-scrollbar,
+  .dashboard-main::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide all scrollbars globally */
+  body, html {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  body::-webkit-scrollbar,
+  html::-webkit-scrollbar {
+    display: none;
   }
 
   /* Metrics Carousel Container */
@@ -3663,6 +3703,9 @@
     border: 1px solid rgba(152, 143, 129, 0.5);
     border-radius: 15px;
     flex: 1;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .chart-panel-title,
@@ -3690,7 +3733,18 @@
     border: 1px solid var(--color-amber);
     background: rgba(221, 144, 29, 0.06);
     padding: 16px;
+    overflow: hidden;
+    width: 100%;
     flex: 1;
+  }
+
+  /* Flex container for chart and analytics */
+  .dashboard-main > div.flex {
+    display: flex !important;
+    width: 100%;
+    overflow: hidden !important;
+    flex-wrap: nowrap;
+    min-width: 0;
   }
 
   /* Analytics Card */
@@ -3703,6 +3757,7 @@
     background: rgba(221, 144, 29, 0.04);
     border: 1px solid rgba(152, 143, 129, 0.5);
     border-radius: 15px;
+    overflow: hidden;
     flex-shrink: 0;
     margin-left: 24px;
   }
