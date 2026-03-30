@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { logoutOperator } from "../../services/operatorAuth";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -382,11 +384,17 @@ const ANALYTICS_CARDS = [
 ];
 
 export default function SuperAdminDashboard() {
+  const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState("dashboard");
   const [mounted, setMounted] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [metricsIndex, setMetricsIndex] = useState(0);
   const [analyticsIndex, setAnalyticsIndex] = useState(0);
+
+  const handleLogout = () => {
+    logoutOperator();
+    navigate("/operators/login");
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -475,7 +483,7 @@ export default function SuperAdminDashboard() {
 
         {/* Log Out */}
         <div className="sidebar-logout-section">
-          <button className="logout-button" title="Log out">
+          <button onClick={handleLogout} className="logout-button" title="Log out">
             <LogOutIcon />
             {sidebarExpanded && <span>Log Out</span>}
           </button>
