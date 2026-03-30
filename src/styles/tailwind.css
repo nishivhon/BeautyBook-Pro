@@ -4034,10 +4034,10 @@
   /* ─── Stats Bar ─── */
   .stats-bar {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
-    margin-top: 24px;
-    padding-top: 24px;
+    margin-top: 0px;
+    padding-top: 14px;
     border-top: 1px solid rgba(152, 143, 129, 0.2);
   }
 

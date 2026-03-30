@@ -483,6 +483,8 @@ export default function SuperAdminDashboard() {
                     navigate("/superadmin/users");
                   } else if (item.id === "database") {
                     navigate("/superadmin/database");
+                  } else if (item.id === "security") {
+                    navigate("/superadmin/security");
                   } else {
                     setActiveNav(item.id);
                   }
