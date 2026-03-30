@@ -358,7 +358,7 @@ export default function SuperAdminDatabaseDashboard() {
             </div>
 
             {/* Database rows */}
-            <div className="space-y-2 mt-6">
+            <div className="space-y-2 mt-2">
               {DATABASE_TABLES.map((table) => (
                 <div key={table.id} className="db-row">
                   <div className="db-icon">
