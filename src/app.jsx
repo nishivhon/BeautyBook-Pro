@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Homepage from './pages/landpage'
 import { Register } from './pages/register'
@@ -10,8 +10,14 @@ import { AdminDashboardLiveStatus } from './pages/admin/admin_live_status_dashbo
 import { AdminDashboardStaffStatus } from './pages/admin/admin_staff_status_dashboard'
 import SuperAdminDashboard from './pages/superadmin/super_admin_dashboard'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { logMagicLinksForTesting } from './services/magicLink'
 
 function App() {
+  useEffect(() => {
+    // Log test magic links to console for easy access during development
+    logMagicLinksForTesting();
+  }, []);
+
   return (
     <Router>
       <Routes>

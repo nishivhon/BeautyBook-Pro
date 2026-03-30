@@ -17,23 +17,28 @@ Password: superadmin123
 
 ## 🔗 Magic Link Access (Recommended)
 
-### Super Admin Magic Link:
-```
-Magic Token:
-c3VwZXJhZG1pbkBiZWF1dHlib29rLnByb3wxNzc0Nzk5NTEyNDI3fHN1cGVyYWRtaW40NTZ4eXo
+### How to Get the Magic Link
 
-Full URL:
-http://localhost:5174/operators/login?token=c3VwZXJhZG1pbkBiZWF1dHlib29rLnByb3wxNzc0Nzk5NTEyNDI3fHN1cGVyYWRtaW40NTZ4eXo
+1. **Start the app** - The magic link will be automatically generated with a fresh timestamp
+2. **Open the browser console** (F12 or Right-Click → Inspect → Console)
+3. **Look for the "🔐 BeautyBook Pro - Magic Links for Testing"** section
+4. **Copy the Super Admin Test Link URL** from the console
+
+### Example Console Output:
+```
+👑 Super Admin Test Link
+Email: superadmin@beautybook.pro
+Password: superadmin123
+Full URL: http://localhost:5174/operators/login?token=c3VwZXJhZG1pbkBiZWF1dHlib29rLnByb3x...
 ```
 
 ### How to Use:
-1. Copy the full URL above
+1. Copy the full URL from the browser console
 2. Paste it in your browser address bar
-3. Press Enter - you'll be redirected to the login page
-4. The email (`superadmin@beautybook.pro`) will be **pre-filled**
-5. Enter password: `superadmin123`
-6. Click "Sign In"
-7. ✅ You'll be redirected to the Super Admin Dashboard at `/superadmin/dashboard`
+3. Press Enter - the email will be **pre-filled** automatically
+4. Enter password: `superadmin123`
+5. Click "Sign In"
+6. ✅ You'll be redirected to the Super Admin Dashboard at `/superadmin/dashboard`
 
 ---
 
@@ -41,8 +46,9 @@ http://localhost:5174/operators/login?token=c3VwZXJhZG1pbkBiZWF1dHlib29rLnByb3wx
 
 If you prefer to skip the magic link:
 
-1. Navigate to `http://localhost:5173/operators/login?token=c3VwZXJhZG1pbkBiZWF1dHlib29rLnBybzE3NDU2MDAwMDB8c3VwZXJhZG1pbjEyM3N1cGVy`
-2. Or access `/operators/login` with the token
+1. Navigate to `http://localhost:5173/operators/login`
+   - Note: You'll get an "Access Restricted" message - this is expected for direct access
+2. Or use the magic link method above (recommended)
 3. Enter credentials:
    - Email: `superadmin@beautybook.pro`
    - Password: `superadmin123`
@@ -74,30 +80,68 @@ The Super Admin Dashboard includes:
 
 ## ✅ Technical Implementation
 
+### How Magic Links Work Now
+
+**Tokens are regenerated with fresh timestamps on each app load**, ensuring they never expire during development/testing.
+
 ### Files Modified/Created:
 
-1. **`src/services/operatorAuth.js`**
-   - Added super admin account to mock operator database
+1. **`src/services/magicLink.js`**
+   - Magic link generation & validation
+   - Tokens are dynamically generated with current timestamp
+   - `logMagicLinksForTesting()` function logs URLs to console
+   - `getTestMagicLinks()` function returns all test link URLs
+
+2. **`src/services/operatorAuth.js`**
+   - Added super admin account to mock operators database
    - Email: `superadmin@beautybook.pro`
    - Password: `superadmin123`
-   - Role: `super admin`
-
-2. **`src/services/magicLink.js`**
-   - Added super admin magic link token
-   - Token expires on April 29, 2026
-   - Pre-configured for testing
+   - Role: `OPERATOR_ROLES.SUPER_ADMIN`
 
 3. **`src/app.jsx`**
    - Added route: `/superadmin/dashboard`
    - Protected with `ProtectedRoute` component
    - Requires `super admin` role
+   - Calls `logMagicLinksForTesting()` on app load
 
 4. **`src/pages/login.jsx`**
    - Updated redirect logic to route super admins to `/superadmin/dashboard`
-   - Previously routed to `/admin/dashboard`
+   - Validates magic link token before showing login form
+   - Pre-fills email from token
 
 5. **`src/pages/superadmin/super_admin_dashboard.jsx`**
    - Dashboard UI is ready to use
+
+---
+
+## 🧪 Testing the Magic Link
+
+1. Start the app: `npm run dev`
+2. Open browser console (F12)
+3. Find the super admin link in the console output
+4. Copy and paste the Full URL into your browser
+5. Login with password: `superadmin123`
+6. You should see the Super Admin Dashboard
+
+---
+
+## 🔄 Token Refresh
+
+If a token ever expires (> 24 hours old):
+1. Simply refresh the app
+2. A new token will be generated automatically
+3. Check the browser console for the fresh URL
+
+---
+
+## 📝 Production Notes
+
+- [ ] Migrate to database-backed user accounts
+- [ ] Use bcrypt/argon2 for password hashing
+- [ ] Integrate with Resend for real email magic links
+- [ ] Add audit logging for super admin actions
+- [ ] Implement more sophisticated token security
+- [ ] Set up proper email templates for magic links
    - Full animations and styling included
 
 ---
