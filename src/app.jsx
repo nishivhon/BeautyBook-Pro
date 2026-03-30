@@ -9,6 +9,7 @@ import { AdminDashboardServices } from './pages/admin/admin_services_dashboard'
 import { AdminDashboardLiveStatus } from './pages/admin/admin_live_status_dashboard'
 import { AdminDashboardStaffStatus } from './pages/admin/admin_staff_status_dashboard'
 import SuperAdminDashboard from './pages/superadmin/super_admin_dashboard'
+import SuperAdminUsersDashboard from './pages/superadmin/super_admin_users_dashboard'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { logMagicLinksForTesting } from './services/magicLink'
 
@@ -62,6 +63,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="super admin">
               <SuperAdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/users"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminUsersDashboard />
             </ProtectedRoute>
           }
         />

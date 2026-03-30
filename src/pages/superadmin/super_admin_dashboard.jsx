@@ -470,7 +470,13 @@ export default function SuperAdminDashboard() {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveNav(item.id)}
+                onClick={() => {
+                  if (item.id === "user-accounts") {
+                    navigate("/superadmin/users");
+                  } else {
+                    setActiveNav(item.id);
+                  }
+                }}
                 className={`nav-button ${isActive ? "active" : ""}`}
                 title={item.label}
               >
