@@ -122,9 +122,17 @@ const NAV_ITEMS = [
 
 export default function SuperAdminUsersDashboard() {
   const navigate = useNavigate();
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    const saved = localStorage.getItem('sidebarExpanded');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   const [mounted, setMounted] = useState(false);
   const [activeNav, setActiveNav] = useState("user-accounts");
+
+  // Persist sidebar state to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
+  }, [sidebarExpanded]);
   
   const [staffData] = useState([
     { id:1, initial:'A', name:'Anna Cruz',      email:'annacruz@gmail.com',      role:'Admin',  status:'Active',   lastLogin:'Last Active 2 hrs ago' },
@@ -229,6 +237,8 @@ export default function SuperAdminUsersDashboard() {
                     setActiveNav(item.id);
                   } else if (item.id === "dashboard") {
                     navigate("/superadmin/dashboard");
+                  } else if (item.id === "database") {
+                    navigate("/superadmin/database");
                   } else {
                     setActiveNav(item.id);
                     displayToast(`${item.label} section coming soon`);

@@ -387,9 +387,17 @@ export default function SuperAdminDashboard() {
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState("dashboard");
   const [mounted, setMounted] = useState(false);
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    const saved = localStorage.getItem('sidebarExpanded');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   const [metricsIndex, setMetricsIndex] = useState(0);
   const [analyticsIndex, setAnalyticsIndex] = useState(0);
+
+  // Persist sidebar state to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
+  }, [sidebarExpanded]);
 
   const handleLogout = () => {
     logoutOperator();
@@ -473,6 +481,8 @@ export default function SuperAdminDashboard() {
                 onClick={() => {
                   if (item.id === "user-accounts") {
                     navigate("/superadmin/users");
+                  } else if (item.id === "database") {
+                    navigate("/superadmin/database");
                   } else {
                     setActiveNav(item.id);
                   }
