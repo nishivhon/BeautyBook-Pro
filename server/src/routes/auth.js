@@ -1,15 +1,25 @@
 import express from 'express';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 
 const router = express.Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Initialize Brevo SMTP transporter
+const transporter = nodemailer.createTransport({
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false, // TLS
+  auth: {
+    user: process.env.BREVO_SMTP_USERNAME,
+    pass: process.env.BREVO_SMTP_PASSWORD
+  }
+});
 
 // In-memory storage for verification tokens (testing only, no database)
 const verificationTokens = new Map();
 
 /**
- * POST /signup - Send verification email via Resend (no database save)
+ * POST /signup - Send verification email via Brevo (no database save)
  */
 router.post('/signup', async (req, res) => {
   const { email, full_name, phone } = req.body;
@@ -34,12 +44,12 @@ router.post('/signup', async (req, res) => {
     // Generate magic link URL
     const magicLink = `${process.env.FRONTEND_URL}/auth/callback?token=${magicToken}&email=${encodeURIComponent(email)}&full_name=${encodeURIComponent(full_name)}&phone=${encodeURIComponent(phone || '')}`;
 
-    console.log('🔑 Resend API Key exists:', !!process.env.RESEND_API_KEY);
+    console.log('🔑 Brevo SMTP configured:', !!process.env.BREVO_API_KEY && !!process.env.BREVO_SENDER_EMAIL);
     console.log('📧 Attempting to send email to:', email);
 
-    // Send email via Resend
-    const emailResponse = await resend.emails.send({
-      from: 'Verify <onboarding@resend.dev>',
+    // Send email via Brevo SMTP
+    const emailResponse = await transporter.sendMail({
+      from: `BeautyBook <${process.env.BREVO_SENDER_EMAIL}>`,
       to: email,
       subject: 'Verify Your Email - BeautyBook',
       html: `
@@ -59,8 +69,8 @@ router.post('/signup', async (req, res) => {
       `
     });
 
-    console.log('✅ Email sent successfully, Response ID:', emailResponse.id);
-    console.log('📦 Full Resend Response:', emailResponse);
+    console.log('✅ Email sent successfully, Message ID:', emailResponse.messageId);
+    console.log('📦 Full Response:', emailResponse);
 
     res.status(200).json({
       message: 'Verification email sent. Check your inbox!',
