@@ -241,6 +241,8 @@ export default function SuperAdminUsersDashboard() {
                     navigate("/superadmin/database");
                   } else if (item.id === "security") {
                     navigate("/superadmin/security");
+                  } else if (item.id === "landing-page") {
+                    navigate("/superadmin/landing-page");
                   } else {
                     setActiveNav(item.id);
                     displayToast(`${item.label} section coming soon`);

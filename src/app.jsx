@@ -12,6 +12,7 @@ import SuperAdminDashboard from './pages/superadmin/super_admin_dashboard'
 import SuperAdminUsersDashboard from './pages/superadmin/super_admin_users_dashboard'
 import SuperAdminDatabaseDashboard from './pages/superadmin/super_admin_database_dashboard'
 import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security_dashboard'
+import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage_edit_dashboard'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { logMagicLinksForTesting } from './services/magicLink'
 
@@ -89,6 +90,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="super admin">
               <SuperAdminSecurityDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/landing-page"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminLandingPageEditor />
             </ProtectedRoute>
           }
         />
