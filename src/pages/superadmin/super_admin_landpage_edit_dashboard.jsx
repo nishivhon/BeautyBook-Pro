@@ -343,7 +343,9 @@ export default function SuperAdminLandingPageEditor() {
               <button
                 key={item.id}
                 onClick={() => {
-                  if (item.id === "user-accounts") {
+                  if (item.id === "dashboard") {
+                    navigate("/superadmin/dashboard");
+                  } else if (item.id === "user-accounts") {
                     navigate("/superadmin/users");
                   } else if (item.id === "database") {
                     navigate("/superadmin/database");
