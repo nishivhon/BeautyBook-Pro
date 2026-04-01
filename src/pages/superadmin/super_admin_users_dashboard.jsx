@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { generateMagicToken } from "../../services/magicLink";
 import CreateAccountModal from "../../components/modal/create_account";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
@@ -159,6 +160,9 @@ export default function SuperAdminUsersDashboard() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState(null);
+  const [linkSearchValue, setLinkSearchValue] = useState("");
+  const [linkSearchResults, setLinkSearchResults] = useState([]);
+  const [showLinkSearchDropdown, setShowLinkSearchDropdown] = useState(false);
 
   // Check if form has any data
   const hasFormData = useCallback(() => {
@@ -212,9 +216,11 @@ export default function SuperAdminUsersDashboard() {
       setDropdownResults([]);
       setFilteredStaff(staffData);
     } else {
-      const results = staffData.filter(s => 
-        s.name.toLowerCase().includes(lower) || s.email.toLowerCase().includes(lower)
-      );
+      const results = staffData
+        .filter(s => 
+          s.name.toLowerCase().startsWith(lower) || s.email.toLowerCase().startsWith(lower)
+        )
+        .sort((a, b) => a.name.localeCompare(b.name));
       setDropdownResults(results);
       setShowSearchDropdown(results.length > 0);
     }
@@ -233,7 +239,21 @@ export default function SuperAdminUsersDashboard() {
   };
 
   const handleGenerateLink = () => {
-    const val = linkEmail.trim();
+    // Check if a staff member was selected from dropdown
+    const selectedStaff = staffData.find(s => s.name === linkSearchValue);
+    
+    if (selectedStaff) {
+      // Generate link using proper token from magicLink service
+      const token = generateMagicToken(selectedStaff.email);
+      const link = `http://localhost:5173/operators/login?token=${token}`;
+      navigator.clipboard?.writeText(link).catch(()=>{});
+      setLinkSearchValue(link);
+      displayToast(`Link copied for ${selectedStaff.name}!`);
+      return;
+    }
+    
+    // If no staff selected, treat as manual email entry
+    const val = linkSearchValue.trim();
     if (!val) {
       displayToast('Please enter an email or select a user.');
       return;
@@ -242,10 +262,11 @@ export default function SuperAdminUsersDashboard() {
       displayToast('Please enter a valid email address.');
       return;
     }
-    const link = `https://beautybook.pro/magic/${btoa(val).slice(0,14)}`;
+    const token = generateMagicToken(val);
+    const link = `http://localhost:5173/operators/login?token=${token}`;
     navigator.clipboard?.writeText(link).catch(()=>{});
+    setLinkSearchValue(link);
     displayToast('Link copied: ' + link.slice(0,40) + '…');
-    setLinkEmail('');
   };
 
   const handleCreateAccount = () => {
@@ -338,6 +359,39 @@ export default function SuperAdminUsersDashboard() {
       setShowDeleteConfirm(false);
       setStaffToDelete(null);
     }
+  };
+
+  const handleLinkSearch = (value) => {
+    setLinkSearchValue(value);
+    const lower = value.toLowerCase().trim();
+    if (!lower) {
+      setShowLinkSearchDropdown(false);
+      setLinkSearchResults([]);
+    } else {
+      const results = staffData
+        .filter(s => 
+          s.name.toLowerCase().startsWith(lower) || s.email.toLowerCase().startsWith(lower)
+        )
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setLinkSearchResults(results);
+      setShowLinkSearchDropdown(results.length > 0);
+    }
+  };
+
+  const handleGenerateLinkFromSearch = (staff) => {
+    const roleNormalized = staff.role.toLowerCase().replace(/\s+/g, '_');
+    const link = `https://beautybook.pro/magic/${btoa(staff.email).slice(0,14)}?role=${roleNormalized}`;
+    navigator.clipboard?.writeText(link).catch(()=>{});
+    setLinkSearchValue(link);
+    setShowLinkSearchDropdown(false);
+    setLinkSearchResults([]);
+    displayToast(`Link copied for ${staff.name}!`);
+  };
+
+  const handleSelectFromLinkDropdown = (staff) => {
+    setLinkSearchValue(staff.name);
+    setShowLinkSearchDropdown(false);
+    setLinkSearchResults([]);
   };
 
   return (
@@ -438,7 +492,7 @@ export default function SuperAdminUsersDashboard() {
                 User Management
               </div>
               <div className="table-controls">
-                <div className="search-wrap">
+                <div className="search-wrap" style={{ position: "relative" }}>
                   <SearchIcon />
                   <input 
                     className="search-input" 
@@ -449,32 +503,82 @@ export default function SuperAdminUsersDashboard() {
                   />
                   {/* Search Results Dropdown */}
                   {showSearchDropdown && searchValue && (
-                    <div className="search-dropdown">
-                      <div className="search-dropdown-header">
-                        <span className="search-results-count">{dropdownResults.length} result{dropdownResults.length !== 1 ? 's' : ''}</span>
-                      </div>
-                      <div className="search-dropdown-list">
-                        {dropdownResults.map(staff => (
-                          <div 
-                            key={staff.id} 
-                            className="search-result-item"
-                            onClick={() => handleSelectFromDropdown(staff)}
-                          >
-                            <div className="result-avatar">
-                              <span className="avatar-initial">{staff.initial}</span>
+                    <div className="search-dropdown" style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      marginTop: "8px",
+                      backgroundColor: "#1a1a1a",
+                      border: "1px solid rgba(221, 144, 29, 0.3)",
+                      borderRadius: "8px",
+                      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
+                      zIndex: 100,
+                      maxHeight: "300px",
+                      overflowY: "auto",
+                      fontFamily: "Inter, sans-serif",
+                      scrollbarWidth: "thin",
+                      scrollbarColor: "rgba(221, 144, 29, 0.2) transparent"
+                    }}>
+                      {dropdownResults.map((staff, index) => (
+                        <div 
+                          key={staff.id} 
+                          onClick={() => handleSelectFromDropdown(staff)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            padding: "12px 16px",
+                            borderBottom: index !== dropdownResults.length - 1 ? "1px solid rgba(221, 144, 29, 0.1)" : "none",
+                            cursor: "pointer",
+                            transition: "background-color 0.2s ease"
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.08)"}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                        >
+                          <div style={{
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "6px",
+                            backgroundColor: "rgba(221, 144, 29, 0.15)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "13px",
+                            fontWeight: "600",
+                            color: "#dd901d",
+                            flexShrink: 0
+                          }}>
+                            {staff.initial}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{
+                              fontSize: "13px",
+                              fontWeight: "600",
+                              color: "#f5f5f5"
+                            }}>
+                              {staff.name}
                             </div>
-                            <div className="result-info">
-                              <span className="result-name">{staff.name}</span>
-                              <span className="result-email">{staff.email}</span>
-                            </div>
-                            <div className="result-badge">
-                              <span className={`badge-inner ${staff.status === 'Active' ? 'badge-active' : 'badge-inactive'}`}>
-                                {staff.status}
-                              </span>
+                            <div style={{
+                              fontSize: "11px",
+                              color: "#988f81"
+                            }}>
+                              {staff.email}
                             </div>
                           </div>
-                        ))}
-                      </div>
+                          <div style={{
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            backgroundColor: staff.status === 'Active' ? "rgba(76, 175, 80, 0.15)" : "rgba(244, 67, 54, 0.15)",
+                            color: staff.status === 'Active' ? "#4caf50" : "#f44336",
+                            flexShrink: 0
+                          }}>
+                            {staff.status}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -550,18 +654,108 @@ export default function SuperAdminUsersDashboard() {
             </div>
 
             <p className="panel-description">
-              Generate a one-time login link for staff or admin accounts.
+              Search for an account and generate a one-time login link.
             </p>
 
             <div className="link-gen-body">
-              <div className="link-input-wrap">
+              <div style={{ position: "relative", flex: 1 }}>
                 <input 
-                  className="link-input" 
-                  type="text" 
+                  type="text"
                   placeholder="Select user or enter email"
-                  value={linkEmail}
-                  onChange={(e) => setLinkEmail(e.target.value)}
+                  value={linkSearchValue}
+                  onChange={(e) => handleLinkSearch(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    backgroundColor: "rgba(26, 15, 0, 0.5)",
+                    border: "1px solid rgba(221, 144, 29, 0.3)",
+                    borderRadius: "8px",
+                    color: "#f5f5f5",
+                    fontSize: "14px",
+                    fontFamily: "Inter, sans-serif",
+                    boxSizing: "border-box",
+                    transition: "border-color 0.2s ease"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
+                  onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
                 />
+                
+                {/* Search Results Dropdown - appears above input */}
+                {showLinkSearchDropdown && linkSearchValue && (
+                  <div className="link-dropdown-scroll" style={{
+                    position: "absolute",
+                    bottom: "100%",
+                    left: 0,
+                    right: 0,
+                    marginBottom: "8px",
+                    backgroundColor: "#1a1a1a",
+                    border: "1px solid rgba(221, 144, 29, 0.3)",
+                    borderRadius: "8px",
+                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
+                    zIndex: 100,
+                    maxHeight: "300px",
+                    overflowY: "auto",
+                    fontFamily: "Inter, sans-serif",
+                    scrollbarWidth: "thin",
+                    scrollbarColor: "rgba(221, 144, 29, 0.2) transparent"
+                  }}>
+                    {linkSearchResults.map((staff, index) => (
+                      <div 
+                        key={staff.id} 
+                        onClick={() => handleSelectFromLinkDropdown(staff)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "12px 16px",
+                          borderBottom: index !== linkSearchResults.length - 1 ? "1px solid rgba(221, 144, 29, 0.1)" : "none",
+                          gap: "12px",
+                          cursor: "pointer",
+                          transition: "background-color 0.2s ease"
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.08)"}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                      >
+                        <div style={{
+                          flex: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px"
+                        }}>
+                          <div style={{
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "6px",
+                            backgroundColor: "rgba(221, 144, 29, 0.15)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "13px",
+                            fontWeight: "600",
+                            color: "#dd901d"
+                          }}>
+                            {staff.initial}
+                          </div>
+                          <div>
+                            <div style={{
+                              fontSize: "13px",
+                              fontWeight: "600",
+                              color: "#f5f5f5"
+                            }}>
+                              {staff.name}
+                            </div>
+                            <div style={{
+                              fontSize: "11px",
+                              color: "#988f81"
+                            }}>
+                              {staff.email}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <button className="btn-gold" onClick={handleGenerateLink}>Generate Link</button>
             </div>

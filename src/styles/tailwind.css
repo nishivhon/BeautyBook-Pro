@@ -5129,6 +5129,24 @@
     background: rgb(221, 144, 29);
   }
 
+  /* ── Link Dropdown Scrollbar ── */
+  .link-dropdown-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .link-dropdown-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .link-dropdown-scroll::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.2);
+    border-radius: 3px;
+  }
+
+  .link-dropdown-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 0.4);
+  }
+
   /* ── Service category divider ── */
   .svc-category-divider {
     width: 100%;
