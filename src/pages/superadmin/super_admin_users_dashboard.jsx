@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import CreateAccountModal from "../../components/modal/create_account";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -150,6 +151,28 @@ export default function SuperAdminUsersDashboard() {
   const [linkEmail, setLinkEmail] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [dropdownResults, setDropdownResults] = useState([]);
+  const [confirmExit, setConfirmExit] = useState(false);
+  const [formData, setFormData] = useState({ name: "", email: "", role: "", password: "", confirmPassword: "" });
+
+  // Check if form has any data
+  const hasFormData = useCallback(() => {
+    return formData.name.trim() !== "" || 
+           formData.email.trim() !== "" || 
+           formData.role.trim() !== "" || 
+           formData.password.trim() !== "" || 
+           formData.confirmPassword.trim() !== "";
+  }, [formData]);
+
+  // Handle modal close with confirmation
+  const handleModalClose = useCallback(() => {
+    setConfirmExit(true);
+  }, []);
+
+  const handleConfirmExit = () => {
+    setFormData({ name: "", email: "", role: "", password: "", confirmPassword: "" });
+    setConfirmExit(false);
+    setShowModal(false);
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -159,6 +182,12 @@ export default function SuperAdminUsersDashboard() {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
   }, []);
+
+  // Email validation helper
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleLogout = () => {
     logoutOperator();
@@ -199,6 +228,10 @@ export default function SuperAdminUsersDashboard() {
       displayToast('Please enter an email or select a user.');
       return;
     }
+    if (!validateEmail(val)) {
+      displayToast('Please enter a valid email address.');
+      return;
+    }
     const link = `https://beautybook.pro/magic/${btoa(val).slice(0,14)}`;
     navigator.clipboard?.writeText(link).catch(()=>{});
     displayToast('Link copied: ' + link.slice(0,40) + '…');
@@ -206,8 +239,41 @@ export default function SuperAdminUsersDashboard() {
   };
 
   const handleCreateAccount = () => {
+    if (!formData.name || !formData.email || !formData.role || !formData.password || !formData.confirmPassword) {
+      displayToast("Please fill in all fields");
+      return;
+    }
+    if (!validateEmail(formData.email)) {
+      displayToast("Please enter a valid email address.");
+      return;
+    }
+    if (formData.password.length < 8) {
+      displayToast("Password must be at least 8 characters long.");
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      displayToast("Passwords do not match.");
+      return;
+    }
+    const emailExists = staffData.some(staff => staff.email.toLowerCase() === formData.email.toLowerCase());
+    if (emailExists) {
+      displayToast("This email is already registered.");
+      return;
+    }
+    // Add new staff to the list
+    const newStaff = {
+      id: staffData.length + 1,
+      initial: formData.name.charAt(0).toUpperCase(),
+      name: formData.name,
+      email: formData.email,
+      role: formData.role,
+      status: "Active",
+      lastLogin: "Last Active just now"
+    };
+    // Reset form and close modal
+    setFormData({ name: "", email: "", role: "", password: "", confirmPassword: "" });
     setShowModal(false);
-    displayToast('Account created successfully!');
+    displayToast(`Account created for ${formData.name}!`);
   };
 
   return (
@@ -439,31 +505,100 @@ export default function SuperAdminUsersDashboard() {
         </main>
       </div>
 
-      {/* ─── MODAL BACKDROP ─── */}
-      {showModal && (
-        <div className="modal-backdrop" onClick={(e) => {if(e.target === e.currentTarget) setShowModal(false)}}>
-          <div className="modal">
-            <div className="modal-title">Create New Account</div>
-            <div className="form-group">
-              <label className="form-label">Full Name</label>
-              <input className="form-input" type="text" placeholder="e.g. Jane Reyes"/>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Email Address</label>
-              <input className="form-input" type="email" placeholder="jane@example.com"/>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Role</label>
-              <select className="form-select">
-                <option value="" disabled selected style={{color:'#666'}}>Select role</option>
-                <option>Staff</option>
-                <option>Admin</option>
-                <option>Super Administrator</option>
-              </select>
-            </div>
-            <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn-gold" onClick={handleCreateAccount}>Create Account</button>
+      {/* ─── MODAL ─── */}
+      <CreateAccountModal 
+        showModal={showModal}
+        onClose={handleModalClose}
+        formData={formData}
+        setFormData={setFormData}
+        handleCreateAccount={handleCreateAccount}
+      />
+
+      {/* ─── CONFIRMATION DIALOG ─── */}
+      {confirmExit && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1001,
+          fontFamily: "Inter, sans-serif"
+        }}>
+          <div style={{
+            backgroundColor: "#1a1a1a",
+            borderRadius: "12px",
+            padding: "32px",
+            width: "90%",
+            maxWidth: "400px",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+            border: "1px solid rgba(221, 144, 29, 0.2)"
+          }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{
+              fontSize: "18px",
+              fontWeight: "700",
+              color: "#f5f5f5",
+              margin: "0 0 16px 0"
+            }}>Discard Changes?</h3>
+            <p style={{
+              fontSize: "14px",
+              color: "#988f81",
+              margin: "0 0 24px 0",
+              lineHeight: "1.5"
+            }}>You have unsaved data. Are you sure you want to exit without creating the account?</p>
+            <div style={{
+              display: "flex",
+              gap: "12px",
+              justifyContent: "flex-end"
+            }}>
+              <button
+                onClick={() => setConfirmExit(false)}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "transparent",
+                  border: "1px solid rgba(221, 144, 29, 0.4)",
+                  color: "#dd901d",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontFamily: "Inter, sans-serif",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = "transparent";
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
+                }}
+              >
+                Keep Editing
+              </button>
+              <button
+                onClick={handleConfirmExit}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#dd901d",
+                  color: "#1a1a1a",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontFamily: "Inter, sans-serif",
+                  transition: "background-color 0.2s ease"
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = "#e6a326"}
+                onMouseOut={(e) => e.target.style.backgroundColor = "#dd901d"}
+              >
+                Discard
+              </button>
             </div>
           </div>
         </div>
