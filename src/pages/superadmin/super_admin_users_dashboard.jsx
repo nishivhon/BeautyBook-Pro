@@ -153,6 +153,10 @@ export default function SuperAdminUsersDashboard() {
   const [dropdownResults, setDropdownResults] = useState([]);
   const [confirmExit, setConfirmExit] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", role: "", password: "", confirmPassword: "" });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingStaffId, setEditingStaffId] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Check if form has any data
   const hasFormData = useCallback(() => {
@@ -172,6 +176,10 @@ export default function SuperAdminUsersDashboard() {
     setFormData({ name: "", email: "", role: "", password: "", confirmPassword: "" });
     setConfirmExit(false);
     setShowModal(false);
+    setIsEditing(false);
+    setEditingStaffId(null);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
   useEffect(() => {
@@ -274,6 +282,47 @@ export default function SuperAdminUsersDashboard() {
     setFormData({ name: "", email: "", role: "", password: "", confirmPassword: "" });
     setShowModal(false);
     displayToast(`Account created for ${formData.name}!`);
+  };
+
+  const handleEditStaff = (staff) => {
+    setIsEditing(true);
+    setEditingStaffId(staff.id);
+    setFormData({
+      name: staff.name,
+      email: staff.email,
+      role: staff.role,
+      password: "",
+      confirmPassword: ""
+    });
+    setShowModal(true);
+  };
+
+  const handleUpdateAccount = () => {
+    if (!formData.name || !formData.email || !formData.role) {
+      displayToast("Please fill in name, email, and role");
+      return;
+    }
+    if (!validateEmail(formData.email)) {
+      displayToast("Please enter a valid email address.");
+      return;
+    }
+    // If password is being changed, validate it
+    if (formData.password || formData.confirmPassword) {
+      if (formData.password.length < 8) {
+        displayToast("Password must be at least 8 characters long.");
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        displayToast("Passwords do not match.");
+        return;
+      }
+    }
+    // Update logic would go here
+    setFormData({ name: "", email: "", role: "", password: "", confirmPassword: "" });
+    setShowModal(false);
+    setIsEditing(false);
+    setEditingStaffId(null);
+    displayToast(`Account updated for ${formData.name}!`);
   };
 
   return (
@@ -460,7 +509,7 @@ export default function SuperAdminUsersDashboard() {
                       </div>
 
                       <div className="actions-cell">
-                        <button className="action-btn" title="Edit" onClick={() => displayToast(`Edit: ${staff.name}`)}>
+                        <button className="action-btn" title="Edit" onClick={() => handleEditStaff(staff)}>
                           <EditIcon />
                         </button>
                         <button className="action-btn danger" title="Remove" onClick={() => displayToast(`Removed: ${staff.name}`)}>
@@ -511,7 +560,12 @@ export default function SuperAdminUsersDashboard() {
         onClose={handleModalClose}
         formData={formData}
         setFormData={setFormData}
-        handleCreateAccount={handleCreateAccount}
+        handleCreateAccount={isEditing ? handleUpdateAccount : handleCreateAccount}
+        isEditing={isEditing}
+        showPassword={showPassword}
+        togglePasswordVisibility={() => setShowPassword(!showPassword)}
+        showConfirmPassword={showConfirmPassword}
+        toggleConfirmPasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
       />
 
       {/* ─── CONFIRMATION DIALOG ─── */}
