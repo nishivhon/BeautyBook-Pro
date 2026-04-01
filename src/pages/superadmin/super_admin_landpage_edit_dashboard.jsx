@@ -157,7 +157,7 @@ const LiveEditStarIcon = () => (
 
 // ─── EditableText Component ───────────────────────────────────────────────────
 
-const EditableText = ({ value, onChange, isEditing, setIsEditing, className = "" }) => {
+const EditableText = ({ value, onChange, isEditing, setIsEditing, className = "", isTextarea = false }) => {
   const [draft, setDraft] = useState(value);
 
   useEffect(() => setDraft(value), [value]);
@@ -168,6 +168,23 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
   };
 
   if (isEditing) {
+    if (isTextarea) {
+      return (
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setIsEditing(false);
+          }}
+          style={{ fontSize: "16px", lineHeight: "1.6", fontFamily: "inherit", color: "#dd901d", overflow: "hidden", width: "100%", boxSizing: "border-box", minWidth: "600px", padding: "16px 20px", textAlign: "center" }}
+          className={`px-8 py-6 w-full min-h-[200px] bg-white border-3 border-[#dd901d] rounded-xl focus:outline-none focus:ring-3 focus:ring-[#dd901d] focus:ring-offset-2 focus:border-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 resize-none ${className}`}
+          placeholder="Type to edit..."
+        />
+      );
+    }
+
     return (
       <input
         autoFocus
@@ -179,7 +196,9 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
           if (e.key === "Enter") commit();
           if (e.key === "Escape") setIsEditing(false);
         }}
-        className={`px-2 py-1 bg-[#dd901d] text-[#0a0908] border-2 border-[#dd901d] rounded font-semibold focus:outline-none ${className}`}
+        style={{ fontSize: "48px", lineHeight: "1.2", textAlign: "center" }}
+        className={`px-5 py-4 w-full min-h-[80px] bg-white !text-[#dd901d] border-3 border-[#dd901d] rounded-xl font-bold focus:outline-none focus:ring-3 focus:ring-[#dd901d] focus:ring-offset-2 focus:border-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 ${className}`}
+        placeholder="Type to edit..."
       />
     );
   }
@@ -475,6 +494,7 @@ export default function SuperAdminLandingPageEditor() {
                 onChange={(v) => setHero({ ...hero, subheading: v })}
                 isEditing={editingField === "subheading"}
                 setIsEditing={(val) => setEditingField(val ? "subheading" : null)}
+                isTextarea={true}
               />
             </p>
 
