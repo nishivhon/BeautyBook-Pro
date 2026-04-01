@@ -148,6 +148,8 @@ export default function SuperAdminUsersDashboard() {
   const [showToast, setShowToast] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [linkEmail, setLinkEmail] = useState("");
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [dropdownResults, setDropdownResults] = useState([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -167,12 +169,22 @@ export default function SuperAdminUsersDashboard() {
     setSearchValue(value);
     const lower = value.toLowerCase().trim();
     if (!lower) {
+      setShowSearchDropdown(false);
+      setDropdownResults([]);
       setFilteredStaff(staffData);
     } else {
-      setFilteredStaff(staffData.filter(s => 
+      const results = staffData.filter(s => 
         s.name.toLowerCase().includes(lower) || s.email.toLowerCase().includes(lower)
-      ));
+      );
+      setDropdownResults(results);
+      setShowSearchDropdown(results.length > 0);
     }
+  };
+
+  const handleSelectFromDropdown = (staff) => {
+    setSearchValue(staff.name);
+    setShowSearchDropdown(false);
+    setFilteredStaff([staff]);
   };
 
   const displayToast = (message) => {
@@ -305,6 +317,36 @@ export default function SuperAdminUsersDashboard() {
                     value={searchValue}
                     onChange={(e) => handleSearch(e.target.value)}
                   />
+                  {/* Search Results Dropdown */}
+                  {showSearchDropdown && searchValue && (
+                    <div className="search-dropdown">
+                      <div className="search-dropdown-header">
+                        <span className="search-results-count">{dropdownResults.length} result{dropdownResults.length !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="search-dropdown-list">
+                        {dropdownResults.map(staff => (
+                          <div 
+                            key={staff.id} 
+                            className="search-result-item"
+                            onClick={() => handleSelectFromDropdown(staff)}
+                          >
+                            <div className="result-avatar">
+                              <span className="avatar-initial">{staff.initial}</span>
+                            </div>
+                            <div className="result-info">
+                              <span className="result-name">{staff.name}</span>
+                              <span className="result-email">{staff.email}</span>
+                            </div>
+                            <div className="result-badge">
+                              <span className={`badge-inner ${staff.status === 'Active' ? 'badge-active' : 'badge-inactive'}`}>
+                                {staff.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <button className="btn-gold" onClick={() => setShowModal(true)}>Create Account</button>
               </div>
