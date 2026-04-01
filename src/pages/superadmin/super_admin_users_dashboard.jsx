@@ -157,6 +157,8 @@ export default function SuperAdminUsersDashboard() {
   const [editingStaffId, setEditingStaffId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState(null);
 
   // Check if form has any data
   const hasFormData = useCallback(() => {
@@ -323,6 +325,19 @@ export default function SuperAdminUsersDashboard() {
     setIsEditing(false);
     setEditingStaffId(null);
     displayToast(`Account updated for ${formData.name}!`);
+  };
+
+  const handleDeleteStaff = (staff) => {
+    setStaffToDelete(staff);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (staffToDelete) {
+      displayToast(`Account deleted for ${staffToDelete.name}!`);
+      setShowDeleteConfirm(false);
+      setStaffToDelete(null);
+    }
   };
 
   return (
@@ -512,7 +527,7 @@ export default function SuperAdminUsersDashboard() {
                         <button className="action-btn" title="Edit" onClick={() => handleEditStaff(staff)}>
                           <EditIcon />
                         </button>
-                        <button className="action-btn danger" title="Remove" onClick={() => displayToast(`Removed: ${staff.name}`)}>
+                        <button className="action-btn danger" title="Remove" onClick={() => handleDeleteStaff(staff)}>
                           <DeleteIcon />
                         </button>
                       </div>
@@ -568,7 +583,101 @@ export default function SuperAdminUsersDashboard() {
         toggleConfirmPasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
       />
 
-      {/* ─── CONFIRMATION DIALOG ─── */}
+      {/* ─── DELETE CONFIRMATION DIALOG ─── */}
+      {showDeleteConfirm && staffToDelete && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1001,
+          fontFamily: "Inter, sans-serif"
+        }}>
+          <div style={{
+            backgroundColor: "#1a1a1a",
+            borderRadius: "12px",
+            padding: "32px",
+            width: "90%",
+            maxWidth: "400px",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+            border: "1px solid rgba(221, 144, 29, 0.2)"
+          }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{
+              fontSize: "18px",
+              fontWeight: "700",
+              color: "#f5f5f5",
+              margin: "0 0 16px 0"
+            }}>Delete Account?</h3>
+            <p style={{
+              fontSize: "14px",
+              color: "#988f81",
+              margin: "0 0 8px 0",
+              lineHeight: "1.5"
+            }}>Are you sure you want to delete the account for <span style={{ color: "#dd901d", fontWeight: "600" }}>{staffToDelete.name}</span>? This action cannot be undone.</p>
+            <div style={{
+              display: "flex",
+              gap: "12px",
+              justifyContent: "flex-end",
+              marginTop: "24px"
+            }}>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setStaffToDelete(null);
+                }}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "transparent",
+                  border: "1px solid rgba(221, 144, 29, 0.4)",
+                  color: "#dd901d",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontFamily: "Inter, sans-serif",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = "transparent";
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "#e74c3c",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontFamily: "Inter, sans-serif",
+                  transition: "background-color 0.2s ease"
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = "#c0392b"}
+                onMouseOut={(e) => e.target.style.backgroundColor = "#e74c3c"}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL EXIT CONFIRMATION DIALOG ─── */}
       {confirmExit && (
         <div style={{
           position: "fixed",
