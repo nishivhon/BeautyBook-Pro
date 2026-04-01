@@ -250,7 +250,716 @@ const AppointmentLineChart = () => {
   );
 };
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─── Queue Bar Chart Component ──────────────────────────────────────────────
+
+const QueueChart = () => {
+  const data = [
+    { service: "Haircut", count: 3, color: "#DD901D" },
+    { service: "Massage", count: 2, color: "#DD901D" },
+    { service: "Nail", count: 1, color: "#DD901D" },
+    { service: "Skincare", count: 1, color: "#DD901D" },
+    { service: "Premium", count: 1, color: "#DD901D" },
+  ];
+
+  const width = 520;
+  const height = 300;
+  const paddingLeft = 48;
+  const paddingRight = 20;
+  const paddingTop = 16;
+  const paddingBottom = 44;
+
+  const maxCount = Math.max(...data.map(d => d.count));
+
+  const chartW = width - paddingLeft - paddingRight;
+  const chartH = height - paddingTop - paddingBottom;
+
+  const barWidth = chartW / data.length * 0.7;
+  const barSpacing = chartW / data.length;
+
+  const toY = (count) => paddingTop + chartH - (count / maxCount) * chartH;
+
+  const yLines = [0, 1, 2, 3];
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      width="100%"
+      height="100%"
+      style={{ overflow: "visible" }}
+    >
+      <defs>
+        <filter id="barGlow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Grid lines */}
+      {yLines.map((v) => (
+        <g key={v}>
+          <line
+            x1={paddingLeft}
+            y1={toY(v)}
+            x2={width - paddingRight}
+            y2={toY(v)}
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth="1"
+          />
+          <text
+            x={paddingLeft - 8}
+            y={toY(v) + 4}
+            textAnchor="end"
+            fill="rgba(152,143,129,0.9)"
+            fontSize="11"
+            fontFamily="Inter, sans-serif"
+          >
+            {v}
+          </text>
+        </g>
+      ))}
+
+      {/* Bars */}
+      {data.map((d, i) => {
+        const barX = paddingLeft + i * barSpacing + (barSpacing - barWidth) / 2;
+        const barY = toY(d.count);
+        const barH = height - paddingTop - paddingBottom - barY + paddingTop;
+
+        return (
+          <g key={d.service}>
+            <rect
+              x={barX}
+              y={barY}
+              width={barWidth}
+              height={barH}
+              fill={d.color}
+              rx="4"
+              opacity="0.85"
+              filter="url(#barGlow)"
+            />
+            <rect
+              x={barX}
+              y={barY}
+              width={barWidth}
+              height={barH}
+              fill={d.color}
+              rx="4"
+              opacity="0.3"
+            />
+          </g>
+        );
+      })}
+
+      {/* Count labels on bars */}
+      {data.map((d, i) => {
+        const barX = paddingLeft + i * barSpacing + (barSpacing - barWidth) / 2;
+        const barY = toY(d.count);
+
+        return (
+          <text
+            key={`label-${d.service}`}
+            x={barX + barWidth / 2}
+            y={barY - 8}
+            textAnchor="middle"
+            fill="#DD901D"
+            fontSize="13"
+            fontWeight="600"
+            fontFamily="Inter, sans-serif"
+          >
+            {d.count}
+          </text>
+        );
+      })}
+
+      {/* X-axis labels */}
+      {data.map((d, i) => (
+        <text
+          key={d.service}
+          x={paddingLeft + i * barSpacing + barSpacing / 2}
+          y={paddingTop + chartH + 22}
+          textAnchor="middle"
+          fill="rgba(152,143,129,0.9)"
+          fontSize="11"
+          fontFamily="Inter, sans-serif"
+        >
+          {d.service}
+        </text>
+      ))}
+    </svg>
+  );
+};
+
+// ─── Revenue Chart Component ────────────────────────────────────────────────
+
+const RevenueChart = () => {
+  const data = [
+    { service: "Haircut", revenue: 3200, color: "#DD901D" },
+    { service: "Massage", revenue: 2800, color: "#DD901D" },
+    { service: "Nail", revenue: 1500, color: "#DD901D" },
+    { service: "Skincare", revenue: 2950, color: "#DD901D" },
+    { service: "Premium", revenue: 2000, color: "#DD901D" },
+  ];
+
+  const width = 520;
+  const height = 300;
+  const paddingLeft = 48;
+  const paddingRight = 20;
+  const paddingTop = 16;
+  const paddingBottom = 44;
+
+  const maxRevenue = Math.max(...data.map(d => d.revenue));
+  const chartW = width - paddingLeft - paddingRight;
+  const chartH = height - paddingTop - paddingBottom;
+  const barWidth = chartW / data.length * 0.7;
+  const barSpacing = chartW / data.length;
+
+  const toY = (rev) => paddingTop + chartH - (rev / maxRevenue) * chartH;
+  const yLines = [0, 1000, 2000, 3000, 4000];
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
+      <defs>
+        <filter id="barGlow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {yLines.map((v) => (
+        <g key={v}>
+          <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+          <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+            ₱{v}
+          </text>
+        </g>
+      ))}
+
+      {data.map((d, i) => {
+        const barX = paddingLeft + i * barSpacing + (barSpacing - barWidth) / 2;
+        const barY = toY(d.revenue);
+        const barH = height - paddingTop - paddingBottom - barY + paddingTop;
+
+        return (
+          <g key={d.service}>
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.85" filter="url(#barGlow)" />
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.3" />
+            <text key={`label-${d.service}`} x={barX + barWidth / 2} y={barY - 8} textAnchor="middle" fill="#DD901D" fontSize="12" fontWeight="600" fontFamily="Inter, sans-serif">
+              ₱{(d.revenue / 1000).toFixed(1)}k
+            </text>
+          </g>
+        );
+      })}
+
+      {data.map((d, i) => (
+        <text key={d.service} x={paddingLeft + i * barSpacing + barSpacing / 2} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+          {d.service}
+        </text>
+      ))}
+    </svg>
+  );
+};
+
+// ─── Waiting Time Chart Component ──────────────────────────────────────────
+
+const WaitingTimeChart = () => {
+  const data = [
+    { hour: "9 AM", minutes: 15 },
+    { hour: "10 AM", minutes: 18 },
+    { hour: "11 AM", minutes: 22 },
+    { hour: "12 PM", minutes: 28 },
+    { hour: "1 PM", minutes: 25 },
+  ];
+
+  const width = 520;
+  const height = 300;
+  const paddingLeft = 48;
+  const paddingRight = 20;
+  const paddingTop = 16;
+  const paddingBottom = 44;
+
+  const minVal = 10;
+  const maxVal = 35;
+  const chartW = width - paddingLeft - paddingRight;
+  const chartH = height - paddingTop - paddingBottom;
+
+  const toX = (i) => paddingLeft + (i / (data.length - 1)) * chartW;
+  const toY = (v) => paddingTop + chartH - ((v - minVal) / (maxVal - minVal)) * chartH;
+
+  const yLines = [10, 15, 20, 25, 30, 35];
+  const pointsStr = data.map((d, i) => `${toX(i)},${toY(d.minutes)}`).join(" ");
+
+  const areaPath = `M ${toX(0)},${toY(data[0].minutes)} ` +
+    data.slice(1).map((d, i) => `L ${toX(i + 1)},${toY(d.minutes)}`).join(" ") +
+    ` L ${toX(data.length - 1)},${paddingTop + chartH} L ${toX(0)},${paddingTop + chartH} Z`;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
+      <defs>
+        <linearGradient id="timeGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#DD901D" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#DD901D" stopOpacity="0.03" />
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {yLines.map((v) => (
+        <g key={v}>
+          <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+          <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+            {v}m
+          </text>
+        </g>
+      ))}
+
+      <path d={areaPath} fill="url(#timeGrad)" />
+      <polyline points={pointsStr} fill="none" stroke="#DD901D" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" filter="url(#glow)" />
+
+      {data.map((d, i) => (
+        <g key={d.hour}>
+          <circle cx={toX(i)} cy={toY(d.minutes)} r="5" fill="#0a0908" stroke="#DD901D" strokeWidth="2.5" />
+          <circle cx={toX(i)} cy={toY(d.minutes)} r="2" fill="#DD901D" />
+        </g>
+      ))}
+
+      {data.map((d, i) => (
+        <text key={d.hour} x={toX(i)} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+          {d.hour}
+        </text>
+      ))}
+    </svg>
+  );
+};
+
+// ─── Promo Bookings Chart Component ────────────────────────────────────────
+
+const PromoBookingsChart = () => {
+  const data = [
+    { promo: "20% Off", bookings: 5, color: "#DD901D" },
+    { promo: "Buy 2 Get 1", bookings: 4, color: "#DD901D" },
+    { promo: "Referral", bookings: 3, color: "#DD901D" },
+    { promo: "Bundle Deal", bookings: 2, color: "#DD901D" },
+  ];
+
+  const width = 520;
+  const height = 300;
+  const paddingLeft = 48;
+  const paddingRight = 20;
+  const paddingTop = 16;
+  const paddingBottom = 44;
+
+  const maxBookings = Math.max(...data.map(d => d.bookings));
+  const chartW = width - paddingLeft - paddingRight;
+  const chartH = height - paddingTop - paddingBottom;
+  const barWidth = chartW / data.length * 0.65;
+  const barSpacing = chartW / data.length;
+
+  const toY = (count) => paddingTop + chartH - (count / maxBookings) * chartH;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
+      <defs>
+        <filter id="barGlow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {[0, 1, 2, 3, 4, 5].map((v) => (
+        <g key={v}>
+          <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+          <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+            {v}
+          </text>
+        </g>
+      ))}
+
+      {data.map((d, i) => {
+        const barX = paddingLeft + i * barSpacing + (barSpacing - barWidth) / 2;
+        const barY = toY(d.bookings);
+        const barH = height - paddingTop - paddingBottom - barY + paddingTop;
+
+        return (
+          <g key={d.promo}>
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.85" filter="url(#barGlow)" />
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.3" />
+            <text x={barX + barWidth / 2} y={barY - 8} textAnchor="middle" fill="#DD901D" fontSize="13" fontWeight="600" fontFamily="Inter, sans-serif">
+              {d.bookings}
+            </text>
+          </g>
+        );
+      })}
+
+      {data.map((d, i) => (
+        <text key={d.promo} x={paddingLeft + i * barSpacing + barSpacing / 2} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="9" fontFamily="Inter, sans-serif">
+          <tspan x={paddingLeft + i * barSpacing + barSpacing / 2} dy="0">{d.promo.split(" ")[0]}</tspan>
+        </text>
+      ))}
+    </svg>
+  );
+};
+
+// ─── Loyalty Cards Chart Component ─────────────────────────────────────────
+
+const LoyaltyCardsChart = () => {
+  const data = [
+    { level: "Gold", activated: 8, color: "#DD901D" },
+    { level: "Silver", activated: 3, color: "#DD901D" },
+    { level: "Bronze", activated: 1, color: "#DD901D" },
+  ];
+
+  const width = 520;
+  const height = 300;
+  const paddingLeft = 48;
+  const paddingRight = 20;
+  const paddingTop = 16;
+  const paddingBottom = 44;
+
+  const maxActivated = Math.max(...data.map(d => d.activated));
+  const chartW = width - paddingLeft - paddingRight;
+  const chartH = height - paddingTop - paddingBottom;
+  const barWidth = chartW / data.length * 0.6;
+  const barSpacing = chartW / data.length;
+
+  const toY = (count) => paddingTop + chartH - (count / maxActivated) * chartH;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
+      <defs>
+        <filter id="barGlow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {[0, 2, 4, 6, 8].map((v) => (
+        <g key={v}>
+          <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+          <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+            {v}
+          </text>
+        </g>
+      ))}
+
+      {data.map((d, i) => {
+        const barX = paddingLeft + i * barSpacing + (barSpacing - barWidth) / 2;
+        const barY = toY(d.activated);
+        const barH = height - paddingTop - paddingBottom - barY + paddingTop;
+
+        return (
+          <g key={d.level}>
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.85" filter="url(#barGlow)" />
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.3" />
+            <text x={barX + barWidth / 2} y={barY - 8} textAnchor="middle" fill="#DD901D" fontSize="13" fontWeight="600" fontFamily="Inter, sans-serif">
+              {d.activated}
+            </text>
+          </g>
+        );
+      })}
+
+      {data.map((d, i) => (
+        <text key={d.level} x={paddingLeft + i * barSpacing + barSpacing / 2} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+          {d.level}
+        </text>
+      ))}
+    </svg>
+  );
+};
+
+// ─── Completed Chart Component ────────────────────────────────────────────
+
+const CompletedChart = () => {
+  const data = [
+    { service: "Haircut", completed: 8, color: "#DD901D" },
+    { service: "Massage", completed: 4, color: "#DD901D" },
+    { service: "Nail", completed: 2, color: "#DD901D" },
+    { service: "Skincare", completed: 1, color: "#DD901D" },
+    { service: "Premium", completed: 1, color: "#DD901D" },
+  ];
+
+  const width = 520;
+  const height = 300;
+  const paddingLeft = 48;
+  const paddingRight = 20;
+  const paddingTop = 16;
+  const paddingBottom = 44;
+
+  const maxCompleted = Math.max(...data.map(d => d.completed));
+  const chartW = width - paddingLeft - paddingRight;
+  const chartH = height - paddingTop - paddingBottom;
+  const barWidth = chartW / data.length * 0.7;
+  const barSpacing = chartW / data.length;
+
+  const toY = (count) => paddingTop + chartH - (count / maxCompleted) * chartH;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
+      <defs>
+        <filter id="barGlow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {[0, 2, 4, 6, 8].map((v) => (
+        <g key={v}>
+          <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,ffffff,0.08)" strokeWidth="1" />
+          <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+            {v}
+          </text>
+        </g>
+      ))}
+
+      {data.map((d, i) => {
+        const barX = paddingLeft + i * barSpacing + (barSpacing - barWidth) / 2;
+        const barY = toY(d.completed);
+        const barH = height - paddingTop - paddingBottom - barY + paddingTop;
+
+        return (
+          <g key={d.service}>
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.85" filter="url(#barGlow)" />
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.3" />
+            <text x={barX + barWidth / 2} y={barY - 8} textAnchor="middle" fill="#DD901D" fontSize="13" fontWeight="600" fontFamily="Inter, sans-serif">
+              {d.completed}
+            </text>
+          </g>
+        );
+      })}
+
+      {data.map((d, i) => (
+        <text key={d.service} x={paddingLeft + i * barSpacing + barSpacing / 2} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+          {d.service}
+        </text>
+      ))}
+    </svg>
+  );
+};
+
+// ─── In Progress Chart Component ───────────────────────────────────────────
+
+const InProgressChart = () => {
+  const data = [
+    { service: "Haircut", inProgress: 2, color: "#DD901D" },
+    { service: "Massage", inProgress: 1, color: "#DD901D" },
+  ];
+
+  const width = 520;
+  const height = 300;
+  const paddingLeft = 48;
+  const paddingRight = 20;
+  const paddingTop = 16;
+  const paddingBottom = 44;
+
+  const maxInProgress = 2;
+  const chartW = width - paddingLeft - paddingRight;
+  const chartH = height - paddingTop - paddingBottom;
+  const barWidth = chartW / 4 * 0.8;
+  const barSpacing = chartW / 4;
+
+  const toY = (count) => paddingTop + chartH - (count / maxInProgress) * chartH;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
+      <defs>
+        <filter id="barGlow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {[0, 1, 2].map((v) => (
+        <g key={v}>
+          <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+          <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+            {v}
+          </text>
+        </g>
+      ))}
+
+      {data.map((d, i) => {
+        const barX = paddingLeft + i * barSpacing + (barSpacing - barWidth) / 2;
+        const barY = toY(d.inProgress);
+        const barH = height - paddingTop - paddingBottom - barY + paddingTop;
+
+        return (
+          <g key={d.service}>
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.85" filter="url(#barGlow)" />
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.3" />
+            <text x={barX + barWidth / 2} y={barY - 8} textAnchor="middle" fill="#DD901D" fontSize="13" fontWeight="600" fontFamily="Inter, sans-serif">
+              {d.inProgress}
+            </text>
+          </g>
+        );
+      })}
+
+      {data.map((d, i) => (
+        <text key={d.service} x={paddingLeft + i * barSpacing + barSpacing / 2} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+          {d.service}
+        </text>
+      ))}
+    </svg>
+  );
+};
+
+// ─── Pending Chart Component ───────────────────────────────────────────────
+
+const PendingChart = () => {
+  const data = [
+    { reason: "Awaiting Customer", pending: 3, color: "#DD901D" },
+    { reason: "Awaiting Staff", pending: 2, color: "#DD901D" },
+  ];
+
+  const width = 520;
+  const height = 300;
+  const paddingLeft = 48;
+  const paddingRight = 20;
+  const paddingTop = 16;
+  const paddingBottom = 44;
+
+  const maxPending = 3;
+  const chartW = width - paddingLeft - paddingRight;
+  const chartH = height - paddingTop - paddingBottom;
+  const barWidth = chartW / 4 * 0.8;
+  const barSpacing = chartW / 4;
+
+  const toY = (count) => paddingTop + chartH - (count / maxPending) * chartH;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
+      <defs>
+        <filter id="barGlow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {[0, 1, 2, 3].map((v) => (
+        <g key={v}>
+          <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+          <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+            {v}
+          </text>
+        </g>
+      ))}
+
+      {data.map((d, i) => {
+        const barX = paddingLeft + i * barSpacing + (barSpacing - barWidth) / 2;
+        const barY = toY(d.pending);
+        const barH = height - paddingTop - paddingBottom - barY + paddingTop;
+
+        return (
+          <g key={d.reason}>
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.85" filter="url(#barGlow)" />
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.3" />
+            <text x={barX + barWidth / 2} y={barY - 8} textAnchor="middle" fill="#DD901D" fontSize="13" fontWeight="600" fontFamily="Inter, sans-serif">
+              {d.pending}
+            </text>
+          </g>
+        );
+      })}
+
+      {data.map((d, i) => (
+        <text key={d.reason} x={paddingLeft + i * barSpacing + barSpacing / 2} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="9" fontFamily="Inter, sans-serif">
+          <tspan x={paddingLeft + i * barSpacing + barSpacing / 2} dy="0">{d.reason.split(" ")[0]}</tspan>
+        </text>
+      ))}
+    </svg>
+  );
+};
+
+// ─── Cancelled Chart Component ────────────────────────────────────────────
+
+const CancelledChart = () => {
+  const data = [
+    { reason: "No Show", cancelled: 1, color: "#DD901D" },
+    { reason: "Customer Request", cancelled: 1, color: "#DD901D" },
+  ];
+
+  const width = 520;
+  const height = 300;
+  const paddingLeft = 48;
+  const paddingRight = 20;
+  const paddingTop = 16;
+  const paddingBottom = 44;
+
+  const maxCancelled = 1;
+  const chartW = width - paddingLeft - paddingRight;
+  const chartH = height - paddingTop - paddingBottom;
+  const barWidth = chartW / 4 * 0.8;
+  const barSpacing = chartW / 4;
+
+  const toY = (count) => paddingTop + chartH - (count / maxCancelled) * chartH;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
+      <defs>
+        <filter id="barGlow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {[0, 1].map((v) => (
+        <g key={v}>
+          <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+          <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+            {v}
+          </text>
+        </g>
+      ))}
+
+      {data.map((d, i) => {
+        const barX = paddingLeft + i * barSpacing + (barSpacing - barWidth) / 2;
+        const barY = toY(d.cancelled);
+        const barH = height - paddingTop - paddingBottom - barY + paddingTop;
+
+        return (
+          <g key={d.reason}>
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.85" filter="url(#barGlow)" />
+            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.3" />
+            <text x={barX + barWidth / 2} y={barY - 8} textAnchor="middle" fill="#DD901D" fontSize="13" fontWeight="600" fontFamily="Inter, sans-serif">
+              {d.cancelled}
+            </text>
+          </g>
+        );
+      })}
+
+      {data.map((d, i) => (
+        <text key={d.reason} x={paddingLeft + i * barSpacing + barSpacing / 2} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="9" fontFamily="Inter, sans-serif">
+          <tspan x={paddingLeft + i * barSpacing + barSpacing / 2} dy="0">{d.reason.split(" ")[0]}</tspan>
+        </text>
+      ))}
+    </svg>
+  );
+};
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
@@ -393,6 +1102,7 @@ export default function SuperAdminDashboard() {
   });
   const [metricsIndex, setMetricsIndex] = useState(0);
   const [analyticsIndex, setAnalyticsIndex] = useState(0);
+  const [selectedChart, setSelectedChart] = useState("appointments");
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -550,7 +1260,31 @@ export default function SuperAdminDashboard() {
                 <div
                   key={`${metricsIndex}-${idx}`}
                   className="dash-stat-card"
-                  style={{ animationDelay: `${0.08 + idx * 0.07}s` }}
+                  style={{ animationDelay: `${0.08 + idx * 0.07}s`, cursor: "pointer" }}
+                  onClick={() => {
+                    const label = m.label;
+                    if (label === "In Queue Now") {
+                      setSelectedChart("queue");
+                    } else if (label === "Today's Appointments") {
+                      setSelectedChart("appointments");
+                    } else if (label === "Revenue Today") {
+                      setSelectedChart("revenue");
+                    } else if (label === "Avg. Waiting Time") {
+                      setSelectedChart("waitingTime");
+                    } else if (label === "Promo Bookings Today") {
+                      setSelectedChart("promoBookings");
+                    } else if (label === "Loyalty Cards Activated") {
+                      setSelectedChart("loyaltyCards");
+                    } else if (label === "Completed") {
+                      setSelectedChart("completed");
+                    } else if (label === "In Progress") {
+                      setSelectedChart("inProgress");
+                    } else if (label === "Pending") {
+                      setSelectedChart("pending");
+                    } else if (label === "Cancelled") {
+                      setSelectedChart("cancelled");
+                    }
+                  }}
                 >
                   <div className="dash-stat-top">
                     <div className="dash-stat-icon-box">{m.icon}</div>
@@ -621,13 +1355,33 @@ export default function SuperAdminDashboard() {
             <div className="chart-panel">
               {/* Panel title */}
               <div className="flex flex-col gap-1">
-                <h2 className="chart-panel-title">Today's Appointment Chart</h2>
+                <h2 className="chart-panel-title">
+                  {selectedChart === "queue" && "Queue by Service"}
+                  {selectedChart === "appointments" && "Today's Appointment Chart"}
+                  {selectedChart === "revenue" && "Revenue by Service"}
+                  {selectedChart === "waitingTime" && "Waiting Time Trends"}
+                  {selectedChart === "promoBookings" && "Promo Bookings by Type"}
+                  {selectedChart === "loyaltyCards" && "Loyalty Cards by Level"}
+                  {selectedChart === "completed" && "Completed Appointments"}
+                  {selectedChart === "inProgress" && "In Progress Appointments"}
+                  {selectedChart === "pending" && "Pending Appointments"}
+                  {selectedChart === "cancelled" && "Cancelled Appointments"}
+                </h2>
                 <div className="chart-divider" />
               </div>
 
               {/* Chart area */}
               <div className="chart-container">
-                <AppointmentLineChart />
+                {selectedChart === "queue" && <QueueChart />}
+                {selectedChart === "appointments" && <AppointmentLineChart />}
+                {selectedChart === "revenue" && <RevenueChart />}
+                {selectedChart === "waitingTime" && <WaitingTimeChart />}
+                {selectedChart === "promoBookings" && <PromoBookingsChart />}
+                {selectedChart === "loyaltyCards" && <LoyaltyCardsChart />}
+                {selectedChart === "completed" && <CompletedChart />}
+                {selectedChart === "inProgress" && <InProgressChart />}
+                {selectedChart === "pending" && <PendingChart />}
+                {selectedChart === "cancelled" && <CancelledChart />}
               </div>
             </div>
 
