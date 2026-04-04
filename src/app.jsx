@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Homepage from './pages/landpage'
 import { Register } from './pages/register'
@@ -8,9 +8,20 @@ import { AdminDashboard } from './pages/admin/admin_dashboard'
 import { AdminDashboardServices } from './pages/admin/admin_services_dashboard'
 import { AdminDashboardLiveStatus } from './pages/admin/admin_live_status_dashboard'
 import { AdminDashboardStaffStatus } from './pages/admin/admin_staff_status_dashboard'
+import SuperAdminDashboard from './pages/superadmin/super_admin_dashboard'
+import SuperAdminUsersDashboard from './pages/superadmin/super_admin_users_dashboard'
+import SuperAdminDatabaseDashboard from './pages/superadmin/super_admin_database_dashboard'
+import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security_dashboard'
+import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage_edit_dashboard'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { logMagicLinksForTesting } from './services/magicLink'
 
 function App() {
+  useEffect(() => {
+    // Log test magic links to console for easy access during development
+    logMagicLinksForTesting();
+  }, []);
+
   return (
     <Router>
       <Routes>
@@ -47,6 +58,46 @@ function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminDashboardStaffStatus />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/dashboard"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/users"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminUsersDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/database"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminDatabaseDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/security"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminSecurityDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/landing-page"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminLandingPageEditor />
             </ProtectedRoute>
           }
         />

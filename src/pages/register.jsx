@@ -240,7 +240,11 @@ export const Register = () => {
     if (Object.keys(newErrors).length === 0) {
       setIsSubmitting(true);
       
-      fetch(`${import.meta.env.VITE_API_URL}/auth/signup`, {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      console.log('📧 Sending signup request to:', `${apiUrl}/auth/signup`);
+      console.log('📋 Data:', { email, full_name: fullName, phone });
+      
+      fetch(`${apiUrl}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -249,8 +253,12 @@ export const Register = () => {
           phone: phone || ""
         })
       })
-        .then(res => res.json())
+        .then(res => {
+          console.log('📥 Response status:', res.status);
+          return res.json();
+        })
         .then(data => {
+          console.log('📦 Response data:', data);
           if (data.message) {
             setToastMessage(`Verification email sent to ${email}. Check your inbox!`);
             setShowToast(true);
@@ -267,12 +275,16 @@ export const Register = () => {
               }
             }, 2000);
           } else {
-            setToastMessage(data.error || "Failed to send verification email");
+            const errorMsg = data.error || "Failed to send verification email";
+            console.error('❌ Error:', errorMsg);
+            setToastMessage(errorMsg);
             setShowToast(true);
           }
         })
         .catch(err => {
-          setToastMessage("Error sending verification email");
+          console.error('❌ Network/Fetch Error:', err);
+          const errorMsg = `Error: ${err.message || 'Unable to connect to server'}`;
+          setToastMessage(errorMsg);
           setShowToast(true);
         })
         .finally(() => setIsSubmitting(false));

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /* Scissors icon used for all hair service rows */
 const ScissorsIcon = () => (
@@ -24,19 +24,21 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-const HAIR_SERVICES = [
-  { id: 1, title: "Hair cuts",      desc: "Classic Haircut with Styling", price: "₱00.00", estTime: "est time" },
-  { id: 2, title: "Hair color",     desc: "Full hair color service",       price: "₱00.00", estTime: "est time" },
-  { id: 3, title: "Hair treatment", desc: "Full hair color service",       price: "₱00.00", estTime: "est time" },
-  { id: 4, title: "Beard trimming", desc: "Trim and beard shaping",        price: "₱00.00", estTime: "est time" },
-];
-
 const STEPS = [
   { number: 1, label: "Schedule" },
   { number: 2, label: "Service"  },
   { number: 3, label: "Stylist"  },
   { number: 4, label: "Confirm"  },
 ];
+
+// Format service data for display
+const formatService = (service) => ({
+  id: service.id,
+  title: service.service_name,
+  desc: service.description,
+  price: `₱${parseFloat(service.price).toFixed(2)}`,
+  estTime: `${service.est_time} min`,
+});
 
 /* ── Header — shows the service category name ── */
 const ServiceHeader = ({ title, onBack, isSaving = false }) => (
@@ -121,33 +123,54 @@ const ServiceRow = ({ service, isSelected, onSelect }) => (
 );
 
 export const HairServicesModal = ({ onBack, onContinue, initialSelected = [], isUpdating = false }) => {
-  const [selected, setSelected] = useState(initialSelected); // Array for multiple selections, initialized with previous selections
+  const [selected, setSelected] = useState(initialSelected);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/services/category/Hair%20Services');
+        if (!response.ok) {
+          throw new Error('Failed to fetch services');
+        }
+        const data = await response.json();
+        setServices(data.map(formatService));
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching hair services:', err);
+        setError(err.message);
+        setServices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   const handleBack = () => {
-    // Auto-save when clicking back
-    const selectedServices = HAIR_SERVICES.filter((s) => selected.includes(s.id));
+    const selectedServices = services.filter((s) => selected.includes(s.id));
     onContinue?.({ services: selectedServices });
     onBack?.();
   };
 
   const handleSelectService = (serviceId, isDeselect) => {
     if (isDeselect) {
-      // Remove from selected
       setSelected(selected.filter((id) => id !== serviceId));
     } else {
-      // Add to selected
       setSelected([...selected, serviceId]);
     }
   };
 
   const handleContinue = () => {
-    // Allow save on subsequent visits even with no selections
-    // Only validate on first visit (when isUpdating is false)
     if (selected.length === 0 && !isUpdating) {
-      return; // Prevent continue if nothing selected on first visit
+      return;
     }
 
-    const selectedServices = HAIR_SERVICES.filter((s) => selected.includes(s.id));
+    const selectedServices = services.filter((s) => selected.includes(s.id));
     onContinue?.({ services: selectedServices });
   };
 
@@ -164,17 +187,33 @@ export const HairServicesModal = ({ onBack, onContinue, initialSelected = [], is
           <p className="appt-section-sub">Select one or more services you&apos;d like to book</p>
         </div>
 
+        {/* Loading state */}
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+            Loading services...
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#ff6b6b' }}>
+            Error loading services: {error}
+          </div>
+        )}
+
         {/* service list */}
-        <div className="svc-list">
-          {HAIR_SERVICES.map((svc) => (
-            <ServiceRow
-              key={svc.id}
-              service={svc}
-              isSelected={selected.includes(svc.id)}
-              onSelect={handleSelectService}
-            />
-          ))}
-        </div>
+        {!loading && !error && (
+          <div className="svc-list">
+            {services.map((svc) => (
+              <ServiceRow
+                key={svc.id}
+                service={svc}
+                isSelected={selected.includes(svc.id)}
+                onSelect={handleSelectService}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Footer CTA ── */}
@@ -218,7 +257,7 @@ export const HairServicesModal = ({ onBack, onContinue, initialSelected = [], is
           <button
             className="appt-continue-btn"
             onClick={handleContinue}
-            disabled={selected.length === 0 && !isUpdating}
+            disabled={selected.length === 0 && !isUpdating || loading}
             style={{
               flex: 1,
               opacity: selected.length > 0 || isUpdating ? 1 : 0.5,

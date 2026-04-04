@@ -260,6 +260,13 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
 
+  const handleCompleteService = (itemId, customerName, service) => {
+    console.log(`Service completed for ${customerName}: ${service}`);
+    // Here you can integrate with your API to mark the service as complete
+    // For now, just logging the data
+    // You could also remove the item from the queue or update its status
+  };
+
   const QUEUE_SECTIONS = [
     {
       label: "Current",
@@ -395,7 +402,7 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
     },
   ];
 
-  const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details }) => {
+  const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, onCompleteService }) => {
     const isActive = type === "active";
     const isCancelled = type === "cancelled";
     const rowClass = isActive ? "live-queue-row-active"
@@ -405,6 +412,12 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
 
     const handleChevronClick = () => {
       setExpandedItemId(isItemExpanded ? null : id);
+    };
+
+    const handleCompleteService = () => {
+      if (onCompleteService) {
+        onCompleteService(id, name, service);
+      }
     };
 
     return (
@@ -470,6 +483,34 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
                 <span style={{ fontSize: "12px", color: "#dd901d", fontWeight: "600", display: "block", marginBottom: "4px", fontFamily: "Inter, sans-serif" }}>Estimated Time</span>
                 <span style={{ fontSize: "14px", color: "#f5f5f5", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>{details.estimatedTime}</span>
               </div>
+
+              {isActive && (
+                <button
+                  onClick={handleCompleteService}
+                  style={{
+                    marginTop: "8px",
+                    padding: "10px 16px",
+                    backgroundColor: "#22c55e",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    fontFamily: "Inter, sans-serif",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    transition: "background-color 0.2s ease"
+                  }}
+                  onMouseOver={(e) => e.target.style.backgroundColor = "#16a34a"}
+                  onMouseOut={(e) => e.target.style.backgroundColor = "#22c55e"}
+                >
+                  <CheckCircleIcon size={16} color="#fff" />
+                  Complete Service
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -512,7 +553,7 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
             <p className="live-section-label">{section.label}</p>
             <div className="live-queue-group">
               {section.items.map((item, ii) => (
-                <QueueItem key={ii} {...item} />
+                <QueueItem key={ii} {...item} onCompleteService={handleCompleteService} />
               ))}
             </div>
           </div>

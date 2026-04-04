@@ -123,6 +123,7 @@ export const validateOperatorCredentials = async (email, password) => {
     const operators = [
       { email: 'admin@beautybook.pro', password: 'admin123', role: OPERATOR_ROLES.ADMIN },
       { email: 'staff@beautybook.pro', password: 'staff123', role: OPERATOR_ROLES.STAFF },
+      { email: 'superadmin@beautybook.pro', password: 'superadmin123', role: OPERATOR_ROLES.SUPER_ADMIN },
     ];
 
     const operator = operators.find(op => op.email === email && op.password === password);
