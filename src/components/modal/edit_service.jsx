@@ -11,6 +11,103 @@ const CloseIcon = ({ size = 20, color = "currentColor" }) => (
 );
 
 // ═══════════════════════════════════════════════════════════════════
+// CONFIRMATION DIALOG COMPONENT
+// ═══════════════════════════════════════════════════════════════════
+
+const ConfirmationDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Discard", cancelText = "Keep Editing" }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1001,
+      fontFamily: "Inter, sans-serif"
+    }}>
+      <div style={{
+        backgroundColor: "#1a1a1a",
+        borderRadius: "12px",
+        padding: "24px",
+        width: "90%",
+        maxWidth: "400px",
+        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+        border: "1px solid rgba(221, 144, 29, 0.2)"
+      }}>
+        <h3 style={{
+          fontSize: "18px",
+          fontWeight: "700",
+          color: "#f5f5f5",
+          margin: "0 0 12px 0"
+        }}>{title}</h3>
+        <p style={{
+          fontSize: "14px",
+          color: "#b0ada5",
+          margin: "0 0 24px 0",
+          lineHeight: "1.5"
+        }}>{message}</p>
+        <div style={{
+          display: "flex",
+          gap: "12px",
+          justifyContent: "flex-end"
+        }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "transparent",
+              border: "1px solid rgba(221, 144, 29, 0.4)",
+              color: "#dd901d",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontFamily: "Inter, sans-serif",
+              transition: "all 0.2s ease"
+            }}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
+              e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = "transparent";
+              e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
+            }}
+          >
+            {cancelText}
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "#ef4444",
+              color: "#f5f5f5",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontFamily: "Inter, sans-serif",
+              transition: "background-color 0.2s ease"
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = "#dc2626"}
+            onMouseOut={(e) => e.target.style.backgroundColor = "#ef4444"}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 
@@ -18,15 +115,32 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
   const [formData, setFormData] = useState({ name: "", meta: "", available: true, price: "", category: "" });
   const [isNewCategory, setIsNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [initialFormData, setInitialFormData] = useState(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [errors, setErrors] = useState({});
 
   // Sync form data when service changes
   useEffect(() => {
     if (service) {
-      setFormData(service);
+      const serviceData = JSON.parse(JSON.stringify(service));
+      setFormData(serviceData);
+      setInitialFormData(serviceData);
       setIsNewCategory(false);
       setNewCategoryName("");
     }
   }, [service, isOpen]);
+
+  const hasUnsavedChanges = () => {
+    if (!initialFormData) return false;
+    // Check if main form data has changed
+    const hasFormChanges = Object.keys(formData).some(key => 
+      JSON.stringify(formData[key]) !== JSON.stringify(initialFormData[key])
+    );
+    // Check if new category is being created
+    const hasNewCategory = isNewCategory && newCategoryName.length > 0;
+    return hasFormChanges || hasNewCategory;
+  };
 
   const handleFormChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -49,25 +163,67 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
   };
 
   const handleSave = () => {
+    if (!validateForm()) {
+      return;
+    }
     onSave(formData);
     setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+    setInitialFormData(null);
     setIsNewCategory(false);
     setNewCategoryName("");
+    setErrors({});
   };
 
-  const handleCancel = () => {
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.name || formData.name.trim() === "") {
+      newErrors.name = "Service name is required";
+    }
+    if (!formData.price || formData.price.toString().trim() === "") {
+      newErrors.price = "Price is required";
+    }
+    if (!formData.category || formData.category.trim() === "") {
+      newErrors.category = "Category is required";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleConfirmDiscard = () => {
+    setShowConfirmation(false);
     setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+    setInitialFormData(null);
     setIsNewCategory(false);
     setNewCategoryName("");
-    onClose();
+    setErrors({});
+    
+    if (pendingAction === "close") {
+      onClose();
+    }
+    setPendingAction(null);
+  };
+
+  const handleCancelConfirm = () => {
+    setShowConfirmation(false);
+    setPendingAction(null);
+  };
+
+  const handleCloseAttempt = () => {
+    setPendingAction("close");
+    setShowConfirmation(true);
   };
 
   const handleRemove = () => {
     if (onRemove && service) {
       onRemove(service);
       setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+      setInitialFormData(null);
       setIsNewCategory(false);
       setNewCategoryName("");
+      setShowConfirmation(false);
+      setPendingAction(null);
     }
   };
 
@@ -77,20 +233,30 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 1000,
-      fontFamily: "Inter, sans-serif"
-    }}
-    onClick={onClose}>
+    <>
+      <ConfirmationDialog
+        isOpen={showConfirmation}
+        title="Discard Changes?"
+        message="You have unsaved changes. Are you sure you want to discard them?"
+        onConfirm={handleConfirmDiscard}
+        onCancel={handleCancelConfirm}
+        confirmText="Discard"
+        cancelText="Keep Editing"
+      />
+      <div style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.7)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        fontFamily: "Inter, sans-serif"
+      }}
+      onClick={handleCloseAttempt}>
       <div style={{
         backgroundColor: "#1a1a1a",
         borderRadius: "12px",
@@ -115,7 +281,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
             margin: 0
           }}>{modalTitle}</h2>
           <button
-            onClick={handleCancel}
+            onClick={handleCloseAttempt}
             style={{
               background: "none",
               border: "none",
@@ -148,12 +314,15 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => handleFormChange("name", e.target.value)}
+              onChange={(e) => {
+                handleFormChange("name", e.target.value);
+                if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+              }}
               style={{
                 width: "100%",
                 padding: "12px 16px",
                 backgroundColor: "rgba(26, 15, 0, 0.5)",
-                border: "1px solid rgba(221, 144, 29, 0.3)",
+                border: `1px solid ${errors.name ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}`,
                 borderRadius: "8px",
                 color: "#f5f5f5",
                 fontSize: "14px",
@@ -161,9 +330,10 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
                 boxSizing: "border-box",
                 transition: "border-color 0.2s ease"
               }}
-              onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
-              onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
+              onFocus={(e) => e.target.style.borderColor = errors.name ? "#ef4444" : "rgba(221, 144, 29, 0.6)"}
+              onBlur={(e) => e.target.style.borderColor = errors.name ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}
             />
+            {errors.name && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0 0" }}>{errors.name}</p>}
           </div>
 
           {/* Category */}
@@ -177,12 +347,15 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
             }}>Category</label>
             <select
               value={isNewCategory ? "new" : formData.category}
-              onChange={(e) => handleCategoryChange(e.target.value)}
+              onChange={(e) => {
+                handleCategoryChange(e.target.value);
+                if (errors.category) setErrors(prev => ({ ...prev, category: "" }));
+              }}
               style={{
                 width: "100%",
                 padding: "12px 16px",
                 backgroundColor: "rgba(26, 15, 0, 0.5)",
-                border: "1px solid rgba(221, 144, 29, 0.3)",
+                border: `1px solid ${errors.category ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}`,
                 borderRadius: "8px",
                 color: "#f5f5f5",
                 fontSize: "14px",
@@ -191,8 +364,8 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
                 transition: "border-color 0.2s ease",
                 cursor: "pointer"
               }}
-              onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
-              onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
+              onFocus={(e) => e.target.style.borderColor = errors.category ? "#ef4444" : "rgba(221, 144, 29, 0.6)"}
+              onBlur={(e) => e.target.style.borderColor = errors.category ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}
             >
               <option value="">Select a category</option>
               {categories.map((cat) => (
@@ -200,6 +373,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
               ))}
               <option value="new">+ Create New Category</option>
             </select>
+            {errors.category && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0 0" }}>{errors.category}</p>}
           </div>
 
           {/* New Category Input (shown when creating new category) */}
@@ -278,12 +452,15 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
             <input
               type="text"
               value={formData.price}
-              onChange={(e) => handleFormChange("price", e.target.value)}
+              onChange={(e) => {
+                handleFormChange("price", e.target.value);
+                if (errors.price) setErrors(prev => ({ ...prev, price: "" }));
+              }}
               style={{
                 width: "100%",
                 padding: "12px 16px",
                 backgroundColor: "rgba(26, 15, 0, 0.5)",
-                border: "1px solid rgba(221, 144, 29, 0.3)",
+                border: `1px solid ${errors.price ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}`,
                 borderRadius: "8px",
                 color: "#f5f5f5",
                 fontSize: "14px",
@@ -291,9 +468,10 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
                 boxSizing: "border-box",
                 transition: "border-color 0.2s ease"
               }}
-              onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
-              onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
+              onFocus={(e) => e.target.style.borderColor = errors.price ? "#ef4444" : "rgba(221, 144, 29, 0.6)"}
+              onBlur={(e) => e.target.style.borderColor = errors.price ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}
             />
+            {errors.price && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0 0" }}>{errors.price}</p>}
           </div>
 
           {/* Availability Toggle */}
@@ -376,7 +554,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
           justifyContent: "flex-end"
         }}>
           <button
-            onClick={handleCancel}
+            onClick={handleCloseAttempt}
             style={{
               padding: "12px 24px",
               backgroundColor: "transparent",
@@ -421,7 +599,8 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
