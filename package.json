@@ -17,6 +17,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.100.1",
     "@tailwindcss/postcss": "^4.2.2",
+    "axios": "^1.14.0",
     "brevo": "^1.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -27,7 +28,6 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.1",
-    "resend": "^6.9.4",
     "svix": "^1.89.0"
   },
   "devDependencies": {
