@@ -11,12 +11,12 @@ Role:     admin (shop owner/operator)
 
 ### Magic Link (Copy & Paste in Browser)
 ```
-/operators/login?token=YWRtaW5AYmVhdXR5Ym9vay5wcm98MTc0NTYwMDAwMDB8YWJjZGVmMTIz
+/operators/login?token=YWRtaW5AYmVhdXR5Ym9vay5wcm98MTc3NDc5OTUxMjQyN3xhYmNkZWYxMjN4eXo
 ```
 
 **Full Local URL:**
 ```
-http://localhost:5173/operators/login?token=YWRtaW5AYmVhdXR5Ym9vay5wcm98MTc0NTYwMDAwMDB8YWJjZGVmMTIz
+http://localhost:5174/operators/login?token=YWRtaW5AYmVhdXR5Ym9vay5wcm98MTc3NDc5OTUxMjQyN3xhYmNkZWYxMjN4eXo
 ```
 
 ---
@@ -59,7 +59,7 @@ The admin dashboard provides complete business insights:
 ### Step 1: Use the Magic Link
 Copy and paste the magic link above into your browser OR manually navigate to:
 ```
-http://localhost:5173/operators/login?token=YWRtaW5AYmVhdXR5Ym9vay5wcm98MTc0NTYwMDAwMDB8YWJjZGVmMTIz
+http://localhost:5174/operators/login?token=YWRtaW5AYmVhdXR5Ym9vay5wcm98MTc3NDc5OTUxMjQyN3xhYmNkZWYxMjN4eXo
 ```
 
 ### Step 2: Login
