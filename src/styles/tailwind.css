@@ -5084,6 +5084,7 @@
     display: flex;
     flex-direction: column;
     gap: 0;
+    padding-right: 12px;
   }
 
   .svc-services-scroll::-webkit-scrollbar {
@@ -5110,6 +5111,7 @@
     display: flex;
     flex-direction: column;
     gap: 0;
+    padding-right: 12px;
   }
 
   .svc-services-scroll-limited::-webkit-scrollbar {
@@ -5675,6 +5677,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-right: 12px;
   }
 
   .live-queue-scroll::-webkit-scrollbar {
@@ -5701,6 +5704,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-right: 12px;
   }
 
   .live-queue-scroll-limited::-webkit-scrollbar {
@@ -5902,6 +5906,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    padding-right: 12px;
   }
 
   .live-schedule-scroll::-webkit-scrollbar {
@@ -5928,6 +5933,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    padding-right: 12px;
   }
 
   .live-schedule-scroll-limited::-webkit-scrollbar {
@@ -6176,6 +6182,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding-right: 12px;
   }
 
   .staff-member-scroll::-webkit-scrollbar {
@@ -6202,6 +6209,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding-right: 12px;
   }
 
   .staff-member-scroll-limited::-webkit-scrollbar {

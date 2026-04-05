@@ -11,65 +11,10 @@ const CloseIcon = ({ size = 20, color = "currentColor" }) => (
 );
 
 // ═══════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
+// CONFIRMATION DIALOG COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 
-export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
-  const [formData, setFormData] = useState({
-    code: "",
-    discountType: "percentage",
-    discountValue: "",
-    description: "",
-    startDate: "",
-    endDate: "",
-    maxUses: ""
-  });
-
-  // Sync form data when modal opens
-  useEffect(() => {
-    if (!isOpen) {
-      setFormData({
-        code: "",
-        discountType: "percentage",
-        discountValue: "",
-        description: "",
-        startDate: "",
-        endDate: "",
-        maxUses: ""
-      });
-    }
-  }, [isOpen]);
-
-  const handleFormChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSave = () => {
-    onSave(formData);
-    setFormData({
-      code: "",
-      discountType: "percentage",
-      discountValue: "",
-      description: "",
-      startDate: "",
-      endDate: "",
-      maxUses: ""
-    });
-  };
-
-  const handleCancel = () => {
-    setFormData({
-      code: "",
-      discountType: "percentage",
-      discountValue: "",
-      description: "",
-      startDate: "",
-      endDate: "",
-      maxUses: ""
-    });
-    onClose();
-  };
-
+const ConfirmationDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Discard", cancelText = "Keep Editing" }) => {
   if (!isOpen) return null;
 
   return (
@@ -83,10 +28,218 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      zIndex: 1000,
+      zIndex: 1001,
       fontFamily: "Inter, sans-serif"
-    }}
-    onClick={onClose}>
+    }}>
+      <div style={{
+        backgroundColor: "#1a1a1a",
+        borderRadius: "12px",
+        padding: "24px",
+        width: "90%",
+        maxWidth: "400px",
+        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+        border: "1px solid rgba(221, 144, 29, 0.2)"
+      }}>
+        <h3 style={{
+          fontSize: "18px",
+          fontWeight: "700",
+          color: "#f5f5f5",
+          margin: "0 0 12px 0"
+        }}>{title}</h3>
+        <p style={{
+          fontSize: "14px",
+          color: "#b0ada5",
+          margin: "0 0 24px 0",
+          lineHeight: "1.5"
+        }}>{message}</p>
+        <div style={{
+          display: "flex",
+          gap: "12px",
+          justifyContent: "flex-end"
+        }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "transparent",
+              border: "1px solid rgba(221, 144, 29, 0.4)",
+              color: "#dd901d",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontFamily: "Inter, sans-serif",
+              transition: "all 0.2s ease"
+            }}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
+              e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = "transparent";
+              e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
+            }}
+          >
+            {cancelText}
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "#ef4444",
+              color: "#f5f5f5",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontFamily: "Inter, sans-serif",
+              transition: "background-color 0.2s ease"
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = "#dc2626"}
+            onMouseOut={(e) => e.target.style.backgroundColor = "#ef4444"}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════
+
+export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    code: "",
+    discountType: "percentage",
+    discountValue: "",
+    description: "",
+    startDate: "",
+    endDate: "",
+    maxUses: ""
+  });
+  const [initialFormData, setInitialFormData] = useState(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [errors, setErrors] = useState({});
+
+  // Sync form data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const emptyForm = {
+        code: "",
+        discountType: "percentage",
+        discountValue: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+        maxUses: ""
+      };
+      setFormData(JSON.parse(JSON.stringify(emptyForm)));
+      setInitialFormData(JSON.parse(JSON.stringify(emptyForm)));
+    }
+  }, [isOpen]);
+
+  const hasUnsavedChanges = () => {
+    if (!initialFormData) return false;
+    return Object.keys(formData).some(key => 
+      JSON.stringify(formData[key]) !== JSON.stringify(initialFormData[key])
+    );
+  };
+
+  const handleFormChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.code?.trim()) newErrors.code = "Promo code is required";
+    if (!formData.discountValue?.toString().trim()) newErrors.discountValue = "Discount value is required";
+    if (!formData.startDate?.trim()) newErrors.startDate = "Start date is required";
+    if (!formData.endDate?.trim()) newErrors.endDate = "End date is required";
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validateForm()) return;
+    onSave(formData);
+    const emptyForm = {
+      code: "",
+      discountType: "percentage",
+      discountValue: "",
+      description: "",
+      startDate: "",
+      endDate: "",
+      maxUses: ""
+    };
+    setFormData(emptyForm);
+    setInitialFormData(emptyForm);
+    setErrors({});
+  };
+
+  const handleConfirmDiscard = () => {
+    setShowConfirmation(false);
+    const emptyForm = {
+      code: "",
+      discountType: "percentage",
+      discountValue: "",
+      description: "",
+      startDate: "",
+      endDate: "",
+      maxUses: ""
+    };
+    setFormData(emptyForm);
+    setInitialFormData(emptyForm);
+    setErrors({});
+    
+    if (pendingAction === "close") {
+      onClose();
+    }
+    setPendingAction(null);
+  };
+
+  const handleCancelConfirm = () => {
+    setShowConfirmation(false);
+    setPendingAction(null);
+  };
+
+  const handleCloseAttempt = () => {
+    setPendingAction("close");
+    setShowConfirmation(true);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      <ConfirmationDialog
+        isOpen={showConfirmation}
+        title="Discard Changes?"
+        message="You have unsaved changes. Are you sure you want to discard them?"
+        onConfirm={handleConfirmDiscard}
+        onCancel={handleCancelConfirm}
+        confirmText="Discard"
+        cancelText="Keep Editing"
+      />
+      <div style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.7)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        fontFamily: "Inter, sans-serif"
+      }}
+      onClick={handleCloseAttempt}>
       <div style={{
         backgroundColor: "#1a1a1a",
         borderRadius: "12px",
@@ -111,7 +264,7 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
             margin: 0
           }}>Create Promo</h2>
           <button
-            onClick={handleCancel}
+            onClick={handleCloseAttempt}
             style={{
               background: "none",
               border: "none",
@@ -144,13 +297,16 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
             <input
               type="text"
               value={formData.code}
-              onChange={(e) => handleFormChange("code", e.target.value)}
+              onChange={(e) => {
+                handleFormChange("code", e.target.value);
+                if (errors.code) setErrors(prev => ({ ...prev, code: "" }));
+              }}
               placeholder="e.g., SUMMER20"
               style={{
                 width: "100%",
                 padding: "12px 16px",
                 backgroundColor: "rgba(26, 15, 0, 0.5)",
-                border: "1px solid rgba(221, 144, 29, 0.3)",
+                border: `1px solid ${errors.code ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}`,
                 borderRadius: "8px",
                 color: "#f5f5f5",
                 fontSize: "14px",
@@ -158,9 +314,10 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
                 boxSizing: "border-box",
                 transition: "border-color 0.2s ease"
               }}
-              onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
-              onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
+              onFocus={(e) => e.target.style.borderColor = errors.code ? "#ef4444" : "rgba(221, 144, 29, 0.6)"}
+              onBlur={(e) => e.target.style.borderColor = errors.code ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}
             />
+            {errors.code && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0 0" }}>{errors.code}</p>}
           </div>
 
           {/* Discount Type & Value */}
@@ -210,13 +367,16 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
               <input
                 type="text"
                 value={formData.discountValue}
-                onChange={(e) => handleFormChange("discountValue", e.target.value)}
+                onChange={(e) => {
+                  handleFormChange("discountValue", e.target.value);
+                  if (errors.discountValue) setErrors(prev => ({ ...prev, discountValue: "" }));
+                }}
                 placeholder={formData.discountType === "percentage" ? "e.g., 20" : "e.g., 500"}
                 style={{
                   width: "100%",
                   padding: "12px 16px",
                   backgroundColor: "rgba(26, 15, 0, 0.5)",
-                  border: "1px solid rgba(221, 144, 29, 0.3)",
+                  border: `1px solid ${errors.discountValue ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}`,
                   borderRadius: "8px",
                   color: "#f5f5f5",
                   fontSize: "14px",
@@ -224,9 +384,10 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
                   boxSizing: "border-box",
                   transition: "border-color 0.2s ease"
                 }}
-                onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
-                onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
+                onFocus={(e) => e.target.style.borderColor = errors.discountValue ? "#ef4444" : "rgba(221, 144, 29, 0.6)"}
+                onBlur={(e) => e.target.style.borderColor = errors.discountValue ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}
               />
+              {errors.discountValue && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0 0" }}>{errors.discountValue}</p>}
             </div>
           </div>
 
@@ -278,12 +439,15 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
               <input
                 type="date"
                 value={formData.startDate}
-                onChange={(e) => handleFormChange("startDate", e.target.value)}
+                onChange={(e) => {
+                  handleFormChange("startDate", e.target.value);
+                  if (errors.startDate) setErrors(prev => ({ ...prev, startDate: "" }));
+                }}
                 style={{
                   width: "100%",
                   padding: "12px 16px",
                   backgroundColor: "rgba(26, 15, 0, 0.5)",
-                  border: "1px solid rgba(221, 144, 29, 0.3)",
+                  border: `1px solid ${errors.startDate ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}`,
                   borderRadius: "8px",
                   color: "#f5f5f5",
                   fontSize: "14px",
@@ -292,9 +456,10 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
                   cursor: "pointer",
                   transition: "border-color 0.2s ease"
                 }}
-                onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
-                onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
+                onFocus={(e) => e.target.style.borderColor = errors.startDate ? "#ef4444" : "rgba(221, 144, 29, 0.6)"}
+                onBlur={(e) => e.target.style.borderColor = errors.startDate ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}
               />
+              {errors.startDate && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0 0" }}>{errors.startDate}</p>}
             </div>
             <div style={{ flex: 1 }}>
               <label style={{
@@ -307,12 +472,15 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
               <input
                 type="date"
                 value={formData.endDate}
-                onChange={(e) => handleFormChange("endDate", e.target.value)}
+                onChange={(e) => {
+                  handleFormChange("endDate", e.target.value);
+                  if (errors.endDate) setErrors(prev => ({ ...prev, endDate: "" }));
+                }}
                 style={{
                   width: "100%",
                   padding: "12px 16px",
                   backgroundColor: "rgba(26, 15, 0, 0.5)",
-                  border: "1px solid rgba(221, 144, 29, 0.3)",
+                  border: `1px solid ${errors.endDate ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}`,
                   borderRadius: "8px",
                   color: "#f5f5f5",
                   fontSize: "14px",
@@ -321,9 +489,10 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
                   cursor: "pointer",
                   transition: "border-color 0.2s ease"
                 }}
-                onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
-                onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
+                onFocus={(e) => e.target.style.borderColor = errors.endDate ? "#ef4444" : "rgba(221, 144, 29, 0.6)"}
+                onBlur={(e) => e.target.style.borderColor = errors.endDate ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}
               />
+              {errors.endDate && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0 0" }}>{errors.endDate}</p>}
             </div>
           </div>
 
@@ -366,7 +535,7 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
           justifyContent: "flex-end"
         }}>
           <button
-            onClick={handleCancel}
+            onClick={handleCloseAttempt}
             style={{
               padding: "12px 24px",
               backgroundColor: "transparent",
@@ -411,7 +580,8 @@ export const CreatePromoModal = ({ isOpen, onClose, onSave }) => {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

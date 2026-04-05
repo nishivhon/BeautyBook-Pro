@@ -4,10 +4,11 @@ import crypto from 'crypto';
 
 const router = express.Router();
 
-// Configure Brevo transporter
+// Initialize Brevo SMTP transporter
 const transporter = nodemailer.createTransport({
   host: 'smtp-relay.brevo.com',
   port: 587,
+  secure: false, // TLS
   auth: {
     user: process.env.BREVO_SMTP_USERNAME,
     pass: process.env.BREVO_SMTP_PASSWORD
@@ -43,22 +44,22 @@ router.post('/signup', async (req, res) => {
     // Generate magic link URL
     const magicLink = `${process.env.FRONTEND_URL}/auth/callback?token=${magicToken}&email=${encodeURIComponent(email)}&full_name=${encodeURIComponent(full_name)}&phone=${encodeURIComponent(phone || '')}`;
 
-    console.log('🔑 Brevo SMTP configured');
+    console.log('🔑 Brevo SMTP configured:', !!process.env.BREVO_API_KEY && !!process.env.BREVO_SENDER_EMAIL);
     console.log('📧 Attempting to send email to:', email);
 
-    // Send email via Brevo
+    // Send email via Brevo SMTP
     const emailResponse = await transporter.sendMail({
-      from: process.env.BREVO_SENDER_EMAIL,
+      from: `BeautyBook <${process.env.BREVO_SENDER_EMAIL}>`,
       to: email,
-      subject: 'Verify Your Email - BeautyBook',
+      subject: 'Verify Your Booking - BeautyBook',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #dd901d;">Verify Your Email</h2>
+          <h2 style="color: #dd901d;">Verify Your Booking</h2>
           <p>Hi ${full_name},</p>
           <p>Click the link below to verify your email and start booking appointments:</p>
           <p style="margin: 30px 0;">
             <a href="${magicLink}" style="background-color: #dd901d; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-              Verify Email
+              Verify Booking
             </a>
           </p>
           <p style="font-size: 12px; color: #999; margin-top: 30px;">
@@ -69,7 +70,7 @@ router.post('/signup', async (req, res) => {
     });
 
     console.log('✅ Email sent successfully, Message ID:', emailResponse.messageId);
-    console.log('📦 Full Brevo Response:', emailResponse);
+    console.log('📦 Full Response:', emailResponse);
 
     res.status(200).json({
       message: 'Verification email sent. Check your inbox!',

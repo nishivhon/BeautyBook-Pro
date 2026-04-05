@@ -5,6 +5,7 @@ import serviceRoutes from './routes/services.js';
 import staffRoutes from './routes/staffs.js';
 import userRoutes from './routes/users.js';
 import authRoutes from './routes/auth.js';
+import unismsOtpRoutes from './routes/unisms-otp.js';
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/sms', unismsOtpRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/staffs', staffRoutes);

@@ -29,19 +29,30 @@ A comprehensive digital appointment and customer management system for barbersho
 
 ### Admin Features
 - **Admin Dashboard** (`/admin/dashboard`)
-  - Real-time metrics (Today's Appointments, Queue Status, Revenue, Wait Time)
-  - Appointment analytics with trends charts
-  - Services management
-  - Staff status monitoring
-  - Navigation between dashboard views
+  - Real-time metrics cards (Today's Appointments, Queue Status, Revenue, Wait Time)
+  - Appointment analytics with trends visualization
+  - Services management interface
+  - Staff status monitoring dashboard
+  - Navigation menu with Home, Services, Live Status, and Staff Status views
+  
+- **Admin Live Status Dashboard** (`/admin/dashboard/live-status`)
+  - Real-time queue visualization
+  - Appointment status updates
+  - Customer notifications
+  
+- **Admin Services Dashboard** (`/admin/dashboard/services`)
+  - Manage services offered
+  - Edit service details
+  - Configure pricing and duration
   
 - **Super Admin Dashboard** (`/superadmin/dashboard`)
   - Full system analytics and metrics
   - User accounts management
   - Database administration
-  - Security settings
-  - Landing page management
+  - Security settings and controls
+  - Landing page content management
   - Advanced reporting and revenue tracking
+  - Multi-section sidebar navigation
 
 ### Authentication
 - Magic link-based operator authentication (admin, super admin, staff)
@@ -105,18 +116,29 @@ npm run preview
 
 ## Testing
 
-### Admin Login
+### Magic Link Testing
 
-Visit the browser console when the app starts to find magic link URLs for testing:
+Magic links are now **dynamically generated** with fresh timestamps on each app load:
 
-```
-👑 Super Admin Test Link
-Email: superadmin@beautybook.pro
-Password: superadmin123
-Full URL: http://localhost:5173/operators/login?token=...
-```
+1. Start the app: `npm run dev`
+2. Open the browser console (F12)
+3. Look for the **"🔐 BeautyBook Pro - Magic Links for Testing"** section
+4. Copy any Full URL and paste it in your browser
+5. Enter the corresponding password when prompted
 
-Or login directly at `/operators/login` with test credentials (see Super Admin Setup docs).
+**Test Accounts:**
+- **Admin**: admin@beautybook.pro / admin123
+- **Super Admin**: superadmin@beautybook.pro / superadmin123
+- **Staff**: staff@beautybook.pro / staff123
+
+### Admin Navigation
+
+All admin dashboards are now fully functional with working navigation:
+- **Home**: `/admin/dashboard` — Main admin dashboard with metrics and charts
+- **Services**: `/admin/dashboard/services` — Services management
+- **Live Status**: `/admin/dashboard/live-status` — Real-time appointment queue
+- **Staff Status**: `/admin/dashboard/staff-status` — Staff monitoring
+- **Super Admin**: `/superadmin/dashboard` — Multi-section super admin dashboard
 
 ## Contact
 

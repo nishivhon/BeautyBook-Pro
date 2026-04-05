@@ -6,6 +6,7 @@ import { AppointmentFormPhase3 } from "../components/modal/appointment/phase_thr
 import { AppointmentFormPhase4 } from "../components/modal/appointment/phase_four";
 import { ConfirmationDialog } from "../components/modal/confirmation_dialog";
 import { Toast } from "../components/toast";
+import { Otp } from "../components/modal/otp";
 
 /** Logo scissors mark */
 const LogoMark = () => (
@@ -121,6 +122,8 @@ export const Register = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [pendingPhone, setPendingPhone] = useState("");
 
   // Create a wrapper for navigate that logs and blocks for verified users
   const navigateWithGuard = (path) => {
@@ -236,22 +239,35 @@ export const Register = () => {
 
     setErrors(newErrors);
 
-    // If no errors, send verification email via Resend
+    // If no errors, send verification via email or SMS
     if (Object.keys(newErrors).length === 0) {
       setIsSubmitting(true);
       
       const apiUrl = import.meta.env.VITE_API_URL;
-      console.log('📧 Sending signup request to:', `${apiUrl}/auth/signup`);
-      console.log('📋 Data:', { email, full_name: fullName, phone });
+
+      // Determine which endpoint to use
+      let endpoint, requestData, successMessage;
       
-      fetch(`${apiUrl}/auth/signup`, {
+      if (usePhone && !useEmail) {
+        // Phone only - use SMS OTP
+        endpoint = `${apiUrl}/sms/send-otp`;
+        requestData = { phone };
+        successMessage = `OTP sent to ${phone}. Check your messages!`;
+        console.log('📱 Sending SMS OTP to:', phone);
+      } else {
+        // Email or both - use email
+        endpoint = `${apiUrl}/auth/signup`;
+        requestData = { email: email || "", full_name: fullName, phone: phone || "" };
+        successMessage = `Verification email sent to ${email}. Check your inbox!`;
+        console.log('📧 Sending verification email to:', email);
+      }
+
+      console.log('📋 Data:', requestData);
+      
+      fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email || "",
-          full_name: fullName,
-          phone: phone || ""
-        })
+        body: JSON.stringify(requestData)
       })
         .then(res => {
           console.log('📥 Response status:', res.status);
@@ -259,23 +275,30 @@ export const Register = () => {
         })
         .then(data => {
           console.log('📦 Response data:', data);
-          if (data.message) {
-            setToastMessage(`Verification email sent to ${email}. Check your inbox!`);
+          if (data.message || data.success) {
+            setToastMessage(successMessage);
             setShowToast(true);
-          setTimeout(() => { setShowToast(false); }, 10000);
-            // Reset form
-            setFullName("");
-            setEmail("");
-            setPhone("");
-            setUseEmail(true);
-            setUsePhone(false);
-            setTimeout(() => {
-              if (verifiedUser === null || verifiedUser === undefined) {
-                navigateWithGuard("/");
-              }
-            }, 2000);
+            setTimeout(() => { setShowToast(false); }, 10000);
+            
+            // If SMS was sent, show OTP modal instead of navigating
+            if (usePhone && !useEmail) {
+              setPendingPhone(phone);
+              setShowOtpModal(true);
+            } else {
+              // Email verification - reset form and navigate
+              setFullName("");
+              setEmail("");
+              setPhone("");
+              setUseEmail(true);
+              setUsePhone(false);
+              setTimeout(() => {
+                if (verifiedUser === null || verifiedUser === undefined) {
+                  navigateWithGuard("/");
+                }
+              }, 2000);
+            }
           } else {
-            const errorMsg = data.error || "Failed to send verification email";
+            const errorMsg = data.error || "Failed to send verification";
             console.error('❌ Error:', errorMsg);
             setToastMessage(errorMsg);
             setShowToast(true);
@@ -296,6 +319,63 @@ export const Register = () => {
       return;
     }
     navigateWithGuard("/");
+  };
+
+  const handleOtpVerified = (otp) => {
+    if (!pendingPhone || !otp) return;
+
+    console.log('🔐 Verifying OTP for:', pendingPhone);
+    const cleanOtp = otp.replace(/\s/g, ''); // Remove spaces
+    const apiUrl = import.meta.env.VITE_API_URL;
+
+    fetch(`${apiUrl}/sms/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: pendingPhone,
+        otp: cleanOtp
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success || data.verified) {
+          console.log('✅ OTP verified successfully!');
+          setToastMessage('✅ Phone verified successfully! Proceeding to booking...');
+          setShowToast(true);
+          
+          // Store verified user
+          const userData = {
+            phone: pendingPhone,
+            full_name: fullName,
+            email: email || ""
+          };
+          setVerifiedUser(userData);
+          setShowAppointment(true);
+          setBackdropClickEnabled(true);
+          sessionStorage.setItem("verifiedUser", JSON.stringify(userData));
+          sessionStorage.setItem("sessionUsed", "true");
+          
+          // Close OTP modal
+          setShowOtpModal(false);
+          setPendingPhone("");
+          
+          // Reset form
+          setFullName("");
+          setEmail("");
+          setPhone("");
+          setUseEmail(true);
+          setUsePhone(false);
+        } else {
+          console.error('❌ OTP verification failed:', data.error);
+          setToastMessage(data.error || 'Invalid OTP. Please try again.');
+          setShowToast(true);
+        }
+      })
+      .catch(err => {
+        console.error('❌ OTP verification error:', err);
+        setToastMessage(`Error: ${err.message || 'Unable to verify OTP'}`);
+        setShowToast(true);
+      });
   };
 
   const handleCancelBooking = () => {
@@ -472,24 +552,33 @@ export const Register = () => {
         est: serviceInfo.duration || "N/A"
       }));
       
+      // Use verified user data if form fields are empty (after OTP verification)
+      const userName = fullName || verifiedUser?.full_name || "";
+      const userEmail = email || verifiedUser?.email || "";
+      const userPhone = phone || verifiedUser?.phone || "";
+      
       // Return object with services array and common booking details
       return {
         services: formattedServices,
         dateTime: dateTime,
-        name: fullName || "",
-        email: email || "",
-        phone: phone || "",
+        name: userName,
+        email: userEmail,
+        phone: userPhone,
         stylist: stylistName,
         refNo: "18xxx-xxxx",
       };
     } catch (error) {
       // Fallback if something goes wrong
+      const userName = fullName || verifiedUser?.full_name || "";
+      const userEmail = email || verifiedUser?.email || "";
+      const userPhone = phone || verifiedUser?.phone || "";
+      
       return {
         services: [],
         dateTime: "Not Selected",
-        name: fullName || "",
-        email: email || "",
-        phone: phone || "",
+        name: userName,
+        email: userEmail,
+        phone: userPhone,
         stylist: "Any Available Stylist",
         refNo: "18xxx-xxxx",
       };
@@ -773,6 +862,18 @@ export const Register = () => {
         }}
         onCancel={() => setShowBackdropConfirm(false)}
       />
+
+      {/* OTP Verification Modal */}
+      {showOtpModal && (
+        <Otp
+          onVerified={handleOtpVerified}
+          onClose={() => {
+            setShowOtpModal(false);
+            setPendingPhone("");
+          }}
+          phone={pendingPhone}
+        />
+      )}
 
       {/* Toast Notification */}
       <Toast
