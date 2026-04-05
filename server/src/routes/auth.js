@@ -1,6 +1,5 @@
 import express from 'express';
 import nodemailer from 'nodemailer';
-import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 
 const router = express.Router();

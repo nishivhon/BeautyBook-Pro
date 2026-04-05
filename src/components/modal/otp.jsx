@@ -36,7 +36,7 @@ const CloseIcon = () => (
 /* ══════════════════════════════════════════
    OTP MODAL COMPONENT
 ══════════════════════════════════════════ */
-export const Otp = ({ onClose, onVerified }) => {
+export const Otp = ({ onClose, onVerified, selectedPhone }) => {
   const INITIAL_TIME = 600; // 10 minutes
   const [timeLeft,   setTimeLeft]   = useState(INITIAL_TIME);
   const [otpValue,   setOtpValue]   = useState("");
@@ -117,7 +117,7 @@ export const Otp = ({ onClose, onVerified }) => {
           {/* OTP field */}
           <div className="otp-field-box">
             <label htmlFor="otp-input" className="otp-field-label">
-              Verification sent to {phone}
+              Verification sent to {selectedPhone}
             </label>
             <div className="otp-input-wrap">
               <div className="otp-input-inner">
