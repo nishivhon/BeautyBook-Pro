@@ -37,7 +37,7 @@ const CloseIcon = () => (
    OTP MODAL COMPONENT
 ══════════════════════════════════════════ */
 export const Otp = ({ onClose, onVerified }) => {
-  const INITIAL_TIME = 300; // 5 minutes
+  const INITIAL_TIME = 600; // 10 minutes
   const [timeLeft,   setTimeLeft]   = useState(INITIAL_TIME);
   const [otpValue,   setOtpValue]   = useState("");
   const [isResending, setIsResending] = useState(false);
@@ -94,7 +94,7 @@ export const Otp = ({ onClose, onVerified }) => {
         {/* ── Header ── */}
         <header className="otp-header">
           <h1 id="otp-title" className="otp-header-title">
-            Verification Step
+            Phone Verification
           </h1>
           <button
             className="otp-close-btn"
@@ -111,13 +111,13 @@ export const Otp = ({ onClose, onVerified }) => {
           {/* Instruction */}
           <p className="otp-instruction">
             Enter the 6-digit code sent to your{" "}
-            <strong>email / phone number</strong>
+            <strong>phone number</strong>
           </p>
 
           {/* OTP field */}
           <div className="otp-field-box">
             <label htmlFor="otp-input" className="otp-field-label">
-              Verify your Email / Phone
+              Verification sent to {phone}
             </label>
             <div className="otp-input-wrap">
               <div className="otp-input-inner">

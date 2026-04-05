@@ -552,24 +552,33 @@ export const Register = () => {
         est: serviceInfo.duration || "N/A"
       }));
       
+      // Use verified user data if form fields are empty (after OTP verification)
+      const userName = fullName || verifiedUser?.full_name || "";
+      const userEmail = email || verifiedUser?.email || "";
+      const userPhone = phone || verifiedUser?.phone || "";
+      
       // Return object with services array and common booking details
       return {
         services: formattedServices,
         dateTime: dateTime,
-        name: fullName || "",
-        email: email || "",
-        phone: phone || "",
+        name: userName,
+        email: userEmail,
+        phone: userPhone,
         stylist: stylistName,
         refNo: "18xxx-xxxx",
       };
     } catch (error) {
       // Fallback if something goes wrong
+      const userName = fullName || verifiedUser?.full_name || "";
+      const userEmail = email || verifiedUser?.email || "";
+      const userPhone = phone || verifiedUser?.phone || "";
+      
       return {
         services: [],
         dateTime: "Not Selected",
-        name: fullName || "",
-        email: email || "",
-        phone: phone || "",
+        name: userName,
+        email: userEmail,
+        phone: userPhone,
         stylist: "Any Available Stylist",
         refNo: "18xxx-xxxx",
       };
