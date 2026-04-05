@@ -51,15 +51,15 @@ router.post('/signup', async (req, res) => {
     const emailResponse = await transporter.sendMail({
       from: `BeautyBook <${process.env.BREVO_SENDER_EMAIL}>`,
       to: email,
-      subject: 'Verify Your Email - BeautyBook',
+      subject: 'Verify Your Booking - BeautyBook',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #dd901d;">Verify Your Email</h2>
+          <h2 style="color: #dd901d;">Verify Your Booking</h2>
           <p>Hi ${full_name},</p>
           <p>Click the link below to verify your email and start booking appointments:</p>
           <p style="margin: 30px 0;">
             <a href="${magicLink}" style="background-color: #dd901d; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-              Verify Email
+              Verify Booking
             </a>
           </p>
           <p style="font-size: 12px; color: #999; margin-top: 30px;">

@@ -236,22 +236,35 @@ export const Register = () => {
 
     setErrors(newErrors);
 
-    // If no errors, send verification email via Resend
+    // If no errors, send verification via email or SMS
     if (Object.keys(newErrors).length === 0) {
       setIsSubmitting(true);
       
       const apiUrl = import.meta.env.VITE_API_URL;
-      console.log('📧 Sending signup request to:', `${apiUrl}/auth/signup`);
-      console.log('📋 Data:', { email, full_name: fullName, phone });
+
+      // Determine which endpoint to use
+      let endpoint, requestData, successMessage;
       
-      fetch(`${apiUrl}/auth/signup`, {
+      if (usePhone && !useEmail) {
+        // Phone only - use SMS OTP
+        endpoint = `${apiUrl}/sms/send-otp`;
+        requestData = { phone };
+        successMessage = `OTP sent to ${phone}. Check your messages!`;
+        console.log('📱 Sending SMS OTP to:', phone);
+      } else {
+        // Email or both - use email
+        endpoint = `${apiUrl}/auth/signup`;
+        requestData = { email: email || "", full_name: fullName, phone: phone || "" };
+        successMessage = `Verification email sent to ${email}. Check your inbox!`;
+        console.log('📧 Sending verification email to:', email);
+      }
+
+      console.log('📋 Data:', requestData);
+      
+      fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email || "",
-          full_name: fullName,
-          phone: phone || ""
-        })
+        body: JSON.stringify(requestData)
       })
         .then(res => {
           console.log('📥 Response status:', res.status);
@@ -259,10 +272,10 @@ export const Register = () => {
         })
         .then(data => {
           console.log('📦 Response data:', data);
-          if (data.message) {
-            setToastMessage(`Verification email sent to ${email}. Check your inbox!`);
+          if (data.message || data.success) {
+            setToastMessage(successMessage);
             setShowToast(true);
-          setTimeout(() => { setShowToast(false); }, 10000);
+            setTimeout(() => { setShowToast(false); }, 10000);
             // Reset form
             setFullName("");
             setEmail("");
@@ -275,7 +288,7 @@ export const Register = () => {
               }
             }, 2000);
           } else {
-            const errorMsg = data.error || "Failed to send verification email";
+            const errorMsg = data.error || "Failed to send verification";
             console.error('❌ Error:', errorMsg);
             setToastMessage(errorMsg);
             setShowToast(true);
