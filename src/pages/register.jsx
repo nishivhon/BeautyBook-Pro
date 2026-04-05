@@ -6,6 +6,7 @@ import { AppointmentFormPhase3 } from "../components/modal/appointment/phase_thr
 import { AppointmentFormPhase4 } from "../components/modal/appointment/phase_four";
 import { ConfirmationDialog } from "../components/modal/confirmation_dialog";
 import { Toast } from "../components/toast";
+import { Otp } from "../components/modal/otp";
 
 /** Logo scissors mark */
 const LogoMark = () => (
@@ -121,6 +122,8 @@ export const Register = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [pendingPhone, setPendingPhone] = useState("");
 
   // Create a wrapper for navigate that logs and blocks for verified users
   const navigateWithGuard = (path) => {
@@ -276,17 +279,24 @@ export const Register = () => {
             setToastMessage(successMessage);
             setShowToast(true);
             setTimeout(() => { setShowToast(false); }, 10000);
-            // Reset form
-            setFullName("");
-            setEmail("");
-            setPhone("");
-            setUseEmail(true);
-            setUsePhone(false);
-            setTimeout(() => {
-              if (verifiedUser === null || verifiedUser === undefined) {
-                navigateWithGuard("/");
-              }
-            }, 2000);
+            
+            // If SMS was sent, show OTP modal instead of navigating
+            if (usePhone && !useEmail) {
+              setPendingPhone(phone);
+              setShowOtpModal(true);
+            } else {
+              // Email verification - reset form and navigate
+              setFullName("");
+              setEmail("");
+              setPhone("");
+              setUseEmail(true);
+              setUsePhone(false);
+              setTimeout(() => {
+                if (verifiedUser === null || verifiedUser === undefined) {
+                  navigateWithGuard("/");
+                }
+              }, 2000);
+            }
           } else {
             const errorMsg = data.error || "Failed to send verification";
             console.error('❌ Error:', errorMsg);
@@ -309,6 +319,63 @@ export const Register = () => {
       return;
     }
     navigateWithGuard("/");
+  };
+
+  const handleOtpVerified = (otp) => {
+    if (!pendingPhone || !otp) return;
+
+    console.log('🔐 Verifying OTP for:', pendingPhone);
+    const cleanOtp = otp.replace(/\s/g, ''); // Remove spaces
+    const apiUrl = import.meta.env.VITE_API_URL;
+
+    fetch(`${apiUrl}/sms/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: pendingPhone,
+        otp: cleanOtp
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success || data.verified) {
+          console.log('✅ OTP verified successfully!');
+          setToastMessage('✅ Phone verified successfully! Proceeding to booking...');
+          setShowToast(true);
+          
+          // Store verified user
+          const userData = {
+            phone: pendingPhone,
+            full_name: fullName,
+            email: email || ""
+          };
+          setVerifiedUser(userData);
+          setShowAppointment(true);
+          setBackdropClickEnabled(true);
+          sessionStorage.setItem("verifiedUser", JSON.stringify(userData));
+          sessionStorage.setItem("sessionUsed", "true");
+          
+          // Close OTP modal
+          setShowOtpModal(false);
+          setPendingPhone("");
+          
+          // Reset form
+          setFullName("");
+          setEmail("");
+          setPhone("");
+          setUseEmail(true);
+          setUsePhone(false);
+        } else {
+          console.error('❌ OTP verification failed:', data.error);
+          setToastMessage(data.error || 'Invalid OTP. Please try again.');
+          setShowToast(true);
+        }
+      })
+      .catch(err => {
+        console.error('❌ OTP verification error:', err);
+        setToastMessage(`Error: ${err.message || 'Unable to verify OTP'}`);
+        setShowToast(true);
+      });
   };
 
   const handleCancelBooking = () => {
@@ -786,6 +853,18 @@ export const Register = () => {
         }}
         onCancel={() => setShowBackdropConfirm(false)}
       />
+
+      {/* OTP Verification Modal */}
+      {showOtpModal && (
+        <Otp
+          onVerified={handleOtpVerified}
+          onClose={() => {
+            setShowOtpModal(false);
+            setPendingPhone("");
+          }}
+          phone={pendingPhone}
+        />
+      )}
 
       {/* Toast Notification */}
       <Toast
