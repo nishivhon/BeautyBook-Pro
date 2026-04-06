@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { HowItWorksStepEditModal } from "../../components/modal/howitworks_step_edit";
 
 // ─── Logo Mark SVG ───────────────────────────────────────────────────────────
 const LogoMark = () => (
@@ -155,6 +156,13 @@ const LiveEditStarIcon = () => (
   </svg>
 );
 
+const PencilIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:16,height:16}}>
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </svg>
+);
+
 // ─── EditableText Component ───────────────────────────────────────────────────
 
 const EditableText = ({ value, onChange, isEditing, setIsEditing, className = "", isTextarea = false, size = "large" }) => {
@@ -244,9 +252,8 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
             if (e.key === "Enter") commit();
             if (e.key === "Escape") setIsEditing(false);
           }}
-          style={{ fontSize: fontSize, fontWeight: fontWeight, lineHeight: "1.2", display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", backgroundColor: "rgba(221, 144, 29, 0.08)", borderRadius: "1rem", border: "1.5px solid #dd901d" }}
-          className={`px-5 py-4 !text-[#dd901d] focus:outline-none focus:ring-2 focus:ring-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 ${className}`}
           style={{ fontSize: fontSize, fontWeight: fontWeight, lineHeight: "1.2", display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", backgroundColor: "rgba(221, 144, 29, 0.08)", borderRadius: "1rem", border: "1.5px solid #dd901d", minHeight: minHeight }}
+          className={`px-5 py-4 !text-[#dd901d] focus:outline-none focus:ring-2 focus:ring-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 ${className}`}
           placeholder="Type to edit..."
         />
       </div>
@@ -311,6 +318,19 @@ export default function SuperAdminLandingPageEditor() {
     phone: "(02) 123-4567",
     email: "beautybookpro@gmail.com",
     hours: "Mon-Fri: 8:00 AM - 5:00 PM",
+  });
+
+  const [howitworksSteps, setHowitworksSteps] = useState([
+    { id: 0, icon: "calendar", title: "Book Online", desc: "Select your service, preferred stylist, and convenient time slot" },
+    { id: 1, icon: "bell", title: "Get Notified", desc: "Receive real-time updates and 'Your Turn Soon' alerts" },
+    { id: 2, icon: "check", title: "Enjoy Service", desc: "Arrive on time and skip the traditional waiting queue" },
+  ]);
+
+  const [editingStepModal, setEditingStepModal] = useState(null);
+  const [uploadedSvgs, setUploadedSvgs] = useState({
+    calendar: "calendar",
+    bell: "bell",
+    check: "check",
   });
 
   useEffect(() => {
@@ -669,18 +689,58 @@ export default function SuperAdminLandingPageEditor() {
               display:"grid",gridTemplateColumns:"repeat(3,1fr)",
               gap:24,maxWidth:800,margin:"0 auto",
             }}>
-              {[
-                {icon:<HowItWorksCalendarIcon/>, title:"Book Online", desc:"Select your service, preferred stylist, and convenient time slot"},
-                {icon:<HowItWorksBellIcon/>, title:"Get Notified", desc:"Receive real-time updates and 'Your Turn Soon' alerts"},
-                {icon:<HowItWorksCheckIcon/>, title:"Enjoy Service", desc:"Arrive on time and skip the traditional waiting queue"},
-              ].map((step, i) => (
-                <div key={i} className="step-card">
-                  <div className="icon-box">{step.icon}</div>
-                  <div className="step-title">{step.title}</div>
-                  <p className="step-desc">{step.desc}</p>
-                </div>
-              ))}
+              {howitworksSteps.map((step, i) => {
+                const iconMap = {
+                  calendar: <HowItWorksCalendarIcon/>,
+                  bell: <HowItWorksBellIcon/>,
+                  check: <HowItWorksCheckIcon/>,
+                };
+                
+                // Check if it's an uploaded SVG
+                const isUploadedSvg = step.icon.startsWith("svg_");
+                const iconContent = isUploadedSvg ? (
+                  <img
+                    src={uploadedSvgs[step.icon]}
+                    alt="Custom icon"
+                    style={{width: "100%", height: "100%", objectFit: "contain"}}
+                  />
+                ) : (
+                  iconMap[step.icon]
+                );
+                
+                return (
+                  <div key={i} className="step-card" style={{position:"relative"}}>
+                    <button
+                      onClick={() => setEditingStepModal(step.id)}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "8px",
+                        background: "#dd901d",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "6px 8px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.3s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                      onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                      title="Edit step"
+                    >
+                      <PencilIcon />
+                    </button>
+                    <div className="icon-box">{iconContent}</div>
+                    <div className="step-title">{step.title}</div>
+                    <p className="step-desc">{step.desc}</p>
+                  </div>
+                );
+              })}
             </div>
+
+
           </section>
 
           {/* SERVICES SECTION */}
@@ -800,6 +860,17 @@ export default function SuperAdminLandingPageEditor() {
             </div>
           </footer>
         </main>
+
+        {/* How It Works Step Edit Modal - Outside transformed container */}
+        <HowItWorksStepEditModal
+          isOpen={editingStepModal !== null}
+          stepId={editingStepModal}
+          howitworksSteps={howitworksSteps}
+          setHowitworksSteps={setHowitworksSteps}
+          uploadedSvgs={uploadedSvgs}
+          setUploadedSvgs={setUploadedSvgs}
+          onClose={() => setEditingStepModal(null)}
+        />
       </div>
     </div>
   );
