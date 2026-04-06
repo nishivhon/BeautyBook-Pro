@@ -124,6 +124,7 @@ export const Register = () => {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [pendingPhone, setPendingPhone] = useState("");
+  const [pendingName, setPendingName] = useState("");
 
   // Create a wrapper for navigate that logs and blocks for verified users
   const navigateWithGuard = (path) => {
@@ -251,7 +252,7 @@ export const Register = () => {
       if (usePhone && !useEmail) {
         // Phone only - use SMS OTP
         endpoint = `${apiUrl}/sms/send-otp`;
-        requestData = { phone };
+        requestData = { phone, name: fullName };
         successMessage = `OTP sent to ${phone}. Check your messages!`;
         console.log('📱 Sending SMS OTP to:', phone);
       } else {
@@ -283,6 +284,7 @@ export const Register = () => {
             // If SMS was sent, show OTP modal instead of navigating
             if (usePhone && !useEmail) {
               setPendingPhone(phone);
+              setPendingName(fullName);
               setShowOtpModal(true);
             } else {
               // Email verification - reset form and navigate
@@ -870,8 +872,10 @@ export const Register = () => {
           onClose={() => {
             setShowOtpModal(false);
             setPendingPhone("");
+            setPendingName("");
           }}
-          phone={pendingPhone}
+          selectedPhone={pendingPhone}
+          name={pendingName}
         />
       )}
 
