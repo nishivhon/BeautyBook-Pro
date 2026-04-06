@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ConfirmationDialog } from "./confirmation_dialog";
+import { ConfirmationDialog } from "../customer/confirmation_dialog";
 
 const BackArrowIcon = () => (
   <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width={16} height={16}>

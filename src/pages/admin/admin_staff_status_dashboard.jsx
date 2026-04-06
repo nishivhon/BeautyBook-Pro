@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
-import CustomerHistoryModal from "../../components/modal/customer_history";
-import CalendarAppointmentsModal from "../../components/modal/calendar_appointments";
+import CustomerHistoryModal from "../../components/modal/admin/customer_history";
+import CalendarAppointmentsModal from "../../components/modal/admin/calendar_appointments";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -371,6 +371,10 @@ const StaffListPanel = () => {
                     className="staff-member-chevron"
                     onClick={() => handleStaffToggle(s.name)}
                     aria-label="View staff details"
+                    style={{
+                      transform: expandedStaff === s.name ? "rotate(90deg)" : "rotate(0deg)",
+                      transition: "transform 0.3s ease"
+                    }}
                   >
                     <ChevronRightIcon size={13} color="currentColor" />
                   </button>
@@ -390,132 +394,45 @@ const StaffListPanel = () => {
                   gap: "16px 24px"
                 }}>
                   <div>
-                    <p style={{
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "#dd901d",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px"
-                    }}>Current Client</p>
-                    <p style={{
-                      fontSize: "14px",
-                      color: "#f5f5f5",
-                      margin: "0"
-                    }}>{s.details.currentClient}</p>
+                    <p className="dash-detail-label">Current Client</p>
+                    <p className="dash-detail-value">{s.details.currentClient}</p>
                   </div>
 
                   <div>
-                    <p style={{
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "#dd901d",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px"
-                    }}>Start of Service</p>
-                    <p style={{
-                      fontSize: "14px",
-                      color: "#f5f5f5",
-                      margin: "0"
-                    }}>{s.details.startOfService}</p>
+                    <p className="dash-detail-label">Start of Service</p>
+                    <p className="dash-detail-value">{s.details.startOfService}</p>
                   </div>
 
                   <div>
-                    <p style={{
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "#dd901d",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px"
-                    }}>Service Done</p>
-                    <p style={{
-                      fontSize: "14px",
-                      color: "#f5f5f5",
-                      margin: "0"
-                    }}>{s.details.serviceDone}</p>
+                    <p className="dash-detail-label">Service Done</p>
+                    <p className="dash-detail-value">{s.details.serviceDone}</p>
                   </div>
 
                   <div>
-                    <p style={{
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "#dd901d",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px"
-                    }}>Time of Break</p>
-                    <p style={{
-                      fontSize: "14px",
-                      color: "#f5f5f5",
-                      margin: "0"
-                    }}>{s.details.timeOfBreak}</p>
+                    <p className="dash-detail-label">Time of Break</p>
+                    <p className="dash-detail-value">{s.details.timeOfBreak}</p>
                   </div>
 
                   <div>
-                    <p style={{
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "#dd901d",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px"
-                    }}>Time of Clock In</p>
-                    <p style={{
-                      fontSize: "14px",
-                      color: "#f5f5f5",
-                      margin: "0"
-                    }}>{s.details.timeOfClockIn}</p>
+                    <p className="dash-detail-label">Time of Clock In</p>
+                    <p className="dash-detail-value">{s.details.timeOfClockIn}</p>
                   </div>
 
                   <div>
-                    <p style={{
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "#dd901d",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px"
-                    }}>Up Next Client</p>
-                    <p style={{
-                      fontSize: "14px",
-                      color: "#f5f5f5",
-                      margin: "0"
-                    }}>{s.details.upNextClient}</p>
+                    <p className="dash-detail-label">Up Next Client</p>
+                    <p className="dash-detail-value">{s.details.upNextClient}</p>
                   </div>
 
                   <div>
-                    <p style={{
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "#dd901d",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px"
-                    }}>No. of Client Today</p>
-                    <p style={{
-                      fontSize: "14px",
-                      color: "#f5f5f5",
-                      margin: "0"
-                    }}>{s.details.noOfClientToday}</p>
+                    <p className="dash-detail-label">No. of Client Today</p>
+                    <p className="dash-detail-value">{s.details.noOfClientToday}</p>
                   </div>
 
                   <div>
-                    <p style={{
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "#dd901d",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px"
-                    }}>Available for Walk-In</p>
-                    <p style={{
-                      fontSize: "14px",
-                      color: s.details.availableForWalkIn ? "#22c55e" : "#ef4444",
-                      margin: "0",
-                      fontWeight: "600"
-                    }}>{s.details.availableForWalkIn ? "Yes" : "No"}</p>
+                    <p className="dash-detail-label">Available for Walk-In</p>
+                    <p className={s.details.availableForWalkIn ? "dash-detail-value-green" : "dash-detail-value-red"}>
+                      {s.details.availableForWalkIn ? "Yes" : "No"}
+                    </p>
                   </div>
                 </div>
               )}

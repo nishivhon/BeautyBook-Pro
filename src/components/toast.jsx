@@ -18,29 +18,12 @@ export const Toast = ({ message = "", type = "info", duration = 5000, isVisible 
 
   return (
     <div
+      className="fixed top-10 left-1/2 -translate-x-1/2 text-white px-8 py-5 rounded-2xl shadow-2xl flex items-center gap-3 font-inter font-semibold text-lg z-9999 animate-fadeInCenter max-w-xs sm:max-w-sm"
       style={{
-        position: "fixed",
-        top: "40px",
-        left: "50%",
-        transform: "translateX(-50%)",
         background: bgColor,
-        color: "white",
-        padding: "20px 32px",
-        borderRadius: "14px",
-        boxShadow: "0 15px 35px rgba(0,0,0,0.3)",
-        display: "flex",
-        alignItems: "center",
-        gap: "14px",
-        fontFamily: "Inter, sans-serif",
-        fontSize: "1.05rem",
-        fontWeight: "600",
-        zIndex: 9999,
-        animation: "fadeInCenter 0.5s ease forwards",
-        maxWidth: "85%",
-        minWidth: "320px",
       }}
     >
-      <span style={{ fontSize: "1.4rem", fontWeight: "bold" }}>{icon}</span>
+      <span className="text-xl font-bold">{icon}</span>
       <span>{message}</span>
     </div>
   );

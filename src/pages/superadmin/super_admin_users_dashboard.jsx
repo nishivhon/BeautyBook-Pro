@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { generateMagicToken } from "../../services/magicLink";
-import CreateAccountModal from "../../components/modal/create_account";
+import CreateAccountModal from "../../components/modal/superadmin/create_account";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 

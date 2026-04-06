@@ -49,16 +49,8 @@ export const AuthCallback = () => {
   }, [searchParams, navigate]);
 
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      height: "100vh",
-      backgroundColor: "#1a1a1a",
-      color: "#fff",
-      fontFamily: "Arial, sans-serif"
-    }}>
-      <div style={{ textAlign: "center" }}>
+    <div className="flex items-center justify-center h-screen bg-gray-900 text-white font-sans">
+      <div className="text-center">
         {loading ? (
           <>
             <h2>Verifying your email...</h2>
@@ -66,13 +58,13 @@ export const AuthCallback = () => {
           </>
         ) : error ? (
           <>
-            <h2 style={{ color: "#dd901d" }}>Verification Error</h2>
+            <h2 className="text-amber">Verification Error</h2>
             <p>{error}</p>
-            <p style={{ fontSize: "12px", color: "#999" }}>Redirecting to home page...</p>
+            <p className="text-xs text-gray-400">Redirecting to home page...</p>
           </>
         ) : (
           <>
-            <h2 style={{ color: "#dd901d" }}>Email Verified!</h2>
+            <h2 className="text-amber">Email Verified!</h2>
             <p>Redirecting to appointment booking...</p>
           </>
         )}
