@@ -61,8 +61,6 @@ const querySupabase = async (table, options = {}) => {
       url += '?' + params.toString();
     }
     
-    console.log(`[Supabase] GET ${url}`);
-    
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -79,7 +77,6 @@ const querySupabase = async (table, options = {}) => {
     }
     
     const data = await response.json();
-    console.log(`[Supabase] ✓ Returned ${data.length} rows`);
     return data;
   } catch (error) {
     console.error(`[Supabase] Query error: ${error.message}`);

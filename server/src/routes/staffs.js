@@ -8,6 +8,7 @@ router.get('/', async (req, res) => {
   try {
     console.log('[Staffs] Fetching all staff');
     const staff = await getAllStaff();
+    console.log(`[Staffs] Successfully fetched ${staff.length} staff members`);
     res.json(staff);
   } catch (error) {
     console.error('[Staffs] Error fetching all staff:', error.message);
@@ -18,8 +19,9 @@ router.get('/', async (req, res) => {
 // Get all staff with "Any available" option
 router.get('/with-any', async (req, res) => {
   try {
-    console.log('[Staffs] Fetching staff with "Any available" option');
+    console.log('[Staffs] Fetching staff with any available option');
     const staff = await getStaffWithAnyOption();
+    console.log(`[Staffs] Successfully fetched ${staff.length} staff members`);
     res.json({
       any: {
         id: 'any',
@@ -41,6 +43,7 @@ router.get('/available', async (req, res) => {
   try {
     console.log('[Staffs] Fetching available staff');
     const staff = await getAvailableStaff();
+    console.log(`[Staffs] Successfully fetched ${staff.length} available staff members`);
     res.json(staff);
   } catch (error) {
     console.error('[Staffs] Error fetching available staff:', error.message);
@@ -53,6 +56,9 @@ router.get('/:id', async (req, res) => {
   try {
     console.log(`[Staffs] Fetching staff ID: ${req.params.id}`);
     const staff = await getStaffById(req.params.id);
+    if (staff) {
+      console.log(`[Staffs] Successfully found staff with ID ${req.params.id}`);
+    }
     
     if (!staff) {
       return res.status(404).json({ error: 'Staff not found' });

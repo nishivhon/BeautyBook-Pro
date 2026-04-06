@@ -485,44 +485,166 @@ export const Register = () => {
     setAppointmentPhase(3);
   };
 
-  const handlePhase4Confirm = () => {
-    // If verified user, process booking
-    if (verifiedUser !== null && verifiedUser !== undefined) {
-      setShowAppointment(false);
-      setBackdropClickEnabled(false);
-      setAppointmentPhase(1);
-      
-      // BOOKING COMPLETE - Clear session and prevent future use of this link
-      setTimeout(() => {
-        sessionStorage.removeItem("verifiedUser");
-        sessionStorage.removeItem("sessionUsed");
-        localStorage.removeItem("verifiedUserBackup");
-      }, 2500);
-      
-      setToastMessage("✅ Appointment booked successfully! Your email link has been used.");
-      setShowToast(true);
-      setTimeout(() => { setShowToast(false); }, 3000);
-      return; // FORCE EXIT - NOTHING BELOW THIS RUNS
-    }
-    
-    // NON-VERIFIED USER PATH ONLY REACHES HERE
-    setShowAppointment(false);
-    setBackdropClickEnabled(false);
-    setAppointmentPhase(1);
-    setFullName("");
-    setEmail("");
-    setPhone("");
-    setUseEmail(true);
-    setUsePhone(false);
-    setToastMessage("Appointment booked successfully!");
-    setShowToast(true);
-    setTimeout(() => {
-      if (verifiedUser === null || verifiedUser === undefined) {
-        sessionStorage.removeItem("verifiedUser");
-        localStorage.removeItem("verifiedUserBackup");
-        navigateWithGuard("/");
+  const handlePhase4Confirm = async () => {
+    const apiUrl = import.meta.env.VITE_API_URL;
+
+    try {
+      // Collect appointment data from the form and appointment phases
+      const scheduleInfo = appointmentData?.schedule;
+      const servicesData = appointmentData?.services;
+      const stylistData = appointmentData?.stylist;
+
+      // Convert date format from "Apr 7" to "YYYY-MM-DD"
+      let appointmentDate = "N/A";
+      if (scheduleInfo?.date?.date) {
+        const dateStr = scheduleInfo.date.date; // e.g., "Apr 7"
+        const today = new Date();
+        const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const parts = dateStr.split(" ");
+        const monthName = parts[0];
+        const day = parseInt(parts[1]);
+        
+        // Find matching month and year
+        let appointDate = new Date(today);
+        const monthIndex = monthLabels.indexOf(monthName);
+        
+        if (monthIndex !== -1) {
+          // Find the next occurrence of this month/day
+          appointDate.setMonth(monthIndex);
+          appointDate.setDate(day);
+          
+          // If the date is in the past this year, assume next year (unlikely for an appointment booking)
+          if (appointDate < today) {
+            appointDate.setFullYear(today.getFullYear() + 1);
+          }
+          
+          // Format as YYYY-MM-DD
+          appointmentDate = appointDate.toISOString().split('T')[0];
+        }
       }
-    }, 2000);
+
+      const appointmentTime = scheduleInfo?.time || "N/A";
+
+      // Convert time format from "09:00 AM" to "09:00:00" (HH:MM:SS)
+      let formattedTime = "N/A";
+      if (appointmentTime && appointmentTime !== "N/A") {
+        if (appointmentTime.includes(":")) {
+          const timeParts = appointmentTime.split(" ");
+          const timeValue = timeParts[0]; // e.g., "09:00"
+          
+          if (timeValue.includes(":")) {
+            // Add seconds if not present, e.g., "09:00" becomes "09:00:00"
+            const timeSplit = timeValue.split(":");
+            if (timeSplit.length === 2) {
+              formattedTime = `${timeSplit[0]}:${timeSplit[1]}:00`;
+            } else if (timeSplit.length === 3) {
+              formattedTime = timeValue;
+            }
+          }
+        }
+      }
+
+      console.log('📅 Formatted Date:', appointmentDate);
+      console.log('⏰ Formatted Time:', formattedTime);
+
+      // Get all selected services and join them
+      let allServices = [];
+      if (servicesData) {
+        const selectedArrays = [
+          servicesData.selectedHairServices,
+          servicesData.selectedNailServices,
+          servicesData.selectedSkincareServices,
+          servicesData.selectedMassageServices,
+          servicesData.selectedPremiumServices
+        ];
+
+        selectedArrays.forEach(arr => {
+          if (Array.isArray(arr) && arr.length > 0) {
+            allServices = allServices.concat(arr.map(s => s.title || s.name || s.service));
+          }
+        });
+      }
+
+      const servicesList = allServices.length > 0 ? allServices.join(", ") : "General Service";
+      const stylistName = stylistData?.name || "Any Available Stylist";
+
+      // Get user info
+      const userName = fullName || verifiedUser?.full_name || "";
+      const userEmail = email || verifiedUser?.email || "";
+      const userPhone = phone || verifiedUser?.phone || "";
+
+      // Prepare appointment data for POST
+      const appointmentPayload = {
+        name: userName,
+        email: userEmail,
+        phone: userPhone,
+        date: appointmentDate,
+        time: formattedTime,
+        service: servicesList,
+        staff_assigned: stylistName
+      };
+
+      console.log('📤 Sending appointment to backend:', appointmentPayload);
+
+      // POST appointment to backend
+      const response = await fetch(`${apiUrl}/appointments/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appointmentPayload)
+      });
+
+      const data = await response.json();
+
+      if (data.success || response.ok) {
+        console.log('✅ Appointment created successfully:', data.appointment);
+
+        // If verified user, close modal and show success
+        if (verifiedUser !== null && verifiedUser !== undefined) {
+          setShowAppointment(false);
+          setBackdropClickEnabled(false);
+          setAppointmentPhase(1);
+
+          // Clear session after successful booking
+          setTimeout(() => {
+            sessionStorage.removeItem("verifiedUser");
+            sessionStorage.removeItem("sessionUsed");
+            localStorage.removeItem("verifiedUserBackup");
+          }, 2500);
+
+          setToastMessage("✅ Appointment booked successfully! Your email link has been used.");
+          setShowToast(true);
+          setTimeout(() => { setShowToast(false); }, 3000);
+          return;
+        }
+
+        // NON-VERIFIED USER PATH
+        setShowAppointment(false);
+        setBackdropClickEnabled(false);
+        setAppointmentPhase(1);
+        setFullName("");
+        setEmail("");
+        setPhone("");
+        setUseEmail(true);
+        setUsePhone(false);
+        setToastMessage("✅ Appointment booked successfully!");
+        setShowToast(true);
+        setTimeout(() => {
+          if (verifiedUser === null || verifiedUser === undefined) {
+            sessionStorage.removeItem("verifiedUser");
+            localStorage.removeItem("verifiedUserBackup");
+            navigateWithGuard("/");
+          }
+        }, 2000);
+      } else {
+        console.error('❌ Failed to create appointment:', data);
+        setToastMessage(data.error || "Failed to book appointment. Please try again.");
+        setShowToast(true);
+      }
+    } catch (error) {
+      console.error('❌ Error booking appointment:', error);
+      setToastMessage(`Error: ${error.message || 'Unable to book appointment'}`);
+      setShowToast(true);
+    }
   };
 
   const handleBackdropClick = (e) => {

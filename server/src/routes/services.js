@@ -6,7 +6,9 @@ const router = express.Router();
 // Get all services
 router.get('/', async (req, res) => {
   try {
+    console.log('[Services] Fetching all services');
     const services = await getAllServices();
+    console.log(`[Services] Successfully fetched ${services.length} services`);
     res.json(services);
   } catch (error) {
     console.error('[Services] Error fetching all services:', error.message);
@@ -17,7 +19,9 @@ router.get('/', async (req, res) => {
 // Get all categories
 router.get('/categories/list', async (req, res) => {
   try {
+    console.log('[Services] Fetching all categories');
     const categories = await getServiceCategories();
+    console.log(`[Services] Found ${categories.length} categories`);
     res.json(categories);
   } catch (error) {
     console.error('[Services] Error fetching categories:', error.message);
@@ -30,7 +34,7 @@ router.get('/category/:category', async (req, res) => {
   try {
     console.log(`[Services] Fetching services for category: ${req.params.category}`);
     const services = await getServicesByCategory(req.params.category);
-    console.log(`[Services] Found ${services.length} services`);
+    console.log(`[Services] Found ${services.length} services in category ${req.params.category}`);
     res.json(services);
   } catch (error) {
     console.error('[Services] Error fetching services by category:', error.message);
@@ -41,7 +45,11 @@ router.get('/category/:category', async (req, res) => {
 // Get service by ID
 router.get('/:id', async (req, res) => {
   try {
+    console.log(`[Services] Fetching service ID: ${req.params.id}`);
     const service = await getServiceById(req.params.id);
+    if (service) {
+      console.log(`[Services] Successfully found service with ID ${req.params.id}`);
+    }
     
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
