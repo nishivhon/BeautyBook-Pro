@@ -165,6 +165,24 @@ const PencilIcon = () => (
   </svg>
 );
 
+const ToolsIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
+    <path d="M3 3h8v8H3V3M13 3h8v8h-8V3M3 13h8v8H3v-8M13 13h8v8h-8v-8" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const PlusIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
+    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const ArrowsIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
+    <path d="M7 16.5L12 12l5 4.5M7 7.5L12 12l5-4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 // ─── EditableText Component ───────────────────────────────────────────────────
 
 const EditableText = ({ value, onChange, isEditing, setIsEditing, className = "", isTextarea = false, size = "large" }) => {
@@ -325,6 +343,7 @@ export default function SuperAdminLandingPageEditor() {
   ]);
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
   const [editingFooterModal, setEditingFooterModal] = useState(false);
+  const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
@@ -539,6 +558,226 @@ export default function SuperAdminLandingPageEditor() {
                 <span>Live Edit Mode — Click any text on the preview below to edit it inline.</span>
               </div>
               <div className="live-edit-actions">
+                <div style={{ position: "relative" }}>
+                  <button
+                    onClick={() => setToolsMenuOpen(!toolsMenuOpen)}
+                    className="live-edit-btn-secondary"
+                    title="Tools and options"
+                  >
+                    <ToolsIcon />
+                    Tools
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {toolsMenuOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: "0",
+                        marginTop: "8px",
+                        background: "#1a1a1a",
+                        border: "1.5px solid #dd901d",
+                        borderRadius: "8px",
+                        boxShadow: "0 8px 24px rgba(0, 0, 0, 0.6)",
+                        minWidth: "220px",
+                        zIndex: 1000,
+                      }}
+                    >
+                      <button
+                        onClick={() => {
+                          alert("Add Button - Feature coming soon");
+                          setToolsMenuOpen(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "12px 16px",
+                          background: "transparent",
+                          border: "none",
+                          color: "white",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          transition: "all 0.2s ease",
+                          borderBottom: "1px solid rgba(221, 144, 29, 0.2)",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(221, 144, 29, 0.1)";
+                          e.currentTarget.style.color = "#dd901d";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                          e.currentTarget.style.color = "white";
+                        }}
+                      >
+                        <PlusIcon />
+                        Add Button
+                      </button>
+                      <button
+                        onClick={() => {
+                          alert("Add Cards - Feature coming soon");
+                          setToolsMenuOpen(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "12px 16px",
+                          background: "transparent",
+                          border: "none",
+                          color: "white",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          transition: "all 0.2s ease",
+                          borderBottom: "1px solid rgba(221, 144, 29, 0.2)",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(221, 144, 29, 0.1)";
+                          e.currentTarget.style.color = "#dd901d";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                          e.currentTarget.style.color = "white";
+                        }}
+                      >
+                        <PlusIcon />
+                        Add Cards
+                      </button>
+                      <button
+                        onClick={() => {
+                          alert("Add Section - Feature coming soon");
+                          setToolsMenuOpen(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "12px 16px",
+                          background: "transparent",
+                          border: "none",
+                          color: "white",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          transition: "all 0.2s ease",
+                          borderBottom: "1px solid rgba(221, 144, 29, 0.2)",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(221, 144, 29, 0.1)";
+                          e.currentTarget.style.color = "#dd901d";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                          e.currentTarget.style.color = "white";
+                        }}
+                      >
+                        <PlusIcon />
+                        Add Section
+                      </button>
+                      <button
+                        onClick={() => {
+                          alert("Add Subheading - Feature coming soon");
+                          setToolsMenuOpen(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "12px 16px",
+                          background: "transparent",
+                          border: "none",
+                          color: "white",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          transition: "all 0.2s ease",
+                          borderBottom: "1px solid rgba(221, 144, 29, 0.2)",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(221, 144, 29, 0.1)";
+                          e.currentTarget.style.color = "#dd901d";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                          e.currentTarget.style.color = "white";
+                        }}
+                      >
+                        <PlusIcon />
+                        Add Subheading
+                      </button>
+                      <button
+                        onClick={() => {
+                          alert("Add Title - Feature coming soon");
+                          setToolsMenuOpen(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "12px 16px",
+                          background: "transparent",
+                          border: "none",
+                          color: "white",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          transition: "all 0.2s ease",
+                          borderBottom: "1px solid rgba(221, 144, 29, 0.2)",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(221, 144, 29, 0.1)";
+                          e.currentTarget.style.color = "#dd901d";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                          e.currentTarget.style.color = "white";
+                        }}
+                      >
+                        <PlusIcon />
+                        Add Title
+                      </button>
+                      <button
+                        onClick={() => {
+                          alert("Navigate Section - Feature coming soon");
+                          setToolsMenuOpen(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "12px 16px",
+                          background: "rgba(221, 144, 29, 0.15)",
+                          border: "1px solid rgba(221, 144, 29, 0.4)",
+                          color: "#dd901d",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          transition: "all 0.2s ease",
+                          fontWeight: "500",
+                          borderRadius: "0 0 6px 6px",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(221, 144, 29, 0.25)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "rgba(221, 144, 29, 0.15)";
+                        }}
+                      >
+                        <ArrowsIcon />
+                        Navigate Sections
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button className="live-edit-btn-secondary">
                   <EyeIcon />
                   Preview
