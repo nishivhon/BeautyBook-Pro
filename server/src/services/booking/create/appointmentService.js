@@ -1,4 +1,4 @@
-import { querySupabase } from '../db/supabaseClient.js';
+import { querySupabase } from '../../../db/supabaseClient.js';
 
 /**
  * Fetch all appointments

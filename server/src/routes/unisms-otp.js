@@ -53,8 +53,7 @@ router.post('/send-otp', async (req, res) => {
       attempts: 0
     });
 
-    console.log(`📱 Sending OTP to: ${phone}`);
-    console.log(`🔐 OTP Code: ${otp}`);
+    console.log(`Sending OTP to: ${phone}`);
 
     // Send SMS via UniSMS with correct API format
     const message = `Hello ${name}, Your BeautyBook OTP is: ${otp}. Valid for 10 minutes.`;
@@ -69,8 +68,8 @@ router.post('/send-otp', async (req, res) => {
       }
     });
 
-    console.log('✅ OTP sent successfully to', phone);
-    console.log('📦 UniSMS Response:', response.data);
+    console.log('OTP sent successfully to', phone);
+    console.log('UniSMS Response:', response.data);
 
     res.status(200).json({
       success: true,
@@ -128,7 +127,7 @@ router.post('/verify-otp', async (req, res) => {
     // OTP verified successfully - delete it
     otpStorage.delete(phone);
 
-    console.log('✅ OTP verified successfully for:', phone);
+    console.log('OTP verified successfully for:', phone);
 
     res.status(200).json({
       success: true,
@@ -180,8 +179,7 @@ router.post('/resend-otp', async (req, res) => {
       attempts: 0
     });
 
-    console.log(`📱 Resending OTP to: ${phone}`);
-    console.log(`🔐 New OTP Code: ${otp}`);
+    console.log(`Resending OTP to: ${phone}`);
 
     const message = `Hello ${name}, your new BeautyBook OTP is: ${otp}. Valid for 10 minutes.`;
 
@@ -195,7 +193,7 @@ router.post('/resend-otp', async (req, res) => {
       }
     });
 
-    console.log('✅ OTP resent successfully to', phone);
+    console.log('OTP resent successfully to', phone);
 
     res.status(200).json({
       success: true,

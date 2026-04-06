@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllStaff, getStaffById, getAvailableStaff, getStaffWithAnyOption } from '../services/staffService.js';
+import { getAllStaff, getStaffById, getAvailableStaff, getStaffWithAnyOption } from '../services/booking/read/staffService.js';
 
 const router = express.Router();
 

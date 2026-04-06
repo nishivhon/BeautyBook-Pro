@@ -76,8 +76,7 @@ router.post('/send-email-otp', async (req, res) => {
       phone
     });
 
-    console.log(`📧 Sending OTP to: ${email}`);
-    console.log(`🔐 OTP Code: ${otp}`);
+    console.log(`Sending OTP to: ${email}`);
 
     // Send OTP via Brevo SMTP
     const emailResponse = await transporter.sendMail({
@@ -100,7 +99,7 @@ router.post('/send-email-otp', async (req, res) => {
       `
     });
 
-    console.log('✅ Email OTP sent successfully, Message ID:', emailResponse.messageId);
+    console.log('Email OTP sent successfully, Message ID:', emailResponse.messageId);
 
     res.status(200).json({
       success: true,
@@ -154,7 +153,7 @@ router.post('/verify-email-otp', async (req, res) => {
     // OTP verified - delete it and return user data
     emailOtpStorage.delete(email);
 
-    console.log('✅ Email OTP verified successfully for:', email);
+    console.log('Email OTP verified successfully for:', email);
 
     res.status(200).json({
       success: true,

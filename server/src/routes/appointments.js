@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllAppointments, getAppointmentById, getAppointmentsByUserId, getAppointmentsByStylistId, getAppointmentsByDateRange } from '../services/appointmentService.js';
+import { getAllAppointments, getAppointmentById, getAppointmentsByUserId, getAppointmentsByStylistId, getAppointmentsByDateRange } from '../services/booking/create/appointmentService.js';
 
 const router = express.Router();
 
