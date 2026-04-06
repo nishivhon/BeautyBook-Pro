@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
-import { AddWalkInModal } from "../../components/modal/add_walkin";
+import { AddWalkInModal } from "../../components/modal/admin/add_walkin";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS

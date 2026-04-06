@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import AppointmentForm from "../components/modal/appointment/phase_one";
-import { AppointmentFormPhase2 } from "../components/modal/appointment/phase_two";
-import { AppointmentFormPhase3 } from "../components/modal/appointment/phase_three";
-import { AppointmentFormPhase4 } from "../components/modal/appointment/phase_four";
-import { ConfirmationDialog } from "../components/modal/confirmation_dialog";
+import AppointmentForm from "../components/modal/customer/appointment/phase_one";
+import { AppointmentFormPhase2 } from "../components/modal/customer/appointment/phase_two";
+import { AppointmentFormPhase3 } from "../components/modal/customer/appointment/phase_three";
+import { AppointmentFormPhase4 } from "../components/modal/customer/appointment/phase_four";
+import { ConfirmationDialog } from "../components/modal/customer/confirmation_dialog";
 import { Toast } from "../components/toast";
-import { Otp } from "../components/modal/otp";
+import { Otp } from "../components/modal/customer/otp";
 
 /** Logo scissors mark */
 const LogoMark = () => (

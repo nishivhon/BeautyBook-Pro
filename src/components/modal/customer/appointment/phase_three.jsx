@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ConfirmationDialog } from "../confirmation_dialog";
-import { fetchStaffWithAnyOption } from "../../../services/staffApi";
+import { fetchStaffWithAnyOption } from "../../../../services/staffApi";
 
 /* ══════════════════════════════════════════
    INLINE SVG ICONS

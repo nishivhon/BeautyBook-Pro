@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
-import CustomerHistoryModal from "../../components/modal/customer_history";
-import CalendarAppointmentsModal from "../../components/modal/calendar_appointments";
+import CustomerHistoryModal from "../../components/modal/admin/customer_history";
+import CalendarAppointmentsModal from "../../components/modal/admin/calendar_appointments";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS

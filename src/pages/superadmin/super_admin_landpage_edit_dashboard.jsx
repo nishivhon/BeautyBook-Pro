@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
-import { HowItWorksStepEditModal } from "../../components/modal/howitworks_step_edit";
-import { ServiceEditModal } from "../../components/modal/service_edit";
+import { HowItWorksStepEditModal } from "../../components/modal/superadmin/howitworks_step_edit";
+import { ServiceEditModal } from "../../components/modal/superadmin/service_edit";
 
 // ─── Logo Mark SVG ───────────────────────────────────────────────────────────
 const LogoMark = () => (
