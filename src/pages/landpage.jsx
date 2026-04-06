@@ -152,7 +152,7 @@ const NavBar = ({ onBookAppointment }) => {
   return (
     <nav className="navbar">
       {/* Logo */}
-      <div style={{display:"flex",alignItems:"center",gap:8}}>
+      <div className="flex-center-gap-2">
         <div className="logo-badge">
           <LogoMark/>
         </div>
@@ -162,7 +162,7 @@ const NavBar = ({ onBookAppointment }) => {
       </div>
 
       {/* Nav links */}
-      <div style={{display:"flex",alignItems:"center",gap:2}}>
+      <div className="flex-center-gap-1">
         {[
           {label:"Home",       id:"home"},
           {label:"Services",   id:"services"},
@@ -176,7 +176,7 @@ const NavBar = ({ onBookAppointment }) => {
       </div>
 
       {/* CTA */}
-      <button onClick={onBookAppointment} className="btn-primary" style={{padding:"5px 14px",height:"36px",fontSize:"0.75rem"}}>
+      <button onClick={onBookAppointment} className="btn-primary btn-nav">
         Book Appointment
       </button>
     </nav>
@@ -207,7 +207,7 @@ const HeroSection = ({ onBookAppointment }) => (
     </p>
 
     {/* CTA */}
-    <button onClick={onBookAppointment} className="btn-large" style={{width:"auto",padding:"10px 28px",height:"44px",fontSize:"0.9rem"}}>
+    <button onClick={onBookAppointment} className="btn-large btn-hero">
       Book Appointment
     </button>
   </section>
@@ -224,10 +224,7 @@ const HowItWorksSection = () => {
       <h2 className="section-title">How BeautyBook Pro Works</h2>
       <p className="section-subtitle">Simple, efficient digital booking appointment for modern salon businesses</p>
 
-      <div style={{
-        display:"grid",gridTemplateColumns:"repeat(3,1fr)",
-        gap:18,maxWidth:860,margin:"0 auto",
-      }}>
+      <div className="grid-3col">
         {steps.map((s,i) => (
           <div key={i} className="step-card">
             <div className="icon-box">{s.icon}</div>
@@ -242,12 +239,7 @@ const HowItWorksSection = () => {
 
 const SvcCard = ({icon,title,items}) => (
   <div className="service-card">
-    <div style={{
-      width:50,height:50,background:"#dd901d",
-      borderRadius:14,padding:10,
-      display:"flex",alignItems:"center",justifyContent:"center",
-      marginBottom:10,
-    }}>{icon}</div>
+    <div className="svc-icon-box">{icon}</div>
     <div className="service-title">{title}</div>
     <div className="service-items">
       {items.map((l,i) => (
@@ -275,11 +267,11 @@ const ServicesSection = () => {
       <h2 className="section-title">Our Services</h2>
       <p className="section-subtitle">Professional grooming services tailored to your style</p>
 
-      <div style={{maxWidth:860,margin:"0 auto",display:"flex",flexDirection:"column",gap:18}}>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:18}}>
+      <div className="section-flex-col">
+        <div className="grid-auto">
           {row1.map((s,i) => <SvcCard key={i} {...s}/>)}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:18,maxWidth:572}}>
+        <div className="grid-2col">
           {row2.map((s,i) => <SvcCard key={i} {...s}/>)}
         </div>
       </div>
@@ -289,7 +281,7 @@ const ServicesSection = () => {
 
 const FooterSection = () => (
   <footer id="about" className="footer">
-    <div style={{maxWidth:860,margin:"0 auto"}}>
+    <div className="section-container">
       {/* Contact row */}
       <div className="footer-row">
         <span className="footer-label">
@@ -339,7 +331,7 @@ export default function App() {
   const handleBook = () => navigate("/register");
 
   return (
-    <div style={{background:"#0a0908",minHeight:"100vh",width:"100%",zoom:"125%",transformOrigin:"top left"}}>
+    <div className="app-wrapper">
       <NavBar onBookAppointment={handleBook}/>
       <HeroSection onBookAppointment={handleBook}/>
       <HowItWorksSection/>

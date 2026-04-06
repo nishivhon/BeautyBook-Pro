@@ -465,45 +465,29 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
           }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div>
-                <span style={{ fontSize: "12px", color: "#dd901d", fontWeight: "600", display: "block", marginBottom: "4px", fontFamily: "Inter, sans-serif" }}>Service Selected</span>
-                <span style={{ fontSize: "14px", color: "#f5f5f5", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>{details.serviceSelected}</span>
+                <span className="dash-detail-label">Service Selected</span>
+                <span className="dash-detail-value">{details.serviceSelected}</span>
               </div>
 
               <div>
-                <span style={{ fontSize: "12px", color: "#dd901d", fontWeight: "600", display: "block", marginBottom: "4px", fontFamily: "Inter, sans-serif" }}>Current Service</span>
-                <span style={{ fontSize: "14px", color: "#f5f5f5", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>{details.currentService}</span>
+                <span className="dash-detail-label">Current Service</span>
+                <span className="dash-detail-value">{details.currentService}</span>
               </div>
 
               <div>
-                <span style={{ fontSize: "12px", color: "#dd901d", fontWeight: "600", display: "block", marginBottom: "4px", fontFamily: "Inter, sans-serif" }}>Starting Time</span>
-                <span style={{ fontSize: "14px", color: "#f5f5f5", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>{details.startTime}</span>
+                <span className="dash-detail-label">Starting Time</span>
+                <span className="dash-detail-value">{details.startTime}</span>
               </div>
 
               <div>
-                <span style={{ fontSize: "12px", color: "#dd901d", fontWeight: "600", display: "block", marginBottom: "4px", fontFamily: "Inter, sans-serif" }}>Estimated Time</span>
-                <span style={{ fontSize: "14px", color: "#f5f5f5", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>{details.estimatedTime}</span>
+                <span className="dash-detail-label">Estimated Time</span>
+                <span className="dash-detail-value">{details.estimatedTime}</span>
               </div>
 
               {isActive && (
                 <button
                   onClick={handleCompleteService}
-                  style={{
-                    marginTop: "8px",
-                    padding: "10px 16px",
-                    backgroundColor: "#22c55e",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    fontFamily: "Inter, sans-serif",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    transition: "background-color 0.2s ease"
-                  }}
+                  className="dash-complete-btn"
                   onMouseOver={(e) => e.target.style.backgroundColor = "#16a34a"}
                   onMouseOut={(e) => e.target.style.backgroundColor = "#22c55e"}
                 >

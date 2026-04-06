@@ -141,6 +141,304 @@
   }
 
   /* ─────────────────────────────────────
+     Modal & Dialog Styles
+  ───────────────────────────────────── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-card {
+    background: #1a1a1a;
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(221, 144, 29, 0.2);
+  }
+
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f5f5f5;
+    margin-bottom: 12px;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .modal-message {
+    font-size: 14px;
+    font-weight: 400;
+    color: #988f81;
+    text-align: center;
+    margin-bottom: 24px;
+    line-height: 1.6;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  /* ─────────────────────────────────────
+     Button Variants
+  ───────────────────────────────────── */
+  .btn-secondary {
+    padding: 10px 18px;
+    background: transparent;
+    color: #dd901d;
+    border: 1px solid #dd901d;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(221, 144, 29, 0.1);
+  }
+
+  .btn-danger {
+    padding: 10px 20px;
+    background-color: #ef4444;
+    color: #f5f5f5;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .btn-danger:hover {
+    background-color: #dc2626;
+  }
+
+  /* ─────────────────────────────────────
+     Form Input Fields
+  ───────────────────────────────────── */
+  .form-input {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: rgba(26, 15, 0, 0.5);
+    border: 1px solid rgba(221, 144, 29, 0.3);
+    border-radius: 8px;
+    color: #f5f5f5;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+    outline: none;
+  }
+
+  .form-input:focus {
+    border-color: rgba(221, 144, 29, 0.6);
+  }
+
+  .form-input::placeholder {
+    color: #988f81;
+  }
+
+  /* ─────────────────────────────────────
+     Badge & Count Styles
+  ───────────────────────────────────── */
+  .badge-count {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--color-amber);
+    color: var(--color-black);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .badge-small {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    background: var(--color-amber);
+    color: var(--color-black);
+    border-radius: 11px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ─────────────────────────────────────
+     Flex Layout Utilities
+  ───────────────────────────────────── */
+  .flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .flex-start {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .flex-col-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ─────────────────────────────────────
+     Text & Typography Utilities
+  ───────────────────────────────────── */
+  .text-amber {
+    color: #dd901d;
+  }
+
+  .text-white {
+    color: #fff;
+  }
+
+  .text-light {
+    color: #f5f1eb;
+  }
+
+  .text-tan {
+    color: #988f81;
+  }
+
+  .text-label {
+    font-size: 12px;
+    color: #dd901d;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .text-value {
+    font-size: 14px;
+    color: #f5f5f5;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .text-xs {
+    font-size: 0.75rem;
+  }
+
+  .text-sm {
+    font-size: 0.875rem;
+  }
+
+  .text-base {
+    font-size: 1rem;
+  }
+
+  /* ─────────────────────────────────────
+     Icon Utilities
+  ───────────────────────────────────── */
+  .icon-sm {
+    width: 16px;
+    height: 16px;
+  }
+
+  .icon-md {
+    width: 22px;
+    height: 22px;
+  }
+
+  .icon-lg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .icon-shrink {
+    flex-shrink: 0;
+  }
+
+  /* ─────────────────────────────────────
+     Spacing & Layout Utilities
+  ───────────────────────────────────── */
+  .gap-xs {
+    gap: 4px;
+  }
+
+  .gap-sm {
+    gap: 8px;
+  }
+
+  .gap-md {
+    gap: 12px;
+  }
+
+  .gap-lg {
+    gap: 16px;
+  }
+
+  .gap-xl {
+    gap: 24px;
+  }
+
+  .mb-xs {
+    margin-bottom: 4px;
+  }
+
+  .mb-sm {
+    margin-bottom: 8px;
+  }
+
+  .mb-md {
+    margin-bottom: 12px;
+  }
+
+  .mb-lg {
+    margin-bottom: 16px;
+  }
+
+  .p-sm {
+    padding: 8px;
+  }
+
+  .p-md {
+    padding: 12px;
+  }
+
+  .p-lg {
+    padding: 16px;
+  }
+
+  /* ─────────────────────────────────────
      Hero Section
   ───────────────────────────────────── */
   .hero-section {
@@ -312,6 +610,52 @@
     font-size: 0.78rem;
     color: var(--color-tan);
   }
+
+  /* ─────────────────────────────────────
+     Landpage & Admin Specific Styles
+  ───────────────────────────────────── */
+
+  /* SVG Icon sizes */
+  .svg-icon-22 { width: 22px; height: 22px; }
+  .svg-icon-16 { width: 16px; height: 16px; }
+  .svg-icon-18 { width: 18px; height: 18px; flex-shrink: 0; }
+  .svg-icon-15 { width: 15px; height: 15px; flex-shrink: 0; }
+  .svg-icon-full { width: 100%; height: 100%; }
+
+  /* Flex utilities for layout */
+  .flex-center-gap-2 { display: flex; align-items: center; gap: 8px; }
+  .flex-center-gap-1 { display: flex; align-items: center; gap: 2px; }
+
+  /* Grid layouts */
+  .grid-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; max-width: 860px; margin: 0 auto; }
+  .grid-2col { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; max-width: 572px; }
+  .grid-auto { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+
+  /* Service card icon box */
+  .svc-icon-box { width: 50px; height: 50px; background: #dd901d; border-radius: 14px; padding: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+
+  /* Navbar button styling */
+  .btn-nav { padding: 5px 14px; height: 36px; font-size: 0.75rem; }
+
+  /* Hero section button */
+  .btn-hero { width: auto; padding: 10px 28px; height: 44px; font-size: 0.9rem; }
+
+  /* Section containers */
+  .section-container { max-width: 860px; margin: 0 auto; }
+  .section-flex-col { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+  /* App wrapper */
+  .app-wrapper { background: #0a0908; min-height: 100vh; width: 100%; zoom: 125%; transform-origin: top left; }
+
+  /* Editable text styling */
+  .editable-text-container { display: flex; justify-content: center; width: 100%; max-width: 800px; margin: 0 auto; flex-direction: column; align-items: center; }
+  .editable-text-preview { display: block; color: white; font-size: 16px; line-height: 1.6; text-align: center; margin-bottom: 12px; white-space: pre-wrap; word-wrap: break-word; }
+  .editable-text-textarea { font-size: 16px; line-height: 1.6; font-family: inherit; color: #dd901d; overflow: hidden; width: 100%; box-sizing: border-box; text-align: center; background-color: rgba(221, 144, 29, 0.08); border-radius: 1rem; border: 1.5px solid #dd901d; }
+  .editable-text-input { font-size: inherit; font-weight: inherit; line-height: 1.2; display: block; width: 100%; box-sizing: border-box; text-align: center; background-color: rgba(221, 144, 29, 0.08); border-radius: 1rem; border: 1.5px solid #dd901d; min-height: 40px; }
+
+  .editable-text-span { cursor: pointer; transition: all 0.3s ease; border-radius: 0.5rem; padding: 0 4px; display: inline-block; }
+  .editable-text-span:hover { opacity: 1; box-shadow: 0 0 12px rgba(221, 144, 29, 0.4); }
+  .editable-text-span:not(:hover) { opacity: 0.9; }
 
   /* ─────────────────────────────────────
      Footer
@@ -6178,6 +6522,76 @@
   .staff-member-scroll {
     max-height: 600px;
     overflow-y: auto;
+  }
+
+  /* ─────────────────────────────────────
+     Admin Dashboard — Detail Labels & Values
+  ───────────────────────────────────── */
+  
+  /* Detail section labels (yellow) */
+  .dash-detail-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #dd901d;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: 'Inter', sans-serif;
+    display: block;
+  }
+
+  /* Detail section values (light) */
+  .dash-detail-value {
+    font-size: 14px;
+    color: #f5f5f5;
+    margin: 0;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Detail value - success color */
+  .dash-detail-value-green {
+    font-size: 14px;
+    color: #22c55e;
+    margin: 0;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Detail value - error color */
+  .dash-detail-value-red {
+    font-size: 14px;
+    color: #ef4444;
+    margin: 0;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Complete service button */
+  .dash-complete-btn {
+    margin-top: 8px;
+    padding: 10px 16px;
+    background-color: #22c55e;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s ease;
+  }
+
+  .dash-complete-btn:hover {
+    background-color: #16a34a;
+  }
+
+  /* Continued staff member scroll styles */
+  .staff-member-scroll {
     overflow-x: hidden;
     display: flex;
     flex-direction: column;

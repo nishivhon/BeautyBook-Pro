@@ -6,7 +6,7 @@ import { ServiceEditModal } from "../../components/modal/superadmin/service_edit
 
 // ─── Logo Mark SVG ───────────────────────────────────────────────────────────
 const LogoMark = () => (
-  <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:22,height:22}}>
+  <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-22">
     <circle cx="6"  cy="21" r="4" stroke="black" strokeWidth="2" fill="none"/>
     <circle cx="6"  cy="9"  r="4" stroke="black" strokeWidth="2" fill="none"/>
     <path d="M10 18.5 L28 7"  stroke="black" strokeWidth="2" strokeLinecap="round"/>
@@ -19,7 +19,7 @@ const LogoMark = () => (
 // ─── Icon Sets from Real Landing Page ───────────────────────────────────────
 
 const CalendarIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-full">
     <rect x="2" y="4" width="20" height="18" rx="2" stroke="black" strokeWidth="1.8" fill="none"/>
     <line x1="2" y1="10" x2="22" y2="10" stroke="black" strokeWidth="1.8"/>
     <path d="M8 2v4M16 2v4" stroke="black" strokeWidth="1.8" strokeLinecap="round"/>
@@ -32,7 +32,7 @@ const CalendarIcon = () => (
 );
 
 const BellNotifyIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-full">
     <path d="M5 15V10a7 7 0 0 1 14 0v5l2 2H3l2-2z" stroke="black" strokeWidth="1.8" fill="none" strokeLinejoin="round"/>
     <path d="M10 19a2 2 0 0 0 4 0" stroke="black" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
     <circle cx="17.5" cy="6.5" r="4" fill="#dd901d"/>
@@ -41,14 +41,14 @@ const BellNotifyIcon = () => (
 );
 
 const CheckCircleIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-full">
     <circle cx="12" cy="12" r="10" stroke="black" strokeWidth="1.8" fill="none"/>
     <path d="M7.5 12l3 3.5 6-7" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
 const CheckItem = () => (
-  <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:15,height:15,flexShrink:0}}>
+  <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-15">
     <circle cx="8" cy="8" r="7.2" stroke="#dd901d" strokeWidth="1.3" fill="none"/>
     <path d="M5 8l2.2 2.2L11 5.5" stroke="#dd901d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
@@ -57,7 +57,7 @@ const CheckItem = () => (
 // ─── How It Works Icons ───────────────────────────────────────────────────────
 
 const HowItWorksCalendarIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-full">
     <rect x="2" y="4" width="20" height="18" rx="2" stroke="black" strokeWidth="1.8" fill="none"/>
     <line x1="2" y1="10" x2="22" y2="10" stroke="black" strokeWidth="1.8"/>
     <path d="M8 2v4M16 2v4" stroke="black" strokeWidth="1.8" strokeLinecap="round"/>
@@ -70,7 +70,7 @@ const HowItWorksCalendarIcon = () => (
 );
 
 const HowItWorksBellIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-full">
     <path d="M5 15V10a7 7 0 0 1 14 0v5l2 2H3l2-2z" stroke="black" strokeWidth="1.8" fill="none" strokeLinejoin="round"/>
     <path d="M10 19a2 2 0 0 0 4 0" stroke="black" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
     <circle cx="17.5" cy="6.5" r="4" fill="#dd901d"/>
@@ -79,7 +79,7 @@ const HowItWorksBellIcon = () => (
 );
 
 const HowItWorksCheckIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-full">
     <circle cx="12" cy="12" r="10" stroke="black" strokeWidth="1.8" fill="none"/>
     <path d="M7.5 12l3 3.5 6-7" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
@@ -88,7 +88,7 @@ const HowItWorksCheckIcon = () => (
 // ─── Services Icons ───────────────────────────────────────────────────────────
 
 const ScissorsIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-full">
     <circle cx="5.5" cy="6.5" r="3" stroke="black" strokeWidth="1.6" fill="none"/>
     <circle cx="5.5" cy="17.5" r="3" stroke="black" strokeWidth="1.6" fill="none"/>
     <path d="M8 5 L21 12" stroke="black" strokeWidth="1.6" strokeLinecap="round"/>
@@ -99,7 +99,7 @@ const ScissorsIcon = () => (
 );
 
 const NailIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-full">
     <rect x="8" y="10" width="8" height="11" rx="2" stroke="black" strokeWidth="1.7" fill="none"/>
     <rect x="10" y="6" width="4" height="4" rx="0.5" stroke="black" strokeWidth="1.5" fill="none"/>
     <rect x="9" y="3" width="6" height="3.5" rx="1.5" stroke="black" strokeWidth="1.5" fill="black" fillOpacity="0.15"/>
@@ -108,7 +108,7 @@ const NailIcon = () => (
 );
 
 const SkinIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-full">
     <circle cx="12" cy="12" r="9.5" stroke="black" strokeWidth="1.7" fill="none"/>
     <circle cx="9"  cy="10" r="1.2" fill="black"/>
     <circle cx="15" cy="10" r="1.2" fill="black"/>
@@ -117,7 +117,7 @@ const SkinIcon = () => (
 );
 
 const MassageIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-full">
     <circle cx="18" cy="5" r="2.2" stroke="black" strokeWidth="1.5" fill="none"/>
     <path d="M2 14 Q5 11 9 12 L14 11 Q17 10.5 20 12" stroke="black" strokeWidth="1.7" strokeLinecap="round" fill="none"/>
     <line x1="1" y1="16" x2="23" y2="16" stroke="black" strokeWidth="1.7" strokeLinecap="round"/>
@@ -129,7 +129,7 @@ const MassageIcon = () => (
 );
 
 const StarIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-full">
     <path d="M12 2.5 L14.6 9.2 H21.8 L15.9 13.4 L18.2 20.2 L12 16.1 L5.8 20.2 L8.1 13.4 L2.2 9.2 H9.4 Z" stroke="black" strokeWidth="1.7" fill="none" strokeLinejoin="round"/>
   </svg>
 );
@@ -137,14 +137,14 @@ const StarIcon = () => (
 // ─── Preview and Save Icons ───────────────────────────────────────────────────
 
 const EyeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:16,height:16}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
     <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8"/>
     <path d="M1 12c0 0 4-8 11-8s11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
 const SaveIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:16,height:16}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
     <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
     <polyline points="7 5 7 1 17 1 17 5" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
@@ -152,13 +152,13 @@ const SaveIcon = () => (
 );
 
 const LiveEditStarIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:18,height:18,flexShrink:0}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-18">
     <path d="M12 2L15.09 10.26H24L17.55 15.36L20.64 23.61L12 18.5L3.36 23.61L6.45 15.36L0 10.26H8.91L12 2Z" fill="#dd901d"/>
   </svg>
 );
 
 const PencilIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:16,height:16}}>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
   </svg>
@@ -190,17 +190,8 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
   if (isEditing) {
     if (isTextarea) {
       return (
-        <div style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: "800px", margin: "0 auto", flexDirection: "column", alignItems: "center" }}>
-          <div style={{
-            fontSize: "16px",
-            lineHeight: "1.6",
-            textAlign: "center",
-            marginBottom: "12px",
-            display: "block",
-            color: "white",
-            whitespace: "pre-wrap",
-            wordWrap: "break-word",
-          }}>
+        <div className="editable-text-container">
+          <div className="editable-text-preview">
             {draft}
           </div>
           <textarea
@@ -222,8 +213,7 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
                 setIsEditing(false);
               }
             }}
-            style={{ fontSize: "16px", lineHeight: "1.6", fontFamily: "inherit", color: "#dd901d", overflow: "hidden", width: "100%", boxSizing: "border-box", textAlign: "center", backgroundColor: "rgba(221, 144, 29, 0.08)", borderRadius: "1rem", border: "1.5px solid #dd901d" }}
-            className={`px-5 py-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 resize-none ${className}`}
+            className={`editable-text-textarea px-5 py-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 resize-none ${className}`}
             placeholder="Type to edit..."
           />
         </div>
@@ -231,7 +221,7 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
     }
 
     return (
-      <div style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: "800px", margin: "0 auto", flexDirection: "column", alignItems: "center" }}>
+      <div className="editable-text-container">
         <div style={{
           fontSize: fontSize,
           fontWeight: fontWeight,
@@ -253,8 +243,8 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
             if (e.key === "Enter") commit();
             if (e.key === "Escape") setIsEditing(false);
           }}
-          style={{ fontSize: fontSize, fontWeight: fontWeight, lineHeight: "1.2", display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", backgroundColor: "rgba(221, 144, 29, 0.08)", borderRadius: "1rem", border: "1.5px solid #dd901d", minHeight: minHeight }}
-          className={`px-5 py-4 !text-[#dd901d] focus:outline-none focus:ring-2 focus:ring-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 ${className}`}
+          style={{ fontSize: fontSize, fontWeight: fontWeight, lineHeight: "1.2", minHeight: minHeight }}
+          className={`editable-text-input px-5 py-4 !text-[#dd901d] focus:outline-none focus:ring-2 focus:ring-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 ${className}`}
           placeholder="Type to edit..."
         />
       </div>
@@ -266,16 +256,7 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
       onClick={() => setIsEditing(true)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{
-        cursor: "pointer",
-        transition: "all 0.3s ease",
-        opacity: isHovered ? 1 : 0.9,
-        boxShadow: isHovered ? "0 0 12px rgba(221, 144, 29, 0.4)" : "none",
-        borderRadius: "0.5rem",
-        padding: "0 4px",
-        display: "inline-block",
-      }}
-      className={className}
+      className={`editable-text-span ${className}`}
     >
       {value}
     </span>

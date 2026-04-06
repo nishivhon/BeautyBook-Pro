@@ -221,21 +221,14 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
 
         {/* Loading state */}
         {loading && (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666' }}>
+          <div className="text-center py-10 text-gray-500">
             Loading stylists...
           </div>
         )}
 
         {/* Error state */}
         {error && (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '20px', 
-            color: '#d00',
-            background: '#fee',
-            borderRadius: '8px',
-            margin: '20px'
-          }}>
+          <div className="text-center p-5 text-red-600 bg-red-50 rounded-lg mx-5">
             Error loading stylists. Please try again.
           </div>
         )}
@@ -261,7 +254,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
 
       {/* ── Footer CTA ── */}
       <div className="appt-footer">
-        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+        <div className="flex gap-3 w-full">
           <button
             onClick={handleCancelClick}
             style={{
