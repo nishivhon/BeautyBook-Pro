@@ -125,6 +125,8 @@ export const Register = () => {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [pendingPhone, setPendingPhone] = useState("");
   const [pendingName, setPendingName] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [otpType, setOtpType] = useState("phone"); // "phone" or "email"
 
   // Create a wrapper for navigate that logs and blocks for verified users
   const navigateWithGuard = (path) => {
@@ -255,12 +257,18 @@ export const Register = () => {
         requestData = { phone, name: fullName };
         successMessage = `OTP sent to ${phone}. Check your messages!`;
         console.log('📱 Sending SMS OTP to:', phone);
+      } else if (useEmail && !usePhone) {
+        // Email only - use Email OTP (NEW)
+        endpoint = `${apiUrl}/auth/send-email-otp`;
+        requestData = { email, full_name: fullName, phone: phone || "" };
+        successMessage = `OTP sent to ${email}. Check your inbox!`;
+        console.log('📧 Sending email OTP to:', email);
       } else {
-        // Email or both - use email
-        endpoint = `${apiUrl}/auth/signup`;
-        requestData = { email: email || "", full_name: fullName, phone: phone || "" };
-        successMessage = `Verification email sent to ${email}. Check your inbox!`;
-        console.log('📧 Sending verification email to:', email);
+        // Both email and phone - send SMS OTP (user can receive via either)
+        endpoint = `${apiUrl}/sms/send-otp`;
+        requestData = { phone, name: fullName };
+        successMessage = `OTP sent to ${phone}. Check your messages!`;
+        console.log('📱 Sending SMS OTP to:', phone);
       }
 
       console.log('📋 Data:', requestData);
@@ -281,23 +289,28 @@ export const Register = () => {
             setShowToast(true);
             setTimeout(() => { setShowToast(false); }, 10000);
             
-            // If SMS was sent, show OTP modal instead of navigating
+            // Show OTP modal for both email and phone
             if (usePhone && !useEmail) {
+              // Phone only
               setPendingPhone(phone);
               setPendingName(fullName);
+              setPendingEmail("");
+              setOtpType("phone");
+              setShowOtpModal(true);
+            } else if (useEmail && !usePhone) {
+              // Email only
+              setPendingEmail(email);
+              setPendingName(fullName);
+              setPendingPhone("");
+              setOtpType("email");
               setShowOtpModal(true);
             } else {
-              // Email verification - reset form and navigate
-              setFullName("");
-              setEmail("");
-              setPhone("");
-              setUseEmail(true);
-              setUsePhone(false);
-              setTimeout(() => {
-                if (verifiedUser === null || verifiedUser === undefined) {
-                  navigateWithGuard("/");
-                }
-              }, 2000);
+              // Both email and phone - using SMS OTP
+              setPendingPhone(phone);
+              setPendingName(fullName);
+              setPendingEmail("");
+              setOtpType("phone");
+              setShowOtpModal(true);
             }
           } else {
             const errorMsg = data.error || "Failed to send verification";
@@ -324,32 +337,45 @@ export const Register = () => {
   };
 
   const handleOtpVerified = (otp) => {
-    if (!pendingPhone || !otp) return;
-
-    console.log('🔐 Verifying OTP for:', pendingPhone);
     const cleanOtp = otp.replace(/\s/g, ''); // Remove spaces
     const apiUrl = import.meta.env.VITE_API_URL;
+    
+    // Determine which endpoint to use based on otpType
+    let endpoint, verifyData, toastMsg;
+    
+    if (otpType === "phone") {
+      if (!pendingPhone || !otp) return;
+      endpoint = `${apiUrl}/sms/verify-otp`;
+      verifyData = { phone: pendingPhone, otp: cleanOtp };
+      toastMsg = '✅ Phone verified successfully! Proceeding to booking...';
+      console.log('🔐 Verifying SMS OTP for:', pendingPhone);
+    } else if (otpType === "email") {
+      if (!pendingEmail || !otp) return;
+      endpoint = `${apiUrl}/auth/verify-email-otp`;
+      verifyData = { email: pendingEmail, otp: cleanOtp };
+      toastMsg = '✅ Email verified successfully! Proceeding to booking...';
+      console.log('🔐 Verifying Email OTP for:', pendingEmail);
+    } else {
+      return;
+    }
 
-    fetch(`${apiUrl}/sms/verify-otp`, {
+    fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phone: pendingPhone,
-        otp: cleanOtp
-      })
+      body: JSON.stringify(verifyData)
     })
       .then(res => res.json())
       .then(data => {
         if (data.success || data.verified) {
           console.log('✅ OTP verified successfully!');
-          setToastMessage('✅ Phone verified successfully! Proceeding to booking...');
+          setToastMessage(toastMsg);
           setShowToast(true);
           
           // Store verified user
           const userData = {
-            phone: pendingPhone,
-            full_name: fullName,
-            email: email || ""
+            phone: pendingPhone || phone || "",
+            full_name: pendingName || fullName,
+            email: pendingEmail || email || ""
           };
           setVerifiedUser(userData);
           setShowAppointment(true);
@@ -360,6 +386,8 @@ export const Register = () => {
           // Close OTP modal
           setShowOtpModal(false);
           setPendingPhone("");
+          setPendingEmail("");
+          setPendingName("");
           
           // Reset form
           setFullName("");
@@ -872,10 +900,13 @@ export const Register = () => {
           onClose={() => {
             setShowOtpModal(false);
             setPendingPhone("");
+            setPendingEmail("");
             setPendingName("");
           }}
           selectedPhone={pendingPhone}
+          selectedEmail={pendingEmail}
           name={pendingName}
+          otpType={otpType}
         />
       )}
 

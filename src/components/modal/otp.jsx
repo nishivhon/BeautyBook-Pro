@@ -36,7 +36,7 @@ const CloseIcon = () => (
 /* ══════════════════════════════════════════
    OTP MODAL COMPONENT
 ══════════════════════════════════════════ */
-export const Otp = ({ onClose, onVerified, selectedPhone, name }) => {
+export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, otpType = "phone" }) => {
   const INITIAL_TIME = 600; // 10 minutes
   const [timeLeft,   setTimeLeft]   = useState(INITIAL_TIME);
   const [otpValue,   setOtpValue]   = useState("");
@@ -63,10 +63,20 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name }) => {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
-      const response = await fetch(`${apiUrl}/sms/resend-otp`, {
+      
+      let endpoint, resendData;
+      if (otpType === "email") {
+        endpoint = `${apiUrl}/auth/send-email-otp`;
+        resendData = { email: selectedEmail, full_name: name, phone: "" };
+      } else {
+        endpoint = `${apiUrl}/sms/resend-otp`;
+        resendData = { phone: selectedPhone, name };
+      }
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: selectedPhone, name })
+        body: JSON.stringify(resendData)
       });
 
       const data = await response.json();
@@ -80,7 +90,7 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name }) => {
     } finally {
       setTimeout(() => setIsResending(false), 1200);
     }
-  }, [selectedPhone, name]);
+  }, [selectedPhone, selectedEmail, name, otpType]);
 
   const handleCancel = () => {
     setOtpValue("");
@@ -136,7 +146,7 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name }) => {
           {/* OTP field */}
           <div className="otp-field-box">
             <label htmlFor="otp-input" className="otp-field-label">
-              Verification sent to {selectedPhone}
+              Verification sent to {otpType === "email" ? selectedEmail : selectedPhone}
             </label>
             <div className="otp-input-wrap">
               <div className="otp-input-inner">
