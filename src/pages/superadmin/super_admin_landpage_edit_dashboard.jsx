@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { HowItWorksStepEditModal } from "../../components/modal/howitworks_step_edit";
+import { ServiceEditModal } from "../../components/modal/service_edit";
 
 // ─── Logo Mark SVG ───────────────────────────────────────────────────────────
 const LogoMark = () => (
@@ -332,6 +333,14 @@ export default function SuperAdminLandingPageEditor() {
     bell: "bell",
     check: "check",
   });
+  const [servicesData, setServicesData] = useState([
+    { icon: <ScissorsIcon/>, title: "Hair Services", items: ["Haircut & Style", "Color Treatment", "Hair Spa", "Keratin Treatment"] },
+    { icon: <NailIcon/>, title: "Nail Services", items: ["Manicure", "Pedicure", "Nail Art", "Gel Extension"] },
+    { icon: <SkinIcon/>, title: "Skin Care Services", items: ["Facial Treatment", "Chemical Peel", "Microdermabrasion", "Hydration Therapy"] },
+    { icon: <MassageIcon/>, title: "Massage Services", items: ["Swedish Massage", "Deep Tissue Massage", "Hot Stone Massage", "Spa Reflexology"] },
+    { icon: <StarIcon/>, title: "Premium Services", items: ["Bridal Package", "Couple's Massage", "Hair & Glow Combo", "VIP Lounge Experience"] },
+  ]);
+  const [editingServiceIndex, setEditingServiceIndex] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
@@ -764,20 +773,42 @@ export default function SuperAdminLandingPageEditor() {
             </p>
             
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:24,maxWidth:800,margin:"0 auto"}}>
-              {[
-                { icon: <ScissorsIcon/>, title: "Hair Services", items: ["Haircut & Style", "Color Treatment", "Hair Spa", "Keratin Treatment"] },
-                { icon: <NailIcon/>, title: "Nail Services", items: ["Manicure", "Pedicure", "Nail Art", "Gel Extension"] },
-                { icon: <SkinIcon/>, title: "Skin Care Services", items: ["Facial Treatment", "Chemical Peel", "Microdermabrasion", "Hydration Therapy"] },
-                { icon: <MassageIcon/>, title: "Massage Services", items: ["Swedish Massage", "Deep Tissue Massage", "Hot Stone Massage", "Spa Reflexology"] },
-                { icon: <StarIcon/>, title: "Premium Services", items: ["Bridal Package", "Couple's Massage", "Hair & Glow Combo", "VIP Lounge Experience"] },
-              ].map((svc, i) => (
-                <div key={i} className="service-card">
+              {servicesData.map((svc, i) => (
+                <div key={i} className="service-card" style={{position:"relative"}}>
+                  <button
+                    onClick={() => setEditingServiceIndex(i)}
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      background: "#dd901d",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "6px 8px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.3s ease",
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                    onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                    title="Edit service"
+                  >
+                    <PencilIcon />
+                  </button>
                   <div style={{
                     width:50,height:50,background:"#dd901d",
                     borderRadius:14,padding:10,
                     display:"flex",alignItems:"center",justifyContent:"center",
                     marginBottom:16,
-                  }}>{svc.icon}</div>
+                  }}>
+                    {typeof svc.icon === "string" && uploadedSvgs[svc.icon] ? (
+                      <img src={uploadedSvgs[svc.icon]} alt="service icon" style={{width:"100%",height:"100%",objectFit:"contain"}} />
+                    ) : (
+                      svc.icon
+                    )}
+                  </div>
                   <div className="service-title">{svc.title}</div>
                   <div className="service-items">
                     {svc.items.map((item, j) => (
@@ -870,6 +901,17 @@ export default function SuperAdminLandingPageEditor() {
           uploadedSvgs={uploadedSvgs}
           setUploadedSvgs={setUploadedSvgs}
           onClose={() => setEditingStepModal(null)}
+        />
+
+        {/* Service Edit Modal - Outside transformed container */}
+        <ServiceEditModal
+          isOpen={editingServiceIndex !== null}
+          serviceIndex={editingServiceIndex}
+          services={servicesData}
+          setServices={setServicesData}
+          uploadedSvgs={uploadedSvgs}
+          setUploadedSvgs={setUploadedSvgs}
+          onClose={() => setEditingServiceIndex(null)}
         />
       </div>
     </div>
