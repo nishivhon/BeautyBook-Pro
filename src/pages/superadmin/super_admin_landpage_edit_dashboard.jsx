@@ -157,9 +157,13 @@ const LiveEditStarIcon = () => (
 
 // ─── EditableText Component ───────────────────────────────────────────────────
 
-const EditableText = ({ value, onChange, isEditing, setIsEditing, className = "", isTextarea = false }) => {
+const EditableText = ({ value, onChange, isEditing, setIsEditing, className = "", isTextarea = false, size = "large" }) => {
   const [draft, setDraft] = useState(value);
   const [isHovered, setIsHovered] = useState(false);
+
+  const fontSize = size === "body" ? "16px" : "48px";
+  const fontWeight = size === "body" ? "normal" : "bold";
+  const minHeight = size === "body" ? "40px" : "80px";
 
   useEffect(() => setDraft(value), [value]);
 
@@ -177,16 +181,35 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
   if (isEditing) {
     if (isTextarea) {
       return (
-        <div style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: "800px", margin: "0 auto" }}>
+        <div style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: "800px", margin: "0 auto", flexDirection: "column", alignItems: "center" }}>
+          <div style={{
+            fontSize: "16px",
+            lineHeight: "1.6",
+            textAlign: "center",
+            marginBottom: "12px",
+            display: "block",
+            color: "white",
+            whitespace: "pre-wrap",
+            wordWrap: "break-word",
+          }}>
+            {draft}
+          </div>
           <textarea
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && e.ctrlKey) {
-                commit();
+              if (e.key === "Enter") {
+                if (e.ctrlKey) {
+                  e.preventDefault();
+                  setDraft(draft + "\n");
+                } else {
+                  e.preventDefault();
+                  commit();
+                }
               } else if (e.key === "Escape") {
+                e.preventDefault();
                 setIsEditing(false);
               }
             }}
@@ -199,7 +222,18 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
     }
 
     return (
-      <div style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: "800px", margin: "0 auto" }}>
+      <div style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: "800px", margin: "0 auto", flexDirection: "column", alignItems: "center" }}>
+        <div style={{
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          lineHeight: "1.2",
+          textAlign: "center",
+          marginBottom: "12px",
+          display: "inline-block",
+          color: "white",
+        }}>
+          {draft}
+        </div>
         <input
           autoFocus
           type="text"
@@ -210,8 +244,9 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
             if (e.key === "Enter") commit();
             if (e.key === "Escape") setIsEditing(false);
           }}
-          style={{ fontSize: "48px", lineHeight: "1.2", display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", backgroundColor: "rgba(221, 144, 29, 0.08)", borderRadius: "1rem", border: "1.5px solid #dd901d" }}
-          className={`px-5 py-4 min-h-[80px] !text-[#dd901d] font-bold focus:outline-none focus:ring-2 focus:ring-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 ${className}`}
+          style={{ fontSize: fontSize, fontWeight: fontWeight, lineHeight: "1.2", display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", backgroundColor: "rgba(221, 144, 29, 0.08)", borderRadius: "1rem", border: "1.5px solid #dd901d" }}
+          className={`px-5 py-4 !text-[#dd901d] focus:outline-none focus:ring-2 focus:ring-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 ${className}`}
+          style={{ fontSize: fontSize, fontWeight: fontWeight, lineHeight: "1.2", display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", backgroundColor: "rgba(221, 144, 29, 0.08)", borderRadius: "1rem", border: "1.5px solid #dd901d", minHeight: minHeight }}
           placeholder="Type to edit..."
         />
       </div>
@@ -264,6 +299,18 @@ export default function SuperAdminLandingPageEditor() {
   const [howitworks, setHowitworks] = useState({
     title: "How BeautyBook Pro Works",
     subtitle: "Simple, efficient digital booking appointment for modern salon businesses",
+  });
+
+  const [services, setServices] = useState({
+    title: "Our Services",
+    subtitle: "Professional grooming services tailored to your style",
+  });
+
+  const [footer, setFooter] = useState({
+    address: "Canvas city, Abc st., 245 lot B",
+    phone: "(02) 123-4567",
+    email: "beautybookpro@gmail.com",
+    hours: "Mon-Fri: 8:00 AM - 5:00 PM",
   });
 
   useEffect(() => {
@@ -505,21 +552,51 @@ export default function SuperAdminLandingPageEditor() {
 
             <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto" }}>
               {editingField === "headline-combined" ? (
-                <EditableText
-                  value={`${hero.headline1} ${hero.headline2}`}
-                  onChange={(v) => {
-                    const lastSpaceIndex = v.lastIndexOf(" ");
-                    if (lastSpaceIndex > 0) {
+                <div style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: "800px", margin: "0 auto", flexDirection: "column", alignItems: "center" }}>
+                  <div style={{
+                    fontSize: "48px",
+                    fontWeight: "bold",
+                    lineHeight: "1.2",
+                    textAlign: "center",
+                    marginBottom: "12px",
+                    display: "inline-block",
+                  }}>
+                    {(() => {
+                      const fullText = `${hero.headline1}${hero.headline2}`;
+                      const midpoint = Math.ceil(fullText.length / 2);
+                      const firstHalf = fullText.substring(0, midpoint);
+                      const secondHalf = fullText.substring(midpoint);
+                      return (
+                        <>
+                          <span style={{ color: "white" }}>{firstHalf}</span>
+                          <span style={{ color: "#dd901d" }}>{secondHalf}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={`${hero.headline1}${hero.headline2}`}
+                    onChange={(v) => {
+                      const fullText = v.target.value;
+                      const midpoint = Math.ceil(fullText.length / 2);
                       setHero({
                         ...hero,
-                        headline1: v.substring(0, lastSpaceIndex).trim(),
-                        headline2: v.substring(lastSpaceIndex + 1).trim(),
+                        headline1: fullText.substring(0, midpoint),
+                        headline2: fullText.substring(midpoint),
                       });
-                    }
-                  }}
-                  isEditing={true}
-                  setIsEditing={(val) => setEditingField(val ? "headline-combined" : null)}
-                />
+                    }}
+                    onBlur={() => setEditingField(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") setEditingField(null);
+                      if (e.key === "Escape") setEditingField(null);
+                    }}
+                    style={{ fontSize: "48px", lineHeight: "1.2", display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", backgroundColor: "rgba(221, 144, 29, 0.08)", borderRadius: "1rem", border: "1.5px solid #dd901d" }}
+                    className="px-5 py-4 min-h-[80px] !text-[#dd901d] font-bold focus:outline-none focus:ring-2 focus:ring-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500"
+                    placeholder="Type to edit..."
+                  />
+                </div>
               ) : (
                 <h1 className="hero-title">
                   <span
@@ -536,8 +613,18 @@ export default function SuperAdminLandingPageEditor() {
                       display: "inline-block",
                     }}
                   >
-                    <span style={{ color: "white" }}>{hero.headline1}</span>{" "}
-                    <span className="accent" style={{ color: "#dd901d" }}>{hero.headline2}</span>
+                    {(() => {
+                      const fullText = `${hero.headline1}${hero.headline2}`;
+                      const midpoint = Math.ceil(fullText.length / 2);
+                      const firstHalf = fullText.substring(0, midpoint);
+                      const secondHalf = fullText.substring(midpoint);
+                      return (
+                        <>
+                          <span style={{ color: "white" }}>{firstHalf}</span>
+                          <span style={{ color: "#dd901d" }}>{secondHalf}</span>
+                        </>
+                      );
+                    })()}
                   </span>
                 </h1>
               )}
@@ -598,8 +685,23 @@ export default function SuperAdminLandingPageEditor() {
 
           {/* SERVICES SECTION */}
           <section id="services" className="services-section">
-            <h2 className="section-title">Our Services</h2>
-            <p className="section-subtitle">Professional grooming services tailored to your style</p>
+            <h2 className="section-title">
+              <EditableText
+                value={services.title}
+                onChange={(v) => setServices({ ...services, title: v })}
+                isEditing={editingField === "services-title"}
+                setIsEditing={(val) => setEditingField(val ? "services-title" : null)}
+              />
+            </h2>
+            <p className="section-subtitle">
+              <EditableText
+                value={services.subtitle}
+                onChange={(v) => setServices({ ...services, subtitle: v })}
+                isEditing={editingField === "services-subtitle"}
+                setIsEditing={(val) => setEditingField(val ? "services-subtitle" : null)}
+                isTextarea={true}
+              />
+            </p>
             
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:24,maxWidth:800,margin:"0 auto"}}>
               {[
@@ -635,9 +737,42 @@ export default function SuperAdminLandingPageEditor() {
             <div style={{maxWidth:860,margin:"0 auto"}}>
               <div className="footer-row">
                 <span className="footer-label">Contact us</span>
-                {["Canvas city, Abc st., 245 lot B","(02) 123-4567","beautybookpro@gmail.com","Mon-Fri: 8:00 AM - 5:00 PM"].map((t,i) => (
-                  <span key={i} className="footer-text">{t}</span>
-                ))}
+                <span className="footer-text">
+                  <EditableText
+                    value={footer.address}
+                    onChange={(v) => setFooter({ ...footer, address: v })}
+                    isEditing={editingField === "footer-address"}
+                    setIsEditing={(val) => setEditingField(val ? "footer-address" : null)}
+                    size="body"
+                  />
+                </span>
+                <span className="footer-text">
+                  <EditableText
+                    value={footer.phone}
+                    onChange={(v) => setFooter({ ...footer, phone: v })}
+                    isEditing={editingField === "footer-phone"}
+                    setIsEditing={(val) => setEditingField(val ? "footer-phone" : null)}
+                    size="body"
+                  />
+                </span>
+                <span className="footer-text">
+                  <EditableText
+                    value={footer.email}
+                    onChange={(v) => setFooter({ ...footer, email: v })}
+                    isEditing={editingField === "footer-email"}
+                    setIsEditing={(val) => setEditingField(val ? "footer-email" : null)}
+                    size="body"
+                  />
+                </span>
+                <span className="footer-text">
+                  <EditableText
+                    value={footer.hours}
+                    onChange={(v) => setFooter({ ...footer, hours: v })}
+                    isEditing={editingField === "footer-hours"}
+                    setIsEditing={(val) => setEditingField(val ? "footer-hours" : null)}
+                    size="body"
+                  />
+                </span>
               </div>
 
               <div className="footer-row">
