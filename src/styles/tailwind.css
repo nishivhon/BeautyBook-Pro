@@ -689,6 +689,18 @@
     color: rgba(255, 255, 255, 0.6);
   }
 
+  .footer-info-display {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .footer-info-display .footer-text {
+    display: block;
+  }
+
   .social-icon {
     display: flex;
     align-items: center;

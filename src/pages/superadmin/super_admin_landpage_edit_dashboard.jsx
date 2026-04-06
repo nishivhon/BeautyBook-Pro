@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { HowItWorksStepEditModal } from "../../components/modal/superadmin/howitworks_step_edit";
 import { ServiceEditModal } from "../../components/modal/superadmin/service_edit";
+import { FooterEditModal } from "../../components/modal/superadmin/footer_edit";
 
 // ─── Logo Mark SVG ───────────────────────────────────────────────────────────
 const LogoMark = () => (
@@ -300,6 +301,7 @@ export default function SuperAdminLandingPageEditor() {
     phone: "(02) 123-4567",
     email: "beautybookpro@gmail.com",
     hours: "Mon-Fri: 8:00 AM - 5:00 PM",
+    socialLinks: [],
   });
 
   const [howitworksSteps, setHowitworksSteps] = useState([
@@ -322,6 +324,7 @@ export default function SuperAdminLandingPageEditor() {
     { icon: <StarIcon/>, title: "Premium Services", items: ["Bridal Package", "Couple's Massage", "Hair & Glow Combo", "VIP Lounge Experience"] },
   ]);
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
+  const [editingFooterModal, setEditingFooterModal] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
@@ -809,59 +812,83 @@ export default function SuperAdminLandingPageEditor() {
             <div style={{maxWidth:860,margin:"0 auto"}}>
               <div className="footer-row">
                 <span className="footer-label">Contact us</span>
-                <span className="footer-text">
-                  <EditableText
-                    value={footer.address}
-                    onChange={(v) => setFooter({ ...footer, address: v })}
-                    isEditing={editingField === "footer-address"}
-                    setIsEditing={(val) => setEditingField(val ? "footer-address" : null)}
-                    size="body"
-                  />
-                </span>
-                <span className="footer-text">
-                  <EditableText
-                    value={footer.phone}
-                    onChange={(v) => setFooter({ ...footer, phone: v })}
-                    isEditing={editingField === "footer-phone"}
-                    setIsEditing={(val) => setEditingField(val ? "footer-phone" : null)}
-                    size="body"
-                  />
-                </span>
-                <span className="footer-text">
-                  <EditableText
-                    value={footer.email}
-                    onChange={(v) => setFooter({ ...footer, email: v })}
-                    isEditing={editingField === "footer-email"}
-                    setIsEditing={(val) => setEditingField(val ? "footer-email" : null)}
-                    size="body"
-                  />
-                </span>
-                <span className="footer-text">
-                  <EditableText
-                    value={footer.hours}
-                    onChange={(v) => setFooter({ ...footer, hours: v })}
-                    isEditing={editingField === "footer-hours"}
-                    setIsEditing={(val) => setEditingField(val ? "footer-hours" : null)}
-                    size="body"
-                  />
-                </span>
+                <div className="footer-info-display">
+                  <span className="footer-text">{footer.address}</span>
+                  <span className="footer-text">{footer.phone}</span>
+                  <span className="footer-text">{footer.email}</span>
+                  <span className="footer-text">{footer.hours}</span>
+                </div>
+                <button
+                  onClick={() => setEditingFooterModal(true)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#dd901d",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "8px 10px",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    marginTop: "12px",
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                  onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                  title="Edit contact information"
+                >
+                  <PencilIcon />
+                </button>
               </div>
 
               <div className="footer-row">
                 <span className="footer-label">Follow us</span>
-                {[
-                  <svg key="fb" viewBox="0 0 24 24" fill="none" width="14" height="14">
-                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
-                      stroke="white" strokeWidth="1.6" fill="none" strokeLinejoin="round"/>
-                  </svg>,
-                  <svg key="ig" viewBox="0 0 24 24" fill="none" width="16" height="16">
-                    <rect x="2" y="2" width="20" height="20" rx="5" stroke="white" strokeWidth="1.6" fill="none"/>
-                    <circle cx="12" cy="12" r="4" stroke="white" strokeWidth="1.6" fill="none"/>
-                    <circle cx="17.5" cy="6.5" r="1.2" fill="white"/>
-                  </svg>,
-                ].map((ic,i) => (
-                  <div key={i} className="social-icon">{ic}</div>
-                ))}
+                <div className="footer-social-display">
+                  {footer.socialLinks && footer.socialLinks.length > 0 ? (
+                    footer.socialLinks.map((link) => {
+                      const socialMap = {
+                        facebook: (
+                          <svg key={link.id} viewBox="0 0 24 24" fill="none" width="14" height="14">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
+                              stroke="white" strokeWidth="1.6" fill="none" strokeLinejoin="round"/>
+                          </svg>
+                        ),
+                        instagram: (
+                          <svg key={link.id} viewBox="0 0 24 24" fill="none" width="16" height="16">
+                            <rect x="2" y="2" width="20" height="20" rx="5" stroke="white" strokeWidth="1.6" fill="none"/>
+                            <circle cx="12" cy="12" r="4" stroke="white" strokeWidth="1.6" fill="none"/>
+                            <circle cx="17.5" cy="6.5" r="1.2" fill="white"/>
+                          </svg>
+                        ),
+                        twitter: (
+                          <svg key={link.id} viewBox="0 0 24 24" fill="none" width="14" height="14">
+                            <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2s9 5 20 5a9.5 9.5 0 00-9-5.5c4.75 2.45 7-7 7-7s-3 1-5-1V7a4.5 4.5 0 018.23-1"
+                              stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        ),
+                        tiktok: (
+                          <svg key={link.id} viewBox="0 0 24 24" fill="none" width="14" height="14">
+                            <path d="M9 12a4 4 0 1 0 4.18-4M9 12a4 4 0 1 0 4.18-4" stroke="white" strokeWidth="1.6" fill="none"/>
+                            <path d="M15.5 3.5v8M18 5.5a3 3 0 0 1-3 3" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+                          </svg>
+                        ),
+                      };
+                      return (
+                        <a
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-icon"
+                          title={`Visit our ${link.platform}`}
+                        >
+                          {socialMap[link.platform]}
+                        </a>
+                      );
+                    })
+                  ) : (
+                    <span style={{ color: "#888", fontSize: "12px" }}>No social links added</span>
+                  )}
+                </div>
               </div>
 
               <div className="footer-divider">
@@ -893,6 +920,14 @@ export default function SuperAdminLandingPageEditor() {
           uploadedSvgs={uploadedSvgs}
           setUploadedSvgs={setUploadedSvgs}
           onClose={() => setEditingServiceIndex(null)}
+        />
+
+        {/* Footer Edit Modal - Outside transformed container */}
+        <FooterEditModal
+          isOpen={editingFooterModal}
+          footer={footer}
+          setFooter={setFooter}
+          onClose={() => setEditingFooterModal(false)}
         />
       </div>
     </div>
