@@ -159,8 +159,15 @@ const LiveEditStarIcon = () => (
 
 const EditableText = ({ value, onChange, isEditing, setIsEditing, className = "", isTextarea = false }) => {
   const [draft, setDraft] = useState(value);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => setDraft(value), [value]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setIsHovered(false);
+    }
+  }, [isEditing]);
 
   const commit = () => {
     onChange(draft);
@@ -170,43 +177,62 @@ const EditableText = ({ value, onChange, isEditing, setIsEditing, className = ""
   if (isEditing) {
     if (isTextarea) {
       return (
-        <textarea
-          autoFocus
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setIsEditing(false);
-          }}
-          style={{ fontSize: "16px", lineHeight: "1.6", fontFamily: "inherit", color: "#dd901d", overflow: "hidden", width: "100%", boxSizing: "border-box", minWidth: "600px", padding: "16px 20px", textAlign: "center" }}
-          className={`px-8 py-6 w-full min-h-[200px] bg-white border-3 border-[#dd901d] rounded-xl focus:outline-none focus:ring-3 focus:ring-[#dd901d] focus:ring-offset-2 focus:border-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 resize-none ${className}`}
-          placeholder="Type to edit..."
-        />
+        <div style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: "800px", margin: "0 auto" }}>
+          <textarea
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && e.ctrlKey) {
+                commit();
+              } else if (e.key === "Escape") {
+                setIsEditing(false);
+              }
+            }}
+            style={{ fontSize: "16px", lineHeight: "1.6", fontFamily: "inherit", color: "#dd901d", overflow: "hidden", width: "100%", boxSizing: "border-box", textAlign: "center", backgroundColor: "rgba(221, 144, 29, 0.08)", borderRadius: "1rem", border: "1.5px solid #dd901d" }}
+            className={`px-5 py-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 resize-none ${className}`}
+            placeholder="Type to edit..."
+          />
+        </div>
       );
     }
 
     return (
-      <input
-        autoFocus
-        type="text"
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          if (e.key === "Escape") setIsEditing(false);
-        }}
-        style={{ fontSize: "48px", lineHeight: "1.2", textAlign: "center" }}
-        className={`px-5 py-4 w-full min-h-[80px] bg-white !text-[#dd901d] border-3 border-[#dd901d] rounded-xl font-bold focus:outline-none focus:ring-3 focus:ring-[#dd901d] focus:ring-offset-2 focus:border-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 ${className}`}
-        placeholder="Type to edit..."
-      />
+      <div style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: "800px", margin: "0 auto" }}>
+        <input
+          autoFocus
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") setIsEditing(false);
+          }}
+          style={{ fontSize: "48px", lineHeight: "1.2", display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", backgroundColor: "rgba(221, 144, 29, 0.08)", borderRadius: "1rem", border: "1.5px solid #dd901d" }}
+          className={`px-5 py-4 min-h-[80px] !text-[#dd901d] font-bold focus:outline-none focus:ring-2 focus:ring-[#dd901d] transition-all duration-200 shadow-xl placeholder-gray-500 ${className}`}
+          placeholder="Type to edit..."
+        />
+      </div>
     );
   }
 
   return (
     <span
       onClick={() => setIsEditing(true)}
-      className={`cursor-pointer hover:opacity-70 transition-opacity ${className}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        cursor: "pointer",
+        transition: "all 0.3s ease",
+        opacity: isHovered ? 1 : 0.9,
+        boxShadow: isHovered ? "0 0 12px rgba(221, 144, 29, 0.4)" : "none",
+        borderRadius: "0.5rem",
+        padding: "0 4px",
+        display: "inline-block",
+      }}
+      className={className}
     >
       {value}
     </span>
@@ -226,12 +252,18 @@ export default function SuperAdminLandingPageEditor() {
   const [editingField, setEditingField] = useState(null);
   const [activeNav, setActiveNav] = useState("landing-page");
   const [mounted, setMounted] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [hero, setHero] = useState({
     badge: "DIGITAL APPOINTMENT SYSTEM",
     headline1: "Skip The Wait,",
     headline2: "Book Your Style",
     subheading: "A digital appointment and customer management system for barbershops, hair salons, and spas. Book appointments online, reduce wait times, and experience seamless, personalized service—instantly.",
     ctaText: "Book Appointment",
+  });
+
+  const [howitworks, setHowitworks] = useState({
+    title: "How BeautyBook Pro Works",
+    subtitle: "Simple, efficient digital booking appointment for modern salon businesses",
   });
 
   useEffect(() => {
@@ -242,6 +274,12 @@ export default function SuperAdminLandingPageEditor() {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (editingField === null) {
+      setIsHovered(false);
+    }
+  }, [editingField]);
 
   const handleLogout = () => {
     logoutOperator();
@@ -462,33 +500,50 @@ export default function SuperAdminLandingPageEditor() {
           {/* HERO SECTION */}
           <section id="home" className="hero-section" style={{paddingTop: "40px"}}>
             <div className="hero-badge">
-              <EditableText
-                value={hero.badge}
-                onChange={(v) => setHero({ ...hero, badge: v })}
-                isEditing={editingField === "badge"}
-                setIsEditing={(val) => setEditingField(val ? "badge" : null)}
-              />
+              <span>{hero.badge}</span>
             </div>
 
-            <h1 className="hero-title">
-              <EditableText
-                value={hero.headline1}
-                onChange={(v) => setHero({ ...hero, headline1: v })}
-                isEditing={editingField === "headline1"}
-                setIsEditing={(val) => setEditingField(val ? "headline1" : null)}
-              />
-              {" "}
-              <span className="accent">
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto" }}>
+              {editingField === "headline-combined" ? (
                 <EditableText
-                  value={hero.headline2}
-                  onChange={(v) => setHero({ ...hero, headline2: v })}
-                  isEditing={editingField === "headline2"}
-                  setIsEditing={(val) => setEditingField(val ? "headline2" : null)}
+                  value={`${hero.headline1} ${hero.headline2}`}
+                  onChange={(v) => {
+                    const lastSpaceIndex = v.lastIndexOf(" ");
+                    if (lastSpaceIndex > 0) {
+                      setHero({
+                        ...hero,
+                        headline1: v.substring(0, lastSpaceIndex).trim(),
+                        headline2: v.substring(lastSpaceIndex + 1).trim(),
+                      });
+                    }
+                  }}
+                  isEditing={true}
+                  setIsEditing={(val) => setEditingField(val ? "headline-combined" : null)}
                 />
-              </span>
-            </h1>
+              ) : (
+                <h1 className="hero-title">
+                  <span
+                    onClick={() => setEditingField("headline-combined")}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                    style={{
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                      opacity: isHovered ? 1 : 0.9,
+                      boxShadow: isHovered ? "0 0 12px rgba(221, 144, 29, 0.4)" : "none",
+                      borderRadius: "0.5rem",
+                      padding: "0 4px",
+                      display: "inline-block",
+                    }}
+                  >
+                    <span style={{ color: "white" }}>{hero.headline1}</span>{" "}
+                    <span className="accent" style={{ color: "#dd901d" }}>{hero.headline2}</span>
+                  </span>
+                </h1>
+              )}
+            </div>
 
-            <p className="hero-text">
+            <p className="section-subtitle" style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px" }}>
               <EditableText
                 value={hero.subheading}
                 onChange={(v) => setHero({ ...hero, subheading: v })}
@@ -499,20 +554,29 @@ export default function SuperAdminLandingPageEditor() {
             </p>
 
             <button className="btn-large" style={{width:"auto",padding:"10px 28px",height:"44px",fontSize:"0.9rem"}}>
-              <EditableText
-                value={hero.ctaText}
-                onChange={(v) => setHero({ ...hero, ctaText: v })}
-                isEditing={editingField === "ctaText"}
-                setIsEditing={(val) => setEditingField(val ? "ctaText" : null)}
-                className="text-white"
-              />
+              {hero.ctaText}
             </button>
           </section>
 
           {/* HOW IT WORKS SECTION */}
           <section id="howitworks" className="howitworks-section">
-            <h2 className="section-title">How BeautyBook Pro Works</h2>
-            <p className="section-subtitle">Simple, efficient digital booking appointment for modern salon businesses</p>
+            <h2 className="section-title">
+              <EditableText
+                value={howitworks.title}
+                onChange={(v) => setHowitworks({ ...howitworks, title: v })}
+                isEditing={editingField === "howitworks-title"}
+                setIsEditing={(val) => setEditingField(val ? "howitworks-title" : null)}
+              />
+            </h2>
+            <p className="section-subtitle">
+              <EditableText
+                value={howitworks.subtitle}
+                onChange={(v) => setHowitworks({ ...howitworks, subtitle: v })}
+                isEditing={editingField === "howitworks-subtitle"}
+                setIsEditing={(val) => setEditingField(val ? "howitworks-subtitle" : null)}
+                isTextarea={true}
+              />
+            </p>
 
             <div style={{
               display:"grid",gridTemplateColumns:"repeat(3,1fr)",
