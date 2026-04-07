@@ -1,5 +1,6 @@
 import express from 'express';
-import { getAllAppointments, getAppointmentById, getAppointmentsByUserId, getAppointmentsByStylistId, getAppointmentsByDateRange } from '../services/appointmentService.js';
+import { getAllAppointments, getAppointmentById, getAppointmentsByUserId, getAppointmentsByStylistId, getAppointmentsByDateRange } from '../services/booking/read/appointmentService.js';
+import { addAppointment } from '../services/booking/create/addAppointment.js';
 
 const router = express.Router();
 
@@ -52,6 +53,32 @@ router.get('/:id', async (req, res) => {
   } catch (error) {
     console.error('[Appointments] Error fetching appointment by ID:', error.message);
     res.status(500).json({ error: 'Failed to fetch appointment', details: error.message });
+  }
+});
+
+// Create a new appointment
+router.post('/create', async (req, res) => {
+  try {
+    const { name, email, phone, date, time, service, staff_assigned } = req.body;
+
+    const appointment = await addAppointment({
+      name,
+      email,
+      phone,
+      date,
+      time,
+      service,
+      staff_assigned,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Appointment created successfully',
+      appointment,
+    });
+  } catch (error) {
+    console.error('[Appointments] Error creating appointment:', error.message);
+    res.status(400).json({ error: 'Failed to create appointment', details: error.message });
   }
 });
 

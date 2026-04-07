@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import AppointmentForm from "../components/modal/appointment/phase_one";
-import { AppointmentFormPhase2 } from "../components/modal/appointment/phase_two";
-import { AppointmentFormPhase3 } from "../components/modal/appointment/phase_three";
-import { AppointmentFormPhase4 } from "../components/modal/appointment/phase_four";
-import { ConfirmationDialog } from "../components/modal/confirmation_dialog";
+import AppointmentForm from "../components/modal/customer/appointment/phase_one";
+import { AppointmentFormPhase2 } from "../components/modal/customer/appointment/phase_two";
+import { AppointmentFormPhase3 } from "../components/modal/customer/appointment/phase_three";
+import { AppointmentFormPhase4 } from "../components/modal/customer/appointment/phase_four";
+import { ConfirmationDialog } from "../components/modal/customer/confirmation_dialog";
 import { Toast } from "../components/toast";
-import { Otp } from "../components/modal/otp";
+import { Otp } from "../components/modal/customer/otp";
 
 /** Logo scissors mark */
 const LogoMark = () => (
@@ -124,6 +124,9 @@ export const Register = () => {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [pendingPhone, setPendingPhone] = useState("");
+  const [pendingName, setPendingName] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [otpType, setOtpType] = useState("phone"); // "phone" or "email"
 
   // Create a wrapper for navigate that logs and blocks for verified users
   const navigateWithGuard = (path) => {
@@ -251,15 +254,21 @@ export const Register = () => {
       if (usePhone && !useEmail) {
         // Phone only - use SMS OTP
         endpoint = `${apiUrl}/sms/send-otp`;
-        requestData = { phone };
+        requestData = { phone, name: fullName };
         successMessage = `OTP sent to ${phone}. Check your messages!`;
         console.log('📱 Sending SMS OTP to:', phone);
+      } else if (useEmail && !usePhone) {
+        // Email only - use Email OTP (NEW)
+        endpoint = `${apiUrl}/auth/send-email-otp`;
+        requestData = { email, full_name: fullName, phone: phone || "" };
+        successMessage = `OTP sent to ${email}. Check your inbox!`;
+        console.log('📧 Sending email OTP to:', email);
       } else {
-        // Email or both - use email
-        endpoint = `${apiUrl}/auth/signup`;
-        requestData = { email: email || "", full_name: fullName, phone: phone || "" };
-        successMessage = `Verification email sent to ${email}. Check your inbox!`;
-        console.log('📧 Sending verification email to:', email);
+        // Both email and phone - send SMS OTP (user can receive via either)
+        endpoint = `${apiUrl}/sms/send-otp`;
+        requestData = { phone, name: fullName };
+        successMessage = `OTP sent to ${phone}. Check your messages!`;
+        console.log('📱 Sending SMS OTP to:', phone);
       }
 
       console.log('📋 Data:', requestData);
@@ -280,22 +289,28 @@ export const Register = () => {
             setShowToast(true);
             setTimeout(() => { setShowToast(false); }, 10000);
             
-            // If SMS was sent, show OTP modal instead of navigating
+            // Show OTP modal for both email and phone
             if (usePhone && !useEmail) {
+              // Phone only
               setPendingPhone(phone);
+              setPendingName(fullName);
+              setPendingEmail("");
+              setOtpType("phone");
+              setShowOtpModal(true);
+            } else if (useEmail && !usePhone) {
+              // Email only
+              setPendingEmail(email);
+              setPendingName(fullName);
+              setPendingPhone("");
+              setOtpType("email");
               setShowOtpModal(true);
             } else {
-              // Email verification - reset form and navigate
-              setFullName("");
-              setEmail("");
-              setPhone("");
-              setUseEmail(true);
-              setUsePhone(false);
-              setTimeout(() => {
-                if (verifiedUser === null || verifiedUser === undefined) {
-                  navigateWithGuard("/");
-                }
-              }, 2000);
+              // Both email and phone - using SMS OTP
+              setPendingPhone(phone);
+              setPendingName(fullName);
+              setPendingEmail("");
+              setOtpType("phone");
+              setShowOtpModal(true);
             }
           } else {
             const errorMsg = data.error || "Failed to send verification";
@@ -322,32 +337,45 @@ export const Register = () => {
   };
 
   const handleOtpVerified = (otp) => {
-    if (!pendingPhone || !otp) return;
-
-    console.log('🔐 Verifying OTP for:', pendingPhone);
     const cleanOtp = otp.replace(/\s/g, ''); // Remove spaces
     const apiUrl = import.meta.env.VITE_API_URL;
+    
+    // Determine which endpoint to use based on otpType
+    let endpoint, verifyData, toastMsg;
+    
+    if (otpType === "phone") {
+      if (!pendingPhone || !otp) return;
+      endpoint = `${apiUrl}/sms/verify-otp`;
+      verifyData = { phone: pendingPhone, otp: cleanOtp };
+      toastMsg = '✅ Phone verified successfully! Proceeding to booking...';
+      console.log('🔐 Verifying SMS OTP for:', pendingPhone);
+    } else if (otpType === "email") {
+      if (!pendingEmail || !otp) return;
+      endpoint = `${apiUrl}/auth/verify-email-otp`;
+      verifyData = { email: pendingEmail, otp: cleanOtp };
+      toastMsg = '✅ Email verified successfully! Proceeding to booking...';
+      console.log('🔐 Verifying Email OTP for:', pendingEmail);
+    } else {
+      return;
+    }
 
-    fetch(`${apiUrl}/sms/verify-otp`, {
+    fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phone: pendingPhone,
-        otp: cleanOtp
-      })
+      body: JSON.stringify(verifyData)
     })
       .then(res => res.json())
       .then(data => {
         if (data.success || data.verified) {
           console.log('✅ OTP verified successfully!');
-          setToastMessage('✅ Phone verified successfully! Proceeding to booking...');
+          setToastMessage(toastMsg);
           setShowToast(true);
           
           // Store verified user
           const userData = {
-            phone: pendingPhone,
-            full_name: fullName,
-            email: email || ""
+            phone: pendingPhone || phone || "",
+            full_name: pendingName || fullName,
+            email: pendingEmail || email || ""
           };
           setVerifiedUser(userData);
           setShowAppointment(true);
@@ -358,6 +386,8 @@ export const Register = () => {
           // Close OTP modal
           setShowOtpModal(false);
           setPendingPhone("");
+          setPendingEmail("");
+          setPendingName("");
           
           // Reset form
           setFullName("");
@@ -455,44 +485,166 @@ export const Register = () => {
     setAppointmentPhase(3);
   };
 
-  const handlePhase4Confirm = () => {
-    // If verified user, process booking
-    if (verifiedUser !== null && verifiedUser !== undefined) {
-      setShowAppointment(false);
-      setBackdropClickEnabled(false);
-      setAppointmentPhase(1);
-      
-      // BOOKING COMPLETE - Clear session and prevent future use of this link
-      setTimeout(() => {
-        sessionStorage.removeItem("verifiedUser");
-        sessionStorage.removeItem("sessionUsed");
-        localStorage.removeItem("verifiedUserBackup");
-      }, 2500);
-      
-      setToastMessage("✅ Appointment booked successfully! Your email link has been used.");
-      setShowToast(true);
-      setTimeout(() => { setShowToast(false); }, 3000);
-      return; // FORCE EXIT - NOTHING BELOW THIS RUNS
-    }
-    
-    // NON-VERIFIED USER PATH ONLY REACHES HERE
-    setShowAppointment(false);
-    setBackdropClickEnabled(false);
-    setAppointmentPhase(1);
-    setFullName("");
-    setEmail("");
-    setPhone("");
-    setUseEmail(true);
-    setUsePhone(false);
-    setToastMessage("Appointment booked successfully!");
-    setShowToast(true);
-    setTimeout(() => {
-      if (verifiedUser === null || verifiedUser === undefined) {
-        sessionStorage.removeItem("verifiedUser");
-        localStorage.removeItem("verifiedUserBackup");
-        navigateWithGuard("/");
+  const handlePhase4Confirm = async () => {
+    const apiUrl = import.meta.env.VITE_API_URL;
+
+    try {
+      // Collect appointment data from the form and appointment phases
+      const scheduleInfo = appointmentData?.schedule;
+      const servicesData = appointmentData?.services;
+      const stylistData = appointmentData?.stylist;
+
+      // Convert date format from "Apr 7" to "YYYY-MM-DD"
+      let appointmentDate = "N/A";
+      if (scheduleInfo?.date?.date) {
+        const dateStr = scheduleInfo.date.date; // e.g., "Apr 7"
+        const today = new Date();
+        const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const parts = dateStr.split(" ");
+        const monthName = parts[0];
+        const day = parseInt(parts[1]);
+        
+        // Find matching month and year
+        let appointDate = new Date(today);
+        const monthIndex = monthLabels.indexOf(monthName);
+        
+        if (monthIndex !== -1) {
+          // Find the next occurrence of this month/day
+          appointDate.setMonth(monthIndex);
+          appointDate.setDate(day);
+          
+          // If the date is in the past this year, assume next year (unlikely for an appointment booking)
+          if (appointDate < today) {
+            appointDate.setFullYear(today.getFullYear() + 1);
+          }
+          
+          // Format as YYYY-MM-DD
+          appointmentDate = appointDate.toISOString().split('T')[0];
+        }
       }
-    }, 2000);
+
+      const appointmentTime = scheduleInfo?.time || "N/A";
+
+      // Convert time format from "09:00 AM" to "09:00:00" (HH:MM:SS)
+      let formattedTime = "N/A";
+      if (appointmentTime && appointmentTime !== "N/A") {
+        if (appointmentTime.includes(":")) {
+          const timeParts = appointmentTime.split(" ");
+          const timeValue = timeParts[0]; // e.g., "09:00"
+          
+          if (timeValue.includes(":")) {
+            // Add seconds if not present, e.g., "09:00" becomes "09:00:00"
+            const timeSplit = timeValue.split(":");
+            if (timeSplit.length === 2) {
+              formattedTime = `${timeSplit[0]}:${timeSplit[1]}:00`;
+            } else if (timeSplit.length === 3) {
+              formattedTime = timeValue;
+            }
+          }
+        }
+      }
+
+      console.log('📅 Formatted Date:', appointmentDate);
+      console.log('⏰ Formatted Time:', formattedTime);
+
+      // Get all selected services and join them
+      let allServices = [];
+      if (servicesData) {
+        const selectedArrays = [
+          servicesData.selectedHairServices,
+          servicesData.selectedNailServices,
+          servicesData.selectedSkincareServices,
+          servicesData.selectedMassageServices,
+          servicesData.selectedPremiumServices
+        ];
+
+        selectedArrays.forEach(arr => {
+          if (Array.isArray(arr) && arr.length > 0) {
+            allServices = allServices.concat(arr.map(s => s.title || s.name || s.service));
+          }
+        });
+      }
+
+      const servicesList = allServices.length > 0 ? allServices.join(", ") : "General Service";
+      const stylistName = stylistData?.name || "Any Available Stylist";
+
+      // Get user info
+      const userName = fullName || verifiedUser?.full_name || "";
+      const userEmail = email || verifiedUser?.email || "";
+      const userPhone = phone || verifiedUser?.phone || "";
+
+      // Prepare appointment data for POST
+      const appointmentPayload = {
+        name: userName,
+        email: userEmail,
+        phone: userPhone,
+        date: appointmentDate,
+        time: formattedTime,
+        service: servicesList,
+        staff_assigned: stylistName
+      };
+
+      console.log('📤 Sending appointment to backend:', appointmentPayload);
+
+      // POST appointment to backend
+      const response = await fetch(`${apiUrl}/appointments/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appointmentPayload)
+      });
+
+      const data = await response.json();
+
+      if (data.success || response.ok) {
+        console.log('✅ Appointment created successfully:', data.appointment);
+
+        // If verified user, close modal and show success
+        if (verifiedUser !== null && verifiedUser !== undefined) {
+          setShowAppointment(false);
+          setBackdropClickEnabled(false);
+          setAppointmentPhase(1);
+
+          // Clear session after successful booking
+          setTimeout(() => {
+            sessionStorage.removeItem("verifiedUser");
+            sessionStorage.removeItem("sessionUsed");
+            localStorage.removeItem("verifiedUserBackup");
+          }, 2500);
+
+          setToastMessage("✅ Appointment booked successfully! Your email link has been used.");
+          setShowToast(true);
+          setTimeout(() => { setShowToast(false); }, 3000);
+          return;
+        }
+
+        // NON-VERIFIED USER PATH
+        setShowAppointment(false);
+        setBackdropClickEnabled(false);
+        setAppointmentPhase(1);
+        setFullName("");
+        setEmail("");
+        setPhone("");
+        setUseEmail(true);
+        setUsePhone(false);
+        setToastMessage("✅ Appointment booked successfully!");
+        setShowToast(true);
+        setTimeout(() => {
+          if (verifiedUser === null || verifiedUser === undefined) {
+            sessionStorage.removeItem("verifiedUser");
+            localStorage.removeItem("verifiedUserBackup");
+            navigateWithGuard("/");
+          }
+        }, 2000);
+      } else {
+        console.error('❌ Failed to create appointment:', data);
+        setToastMessage(data.error || "Failed to book appointment. Please try again.");
+        setShowToast(true);
+      }
+    } catch (error) {
+      console.error('❌ Error booking appointment:', error);
+      setToastMessage(`Error: ${error.message || 'Unable to book appointment'}`);
+      setShowToast(true);
+    }
   };
 
   const handleBackdropClick = (e) => {
@@ -870,8 +1022,13 @@ export const Register = () => {
           onClose={() => {
             setShowOtpModal(false);
             setPendingPhone("");
+            setPendingEmail("");
+            setPendingName("");
           }}
-          phone={pendingPhone}
+          selectedPhone={pendingPhone}
+          selectedEmail={pendingEmail}
+          name={pendingName}
+          otpType={otpType}
         />
       )}
 

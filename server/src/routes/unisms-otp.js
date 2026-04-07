@@ -21,10 +21,14 @@ const getUniSmsAuthHeader = () => {
  * POST /send-otp - Generate and send OTP via UniSMS
  */
 router.post('/send-otp', async (req, res) => {
-  const { phone } = req.body;
+  const { phone, name } = req.body;
 
   if (!phone) {
     return res.status(400).json({ error: 'Phone number is required' });
+  }
+
+  if (!name) {
+    return res.status(400).json({ error: 'Name is required' });
   }
 
   try {
@@ -49,11 +53,10 @@ router.post('/send-otp', async (req, res) => {
       attempts: 0
     });
 
-    console.log(`📱 Sending OTP to: ${phone}`);
-    console.log(`🔐 OTP Code: ${otp}`);
+    console.log(`Sending OTP to: ${phone}`);
 
     // Send SMS via UniSMS with correct API format
-    const message = `Your BeautyBook OTP is: ${otp}. Valid for 10 minutes.`;
+    const message = `Hello ${name}, Your BeautyBook OTP is: ${otp}. Valid for 10 minutes.`;
 
     const response = await axios.post(UNISMS_API_URL, {
       recipient: formattedPhone,
@@ -65,8 +68,8 @@ router.post('/send-otp', async (req, res) => {
       }
     });
 
-    console.log('✅ OTP sent successfully to', phone);
-    console.log('📦 UniSMS Response:', response.data);
+    console.log('OTP sent successfully to', phone);
+    console.log('UniSMS Response:', response.data);
 
     res.status(200).json({
       success: true,
@@ -124,7 +127,7 @@ router.post('/verify-otp', async (req, res) => {
     // OTP verified successfully - delete it
     otpStorage.delete(phone);
 
-    console.log('✅ OTP verified successfully for:', phone);
+    console.log('OTP verified successfully for:', phone);
 
     res.status(200).json({
       success: true,
@@ -143,10 +146,14 @@ router.post('/verify-otp', async (req, res) => {
  * POST /resend-otp - Resend OTP (rate limited)
  */
 router.post('/resend-otp', async (req, res) => {
-  const { phone } = req.body;
+  const { phone, name } = req.body;
 
   if (!phone) {
     return res.status(400).json({ error: 'Phone number is required' });
+  }
+
+  if (!name) {
+    return res.status(400).json({ error: 'Name is required' });
   }
 
   try {
@@ -172,23 +179,21 @@ router.post('/resend-otp', async (req, res) => {
       attempts: 0
     });
 
-    console.log(`📱 Resending OTP to: ${phone}`);
-    console.log(`🔐 New OTP Code: ${otp}`);
+    console.log(`Resending OTP to: ${phone}`);
 
-    const message = `Your new BeautyBook OTP is: ${otp}. Valid for 10 minutes.`;
+    const message = `Hello ${name}, your new BeautyBook OTP is: ${otp}. Valid for 10 minutes.`;
 
     const response = await axios.post(UNISMS_API_URL, {
-      to: formattedPhone,
-      message: message,
-      from: 'BeautyBook'
+      recipient: formattedPhone,
+      content: message
     }, {
       headers: {
-        'Authorization': `Bearer ${process.env.UNISMS_API_KEY}`,
+        'Authorization': getUniSmsAuthHeader(),
         'Content-Type': 'application/json'
       }
     });
 
-    console.log('✅ OTP resent successfully to', phone);
+    console.log('OTP resent successfully to', phone);
 
     res.status(200).json({
       success: true,

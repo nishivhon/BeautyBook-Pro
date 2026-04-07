@@ -36,7 +36,7 @@ const CloseIcon = () => (
 /* ══════════════════════════════════════════
    OTP MODAL COMPONENT
 ══════════════════════════════════════════ */
-export const Otp = ({ onClose, onVerified, selectedPhone }) => {
+export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, otpType = "phone" }) => {
   const INITIAL_TIME = 600; // 10 minutes
   const [timeLeft,   setTimeLeft]   = useState(INITIAL_TIME);
   const [otpValue,   setOtpValue]   = useState("");
@@ -56,12 +56,41 @@ export const Otp = ({ onClose, onVerified, selectedPhone }) => {
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
 
-  const handleResend = useCallback(() => {
+  const handleResend = useCallback(async () => {
     setIsResending(true);
     setOtpValue("");
     setTimeLeft(INITIAL_TIME);
-    setTimeout(() => setIsResending(false), 1200);
-  }, []);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      
+      let endpoint, resendData;
+      if (otpType === "email") {
+        endpoint = `${apiUrl}/auth/send-email-otp`;
+        resendData = { email: selectedEmail, full_name: name, phone: "" };
+      } else {
+        endpoint = `${apiUrl}/sms/resend-otp`;
+        resendData = { phone: selectedPhone, name };
+      }
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(resendData)
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        console.log('✅ OTP resent successfully');
+      } else {
+        console.error('❌ Resend failed:', data.error);
+      }
+    } catch (error) {
+      console.error('❌ Error resending OTP:', error.message);
+    } finally {
+      setTimeout(() => setIsResending(false), 1200);
+    }
+  }, [selectedPhone, selectedEmail, name, otpType]);
 
   const handleCancel = () => {
     setOtpValue("");
@@ -117,7 +146,7 @@ export const Otp = ({ onClose, onVerified, selectedPhone }) => {
           {/* OTP field */}
           <div className="otp-field-box">
             <label htmlFor="otp-input" className="otp-field-label">
-              Verification sent to {selectedPhone}
+              Verification sent to {otpType === "email" ? selectedEmail : selectedPhone}
             </label>
             <div className="otp-input-wrap">
               <div className="otp-input-inner">

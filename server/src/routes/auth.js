@@ -19,9 +19,43 @@ const transporter = nodemailer.createTransport({
 const verificationTokens = new Map();
 
 /**
- * POST /signup - Send verification email via Brevo (no database save)
+ * POST /signup - DEPRECATED: Use /send-email-otp instead
+ * Magic links are no longer used. All email verification uses OTP only.
  */
 router.post('/signup', async (req, res) => {
+  return res.status(410).json({ 
+    error: 'Magic links deprecated. Use /send-email-otp endpoint for email OTP verification.',
+    endpoint: '/send-email-otp'
+  });
+});
+
+/**
+ * GET /auth-callback - DEPRECATED: Magic links no longer used
+ * Use /send-email-otp and /verify-email-otp instead
+ */
+router.get('/auth-callback', async (req, res) => {
+  return res.status(410).json({ 
+    error: 'Magic links deprecated. Use /send-email-otp and /verify-email-otp for email OTP verification.'
+  });
+});
+
+/**
+ * POST /auth-callback - DEPRECATED: Magic links no longer used
+ * Use /send-email-otp and /verify-email-otp instead
+ */
+router.post('/auth-callback', async (req, res) => {
+  return res.status(410).json({ 
+    error: 'Magic links deprecated. Use /send-email-otp and /verify-email-otp for email OTP verification.'
+  });
+});
+
+// In-memory storage for email OTP
+const emailOtpStorage = new Map();
+
+/**
+ * POST /send-email-otp - Generate and send OTP via email
+ */
+router.post('/send-email-otp', async (req, res) => {
   const { email, full_name, phone } = req.body;
 
   if (!email || !full_name) {
@@ -29,139 +63,111 @@ router.post('/signup', async (req, res) => {
   }
 
   try {
-    // Generate magic token
-    const magicToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    // Store token in memory (no database)
-    verificationTokens.set(magicToken, {
-      email,
+    // Store OTP in memory
+    emailOtpStorage.set(email, {
+      otp,
+      expiresAt,
+      attempts: 0,
       full_name,
-      phone,
-      expiresAt: expiresAt.getTime()
+      phone
     });
 
-    // Generate magic link URL
-    const magicLink = `${process.env.FRONTEND_URL}/auth/callback?token=${magicToken}&email=${encodeURIComponent(email)}&full_name=${encodeURIComponent(full_name)}&phone=${encodeURIComponent(phone || '')}`;
+    console.log(`Sending OTP to: ${email}`);
 
-    console.log('🔑 Brevo SMTP configured:', !!process.env.BREVO_API_KEY && !!process.env.BREVO_SENDER_EMAIL);
-    console.log('📧 Attempting to send email to:', email);
-
-    // Send email via Brevo SMTP
+    // Send OTP via Brevo SMTP
     const emailResponse = await transporter.sendMail({
       from: `BeautyBook <${process.env.BREVO_SENDER_EMAIL}>`,
       to: email,
-      subject: 'Verify Your Booking - BeautyBook',
+      subject: 'Verify Your Email - BeautyBook',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #dd901d;">Verify Your Booking</h2>
+          <h2 style="color: #dd901d;">Email Verification</h2>
           <p>Hi ${full_name},</p>
-          <p>Click the link below to verify your email and start booking appointments:</p>
-          <p style="margin: 30px 0;">
-            <a href="${magicLink}" style="background-color: #dd901d; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-              Verify Booking
-            </a>
+          <p>Your BeautyBook verification code is:</p>
+          <p style="font-size: 32px; font-weight: bold; color: #dd901d; letter-spacing: 5px; margin: 20px 0;">
+            ${otp}
           </p>
+          <p>This code expires in 10 minutes.</p>
           <p style="font-size: 12px; color: #999; margin-top: 30px;">
-            This link expires in 10 minutes.
+            If you didn't request this code, please ignore this email.
           </p>
         </div>
       `
     });
 
-    console.log('✅ Email sent successfully, Message ID:', emailResponse.messageId);
-    console.log('📦 Full Response:', emailResponse);
+    console.log('Email OTP sent successfully, Message ID:', emailResponse.messageId);
 
     res.status(200).json({
-      message: 'Verification email sent. Check your inbox!',
-      user: { email, full_name }
+      success: true,
+      message: 'OTP sent to your email',
+      email: email
     });
   } catch (error) {
-    console.error('Signup error:', error.message);
-    console.error('Full error:', error);
-    res.status(500).json({ error: 'Failed to send verification email. Please try again.' });
+    console.error('❌ Error sending email OTP:', error.message);
+    res.status(500).json({ error: 'Failed to send OTP. Please try again.' });
   }
 });
 
 /**
- * GET /auth-callback - Verify email token and redirect to appointments
- * Called when user clicks the magic link in email
+ * POST /verify-email-otp - Verify email OTP
  */
-router.get('/auth-callback', async (req, res) => {
-  const { token } = req.query;
+router.post('/verify-email-otp', async (req, res) => {
+  const { email, otp } = req.body;
 
-  if (!token) {
-    return res.status(400).json({ error: 'Missing token' });
+  if (!email || !otp) {
+    return res.status(400).json({ error: 'Email and OTP are required' });
   }
 
   try {
-    // Get token from memory
-    const tokenData = verificationTokens.get(token);
-    
-    if (!tokenData) {
-      return res.status(401).json({ error: 'Invalid or expired verification link' });
+    const storedOtp = emailOtpStorage.get(email);
+
+    if (!storedOtp) {
+      return res.status(401).json({ error: 'OTP not found. Request a new OTP.' });
     }
 
-    // Check if token has expired
-    if (Date.now() > tokenData.expiresAt) {
-      verificationTokens.delete(token);
-      return res.status(401).json({ error: 'Token expired' });
+    // Check if OTP expired
+    if (Date.now() > storedOtp.expiresAt) {
+      emailOtpStorage.delete(email);
+      return res.status(401).json({ error: 'OTP expired. Request a new one.' });
     }
 
-    // Token is valid - delete it after use
-    verificationTokens.delete(token);
-
-    // Redirect to appointment page with user data in URL
-    const appointmentUrl = `${process.env.FRONTEND_URL}/book-appointment?email=${encodeURIComponent(tokenData.email)}&full_name=${encodeURIComponent(tokenData.full_name)}&phone=${encodeURIComponent(tokenData.phone || '')}`;
-    
-    res.redirect(appointmentUrl);
-  } catch (error) {
-    console.error('Auth callback error:', error);
-    res.status(500).json({ error: 'Verification failed' });
-  }
-});
-
-/**
- * POST /auth-callback - Alternative for POST requests
- */
-router.post('/auth-callback', async (req, res) => {
-  const { token } = req.body;
-
-  if (!token) {
-    return res.status(400).json({ error: 'Missing token' });
-  }
-
-  try {
-    // Get token from memory
-    const tokenData = verificationTokens.get(token);
-    
-    if (!tokenData) {
-      return res.status(401).json({ error: 'Invalid or expired verification link' });
+    // Check max attempts
+    if (storedOtp.attempts >= 5) {
+      emailOtpStorage.delete(email);
+      return res.status(429).json({ error: 'Too many attempts. Request a new OTP.' });
     }
 
-    // Check if token has expired
-    if (Date.now() > tokenData.expiresAt) {
-      verificationTokens.delete(token);
-      return res.status(401).json({ error: 'Token expired' });
+    // Verify OTP
+    if (storedOtp.otp !== otp) {
+      storedOtp.attempts += 1;
+      return res.status(401).json({
+        error: 'Invalid OTP. Please try again.',
+        attemptsLeft: 5 - storedOtp.attempts
+      });
     }
 
-    // Token is valid - delete it after use
-    verificationTokens.delete(token);
+    // OTP verified - delete it and return user data
+    emailOtpStorage.delete(email);
+
+    console.log('Email OTP verified successfully for:', email);
 
     res.status(200).json({
       success: true,
       message: 'Email verified successfully!',
       user: {
-        email: tokenData.email,
-        full_name: tokenData.full_name,
-        phone: tokenData.phone
+        email: email,
+        full_name: storedOtp.full_name,
+        phone: storedOtp.phone || ''
       }
     });
   } catch (error) {
-    console.error('Auth callback error:', error);
-    res.status(500).json({ error: 'Verification failed' });
+    console.error('❌ Error verifying email OTP:', error.message);
+    res.status(500).json({ error: 'Verification failed. Please try again.' });
   }
 });
-
 
 export default router;

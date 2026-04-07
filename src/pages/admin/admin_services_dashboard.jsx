@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
-import { EditServiceModal } from "../../components/modal/edit_service";
-import { CreatePromoModal } from "../../components/modal/create_promo";
-import { CreateDiscountModal } from "../../components/modal/create_discount";
+import { EditServiceModal } from "../../components/modal/admin/edit_service";
+import { CreatePromoModal } from "../../components/modal/admin/create_promo";
+import { CreateDiscountModal } from "../../components/modal/admin/create_discount";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS

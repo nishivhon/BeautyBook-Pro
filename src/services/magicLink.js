@@ -163,6 +163,15 @@ export const logMagicLinksForTesting = () => {
 };
 
 /**
+ * Map emails to their roles (independent of token timestamps)
+ */
+const EMAIL_TO_ROLE_MAP = {
+  'admin@beautybook.pro': 'admin',
+  'superadmin@beautybook.pro': 'super admin',
+  'staff@beautybook.pro': 'staff'
+};
+
+/**
  * Get magic link info (email, role) from token
  */
 export const getMagicLinkInfo = (token) => {
@@ -175,7 +184,12 @@ export const getMagicLinkInfo = (token) => {
     };
   }
   
-  // Try to extract from token
+  // Try to extract email from token and map to role
   const email = getEmailFromToken(token);
-  return email ? { email, role: 'staff' } : null;
+  if (email) {
+    const role = EMAIL_TO_ROLE_MAP[email] || 'staff';
+    return { email, role };
+  }
+  
+  return null;
 };
