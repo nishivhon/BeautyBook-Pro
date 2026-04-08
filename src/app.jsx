@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Homepage from './pages/landpage'
 import { Register } from './pages/register'
 import { LogIn } from './pages/login'
+import { logMagicLinksForTesting } from './services/magicLink'
 import { AdminDashboard } from './pages/admin/admin_dashboard'
 import { AdminDashboardServices } from './pages/admin/admin_services_dashboard'
 import { AdminDashboardLiveStatus } from './pages/admin/admin_live_status_dashboard'
@@ -15,6 +16,11 @@ import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function App() {
+  useEffect(() => {
+    // Log magic links for testing on app load
+    logMagicLinksForTesting()
+  }, [])
+
   return (
     <Router>
       <Routes>
