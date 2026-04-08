@@ -21,7 +21,6 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 console.log('[Supabase] Initializing Supabase client');
-console.log(`  URL: ${SUPABASE_URL}`);
 
 /**
  * Generic query helper for Supabase REST API
