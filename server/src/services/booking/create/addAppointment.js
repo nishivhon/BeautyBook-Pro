@@ -21,8 +21,6 @@ export const addAppointment = async (appointmentData) => {
       throw new Error('Missing required appointment fields');
     }
 
-    console.log('[AddAppointmentService] Creating appointment for:', name);
-
     // Use upsertSupabase for INSERT operation
     await upsertSupabase('appointments', {
       name,
@@ -46,13 +44,11 @@ export const addAppointment = async (appointmentData) => {
     const appointment = result[0] || null;
 
     if (appointment) {
-      console.log(`[AddAppointmentService] Successfully created appointment with ID: ${appointment.id}`);
       return appointment;
     } else {
       throw new Error('Appointment created but could not be retrieved');
     }
   } catch (error) {
-    console.error('[AddAppointmentService] Error creating appointment:', error.message);
     throw error;
   }
 };
