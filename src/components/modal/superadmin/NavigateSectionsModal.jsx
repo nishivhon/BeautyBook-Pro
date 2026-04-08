@@ -1,0 +1,252 @@
+import { UpArrowIcon, DownArrowIcon, TrashIcon } from "../../../icons";
+import { ScissorsIcon, NailIcon, SkinIcon, MassageIcon, StarIcon } from "../../../icons";
+
+export default function NavigateSectionsModal({
+  isOpen,
+  onClose,
+  sectionOrder,
+  setSectionOrder,
+  hiddenSections,
+  setHiddenSections,
+  customSections,
+  setCustomSections,
+  onClearSection,
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: "rgba(0, 0, 0, 0.6)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 2000,
+    }}>
+      <div style={{
+        background: "#1a1a1a",
+        borderRadius: "12px",
+        padding: "32px",
+        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+        border: "1.5px solid #dd901d",
+        maxWidth: "500px",
+        width: "90%",
+        maxHeight: "80vh",
+        overflowY: "auto",
+        scrollbarWidth: "thin",
+        scrollbarColor: "#dd901d transparent",
+      }}>
+        <h2 style={{ color: "white", marginBottom: "24px", fontSize: "20px", fontWeight: "bold" }}>Navigate Sections</h2>
+        
+        <p style={{ color: "#888", fontSize: "13px", marginBottom: "20px" }}>Reorder, toggle visibility, and manage section contents</p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {sectionOrder.map((sectionId, index) => {
+            const sectionLabels = {
+              hero: "Hero Section",
+              howitworks: "How It Works",
+              services: "Services",
+              footer: "Footer",
+            };
+            
+            if (sectionId.startsWith('custom-')) {
+              const customSection = customSections.find(s => s.id === sectionId);
+              if (customSection) sectionLabels[sectionId] = customSection.title;
+            }
+            
+            const isHidden = hiddenSections[sectionId];
+
+            return (
+              <div key={sectionId} style={{
+                background: "#2a2a2a",
+                border: "1.5px solid rgba(221, 144, 29, 0.3)",
+                borderRadius: "8px",
+                padding: "16px",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                transition: "all 0.2s ease",
+              }}>
+                {/* Section number and label */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: "white", fontWeight: "600", fontSize: "14px" }}>
+                    {sectionLabels[sectionId]}
+                    {sectionId === "footer" && <span style={{ color: "#dd901d", fontSize: "11px" }}> (Locked)</span>}
+                  </div>
+                  <div style={{ color: "#888", fontSize: "12px", marginTop: "4px" }}>
+                    {sectionId === "footer" ? "Always at bottom" : (isHidden ? "Hidden" : "Visible")}
+                  </div>
+                </div>
+
+                {/* Move Up Button */}
+                <button
+                  onClick={() => {
+                    if (index > 0 && sectionId !== "footer") {
+                      const newOrder = [...sectionOrder];
+                      [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+                      setSectionOrder(newOrder);
+                    }
+                  }}
+                  disabled={index === 0 || sectionId === "footer"}
+                  style={{
+                    background: (index === 0 || sectionId === "footer") ? "#3a3a3a" : "#dd901d",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "8px",
+                    cursor: (index === 0 || sectionId === "footer") ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: (index === 0 || sectionId === "footer") ? 0.5 : 1,
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (index !== 0 && sectionId !== "footer") e.target.style.background = "#c97c1c";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (index !== 0 && sectionId !== "footer") e.target.style.background = "#dd901d";
+                  }}
+                  title={sectionId === "footer" ? "Footer is locked at bottom" : "Move up"}
+                >
+                  <UpArrowIcon />
+                </button>
+
+                {/* Move Down Button */}
+                <button
+                  onClick={() => {
+                    if (index < sectionOrder.length - 1 && sectionId !== "footer") {
+                      const newOrder = [...sectionOrder];
+                      [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+                      setSectionOrder(newOrder);
+                    }
+                  }}
+                  disabled={index === sectionOrder.length - 1 || sectionId === "footer"}
+                  style={{
+                    background: (index === sectionOrder.length - 1 || sectionId === "footer") ? "#3a3a3a" : "#dd901d",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "8px",
+                    cursor: (index === sectionOrder.length - 1 || sectionId === "footer") ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: (index === sectionOrder.length - 1 || sectionId === "footer") ? 0.5 : 1,
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (index !== sectionOrder.length - 1 && sectionId !== "footer") e.target.style.background = "#c97c1c";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (index !== sectionOrder.length - 1 && sectionId !== "footer") e.target.style.background = "#dd901d";
+                  }}
+                  title={sectionId === "footer" ? "Footer is locked at bottom" : "Move down"}
+                >
+                  <DownArrowIcon />
+                </button>
+
+                {/* Toggle Visibility Button */}
+                <button
+                  onClick={() => {
+                    setHiddenSections({
+                      ...hiddenSections,
+                      [sectionId]: !isHidden,
+                    });
+                  }}
+                  style={{
+                    background: isHidden ? "rgba(221, 144, 29, 0.3)" : "#dd901d",
+                    border: "1.5px solid " + (isHidden ? "#dd901d" : "transparent"),
+                    borderRadius: "6px",
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                    color: isHidden ? "#dd901d" : "#1a1a1a",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.opacity = "0.8";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.opacity = "1";
+                  }}
+                  title="Toggle visibility"
+                >
+                  {isHidden ? "Show" : "Hide"}
+                </button>
+
+                {/* Delete/Clear Button */}
+                {sectionId !== "footer" && (
+                  <button
+                    onClick={() => {
+                      const actionType = sectionId.startsWith('custom-') ? "Delete this section" : `Clear all contents in ${sectionLabels[sectionId]}`;
+                      if (window.confirm(`${actionType}?`)) {
+                        if (sectionId.startsWith('custom-')) {
+                          // Remove custom section from array
+                          setCustomSections(customSections.filter(s => s.id !== sectionId));
+                          // Remove from sectionOrder
+                          setSectionOrder(sectionOrder.filter(id => id !== sectionId));
+                          // Remove from hidden sections
+                          const newHiddenSections = { ...hiddenSections };
+                          delete newHiddenSections[sectionId];
+                          setHiddenSections(newHiddenSections);
+                        } else {
+                          onClearSection(sectionId);
+                        }
+                      }
+                    }}
+                    style={{
+                      background: "#dd1a1a",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "8px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = "#b81a1a";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = "#dd1a1a";
+                    }}
+                    title={sectionId.startsWith('custom-') ? "Delete section" : "Clear contents"}
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: "12px",
+              background: "#dd901d",
+              border: "none",
+              borderRadius: "6px",
+              color: "#1a1a1a",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontSize: "14px",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+            onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

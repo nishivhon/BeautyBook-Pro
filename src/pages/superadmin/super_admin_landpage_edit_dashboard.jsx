@@ -4,6 +4,9 @@ import { logoutOperator } from "../../services/operatorAuth";
 import { HowItWorksStepEditModal } from "../../components/modal/superadmin/howitworks_step_edit";
 import { ServiceEditModal } from "../../components/modal/superadmin/service_edit";
 import { FooterEditModal } from "../../components/modal/superadmin/footer_edit";
+import AddCardModal from "../../components/modal/superadmin/AddCardModal";
+import NavigateSectionsModal from "../../components/modal/superadmin/NavigateSectionsModal";
+import AddSectionModal from "../../components/modal/superadmin/AddSectionModal";
 
 // ─── Logo Mark SVG ───────────────────────────────────────────────────────────
 const LogoMark = () => (
@@ -1603,625 +1606,94 @@ export default function SuperAdminLandingPageEditor() {
         />
 
         {/* Add Card Modal */}
-        {addCardModal && (
-          <div style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2000,
-          }}>
-            <div style={{
-              background: "#1a1a1a",
-              borderRadius: "12px",
-              padding: "32px",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-              border: "1.5px solid #dd901d",
-              maxWidth: "450px",
-              width: "90%",
-              maxHeight: "80vh",
-              overflowY: "auto",
-            }}>
-              <h2 style={{ color: "white", marginBottom: "20px", fontSize: "20px", fontWeight: "bold" }}>Add Card</h2>
-              
-              <div style={{ marginBottom: "40px" }}>
-                <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Select Section</label>
-                <select
-                  value={cardConfig.section}
-                  onChange={(e) => setCardConfig({ ...cardConfig, section: e.target.value, items: [] })}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    background: "#2a2a2a",
-                    border: "1.5px solid #dd901d",
-                    borderRadius: "6px",
-                    color: "white",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                  }}
-                >
-                  <option value="howitworks">How It Works Section</option>
-                  <option value="services">Services Section</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: "20px" }}>
-                <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Card Title</label>
-                <input
-                  type="text"
-                  value={cardConfig.title}
-                  onChange={(e) => setCardConfig({ ...cardConfig, title: e.target.value })}
-                  placeholder="Enter card title"
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    background: "#2a2a2a",
-                    border: "1.5px solid #dd901d",
-                    borderRadius: "6px",
-                    color: "white",
-                    fontSize: "14px",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-
-              {cardConfig.section === "howitworks" && (
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Description</label>
-                  <textarea
-                    value={cardConfig.description}
-                    onChange={(e) => setCardConfig({ ...cardConfig, description: e.target.value })}
-                    placeholder="Enter card description"
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      background: "#2a2a2a",
-                      border: "1.5px solid #dd901d",
-                      borderRadius: "6px",
-                      color: "white",
-                      fontSize: "14px",
-                      outline: "none",
-                      boxSizing: "border-box",
-                      minHeight: "80px",
-                      fontFamily: "inherit",
-                    }}
-                  />
-                </div>
-              )}
-
-              {cardConfig.section === "services" && (
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Service Items</label>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {cardConfig.items && cardConfig.items.map((item, idx) => (
-                      <div key={idx} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                        <input
-                          type="text"
-                          value={item}
-                          onChange={(e) => {
-                            const newItems = [...cardConfig.items];
-                            newItems[idx] = e.target.value;
-                            setCardConfig({ ...cardConfig, items: newItems });
-                          }}
-                          placeholder={`Item ${idx + 1}`}
-                          style={{
-                            flex: 1,
-                            padding: "8px",
-                            background: "#2a2a2a",
-                            border: "1px solid #555",
-                            borderRadius: "4px",
-                            color: "white",
-                            fontSize: "13px",
-                            outline: "none",
-                            boxSizing: "border-box",
-                          }}
-                        />
-                        <button
-                          onClick={() => {
-                            const newItems = cardConfig.items.filter((_, i) => i !== idx);
-                            setCardConfig({ ...cardConfig, items: newItems });
-                          }}
-                          style={{
-                            padding: "6px 12px",
-                            background: "#c97c1c",
-                            border: "none",
-                            borderRadius: "4px",
-                            color: "white",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                            transition: "all 0.2s ease",
-                          }}
-                          onMouseEnter={(e) => e.target.style.background = "#a85c0f"}
-                          onMouseLeave={(e) => e.target.style.background = "#c97c1c"}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                    {cardConfig.items.length < 4 && (
-                      <button
-                        onClick={() => setCardConfig({ ...cardConfig, items: [...(cardConfig.items || []), ""] })}
-                        style={{
-                          padding: "8px",
-                          background: "transparent",
-                          border: "1.5px dashed #dd901d",
-                          borderRadius: "4px",
-                          color: "#dd901d",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                          transition: "all 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => e.target.style.background = "rgba(221, 144, 29, 0.1)"}
-                        onMouseLeave={(e) => e.target.style.background = "transparent"}
-                      >
-                        + Add Item
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
-                <button
-                  onClick={() => {
-                    if (cardConfig.section === "howitworks") {
-                      const newStep = {
-                        id: Math.max(...howitworksSteps.map(s => s.id), -1) + 1,
-                        icon: "calendar",
-                        title: cardConfig.title,
-                        desc: cardConfig.description,
-                      };
-                      setHowitworksSteps([...howitworksSteps, newStep]);
-                    } else if (cardConfig.section === "services") {
-                      const newService = {
-                        icon: <StarIcon />,
-                        title: cardConfig.title,
-                        items: cardConfig.items.filter(item => item.trim() !== ""),
-                      };
-                      setServicesData([...servicesData, newService]);
-                    }
-                    setAddCardModal(false);
-                    setCardConfig({ section: "howitworks", title: "New Card", description: "", items: [] });
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    background: "#dd901d",
-                    border: "none",
-                    borderRadius: "6px",
-                    color: "#1a1a1a",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
-                  onMouseLeave={(e) => e.target.style.background = "#dd901d"}
-                >
-                  Add Card
-                </button>
-                <button
-                  onClick={() => {
-                    setAddCardModal(false);
-                    setCardConfig({ section: "howitworks", title: "New Card", description: "", items: [] });
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    background: "transparent",
-                    border: "1.5px solid #dd901d",
-                    borderRadius: "6px",
-                    color: "#dd901d",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(221, 144, 29, 0.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "transparent";
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <AddCardModal
+          isOpen={addCardModal}
+          onClose={() => {
+            setAddCardModal(false);
+            setCardConfig({ section: "howitworks", title: "New Card", description: "", items: [] });
+          }}
+          cardConfig={cardConfig}
+          setCardConfig={setCardConfig}
+          onAddCard={() => {
+            if (cardConfig.section === "howitworks") {
+              const newStep = {
+                id: Math.max(...howitworksSteps.map(s => s.id), -1) + 1,
+                icon: "calendar",
+                title: cardConfig.title,
+                desc: cardConfig.description,
+              };
+              setHowitworksSteps([...howitworksSteps, newStep]);
+            } else if (cardConfig.section === "services") {
+              const newService = {
+                icon: <StarIcon />,
+                title: cardConfig.title,
+                items: cardConfig.items.filter(item => item.trim() !== ""),
+              };
+              setServicesData([...servicesData, newService]);
+            }
+            setAddCardModal(false);
+            setCardConfig({ section: "howitworks", title: "New Card", description: "", items: [] });
+          }}
+          howitworksSteps={howitworksSteps}
+          servicesData={servicesData}
+        />
 
         {/* Navigate Sections Modal */}
-        {navigateSectionsOpen && (
-          <div style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2000,
-          }}>
-            <div style={{
-              background: "#1a1a1a",
-              borderRadius: "12px",
-              padding: "32px",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-              border: "1.5px solid #dd901d",
-              maxWidth: "500px",
-              width: "90%",
-              maxHeight: "80vh",
-              overflowY: "auto",
-              scrollbarWidth: "thin",
-              scrollbarColor: "#dd901d transparent",
-            }}>
-              <h2 style={{ color: "white", marginBottom: "24px", fontSize: "20px", fontWeight: "bold" }}>Navigate Sections</h2>
-              
-              <p style={{ color: "#888", fontSize: "13px", marginBottom: "20px" }}>Reorder, toggle visibility, and manage section contents</p>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {sectionOrder.map((sectionId, index) => {
-                  const sectionLabels = {
-                    hero: "Hero Section",
-                    howitworks: "How It Works",
-                    services: "Services",
-                    footer: "Footer",
-                  };
-                  
-                  if (sectionId.startsWith('custom-')) {
-                    const customSection = customSections.find(s => s.id === sectionId);
-                    if (customSection) sectionLabels[sectionId] = customSection.title;
-                  }
-                  
-                  const isHidden = hiddenSections[sectionId];
-
-                  return (
-                    <div key={sectionId} style={{
-                      background: "#2a2a2a",
-                      border: "1.5px solid rgba(221, 144, 29, 0.3)",
-                      borderRadius: "8px",
-                      padding: "16px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      transition: "all 0.2s ease",
-                    }}>
-                      {/* Section number and label */}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ color: "white", fontWeight: "600", fontSize: "14px" }}>
-                          {sectionLabels[sectionId]}
-                          {sectionId === "footer" && <span style={{ color: "#dd901d", fontSize: "11px" }}> (Locked)</span>}
-                        </div>
-                        <div style={{ color: "#888", fontSize: "12px", marginTop: "4px" }}>
-                          {sectionId === "footer" ? "Always at bottom" : (isHidden ? "Hidden" : "Visible")}
-                        </div>
-                      </div>
-
-                      {/* Move Up Button */}
-                      <button
-                        onClick={() => {
-                          if (index > 0 && sectionId !== "footer") {
-                            const newOrder = [...sectionOrder];
-                            [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
-                            setSectionOrder(newOrder);
-                          }
-                        }}
-                        disabled={index === 0 || sectionId === "footer"}
-                        style={{
-                          background: (index === 0 || sectionId === "footer") ? "#3a3a3a" : "#dd901d",
-                          border: "none",
-                          borderRadius: "6px",
-                          padding: "8px",
-                          cursor: (index === 0 || sectionId === "footer") ? "not-allowed" : "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          opacity: (index === 0 || sectionId === "footer") ? 0.5 : 1,
-                          transition: "all 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (index !== 0 && sectionId !== "footer") e.target.style.background = "#c97c1c";
-                        }}
-                        onMouseLeave={(e) => {
-                          if (index !== 0 && sectionId !== "footer") e.target.style.background = "#dd901d";
-                        }}
-                        title={sectionId === "footer" ? "Footer is locked at bottom" : "Move up"}
-                      >
-                        <UpArrowIcon />
-                      </button>
-
-                      {/* Move Down Button */}
-                      <button
-                        onClick={() => {
-                          if (index < sectionOrder.length - 1 && sectionId !== "footer") {
-                            const newOrder = [...sectionOrder];
-                            [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
-                            setSectionOrder(newOrder);
-                          }
-                        }}
-                        disabled={index === sectionOrder.length - 1 || sectionId === "footer"}
-                        style={{
-                          background: (index === sectionOrder.length - 1 || sectionId === "footer") ? "#3a3a3a" : "#dd901d",
-                          border: "none",
-                          borderRadius: "6px",
-                          padding: "8px",
-                          cursor: (index === sectionOrder.length - 1 || sectionId === "footer") ? "not-allowed" : "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          opacity: (index === sectionOrder.length - 1 || sectionId === "footer") ? 0.5 : 1,
-                          transition: "all 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (index !== sectionOrder.length - 1 && sectionId !== "footer") e.target.style.background = "#c97c1c";
-                        }}
-                        onMouseLeave={(e) => {
-                          if (index !== sectionOrder.length - 1 && sectionId !== "footer") e.target.style.background = "#dd901d";
-                        }}
-                        title={sectionId === "footer" ? "Footer is locked at bottom" : "Move down"}
-                      >
-                        <DownArrowIcon />
-                      </button>
-
-                      {/* Toggle Visibility Button */}
-                      <button
-                        onClick={() => {
-                          setHiddenSections({
-                            ...hiddenSections,
-                            [sectionId]: !isHidden,
-                          });
-                        }}
-                        style={{
-                          background: isHidden ? "rgba(221, 144, 29, 0.3)" : "#dd901d",
-                          border: "1.5px solid " + (isHidden ? "#dd901d" : "transparent"),
-                          borderRadius: "6px",
-                          padding: "8px 12px",
-                          cursor: "pointer",
-                          color: isHidden ? "#dd901d" : "#1a1a1a",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          transition: "all 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.opacity = "0.8";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.opacity = "1";
-                        }}
-                        title="Toggle visibility"
-                      >
-                        {isHidden ? "Show" : "Hide"}
-                      </button>
-
-                      {/* Delete/Clear Button */}
-                      {sectionId !== "footer" && (
-                        <button
-                          onClick={() => {
-                            const actionType = sectionId.startsWith('custom-') ? "Delete this section" : `Clear all contents in ${sectionLabels[sectionId]}`;
-                            if (window.confirm(`${actionType}?`)) {
-                              if (sectionId.startsWith('custom-')) {
-                                // Remove custom section from array
-                                setCustomSections(customSections.filter(s => s.id !== sectionId));
-                                // Remove from sectionOrder
-                                setSectionOrder(sectionOrder.filter(id => id !== sectionId));
-                                // Remove from hidden sections
-                                const newHiddenSections = { ...hiddenSections };
-                                delete newHiddenSections[sectionId];
-                                setHiddenSections(newHiddenSections);
-                              } else if (sectionId === "hero") {
-                                setHero({
-                                  badge: "DIGITAL APPOINTMENT SYSTEM",
-                                  headline1: "Skip The Wait,",
-                                  headline2: "Book Your Style",
-                                  subheading: "A digital appointment and customer management system for barbershops, hair salons, and spas. Book appointments online, reduce wait times, and experience seamless, personalized service—instantly.",
-                                  ctaText: "Book Appointment",
-                                  buttons: [],
-                                });
-                              } else if (sectionId === "howitworks") {
-                                setHowitworksSteps([
-                                  { id: 0, icon: "calendar", title: "Book Online", desc: "Select your service, preferred stylist, and convenient time slot" },
-                                  { id: 1, icon: "bell", title: "Get Notified", desc: "Receive real-time updates and 'Your Turn Soon' alerts" },
-                                  { id: 2, icon: "check", title: "Enjoy Service", desc: "Arrive on time and skip the traditional waiting queue" },
-                                ]);
-                              } else if (sectionId === "services") {
-                                setServicesData([
-                                  { icon: <ScissorsIcon/>, title: "Hair Services", items: ["Haircut & Style", "Color Treatment", "Hair Spa", "Keratin Treatment"] },
-                                  { icon: <NailIcon/>, title: "Nail Services", items: ["Manicure", "Pedicure", "Nail Art", "Gel Extension"] },
-                                  { icon: <SkinIcon/>, title: "Skin Care Services", items: ["Facial Treatment", "Chemical Peel", "Microdermabrasion", "Hydration Therapy"] },
-                                  { icon: <MassageIcon/>, title: "Massage Services", items: ["Swedish Massage", "Deep Tissue Massage", "Hot Stone Massage", "Spa Reflexology"] },
-                                  { icon: <StarIcon/>, title: "Premium Services", items: ["Bridal Package", "Couple's Massage", "Hair & Glow Combo", "VIP Lounge Experience"] },
-                                ]);
-                              }
-                            }
-                          }}
-                          style={{
-                            background: "#dd1a1a",
-                            border: "none",
-                            borderRadius: "6px",
-                            padding: "8px",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            transition: "all 0.2s ease",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.target.style.background = "#b81a1a";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.target.style.background = "#dd1a1a";
-                          }}
-                          title={sectionId.startsWith('custom-') ? "Delete section" : "Clear contents"}
-                        >
-                          <TrashIcon />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
-                <button
-                  onClick={() => setNavigateSectionsOpen(false)}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    background: "#dd901d",
-                    border: "none",
-                    borderRadius: "6px",
-                    color: "#1a1a1a",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
-                  onMouseLeave={(e) => e.target.style.background = "#dd901d"}
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <NavigateSectionsModal
+          isOpen={navigateSectionsOpen}
+          onClose={() => setNavigateSectionsOpen(false)}
+          sectionOrder={sectionOrder}
+          setSectionOrder={setSectionOrder}
+          hiddenSections={hiddenSections}
+          setHiddenSections={setHiddenSections}
+          customSections={customSections}
+          setCustomSections={setCustomSections}
+          onClearSection={(sectionId) => {
+            if (sectionId === "hero") {
+              setHero({
+                badge: "DIGITAL APPOINTMENT SYSTEM",
+                headline1: "Skip The Wait,",
+                headline2: "Book Your Style",
+                subheading: "A digital appointment and customer management system for barbershops, hair salons, and spas. Book appointments online, reduce wait times, and experience seamless, personalized service—instantly.",
+                ctaText: "Book Appointment",
+                buttons: [],
+              });
+            } else if (sectionId === "howitworks") {
+              setHowitworksSteps([
+                { id: 0, icon: "calendar", title: "Book Online", desc: "Select your service, preferred stylist, and convenient time slot" },
+                { id: 1, icon: "bell", title: "Get Notified", desc: "Receive real-time updates and 'Your Turn Soon' alerts" },
+                { id: 2, icon: "check", title: "Enjoy Service", desc: "Arrive on time and skip the traditional waiting queue" },
+              ]);
+            } else if (sectionId === "services") {
+              setServicesData([
+                { icon: <ScissorsIcon/>, title: "Hair Services", items: ["Haircut & Style", "Color Treatment", "Hair Spa", "Keratin Treatment"] },
+                { icon: <NailIcon/>, title: "Nail Services", items: ["Manicure", "Pedicure", "Nail Art", "Gel Extension"] },
+                { icon: <SkinIcon/>, title: "Skin Care Services", items: ["Facial Treatment", "Chemical Peel", "Microdermabrasion", "Hydration Therapy"] },
+                { icon: <MassageIcon/>, title: "Massage Services", items: ["Swedish Massage", "Deep Tissue Massage", "Hot Stone Massage", "Spa Reflexology"] },
+                { icon: <StarIcon/>, title: "Premium Services", items: ["Bridal Package", "Couple's Massage", "Hair & Glow Combo", "VIP Lounge Experience"] },
+              ]);
+            }
+          }}
+        />
 
         {/* Add Section Modal */}
-        {addSectionModal && (
-          <div style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2000,
-          }}>
-            <div style={{
-              background: "#1a1a1a",
-              borderRadius: "12px",
-              padding: "32px",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-              border: "1.5px solid #dd901d",
-              maxWidth: "450px",
-              width: "90%",
-              maxHeight: "80vh",
-              overflowY: "auto",
-            }}>
-              <h2 style={{ color: "white", marginBottom: "24px", fontSize: "20px", fontWeight: "bold" }}>Add Draft Section</h2>
-              
-              <div style={{ marginBottom: "20px" }}>
-                <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Section Title</label>
-                <input
-                  type="text"
-                  value={draftSection.title}
-                  onChange={(e) => setDraftSection({ ...draftSection, title: e.target.value })}
-                  placeholder="Enter section title"
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    background: "#2a2a2a",
-                    border: "1.5px solid #dd901d",
-                    borderRadius: "6px",
-                    color: "white",
-                    fontSize: "14px",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: "24px" }}>
-                <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Section Subtitle</label>
-                <textarea
-                  value={draftSection.subtitle}
-                  onChange={(e) => setDraftSection({ ...draftSection, subtitle: e.target.value })}
-                  placeholder="Enter section subtitle (optional)"
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    background: "#2a2a2a",
-                    border: "1.5px solid #dd901d",
-                    borderRadius: "6px",
-                    color: "white",
-                    fontSize: "14px",
-                    outline: "none",
-                    boxSizing: "border-box",
-                    minHeight: "80px",
-                    fontFamily: "inherit",
-                  }}
-                />
-              </div>
-
-              <div style={{ display: "flex", gap: "12px" }}>
-                <button
-                  onClick={() => {
-                    const newId = `custom-${Date.now()}`;
-                    const newSection = { id: newId, ...draftSection };
-                    setCustomSections([...customSections, newSection]);
-                    setSectionOrder([...sectionOrder.slice(0, -1), newId, 'footer']);
-                    setAddSectionModal(false);
-                    setDraftSection({ title: "New Section", subtitle: "" });
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    background: "#dd901d",
-                    border: "none",
-                    borderRadius: "6px",
-                    color: "#1a1a1a",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
-                  onMouseLeave={(e) => e.target.style.background = "#dd901d"}
-                >
-                  Done
-                </button>
-                <button
-                  onClick={() => {
-                    setAddSectionModal(false);
-                    setDraftSection({ title: "New Section", subtitle: "" });
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    background: "transparent",
-                    border: "1.5px solid #dd901d",
-                    borderRadius: "6px",
-                    color: "#dd901d",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = "rgba(221, 144, 29, 0.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = "transparent";
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <AddSectionModal
+          isOpen={addSectionModal}
+          onClose={() => {
+            setAddSectionModal(false);
+            setDraftSection({ title: "New Section", subtitle: "" });
+          }}
+          draftSection={draftSection}
+          setDraftSection={setDraftSection}
+          onAddSection={() => {
+            const newId = `custom-${Date.now()}`;
+            const newSection = { id: newId, ...draftSection };
+            setCustomSections([...customSections, newSection]);
+            setSectionOrder([...sectionOrder.slice(0, -1), newId, 'footer']);
+            setAddSectionModal(false);
+            setDraftSection({ title: "New Section", subtitle: "" });
+          }}
+        />
       </div>
     </div>
   );
