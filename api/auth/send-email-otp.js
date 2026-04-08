@@ -13,12 +13,6 @@ const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL;
 const BREVO_SENDER_NAME = 'BeautyBook';
 
-console.log('[Brevo] REST API configured:');
-console.log(`  Endpoint: ${BREVO_API_URL}`);
-console.log(`  API Key: ${BREVO_API_KEY ? '✅ Set' : '❌ Missing'}`);
-console.log(`  Sender: ${BREVO_SENDER_EMAIL}`);
-console.log(`  Sender Name: ${BREVO_SENDER_NAME}`);
-
 export default async (req, res) => {
   // Only allow POST
   if (req.method !== 'POST') {
@@ -35,9 +29,7 @@ export default async (req, res) => {
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    console.log(`[EmailOTP] Generated OTP for ${email}, expires at: ${expiresAt}`);
-    console.log(`[EmailOTP] 🔐 OTP CODE: ${otp} (for testing - copy from here)`);
-
+    console.log(`[EmailOTP] Generated OTP for ${email}`);
 
     // Save OTP to Supabase
     await saveOtp({
@@ -68,11 +60,6 @@ export default async (req, res) => {
 // Send email asynchronously without blocking
 async function sendEmailAsync(email, full_name, otp) {
   try {
-    console.log(`[EmailOTP] 🚀 Calling Brevo REST API...`);
-    console.log(`  To: ${email}`);
-    console.log(`  User: ${full_name}`);
-    console.log(`  OTP: ${otp}`);
-
     const emailBody = {
       sender: {
         name: BREVO_SENDER_NAME,
@@ -101,11 +88,6 @@ async function sendEmailAsync(email, full_name, otp) {
       `
     };
 
-    console.log(`[EmailOTP] 📧 Sending mail with subject: "${emailBody.subject}"`);
-    console.log(`[EmailOTP] ⏳ Waiting for Brevo response...`);
-    console.log(`[EmailOTP] DEBUG - API Key length: ${BREVO_API_KEY.length}`);
-    console.log(`[EmailOTP] DEBUG - Endpoint: ${BREVO_API_URL}`);
-
     // Create abort controller with 10 second timeout
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -122,19 +104,15 @@ async function sendEmailAsync(email, full_name, otp) {
 
     clearTimeout(timeout);
 
-    console.log(`[EmailOTP] DEBUG - Response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[EmailOTP] ❌ HTTP ${response.status}: ${errorText}`);
+      console.error(`[EmailOTP] Failed to send email: HTTP ${response.status}`);
       return;
     }
 
     const result = await response.json();
-    console.log(`[EmailOTP] ✅ Email sent! Message ID: ${result.messageId}`);
+    console.log(`[EmailOTP] Email sent successfully`);
   } catch (error) {
-    console.error(`[EmailOTP] ❌ Background email error:`, error);
-    console.error(`[EmailOTP] Error name: ${error.name}`);
-    console.error(`[EmailOTP] Error message: ${error.message}`);
+    console.error(`[EmailOTP] Error sending email:`, error.message);
   }
 }

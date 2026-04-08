@@ -10,10 +10,6 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const UNISMS_API_URL = 'https://unismsapi.com/api/sms';
 
-console.log('[UniSMS] Configuration:');
-console.log(`  API URL: ${UNISMS_API_URL}`);
-console.log(`  API Key: ${process.env.UNISMS_API_KEY ? '✅ Set' : '❌ Missing'}`);
-
 export default async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -43,7 +39,6 @@ export default async (req, res) => {
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     console.log(`[SMSOTP] Generated OTP for ${phone}`);
-    console.log(`[SMSOTP] 🔐 OTP CODE: ${otp} (for testing - copy from here)`);
 
     // Save OTP to Supabase
     await saveOtp({
@@ -73,11 +68,6 @@ export default async (req, res) => {
 // Send SMS asynchronously without blocking
 async function sendSmsAsync(formattedPhone, name, otp) {
   try {
-    console.log(`[SMSOTP] 🚀 Calling UniSMS API...`);
-    console.log(`  Recipient: ${formattedPhone}`);
-    console.log(`  Name: ${name}`);
-    console.log(`  OTP: ${otp}`);
-
     const message = `Hello ${name}, Your BeautyBook OTP is: ${otp}. Valid for 10 minutes.`;
     const payload = {
       recipient: formattedPhone,
@@ -85,8 +75,6 @@ async function sendSmsAsync(formattedPhone, name, otp) {
     };
 
     const base64Auth = Buffer.from(`${process.env.UNISMS_API_KEY}:`).toString('base64');
-
-    console.log(`[SMSOTP] 📤 Sending SMS with payload:`, JSON.stringify(payload));
 
     // Create abort controller with 10 second timeout
     const controller = new AbortController();
@@ -104,19 +92,15 @@ async function sendSmsAsync(formattedPhone, name, otp) {
 
     clearTimeout(timeout);
 
-    console.log(`[SMSOTP] DEBUG - Response status: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[SMSOTP] ❌ HTTP ${response.status}: ${errorText}`);
+      console.error(`[SMSOTP] Failed to send SMS: HTTP ${response.status}`);
       return;
     }
 
     const result = await response.json();
-    console.log(`[SMSOTP] ✅ SMS sent! Message ID: ${result.message.reference_id}`);
+    console.log(`[SMSOTP] SMS sent successfully`);
   } catch (error) {
-    console.error(`[SMSOTP] ❌ Background SMS error:`, error);
-    console.error(`[SMSOTP] Error name: ${error.name}`);
-    console.error(`[SMSOTP] Error message: ${error.message}`);
+    console.error(`[SMSOTP] Error sending SMS:`, error.message);
   }
 }
