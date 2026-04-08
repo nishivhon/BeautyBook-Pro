@@ -559,21 +559,21 @@ export const ServiceEditModal = ({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                gap: "6px",
-                transition: "all 0.2s ease",
-              }}
-              onMouseOver={(e) => {
-                e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
-                e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-              }}
-              onMouseOut={(e) => {
-                e.target.style.backgroundColor = "transparent";
-                e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
-              }}
-            >
-              <PlusIcon />
-              Add
-            </button>
+                  gap: "6px",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = "transparent";
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
+                }}
+              >
+                <PlusIcon />
+                Add
+              </button>
             </div>
           )}
           {localItems.length >= 4 && (

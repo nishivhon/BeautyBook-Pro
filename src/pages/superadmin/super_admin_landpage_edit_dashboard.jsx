@@ -370,6 +370,9 @@ export default function SuperAdminLandingPageEditor() {
   const [navigateSectionsOpen, setNavigateSectionsOpen] = useState(false);
   const [sectionOrder, setSectionOrder] = useState(["hero", "howitworks", "services", "footer"]);
   const [hiddenSections, setHiddenSections] = useState({});
+  const [addSectionModal, setAddSectionModal] = useState(false);
+  const [draftSection, setDraftSection] = useState({ title: "New Section", subtitle: "" });
+  const [customSections, setCustomSections] = useState([]);
 
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
@@ -644,7 +647,7 @@ export default function SuperAdminLandingPageEditor() {
                       </button>
                       <button
                         onClick={() => {
-                          alert("Add Section - Feature coming soon");
+                          setAddSectionModal(true);
                           setToolsMenuOpen(false);
                         }}
                         style={{
@@ -1356,6 +1359,126 @@ export default function SuperAdminLandingPageEditor() {
             })()}
           </section>
 
+          {/* Custom Sections */}
+          {customSections.map((section) => {
+            const sectionIndex = sectionOrder.indexOf(section.id);
+            const isEvenPosition = sectionIndex % 2 === 0;
+            const backgroundColor = isEvenPosition ? "#0a0908" : "#14110f";
+            
+            return (
+            <section key={section.id} style={{
+              width: "100%",
+              paddingTop: "40px",
+              paddingBottom: "64px",
+              paddingLeft: "40px",
+              paddingRight: "40px",
+              display: hiddenSections[section.id] ? "none" : "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              backgroundColor: backgroundColor,
+              borderRadius: "0",
+              boxSizing: "border-box",
+              order: sectionIndex,
+              marginBottom: "-24px",
+            }}>
+              <div style={{ width: "100%", textAlign: "center", maxWidth: "800px", margin: "0 auto" }}>
+                <h2 style={{ 
+                  fontSize: "32px", 
+                  fontWeight: "bold", 
+                  color: "white",
+                  cursor: "pointer",
+                  padding: "8px",
+                  borderRadius: "4px",
+                  transition: "all 0.2s ease",
+                  opacity: 0.9,
+                }}
+                onClick={() => setEditingField(`custom-section-${section.id}-title`)}
+                onMouseEnter={(e) => e.target.style.opacity = "1"}
+                onMouseLeave={(e) => e.target.style.opacity = "0.9"}
+                >
+                  {editingField === `custom-section-${section.id}-title` ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={section.title}
+                      onChange={(e) => {
+                        setCustomSections(customSections.map(s => s.id === section.id ? { ...s, title: e.target.value } : s));
+                      }}
+                      onBlur={() => setEditingField(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") setEditingField(null);
+                        if (e.key === "Escape") setEditingField(null);
+                      }}
+                      style={{
+                        fontSize: "32px",
+                        fontWeight: "bold",
+                        backgroundColor: "rgba(221, 144, 29, 0.15)",
+                        border: "2px solid #dd901d",
+                        borderRadius: "4px",
+                        padding: "8px 12px",
+                        color: "#dd901d",
+                        width: "100%",
+                        boxSizing: "border-box",
+                        outline: "none",
+                      }}
+                      placeholder="Section Title"
+                    />
+                  ) : (
+                    section.title
+                  )}
+                </h2>
+                <p style={{
+                  fontSize: "16px",
+                  color: "#999",
+                  cursor: "pointer",
+                  padding: "8px",
+                  borderRadius: "4px",
+                  transition: "all 0.2s ease",
+                  maxWidth: "600px",
+                  margin: "16px auto",
+                  marginBottom: "0",
+                  opacity: 0.85,
+                }}
+                onClick={() => setEditingField(`custom-section-${section.id}-subtitle`)}
+                onMouseEnter={(e) => e.target.style.opacity = "1"}
+                onMouseLeave={(e) => e.target.style.opacity = "0.85"}
+                >
+                  {editingField === `custom-section-${section.id}-subtitle` ? (
+                    <textarea
+                      autoFocus
+                      value={section.subtitle}
+                      onChange={(e) => {
+                        setCustomSections(customSections.map(s => s.id === section.id ? { ...s, subtitle: e.target.value } : s));
+                      }}
+                      onBlur={() => setEditingField(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setEditingField(null);
+                      }}
+                      style={{
+                        fontSize: "16px",
+                        backgroundColor: "rgba(221, 144, 29, 0.15)",
+                        border: "2px solid #dd901d",
+                        borderRadius: "4px",
+                        padding: "8px 12px",
+                        color: "#dd901d",
+                        width: "100%",
+                        boxSizing: "border-box",
+                        outline: "none",
+                        fontFamily: "inherit",
+                        minHeight: "60px",
+                        resize: "vertical",
+                      }}
+                      placeholder="Section Subtitle (Optional)"
+                    />
+                  ) : (
+                    section.subtitle || "(Click to add subtitle)"
+                  )}
+                </p>
+              </div>
+            </section>
+            );
+          })}
+
           {/* FOOTER SECTION */}
           <footer id="about" className="footer" style={{display: hiddenSections.footer ? "none" : "block", order: 999}}>
             <div style={{maxWidth:860,margin:"0 auto"}}>
@@ -1738,6 +1861,8 @@ export default function SuperAdminLandingPageEditor() {
               width: "90%",
               maxHeight: "80vh",
               overflowY: "auto",
+              scrollbarWidth: "thin",
+              scrollbarColor: "#dd901d transparent",
             }}>
               <h2 style={{ color: "white", marginBottom: "24px", fontSize: "20px", fontWeight: "bold" }}>Navigate Sections</h2>
               
@@ -1751,6 +1876,11 @@ export default function SuperAdminLandingPageEditor() {
                     services: "Services",
                     footer: "Footer",
                   };
+                  
+                  if (sectionId.startsWith('custom-')) {
+                    const customSection = customSections.find(s => s.id === sectionId);
+                    if (customSection) sectionLabels[sectionId] = customSection.title;
+                  }
                   
                   const isHidden = hiddenSections[sectionId];
 
@@ -1876,8 +2006,18 @@ export default function SuperAdminLandingPageEditor() {
                       {sectionId !== "footer" && (
                         <button
                           onClick={() => {
-                            if (window.confirm(`Clear all contents in ${sectionLabels[sectionId]}?`)) {
-                              if (sectionId === "hero") {
+                            const actionType = sectionId.startsWith('custom-') ? "Delete this section" : `Clear all contents in ${sectionLabels[sectionId]}`;
+                            if (window.confirm(`${actionType}?`)) {
+                              if (sectionId.startsWith('custom-')) {
+                                // Remove custom section from array
+                                setCustomSections(customSections.filter(s => s.id !== sectionId));
+                                // Remove from sectionOrder
+                                setSectionOrder(sectionOrder.filter(id => id !== sectionId));
+                                // Remove from hidden sections
+                                const newHiddenSections = { ...hiddenSections };
+                                delete newHiddenSections[sectionId];
+                                setHiddenSections(newHiddenSections);
+                              } else if (sectionId === "hero") {
                                 setHero({
                                   badge: "DIGITAL APPOINTMENT SYSTEM",
                                   headline1: "Skip The Wait,",
@@ -1920,7 +2060,7 @@ export default function SuperAdminLandingPageEditor() {
                           onMouseLeave={(e) => {
                             e.target.style.background = "#dd1a1a";
                           }}
-                          title="Clear contents"
+                          title={sectionId.startsWith('custom-') ? "Delete section" : "Clear contents"}
                         >
                           <TrashIcon />
                         </button>
@@ -1949,6 +2089,134 @@ export default function SuperAdminLandingPageEditor() {
                   onMouseLeave={(e) => e.target.style.background = "#dd901d"}
                 >
                   Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Section Modal */}
+        {addSectionModal && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+          }}>
+            <div style={{
+              background: "#1a1a1a",
+              borderRadius: "12px",
+              padding: "32px",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+              border: "1.5px solid #dd901d",
+              maxWidth: "450px",
+              width: "90%",
+              maxHeight: "80vh",
+              overflowY: "auto",
+            }}>
+              <h2 style={{ color: "white", marginBottom: "24px", fontSize: "20px", fontWeight: "bold" }}>Add Draft Section</h2>
+              
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Section Title</label>
+                <input
+                  type="text"
+                  value={draftSection.title}
+                  onChange={(e) => setDraftSection({ ...draftSection, title: e.target.value })}
+                  placeholder="Enter section title"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#2a2a2a",
+                    border: "1.5px solid #dd901d",
+                    borderRadius: "6px",
+                    color: "white",
+                    fontSize: "14px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "24px" }}>
+                <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Section Subtitle</label>
+                <textarea
+                  value={draftSection.subtitle}
+                  onChange={(e) => setDraftSection({ ...draftSection, subtitle: e.target.value })}
+                  placeholder="Enter section subtitle (optional)"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#2a2a2a",
+                    border: "1.5px solid #dd901d",
+                    borderRadius: "6px",
+                    color: "white",
+                    fontSize: "14px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    minHeight: "80px",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={() => {
+                    const newId = `custom-${Date.now()}`;
+                    const newSection = { id: newId, ...draftSection };
+                    setCustomSections([...customSections, newSection]);
+                    setSectionOrder([...sectionOrder.slice(0, -1), newId, 'footer']);
+                    setAddSectionModal(false);
+                    setDraftSection({ title: "New Section", subtitle: "" });
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "#dd901d",
+                    border: "none",
+                    borderRadius: "6px",
+                    color: "#1a1a1a",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                  onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                >
+                  Done
+                </button>
+                <button
+                  onClick={() => {
+                    setAddSectionModal(false);
+                    setDraftSection({ title: "New Section", subtitle: "" });
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "transparent",
+                    border: "1.5px solid #dd901d",
+                    borderRadius: "6px",
+                    color: "#dd901d",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = "rgba(221, 144, 29, 0.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = "transparent";
+                  }}
+                >
+                  Cancel
                 </button>
               </div>
             </div>
