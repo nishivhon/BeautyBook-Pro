@@ -7,6 +7,8 @@ import { FooterEditModal } from "../../components/modal/superadmin/footer_edit";
 import AddCardModal from "../../components/modal/superadmin/AddCardModal";
 import NavigateSectionsModal from "../../components/modal/superadmin/NavigateSectionsModal";
 import AddSectionModal from "../../components/modal/superadmin/AddSectionModal";
+import AddSubheadingModal from "../../components/modal/superadmin/AddSubheadingModal";
+import AddTitleModal from "../../components/modal/superadmin/AddTitleModal";
 
 // ─── Logo Mark SVG ───────────────────────────────────────────────────────────
 const LogoMark = () => (
@@ -324,18 +326,24 @@ export default function SuperAdminLandingPageEditor() {
     subheading: "A digital appointment and customer management system for barbershops, hair salons, and spas. Book appointments online, reduce wait times, and experience seamless, personalized service—instantly.",
     ctaText: "Book Appointment",
     buttons: [],
+    additionalSubheadings: [],
+    additionalTitles: [],
   });
 
   const [howitworks, setHowitworks] = useState({
     title: "How BeautyBook Pro Works",
     subtitle: "Simple, efficient digital booking appointment for modern salon businesses",
     buttons: [],
+    additionalSubheadings: [],
+    additionalTitles: [],
   });
 
   const [services, setServices] = useState({
     title: "Our Services",
     subtitle: "Professional grooming services tailored to your style",
     buttons: [],
+    additionalSubheadings: [],
+    additionalTitles: [],
   });
 
   const [footer, setFooter] = useState({
@@ -344,6 +352,8 @@ export default function SuperAdminLandingPageEditor() {
     email: "beautybookpro@gmail.com",
     hours: "Mon-Fri: 8:00 AM - 5:00 PM",
     socialLinks: [],
+    additionalSubheadings: [],
+    additionalTitles: [],
   });
 
   const [howitworksSteps, setHowitworksSteps] = useState([
@@ -376,6 +386,8 @@ export default function SuperAdminLandingPageEditor() {
   const [addSectionModal, setAddSectionModal] = useState(false);
   const [draftSection, setDraftSection] = useState({ title: "New Section", subtitle: "" });
   const [customSections, setCustomSections] = useState([]);
+  const [addSubheadingModal, setAddSubheadingModal] = useState(false);
+  const [addTitleModal, setAddTitleModal] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
@@ -682,7 +694,7 @@ export default function SuperAdminLandingPageEditor() {
                       </button>
                       <button
                         onClick={() => {
-                          alert("Add Subheading - Feature coming soon");
+                          setAddSubheadingModal(true);
                           setToolsMenuOpen(false);
                         }}
                         style={{
@@ -714,7 +726,7 @@ export default function SuperAdminLandingPageEditor() {
                       </button>
                       <button
                         onClick={() => {
-                          alert("Add Title - Feature coming soon");
+                          setAddTitleModal(true);
                           setToolsMenuOpen(false);
                         }}
                         style={{
@@ -892,6 +904,80 @@ export default function SuperAdminLandingPageEditor() {
               />
             </p>
 
+            {/* Additional Titles */}
+            {hero.additionalTitles && hero.additionalTitles.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
+                {hero.additionalTitles.map((title) => (
+                  <div key={title.id} style={{ position: "relative" }}>
+                    <h2 className="section-title">{title.text}</h2>
+                    <button
+                      onClick={() => {
+                        setHero({
+                          ...hero,
+                          additionalTitles: hero.additionalTitles.filter(t => t.id !== title.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "0",
+                        background: "#dc2626",
+                        border: "none",
+                        borderRadius: "4px",
+                        padding: "4px 8px",
+                        cursor: "pointer",
+                        color: "white",
+                        fontSize: "12px",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete title"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Additional Subheadings */}
+            {hero.additionalSubheadings && hero.additionalSubheadings.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px", gap: "16px" }}>
+                {hero.additionalSubheadings.map((sub) => (
+                  <div key={sub.id} style={{ position: "relative" }}>
+                    <p className="section-subtitle">{sub.text}</p>
+                    <button
+                      onClick={() => {
+                        setHero({
+                          ...hero,
+                          additionalSubheadings: hero.additionalSubheadings.filter(s => s.id !== sub.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "0",
+                        right: "0",
+                        background: "#dc2626",
+                        border: "none",
+                        borderRadius: "4px",
+                        padding: "4px 8px",
+                        cursor: "pointer",
+                        color: "white",
+                        fontSize: "12px",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete subheading"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div style={{ display: "flex", gap: "8px", alignItems: "center", justifyContent: "center", marginBottom: "0" }}>
               <button 
                 className="btn-large" 
@@ -1009,6 +1095,80 @@ export default function SuperAdminLandingPageEditor() {
                 isTextarea={true}
               />
             </p>
+
+            {/* Additional Titles */}
+            {howitworks.additionalTitles && howitworks.additionalTitles.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
+                {howitworks.additionalTitles.map((title) => (
+                  <div key={title.id} style={{ position: "relative" }}>
+                    <h2 className="section-title">{title.text}</h2>
+                    <button
+                      onClick={() => {
+                        setHowitworks({
+                          ...howitworks,
+                          additionalTitles: howitworks.additionalTitles.filter(t => t.id !== title.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "0",
+                        background: "#dc2626",
+                        border: "none",
+                        borderRadius: "4px",
+                        padding: "4px 8px",
+                        cursor: "pointer",
+                        color: "white",
+                        fontSize: "12px",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete title"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Additional Subheadings */}
+            {howitworks.additionalSubheadings && howitworks.additionalSubheadings.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
+                {howitworks.additionalSubheadings.map((sub) => (
+                  <div key={sub.id} style={{ position: "relative" }}>
+                    <p className="section-subtitle">{sub.text}</p>
+                    <button
+                      onClick={() => {
+                        setHowitworks({
+                          ...howitworks,
+                          additionalSubheadings: howitworks.additionalSubheadings.filter(s => s.id !== sub.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "0",
+                        right: "0",
+                        background: "#dc2626",
+                        border: "none",
+                        borderRadius: "4px",
+                        padding: "4px 8px",
+                        cursor: "pointer",
+                        color: "white",
+                        fontSize: "12px",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete subheading"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div style={{
               display:"grid",gridTemplateColumns:"repeat(3,1fr)",
@@ -1198,6 +1358,80 @@ export default function SuperAdminLandingPageEditor() {
                 isTextarea={true}
               />
             </p>
+
+            {/* Additional Titles */}
+            {services.additionalTitles && services.additionalTitles.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
+                {services.additionalTitles.map((title) => (
+                  <div key={title.id} style={{ position: "relative" }}>
+                    <h2 className="section-title">{title.text}</h2>
+                    <button
+                      onClick={() => {
+                        setServices({
+                          ...services,
+                          additionalTitles: services.additionalTitles.filter(t => t.id !== title.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "0",
+                        background: "#dc2626",
+                        border: "none",
+                        borderRadius: "4px",
+                        padding: "4px 8px",
+                        cursor: "pointer",
+                        color: "white",
+                        fontSize: "12px",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete title"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Additional Subheadings */}
+            {services.additionalSubheadings && services.additionalSubheadings.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
+                {services.additionalSubheadings.map((sub) => (
+                  <div key={sub.id} style={{ position: "relative" }}>
+                    <p className="section-subtitle">{sub.text}</p>
+                    <button
+                      onClick={() => {
+                        setServices({
+                          ...services,
+                          additionalSubheadings: services.additionalSubheadings.filter(s => s.id !== sub.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "0",
+                        right: "0",
+                        background: "#dc2626",
+                        border: "none",
+                        borderRadius: "4px",
+                        padding: "4px 8px",
+                        cursor: "pointer",
+                        color: "white",
+                        fontSize: "12px",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete subheading"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:24,maxWidth:800,margin:"0 auto"}}>
               {servicesData.map((svc, i) => (
@@ -1515,6 +1749,43 @@ export default function SuperAdminLandingPageEditor() {
                 </button>
               </div>
 
+              {/* Additional Titles */}
+              {footer.additionalTitles && footer.additionalTitles.length > 0 && (
+                <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", marginBottom: "24px", gap: "16px" }}>
+                  {footer.additionalTitles.map((title) => (
+                    <div key={title.id} style={{ position: "relative" }}>
+                      <h3 style={{ color: "white", fontSize: "16px", marginBottom: "8px", fontWeight: "600" }}>{title.text}</h3>
+                      <button
+                        onClick={() => {
+                          setFooter({
+                            ...footer,
+                            additionalTitles: footer.additionalTitles.filter(t => t.id !== title.id)
+                          });
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: "0",
+                          right: "0",
+                          background: "#dc2626",
+                          border: "none",
+                          borderRadius: "4px",
+                          padding: "4px 8px",
+                          cursor: "pointer",
+                          color: "white",
+                          fontSize: "12px",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                        onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                        title="Delete title"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="footer-row">
                 <span className="footer-label">Follow us</span>
                 <div className="footer-social-display">
@@ -1692,6 +1963,68 @@ export default function SuperAdminLandingPageEditor() {
             setSectionOrder([...sectionOrder.slice(0, -1), newId, 'footer']);
             setAddSectionModal(false);
             setDraftSection({ title: "New Section", subtitle: "" });
+          }}
+        />
+
+        {/* Add Subheading Modal */}
+        <AddSubheadingModal
+          isOpen={addSubheadingModal}
+          onClose={() => setAddSubheadingModal(false)}
+          sections={[
+            { id: "hero", label: "Hero Section" },
+            { id: "howitworks", label: "How It Works" },
+            { id: "services", label: "Services" },
+            { id: "footer", label: "Footer" },
+            ...customSections.map(sec => ({ id: sec.id, label: sec.title }))
+          ]}
+          onAddSubheading={(sectionId, subheadingText) => {
+            const newSubheading = { id: `sub-${Date.now()}`, text: subheadingText };
+            if (sectionId === "hero") {
+              setHero({ ...hero, additionalSubheadings: [...(hero.additionalSubheadings || []), newSubheading] });
+            } else if (sectionId === "howitworks") {
+              setHowitworks({ ...howitworks, additionalSubheadings: [...(howitworks.additionalSubheadings || []), newSubheading] });
+            } else if (sectionId === "services") {
+              setServices({ ...services, additionalSubheadings: [...(services.additionalSubheadings || []), newSubheading] });
+            } else if (sectionId === "footer") {
+              setFooter({ ...footer, additionalSubheadings: [...(footer.additionalSubheadings || []), newSubheading] });
+            } else if (sectionId.startsWith("custom-")) {
+              const updatedCustomSections = customSections.map(sec =>
+                sec.id === sectionId ? { ...sec, additionalSubheadings: [...(sec.additionalSubheadings || []), newSubheading] } : sec
+              );
+              setCustomSections(updatedCustomSections);
+            }
+            setAddSubheadingModal(false);
+          }}
+        />
+
+        {/* Add Title Modal */}
+        <AddTitleModal
+          isOpen={addTitleModal}
+          onClose={() => setAddTitleModal(false)}
+          sections={[
+            { id: "hero", label: "Hero Section" },
+            { id: "howitworks", label: "How It Works" },
+            { id: "services", label: "Services" },
+            { id: "footer", label: "Footer" },
+            ...customSections.map(sec => ({ id: sec.id, label: sec.title }))
+          ]}
+          onAddTitle={(sectionId, titleText) => {
+            const newTitle = { id: `title-${Date.now()}`, text: titleText };
+            if (sectionId === "hero") {
+              setHero({ ...hero, additionalTitles: [...(hero.additionalTitles || []), newTitle] });
+            } else if (sectionId === "howitworks") {
+              setHowitworks({ ...howitworks, additionalTitles: [...(howitworks.additionalTitles || []), newTitle] });
+            } else if (sectionId === "services") {
+              setServices({ ...services, additionalTitles: [...(services.additionalTitles || []), newTitle] });
+            } else if (sectionId === "footer") {
+              setFooter({ ...footer, additionalTitles: [...(footer.additionalTitles || []), newTitle] });
+            } else if (sectionId.startsWith("custom-")) {
+              const updatedCustomSections = customSections.map(sec =>
+                sec.id === sectionId ? { ...sec, additionalTitles: [...(sec.additionalTitles || []), newTitle] } : sec
+              );
+              setCustomSections(updatedCustomSections);
+            }
+            setAddTitleModal(false);
           }}
         />
       </div>

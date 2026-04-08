@@ -1,5 +1,22 @@
-import { UpArrowIcon, DownArrowIcon, TrashIcon } from "../../../icons";
-import { ScissorsIcon, NailIcon, SkinIcon, MassageIcon, StarIcon } from "../../../icons";
+// ─── Arrow Icons ─────────────────────────────────────────────────────────────
+
+const UpArrowIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
+    <path d="M5 15l7-7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const DownArrowIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
+    <path d="M5 9l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16" width="20" height="20">
+    <path d="M6 6l12 12M18 6L6 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 
 export default function NavigateSectionsModal({
   isOpen,
