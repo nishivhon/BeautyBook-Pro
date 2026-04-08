@@ -1,4 +1,3 @@
-import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,16 +8,16 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-// Initialize Brevo SMTP transporter
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_SMTP_USERNAME,
-    pass: process.env.BREVO_SMTP_PASSWORD
-  }
-});
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL;
+const BREVO_SENDER_NAME = 'BeautyBook';
+
+console.log('[Brevo] REST API configured:');
+console.log(`  Endpoint: ${BREVO_API_URL}`);
+console.log(`  API Key: ${BREVO_API_KEY ? '✅ Set' : '❌ Missing'}`);
+console.log(`  Sender: ${BREVO_SENDER_EMAIL}`);
+console.log(`  Sender Name: ${BREVO_SENDER_NAME}`);
 
 export default async (req, res) => {
   // Only allow POST
@@ -37,6 +36,8 @@ export default async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     console.log(`[EmailOTP] Generated OTP for ${email}, expires at: ${expiresAt}`);
+    console.log(`[EmailOTP] 🔐 OTP CODE: ${otp} (for testing - copy from here)`);
+
 
     // Save OTP to Supabase
     await saveOtp({
@@ -46,14 +47,45 @@ export default async (req, res) => {
       name: full_name
     });
 
-    console.log(`[EmailOTP] Sending OTP to: ${email}`);
+    console.log(`[EmailOTP] OTP saved to database for: ${email}`);
 
-    // Send OTP via Brevo SMTP
-    const emailResponse = await transporter.sendMail({
-      from: `BeautyBook <${process.env.BREVO_SENDER_EMAIL}>`,
-      to: email,
+    // Send email synchronously (wait for result before responding)
+    await sendEmailAsync(email, full_name, otp);
+
+    // Return success immediately to show modal
+    res.status(200).json({
+      success: true,
+      message: 'OTP generated. Check your email.',
+      email: email
+    });
+
+  } catch (error) {
+    console.error(`[EmailOTP] Error:`, error);
+    res.status(500).json({ error: 'Failed to generate OTP. Please try again.' });
+  }
+};
+
+// Send email asynchronously without blocking
+async function sendEmailAsync(email, full_name, otp) {
+  try {
+    console.log(`[EmailOTP] 🚀 Calling Brevo REST API...`);
+    console.log(`  To: ${email}`);
+    console.log(`  User: ${full_name}`);
+    console.log(`  OTP: ${otp}`);
+
+    const emailBody = {
+      sender: {
+        name: BREVO_SENDER_NAME,
+        email: BREVO_SENDER_EMAIL
+      },
+      to: [
+        {
+          email: email,
+          name: full_name
+        }
+      ],
       subject: 'Verify Your Email - BeautyBook',
-      html: `
+      htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #dd901d;">Email Verification</h2>
           <p>Hi ${full_name},</p>
@@ -67,17 +99,42 @@ export default async (req, res) => {
           </p>
         </div>
       `
+    };
+
+    console.log(`[EmailOTP] 📧 Sending mail with subject: "${emailBody.subject}"`);
+    console.log(`[EmailOTP] ⏳ Waiting for Brevo response...`);
+    console.log(`[EmailOTP] DEBUG - API Key length: ${BREVO_API_KEY.length}`);
+    console.log(`[EmailOTP] DEBUG - Endpoint: ${BREVO_API_URL}`);
+
+    // Create abort controller with 10 second timeout
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch(BREVO_API_URL, {
+      method: 'POST',
+      headers: {
+        'api-key': BREVO_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(emailBody),
+      signal: controller.signal
     });
 
-    console.log(`[EmailOTP] Sent successfully, Message ID: ${emailResponse.messageId}`);
+    clearTimeout(timeout);
 
-    res.status(200).json({
-      success: true,
-      message: 'OTP sent to your email',
-      email: email
-    });
+    console.log(`[EmailOTP] DEBUG - Response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[EmailOTP] ❌ HTTP ${response.status}: ${errorText}`);
+      return;
+    }
+
+    const result = await response.json();
+    console.log(`[EmailOTP] ✅ Email sent! Message ID: ${result.messageId}`);
   } catch (error) {
-    console.error(`[EmailOTP] Error sending OTP: ${error.message}`);
-    res.status(500).json({ error: 'Failed to send OTP. Please try again.' });
+    console.error(`[EmailOTP] ❌ Background email error:`, error);
+    console.error(`[EmailOTP] Error name: ${error.name}`);
+    console.error(`[EmailOTP] Error message: ${error.message}`);
   }
-};
+}
