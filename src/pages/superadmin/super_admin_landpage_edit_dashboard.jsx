@@ -196,9 +196,8 @@ const DownArrowIcon = () => (
 );
 
 const TrashIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
-    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m0 0v14a2 2 0 01-2 2H10a2 2 0 01-2-2V6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16" width="20" height="20">
+    <path d="M6 6l12 12M18 6L6 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
@@ -366,8 +365,8 @@ export default function SuperAdminLandingPageEditor() {
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
   const [editingFooterModal, setEditingFooterModal] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
-  const [addButtonModal, setAddButtonModal] = useState(false);
-  const [buttonConfig, setButtonConfig] = useState({ section: "hero", text: "New Button" });
+  const [addCardModal, setAddCardModal] = useState(false);
+  const [cardConfig, setCardConfig] = useState({ section: "howitworks", title: "New Card", description: "", items: [] });
   const [navigateSectionsOpen, setNavigateSectionsOpen] = useState(false);
   const [sectionOrder, setSectionOrder] = useState(["hero", "howitworks", "services", "footer"]);
   const [hiddenSections, setHiddenSections] = useState({});
@@ -613,7 +612,7 @@ export default function SuperAdminLandingPageEditor() {
                     >
                       <button
                         onClick={() => {
-                          alert("Add Cards - Feature coming soon");
+                          setAddCardModal(true);
                           setToolsMenuOpen(false);
                         }}
                         style={{
@@ -1035,7 +1034,7 @@ export default function SuperAdminLandingPageEditor() {
                       style={{
                         position: "absolute",
                         top: "8px",
-                        right: "8px",
+                        right: "44px",
                         background: "#dd901d",
                         border: "none",
                         borderRadius: "6px",
@@ -1051,6 +1050,31 @@ export default function SuperAdminLandingPageEditor() {
                       title="Edit step"
                     >
                       <PencilIcon />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHowitworksSteps(howitworksSteps.filter((_, idx) => idx !== i));
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "8px",
+                        background: "#dc2626",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "6px 8px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.3s ease",
+                        color: "white",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete step"
+                    >
+                      <TrashIcon />
                     </button>
                     <div className="icon-box">{iconContent}</div>
                     <div className="step-title">{step.title}</div>
@@ -1177,7 +1201,7 @@ export default function SuperAdminLandingPageEditor() {
                     style={{
                       position: "absolute",
                       top: "8px",
-                      right: "8px",
+                      right: "44px",
                       background: "#dd901d",
                       border: "none",
                       borderRadius: "6px",
@@ -1194,6 +1218,31 @@ export default function SuperAdminLandingPageEditor() {
                   >
                     <PencilIcon />
                   </button>
+                  <button
+                    onClick={() => {
+                      setServicesData(servicesData.filter((_, idx) => idx !== i));
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      background: "#dc2626",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "6px 8px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.3s ease",
+                      color: "white",
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                    onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                    title="Delete service"
+                  >
+                    <TrashIcon />
+                  </button>
                   <div style={{
                     width:50,height:50,background:"#dd901d",
                     borderRadius:14,padding:10,
@@ -1208,7 +1257,7 @@ export default function SuperAdminLandingPageEditor() {
                   </div>
                   <div className="service-title">{svc.title}</div>
                   <div className="service-items">
-                    {svc.items.map((item, j) => (
+                    {svc.items.slice(0, 4).map((item, j) => (
                       <div key={j} className="service-item">
                         <CheckItem/>
                         <span>{item}</span>
@@ -1430,8 +1479,8 @@ export default function SuperAdminLandingPageEditor() {
           onClose={() => setEditingFooterModal(false)}
         />
 
-        {/* Add Button Modal */}
-        {addButtonModal && (
+        {/* Add Card Modal */}
+        {addCardModal && (
           <div style={{
             position: "fixed",
             top: 0,
@@ -1450,16 +1499,18 @@ export default function SuperAdminLandingPageEditor() {
               padding: "32px",
               boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
               border: "1.5px solid #dd901d",
-              maxWidth: "400px",
+              maxWidth: "450px",
               width: "90%",
+              maxHeight: "80vh",
+              overflowY: "auto",
             }}>
-              <h2 style={{ color: "white", marginBottom: "20px", fontSize: "20px", fontWeight: "bold" }}>Add Button</h2>
+              <h2 style={{ color: "white", marginBottom: "20px", fontSize: "20px", fontWeight: "bold" }}>Add Card</h2>
               
-              <div style={{ marginBottom: "20px" }}>
+              <div style={{ marginBottom: "40px" }}>
                 <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Select Section</label>
                 <select
-                  value={buttonConfig.section}
-                  onChange={(e) => setButtonConfig({ ...buttonConfig, section: e.target.value })}
+                  value={cardConfig.section}
+                  onChange={(e) => setCardConfig({ ...cardConfig, section: e.target.value, items: [] })}
                   style={{
                     width: "100%",
                     padding: "10px",
@@ -1471,19 +1522,18 @@ export default function SuperAdminLandingPageEditor() {
                     cursor: "pointer",
                   }}
                 >
-                  <option value="hero">Hero Section</option>
                   <option value="howitworks">How It Works Section</option>
                   <option value="services">Services Section</option>
                 </select>
               </div>
 
-              <div style={{ marginBottom: "24px" }}>
-                <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Button Text</label>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Card Title</label>
                 <input
                   type="text"
-                  value={buttonConfig.text}
-                  onChange={(e) => setButtonConfig({ ...buttonConfig, text: e.target.value })}
-                  placeholder="Enter button text"
+                  value={cardConfig.title}
+                  onChange={(e) => setCardConfig({ ...cardConfig, title: e.target.value })}
+                  placeholder="Enter card title"
                   style={{
                     width: "100%",
                     padding: "10px",
@@ -1498,45 +1548,127 @@ export default function SuperAdminLandingPageEditor() {
                 />
               </div>
 
-              <div style={{ display: "flex", gap: "12px" }}>
+              {cardConfig.section === "howitworks" && (
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Description</label>
+                  <textarea
+                    value={cardConfig.description}
+                    onChange={(e) => setCardConfig({ ...cardConfig, description: e.target.value })}
+                    placeholder="Enter card description"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#2a2a2a",
+                      border: "1.5px solid #dd901d",
+                      borderRadius: "6px",
+                      color: "white",
+                      fontSize: "14px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      minHeight: "80px",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+              )}
+
+              {cardConfig.section === "services" && (
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Service Items</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {cardConfig.items && cardConfig.items.map((item, idx) => (
+                      <div key={idx} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                        <input
+                          type="text"
+                          value={item}
+                          onChange={(e) => {
+                            const newItems = [...cardConfig.items];
+                            newItems[idx] = e.target.value;
+                            setCardConfig({ ...cardConfig, items: newItems });
+                          }}
+                          placeholder={`Item ${idx + 1}`}
+                          style={{
+                            flex: 1,
+                            padding: "8px",
+                            background: "#2a2a2a",
+                            border: "1px solid #555",
+                            borderRadius: "4px",
+                            color: "white",
+                            fontSize: "13px",
+                            outline: "none",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            const newItems = cardConfig.items.filter((_, i) => i !== idx);
+                            setCardConfig({ ...cardConfig, items: newItems });
+                          }}
+                          style={{
+                            padding: "6px 12px",
+                            background: "#c97c1c",
+                            border: "none",
+                            borderRadius: "4px",
+                            color: "white",
+                            cursor: "pointer",
+                            fontSize: "12px",
+                            transition: "all 0.2s ease",
+                          }}
+                          onMouseEnter={(e) => e.target.style.background = "#a85c0f"}
+                          onMouseLeave={(e) => e.target.style.background = "#c97c1c"}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    {cardConfig.items.length < 4 && (
+                      <button
+                        onClick={() => setCardConfig({ ...cardConfig, items: [...(cardConfig.items || []), ""] })}
+                        style={{
+                          padding: "8px",
+                          background: "transparent",
+                          border: "1.5px dashed #dd901d",
+                          borderRadius: "4px",
+                          color: "#dd901d",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = "rgba(221, 144, 29, 0.1)"}
+                        onMouseLeave={(e) => e.target.style.background = "transparent"}
+                      >
+                        + Add Item
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
                 <button
                   onClick={() => {
-                    console.log("=== ADD BUTTON CLICKED ===");
-                    console.log("Current buttonConfig:", buttonConfig);
-                    console.log("Current hero.buttons before:", hero.buttons);
-                    
-                    // Add button to the appropriate section
-                    if (buttonConfig.section === "hero") {
-                      console.log("Adding button to hero:", buttonConfig.text);
-                      const newButtons = [...hero.buttons, { id: Date.now(), text: buttonConfig.text }];
-                      console.log("New buttons array:", newButtons);
-                      setHero({ 
-                        ...hero, 
-                        buttons: newButtons
-                      });
-                      console.log("State update called with new buttons");
-                    } else if (buttonConfig.section === "howitworks") {
-                      console.log("Adding button to howitworks:", buttonConfig.text);
-                      const newButtons = [...(howitworks.buttons || []), { id: Date.now(), text: buttonConfig.text }];
-                      setHowitworks({ 
-                        ...howitworks, 
-                        buttons: newButtons
-                      });
-                    } else if (buttonConfig.section === "services") {
-                      console.log("Adding button to services:", buttonConfig.text);
-                      const newButtons = [...(services.buttons || []), { id: Date.now(), text: buttonConfig.text }];
-                      setServices({ 
-                        ...services, 
-                        buttons: newButtons
-                      });
+                    if (cardConfig.section === "howitworks") {
+                      const newStep = {
+                        id: Math.max(...howitworksSteps.map(s => s.id), -1) + 1,
+                        icon: "calendar",
+                        title: cardConfig.title,
+                        desc: cardConfig.description,
+                      };
+                      setHowitworksSteps([...howitworksSteps, newStep]);
+                    } else if (cardConfig.section === "services") {
+                      const newService = {
+                        icon: <StarIcon />,
+                        title: cardConfig.title,
+                        items: cardConfig.items.filter(item => item.trim() !== ""),
+                      };
+                      setServicesData([...servicesData, newService]);
                     }
-                    setAddButtonModal(false);
-                    setButtonConfig({ section: "hero", text: "New Button" });
-                    alert(`Button "${buttonConfig.text}" added to ${buttonConfig.section} section!`);
+                    setAddCardModal(false);
+                    setCardConfig({ section: "howitworks", title: "New Card", description: "", items: [] });
                   }}
                   style={{
                     flex: 1,
-                    padding: "10px",
+                    padding: "12px",
                     background: "#dd901d",
                     border: "none",
                     borderRadius: "6px",
@@ -1549,16 +1681,16 @@ export default function SuperAdminLandingPageEditor() {
                   onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
                   onMouseLeave={(e) => e.target.style.background = "#dd901d"}
                 >
-                  Add Button
+                  Add Card
                 </button>
                 <button
                   onClick={() => {
-                    setAddButtonModal(false);
-                    setButtonConfig({ section: "hero", text: "New Button" });
+                    setAddCardModal(false);
+                    setCardConfig({ section: "howitworks", title: "New Card", description: "", items: [] });
                   }}
                   style={{
                     flex: 1,
-                    padding: "10px",
+                    padding: "12px",
                     background: "transparent",
                     border: "1.5px solid #dd901d",
                     borderRadius: "6px",
@@ -1569,10 +1701,10 @@ export default function SuperAdminLandingPageEditor() {
                     transition: "all 0.2s ease",
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.background = "rgba(221, 144, 29, 0.1)";
+                    e.currentTarget.style.background = "rgba(221, 144, 29, 0.1)";
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.background = "transparent";
+                    e.currentTarget.style.background = "transparent";
                   }}
                 >
                   Cancel

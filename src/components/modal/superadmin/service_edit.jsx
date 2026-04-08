@@ -512,52 +512,53 @@ export const ServiceEditModal = ({
           </div>
 
           {/* Add New Item */}
-          <div style={{ display: "flex", gap: "8px" }}>
-            <input
-              type="text"
-              value={newItemInput}
-              onChange={(e) => setNewItemInput(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  handleAddItem();
-                }
-              }}
-              style={{
-                flex: 1,
-                padding: "10px 12px",
-                border: "1px solid rgba(221, 144, 29, 0.3)",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontFamily: "Inter, sans-serif",
-                boxSizing: "border-box",
-                backgroundColor: "rgba(221, 144, 29, 0.08)",
-                color: "#f5f5f5",
-                transition: "all 0.2s ease",
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                e.target.style.backgroundColor = "rgba(221, 144, 29, 0.12)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "rgba(221, 144, 29, 0.3)";
-                e.target.style.backgroundColor = "rgba(221, 144, 29, 0.08)";
-              }}
-              placeholder="Add new service item"
-            />
-            <button
-              onClick={handleAddItem}
-              style={{
-                padding: "10px 16px",
-                border: "1px solid rgba(221, 144, 29, 0.4)",
-                backgroundColor: "transparent",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: "600",
-                color: "#dd901d",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+          {localItems.length < 4 && (
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type="text"
+                value={newItemInput}
+                onChange={(e) => setNewItemInput(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddItem();
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  border: "1px solid rgba(221, 144, 29, 0.3)",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  fontFamily: "Inter, sans-serif",
+                  boxSizing: "border-box",
+                  backgroundColor: "rgba(221, 144, 29, 0.08)",
+                  color: "#f5f5f5",
+                  transition: "all 0.2s ease",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
+                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.12)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.3)";
+                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.08)";
+                }}
+                placeholder="Add new service item"
+              />
+              <button
+                onClick={handleAddItem}
+                style={{
+                  padding: "10px 16px",
+                  border: "1px solid rgba(221, 144, 29, 0.4)",
+                  backgroundColor: "transparent",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  color: "#dd901d",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 gap: "6px",
                 transition: "all 0.2s ease",
               }}
@@ -573,7 +574,13 @@ export const ServiceEditModal = ({
               <PlusIcon />
               Add
             </button>
-          </div>
+            </div>
+          )}
+          {localItems.length >= 4 && (
+            <div style={{ fontSize: "12px", color: "#888", fontStyle: "italic", marginTop: "8px" }}>
+              Maximum 4 items allowed
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
