@@ -15,6 +15,13 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
+// Log to verify env vars are loaded
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('[OTP] Missing Supabase config!');
+  console.error(`  SUPABASE_URL: ${SUPABASE_URL ? 'loaded' : 'MISSING'}`);
+  console.error(`  SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? 'loaded' : 'MISSING'}`);
+}
+
 /**
  * Save OTP to database
  * Deletes old OTP first, then inserts new one
@@ -23,7 +30,7 @@ export const saveOtp = async (data) => {
   try {
     const { email, phone, otp, name } = data;
 
-    // Delete old OTP record for this email/phone first
+    // Delete old OTP records FIRST (synchronously wait)
     if (email) {
       await deleteOtpByEmail(email);
     }
@@ -43,7 +50,7 @@ export const saveOtp = async (data) => {
       verified: false,
       expires_at: expiresAt
     };
-    console.log(`[OTP] Saving OTP expiry: ${expiresAt}`, payload);
+    console.log(`[OTP] Saving OTP expiry: ${expiresAt}`);
     
     const response = await fetch(url, {
       method: 'POST',
