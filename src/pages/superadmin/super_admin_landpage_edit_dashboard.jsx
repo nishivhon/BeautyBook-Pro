@@ -183,6 +183,25 @@ const ArrowsIcon = () => (
   </svg>
 );
 
+const UpArrowIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
+    <path d="M5 15l7-7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const DownArrowIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
+    <path d="M5 9l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
+    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m0 0v14a2 2 0 01-2 2H10a2 2 0 01-2-2V6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+  </svg>
+);
+
 // ─── EditableText Component ───────────────────────────────────────────────────
 
 const EditableText = ({ value, onChange, isEditing, setIsEditing, className = "", isTextarea = false, size = "large" }) => {
@@ -302,16 +321,19 @@ export default function SuperAdminLandingPageEditor() {
     headline2: "Book Your Style",
     subheading: "A digital appointment and customer management system for barbershops, hair salons, and spas. Book appointments online, reduce wait times, and experience seamless, personalized service—instantly.",
     ctaText: "Book Appointment",
+    buttons: [],
   });
 
   const [howitworks, setHowitworks] = useState({
     title: "How BeautyBook Pro Works",
     subtitle: "Simple, efficient digital booking appointment for modern salon businesses",
+    buttons: [],
   });
 
   const [services, setServices] = useState({
     title: "Our Services",
     subtitle: "Professional grooming services tailored to your style",
+    buttons: [],
   });
 
   const [footer, setFooter] = useState({
@@ -344,6 +366,11 @@ export default function SuperAdminLandingPageEditor() {
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
   const [editingFooterModal, setEditingFooterModal] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+  const [addButtonModal, setAddButtonModal] = useState(false);
+  const [buttonConfig, setButtonConfig] = useState({ section: "hero", text: "New Button" });
+  const [navigateSectionsOpen, setNavigateSectionsOpen] = useState(false);
+  const [sectionOrder, setSectionOrder] = useState(["hero", "howitworks", "services", "footer"]);
+  const [hiddenSections, setHiddenSections] = useState({});
 
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
@@ -586,38 +613,6 @@ export default function SuperAdminLandingPageEditor() {
                     >
                       <button
                         onClick={() => {
-                          alert("Add Button - Feature coming soon");
-                          setToolsMenuOpen(false);
-                        }}
-                        style={{
-                          width: "100%",
-                          padding: "12px 16px",
-                          background: "transparent",
-                          border: "none",
-                          color: "white",
-                          textAlign: "left",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          transition: "all 0.2s ease",
-                          borderBottom: "1px solid rgba(221, 144, 29, 0.2)",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "rgba(221, 144, 29, 0.1)";
-                          e.currentTarget.style.color = "#dd901d";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "transparent";
-                          e.currentTarget.style.color = "white";
-                        }}
-                      >
-                        <PlusIcon />
-                        Add Button
-                      </button>
-                      <button
-                        onClick={() => {
                           alert("Add Cards - Feature coming soon");
                           setToolsMenuOpen(false);
                         }}
@@ -746,7 +741,7 @@ export default function SuperAdminLandingPageEditor() {
                       </button>
                       <button
                         onClick={() => {
-                          alert("Navigate Section - Feature coming soon");
+                          setNavigateSectionsOpen(true);
                           setToolsMenuOpen(false);
                         }}
                         style={{
@@ -795,9 +790,9 @@ export default function SuperAdminLandingPageEditor() {
         </div>
 
         {/* Landing Page Preview */}
-        <main className="dashboard-main" style={{transform: "scale(1.2)", transformOrigin: "top center", marginBottom: "300px"}}>
+        <main className="dashboard-main" style={{transform: "scale(1.2)", transformOrigin: "top center", marginBottom: "300px", display: "flex", flexDirection: "column"}}>
           {/* HERO SECTION */}
-          <section id="home" className="hero-section" style={{paddingTop: "40px"}}>
+          <section id="home" className="hero-section" style={{paddingTop: "40px", display: hiddenSections.hero ? "none" : "block", order: sectionOrder.indexOf("hero")}}>
             <div className="hero-badge">
               <span>{hero.badge}</span>
             </div>
@@ -892,13 +887,106 @@ export default function SuperAdminLandingPageEditor() {
               />
             </p>
 
-            <button className="btn-large" style={{width:"auto",padding:"10px 28px",height:"44px",fontSize:"0.9rem"}}>
-              {hero.ctaText}
-            </button>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", justifyContent: "center", marginBottom: "0" }}>
+              <button 
+                className="btn-large" 
+                style={{width:"auto",padding:"10px 28px",height:"44px",fontSize:"0.9rem"}}
+              >
+                {hero.ctaText}
+              </button>
+            </div>
+
+            {/* Additional Buttons */}
+            {hero.buttons && hero.buttons.length > 0 && (() => {
+              console.log("Rendering buttons:", hero.buttons);
+              return (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center", marginTop: "16px", padding: "16px 0" }}>
+                {hero.buttons.map((btn) => (
+                  <div key={btn.id} style={{ position: "relative", display: "inline-block" }}>
+                    <button
+                      className="btn-large"
+                      style={{
+                        width: "auto",
+                        padding: "10px 28px",
+                        height: "44px",
+                        fontSize: "0.9rem",
+                        border: "1px solid #dd901d",
+                        opacity: 0.8,
+                      }}
+                      onClick={() => setEditingField(`button-${btn.id}`)}
+                    >
+                      {editingField === `button-${btn.id}` ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={btn.text}
+                          onChange={(e) => {
+                            setHero({
+                              ...hero,
+                              buttons: hero.buttons.map(b => b.id === btn.id ? { ...b, text: e.target.value } : b)
+                            });
+                          }}
+                          onBlur={() => setEditingField(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") setEditingField(null);
+                            if (e.key === "Escape") setEditingField(null);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "white",
+                            fontSize: "0.9rem",
+                            fontWeight: "inherit",
+                            textAlign: "center",
+                            outline: "none",
+                            width: "100%",
+                          }}
+                        />
+                      ) : (
+                        btn.text
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHero({
+                          ...hero,
+                          buttons: hero.buttons.filter(b => b.id !== btn.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "-8px",
+                        right: "-8px",
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#dd901d",
+                        border: "none",
+                        color: "#1a1a1a",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                      onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                      title="Delete button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              );
+            })()}
           </section>
 
           {/* HOW IT WORKS SECTION */}
-          <section id="howitworks" className="howitworks-section">
+          <section id="howitworks" className="howitworks-section" style={{display: hiddenSections.howitworks ? "none" : "block", order: sectionOrder.indexOf("howitworks")}}>
             <h2 className="section-title">
               <EditableText
                 value={howitworks.title}
@@ -972,11 +1060,97 @@ export default function SuperAdminLandingPageEditor() {
               })}
             </div>
 
+            {/* Additional Buttons for How It Works */}
+            {howitworks.buttons && howitworks.buttons.length > 0 && (() => {
+              return (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center", marginTop: "24px", padding: "16px 0" }}>
+                {howitworks.buttons.map((btn) => (
+                  <div key={btn.id} style={{ position: "relative", display: "inline-block" }}>
+                    <button
+                      className="btn-large"
+                      style={{
+                        width: "auto",
+                        padding: "10px 28px",
+                        height: "44px",
+                        fontSize: "0.9rem",
+                        border: "1px solid #dd901d",
+                        opacity: 0.8,
+                      }}
+                      onClick={() => setEditingField(`howitworks-button-${btn.id}`)}
+                    >
+                      {editingField === `howitworks-button-${btn.id}` ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={btn.text}
+                          onChange={(e) => {
+                            setHowitworks({
+                              ...howitworks,
+                              buttons: howitworks.buttons.map(b => b.id === btn.id ? { ...b, text: e.target.value } : b)
+                            });
+                          }}
+                          onBlur={() => setEditingField(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") setEditingField(null);
+                            if (e.key === "Escape") setEditingField(null);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "white",
+                            fontSize: "0.9rem",
+                            fontWeight: "inherit",
+                            textAlign: "center",
+                            outline: "none",
+                            width: "100%",
+                          }}
+                        />
+                      ) : (
+                        btn.text
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHowitworks({
+                          ...howitworks,
+                          buttons: howitworks.buttons.filter(b => b.id !== btn.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "-8px",
+                        right: "-8px",
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#dd901d",
+                        border: "none",
+                        color: "#1a1a1a",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                      onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                      title="Delete button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              );
+            })()}
 
           </section>
 
           {/* SERVICES SECTION */}
-          <section id="services" className="services-section">
+          <section id="services" className="services-section" style={{display: hiddenSections.services ? "none" : "block", order: sectionOrder.indexOf("services")}}>
             <h2 className="section-title">
               <EditableText
                 value={services.title}
@@ -1044,10 +1218,97 @@ export default function SuperAdminLandingPageEditor() {
                 </div>
               ))}
             </div>
+
+            {/* Additional Buttons for Services */}
+            {services.buttons && services.buttons.length > 0 && (() => {
+              return (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center", marginTop: "24px", padding: "16px 0" }}>
+                {services.buttons.map((btn) => (
+                  <div key={btn.id} style={{ position: "relative", display: "inline-block" }}>
+                    <button
+                      className="btn-large"
+                      style={{
+                        width: "auto",
+                        padding: "10px 28px",
+                        height: "44px",
+                        fontSize: "0.9rem",
+                        border: "1px solid #dd901d",
+                        opacity: 0.8,
+                      }}
+                      onClick={() => setEditingField(`services-button-${btn.id}`)}
+                    >
+                      {editingField === `services-button-${btn.id}` ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={btn.text}
+                          onChange={(e) => {
+                            setServices({
+                              ...services,
+                              buttons: services.buttons.map(b => b.id === btn.id ? { ...b, text: e.target.value } : b)
+                            });
+                          }}
+                          onBlur={() => setEditingField(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") setEditingField(null);
+                            if (e.key === "Escape") setEditingField(null);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "white",
+                            fontSize: "0.9rem",
+                            fontWeight: "inherit",
+                            textAlign: "center",
+                            outline: "none",
+                            width: "100%",
+                          }}
+                        />
+                      ) : (
+                        btn.text
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setServices({
+                          ...services,
+                          buttons: services.buttons.filter(b => b.id !== btn.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "-8px",
+                        right: "-8px",
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#dd901d",
+                        border: "none",
+                        color: "#1a1a1a",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                      onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                      title="Delete button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              );
+            })()}
           </section>
 
           {/* FOOTER SECTION */}
-          <footer id="about" className="footer">
+          <footer id="about" className="footer" style={{display: hiddenSections.footer ? "none" : "block", order: 999}}>
             <div style={{maxWidth:860,margin:"0 auto"}}>
               <div className="footer-row">
                 <span className="footer-label">Contact us</span>
@@ -1168,6 +1429,399 @@ export default function SuperAdminLandingPageEditor() {
           setFooter={setFooter}
           onClose={() => setEditingFooterModal(false)}
         />
+
+        {/* Add Button Modal */}
+        {addButtonModal && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+          }}>
+            <div style={{
+              background: "#1a1a1a",
+              borderRadius: "12px",
+              padding: "32px",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+              border: "1.5px solid #dd901d",
+              maxWidth: "400px",
+              width: "90%",
+            }}>
+              <h2 style={{ color: "white", marginBottom: "20px", fontSize: "20px", fontWeight: "bold" }}>Add Button</h2>
+              
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Select Section</label>
+                <select
+                  value={buttonConfig.section}
+                  onChange={(e) => setButtonConfig({ ...buttonConfig, section: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#2a2a2a",
+                    border: "1.5px solid #dd901d",
+                    borderRadius: "6px",
+                    color: "white",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="hero">Hero Section</option>
+                  <option value="howitworks">How It Works Section</option>
+                  <option value="services">Services Section</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: "24px" }}>
+                <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Button Text</label>
+                <input
+                  type="text"
+                  value={buttonConfig.text}
+                  onChange={(e) => setButtonConfig({ ...buttonConfig, text: e.target.value })}
+                  placeholder="Enter button text"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#2a2a2a",
+                    border: "1.5px solid #dd901d",
+                    borderRadius: "6px",
+                    color: "white",
+                    fontSize: "14px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={() => {
+                    console.log("=== ADD BUTTON CLICKED ===");
+                    console.log("Current buttonConfig:", buttonConfig);
+                    console.log("Current hero.buttons before:", hero.buttons);
+                    
+                    // Add button to the appropriate section
+                    if (buttonConfig.section === "hero") {
+                      console.log("Adding button to hero:", buttonConfig.text);
+                      const newButtons = [...hero.buttons, { id: Date.now(), text: buttonConfig.text }];
+                      console.log("New buttons array:", newButtons);
+                      setHero({ 
+                        ...hero, 
+                        buttons: newButtons
+                      });
+                      console.log("State update called with new buttons");
+                    } else if (buttonConfig.section === "howitworks") {
+                      console.log("Adding button to howitworks:", buttonConfig.text);
+                      const newButtons = [...(howitworks.buttons || []), { id: Date.now(), text: buttonConfig.text }];
+                      setHowitworks({ 
+                        ...howitworks, 
+                        buttons: newButtons
+                      });
+                    } else if (buttonConfig.section === "services") {
+                      console.log("Adding button to services:", buttonConfig.text);
+                      const newButtons = [...(services.buttons || []), { id: Date.now(), text: buttonConfig.text }];
+                      setServices({ 
+                        ...services, 
+                        buttons: newButtons
+                      });
+                    }
+                    setAddButtonModal(false);
+                    setButtonConfig({ section: "hero", text: "New Button" });
+                    alert(`Button "${buttonConfig.text}" added to ${buttonConfig.section} section!`);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    background: "#dd901d",
+                    border: "none",
+                    borderRadius: "6px",
+                    color: "#1a1a1a",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                  onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                >
+                  Add Button
+                </button>
+                <button
+                  onClick={() => {
+                    setAddButtonModal(false);
+                    setButtonConfig({ section: "hero", text: "New Button" });
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    background: "transparent",
+                    border: "1.5px solid #dd901d",
+                    borderRadius: "6px",
+                    color: "#dd901d",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = "rgba(221, 144, 29, 0.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = "transparent";
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Navigate Sections Modal */}
+        {navigateSectionsOpen && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+          }}>
+            <div style={{
+              background: "#1a1a1a",
+              borderRadius: "12px",
+              padding: "32px",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+              border: "1.5px solid #dd901d",
+              maxWidth: "500px",
+              width: "90%",
+              maxHeight: "80vh",
+              overflowY: "auto",
+            }}>
+              <h2 style={{ color: "white", marginBottom: "24px", fontSize: "20px", fontWeight: "bold" }}>Navigate Sections</h2>
+              
+              <p style={{ color: "#888", fontSize: "13px", marginBottom: "20px" }}>Reorder, toggle visibility, and manage section contents</p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {sectionOrder.map((sectionId, index) => {
+                  const sectionLabels = {
+                    hero: "Hero Section",
+                    howitworks: "How It Works",
+                    services: "Services",
+                    footer: "Footer",
+                  };
+                  
+                  const isHidden = hiddenSections[sectionId];
+
+                  return (
+                    <div key={sectionId} style={{
+                      background: "#2a2a2a",
+                      border: "1.5px solid rgba(221, 144, 29, 0.3)",
+                      borderRadius: "8px",
+                      padding: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      transition: "all 0.2s ease",
+                    }}>
+                      {/* Section number and label */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: "white", fontWeight: "600", fontSize: "14px" }}>
+                          {sectionLabels[sectionId]}
+                          {sectionId === "footer" && <span style={{ color: "#dd901d", fontSize: "11px" }}> (Locked)</span>}
+                        </div>
+                        <div style={{ color: "#888", fontSize: "12px", marginTop: "4px" }}>
+                          {sectionId === "footer" ? "Always at bottom" : (isHidden ? "Hidden" : "Visible")}
+                        </div>
+                      </div>
+
+                      {/* Move Up Button */}
+                      <button
+                        onClick={() => {
+                          if (index > 0 && sectionId !== "footer") {
+                            const newOrder = [...sectionOrder];
+                            [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+                            setSectionOrder(newOrder);
+                          }
+                        }}
+                        disabled={index === 0 || sectionId === "footer"}
+                        style={{
+                          background: (index === 0 || sectionId === "footer") ? "#3a3a3a" : "#dd901d",
+                          border: "none",
+                          borderRadius: "6px",
+                          padding: "8px",
+                          cursor: (index === 0 || sectionId === "footer") ? "not-allowed" : "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          opacity: (index === 0 || sectionId === "footer") ? 0.5 : 1,
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (index !== 0 && sectionId !== "footer") e.target.style.background = "#c97c1c";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (index !== 0 && sectionId !== "footer") e.target.style.background = "#dd901d";
+                        }}
+                        title={sectionId === "footer" ? "Footer is locked at bottom" : "Move up"}
+                      >
+                        <UpArrowIcon />
+                      </button>
+
+                      {/* Move Down Button */}
+                      <button
+                        onClick={() => {
+                          if (index < sectionOrder.length - 1 && sectionId !== "footer") {
+                            const newOrder = [...sectionOrder];
+                            [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+                            setSectionOrder(newOrder);
+                          }
+                        }}
+                        disabled={index === sectionOrder.length - 1 || sectionId === "footer"}
+                        style={{
+                          background: (index === sectionOrder.length - 1 || sectionId === "footer") ? "#3a3a3a" : "#dd901d",
+                          border: "none",
+                          borderRadius: "6px",
+                          padding: "8px",
+                          cursor: (index === sectionOrder.length - 1 || sectionId === "footer") ? "not-allowed" : "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          opacity: (index === sectionOrder.length - 1 || sectionId === "footer") ? 0.5 : 1,
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (index !== sectionOrder.length - 1 && sectionId !== "footer") e.target.style.background = "#c97c1c";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (index !== sectionOrder.length - 1 && sectionId !== "footer") e.target.style.background = "#dd901d";
+                        }}
+                        title={sectionId === "footer" ? "Footer is locked at bottom" : "Move down"}
+                      >
+                        <DownArrowIcon />
+                      </button>
+
+                      {/* Toggle Visibility Button */}
+                      <button
+                        onClick={() => {
+                          setHiddenSections({
+                            ...hiddenSections,
+                            [sectionId]: !isHidden,
+                          });
+                        }}
+                        style={{
+                          background: isHidden ? "rgba(221, 144, 29, 0.3)" : "#dd901d",
+                          border: "1.5px solid " + (isHidden ? "#dd901d" : "transparent"),
+                          borderRadius: "6px",
+                          padding: "8px 12px",
+                          cursor: "pointer",
+                          color: isHidden ? "#dd901d" : "#1a1a1a",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.opacity = "0.8";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.opacity = "1";
+                        }}
+                        title="Toggle visibility"
+                      >
+                        {isHidden ? "Show" : "Hide"}
+                      </button>
+
+                      {/* Delete/Clear Button */}
+                      {sectionId !== "footer" && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Clear all contents in ${sectionLabels[sectionId]}?`)) {
+                              if (sectionId === "hero") {
+                                setHero({
+                                  badge: "DIGITAL APPOINTMENT SYSTEM",
+                                  headline1: "Skip The Wait,",
+                                  headline2: "Book Your Style",
+                                  subheading: "A digital appointment and customer management system for barbershops, hair salons, and spas. Book appointments online, reduce wait times, and experience seamless, personalized service—instantly.",
+                                  ctaText: "Book Appointment",
+                                  buttons: [],
+                                });
+                              } else if (sectionId === "howitworks") {
+                                setHowitworksSteps([
+                                  { id: 0, icon: "calendar", title: "Book Online", desc: "Select your service, preferred stylist, and convenient time slot" },
+                                  { id: 1, icon: "bell", title: "Get Notified", desc: "Receive real-time updates and 'Your Turn Soon' alerts" },
+                                  { id: 2, icon: "check", title: "Enjoy Service", desc: "Arrive on time and skip the traditional waiting queue" },
+                                ]);
+                              } else if (sectionId === "services") {
+                                setServicesData([
+                                  { icon: <ScissorsIcon/>, title: "Hair Services", items: ["Haircut & Style", "Color Treatment", "Hair Spa", "Keratin Treatment"] },
+                                  { icon: <NailIcon/>, title: "Nail Services", items: ["Manicure", "Pedicure", "Nail Art", "Gel Extension"] },
+                                  { icon: <SkinIcon/>, title: "Skin Care Services", items: ["Facial Treatment", "Chemical Peel", "Microdermabrasion", "Hydration Therapy"] },
+                                  { icon: <MassageIcon/>, title: "Massage Services", items: ["Swedish Massage", "Deep Tissue Massage", "Hot Stone Massage", "Spa Reflexology"] },
+                                  { icon: <StarIcon/>, title: "Premium Services", items: ["Bridal Package", "Couple's Massage", "Hair & Glow Combo", "VIP Lounge Experience"] },
+                                ]);
+                              }
+                            }
+                          }}
+                          style={{
+                            background: "#dd1a1a",
+                            border: "none",
+                            borderRadius: "6px",
+                            padding: "8px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "all 0.2s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.background = "#b81a1a";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.background = "#dd1a1a";
+                          }}
+                          title="Clear contents"
+                        >
+                          <TrashIcon />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+                <button
+                  onClick={() => setNavigateSectionsOpen(false)}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "#dd901d",
+                    border: "none",
+                    borderRadius: "6px",
+                    color: "#1a1a1a",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                  onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
