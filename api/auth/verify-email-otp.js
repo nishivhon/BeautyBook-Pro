@@ -1,6 +1,6 @@
-import { emailOtpStorage } from '../storage.js';
+import { getOtpByEmail, deleteOtpByEmail } from '../supabaseOtpClient.js';
 
-export default (req, res) => {
+export default async (req, res) => {
   // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -13,35 +13,32 @@ export default (req, res) => {
   }
 
   try {
-    const storedOtp = emailOtpStorage.get(email);
+    const storedOtp = await getOtpByEmail(email);
 
     if (!storedOtp) {
       return res.status(401).json({ error: 'OTP not found. Request a new OTP.' });
     }
 
     // Check if OTP expired
-    if (Date.now() > storedOtp.expiresAt) {
-      emailOtpStorage.delete(email);
+    const now = new Date();
+    const expiresAtStr = storedOtp.expires_at.endsWith('Z') ? storedOtp.expires_at : `${storedOtp.expires_at}Z`;
+    const expiresAt = new Date(expiresAtStr);
+    console.log(`[EmailOTP] Verification - Now: ${now.toISOString()}, Expires: ${expiresAt.toISOString()}`);
+    
+    if (now > expiresAt) {
+      await deleteOtpByEmail(email);
       return res.status(401).json({ error: 'OTP expired. Request a new one.' });
-    }
-
-    // Check max attempts
-    if (storedOtp.attempts >= 5) {
-      emailOtpStorage.delete(email);
-      return res.status(429).json({ error: 'Too many attempts. Request a new OTP.' });
     }
 
     // Verify OTP
     if (storedOtp.otp !== otp) {
-      storedOtp.attempts += 1;
       return res.status(401).json({
-        error: 'Invalid OTP. Please try again.',
-        attemptsLeft: 5 - storedOtp.attempts
+        error: 'Invalid OTP. Please try again.'
       });
     }
 
     // OTP verified - delete it and return user data
-    emailOtpStorage.delete(email);
+    await deleteOtpByEmail(email);
 
     console.log(`[EmailOTP] Verified successfully for: ${email}`);
 

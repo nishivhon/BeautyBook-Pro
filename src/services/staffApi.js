@@ -3,7 +3,7 @@
  * Handles all API calls related to staff and stylist management
  */
 
-const API_BASE_URL = 'http://localhost:5000/api/staffs';
+const API_BASE_URL = '/api/staffs';
 
 /**
  * Fetch all staff members

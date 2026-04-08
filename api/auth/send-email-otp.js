@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { emailOtpStorage } from '../storage.js';
+import { saveOtp } from '../supabaseOtpClient.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,15 +35,15 @@ export default async (req, res) => {
   try {
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    console.log(`[EmailOTP] Generated OTP for ${email}, expires at: ${expiresAt}`);
 
-    // Store OTP in memory
-    emailOtpStorage.set(email, {
+    // Save OTP to Supabase
+    await saveOtp({
+      email,
+      phone,
       otp,
-      expiresAt,
-      attempts: 0,
-      full_name,
-      phone
+      name: full_name
     });
 
     console.log(`[EmailOTP] Sending OTP to: ${email}`);

@@ -130,7 +130,7 @@ export const NailServicesModal = ({ onBack, onContinue, initialSelected = [], is
     const fetchServices = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/services/category/Nail%20Services');
+        const response = await fetch('/api/services/Nail%20Services');
         if (!response.ok) {
           throw new Error('Failed to fetch services');
         }

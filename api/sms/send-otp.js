@@ -2,7 +2,7 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { smsOtpStorage } from '../storage.js';
+import { saveOtp } from '../supabaseOtpClient.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,13 +45,12 @@ export default async (req, res) => {
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000;
 
-    // Store OTP
-    smsOtpStorage.set(phone, {
+    // Save OTP to Supabase
+    await saveOtp({
+      phone: formattedPhone,
       otp,
-      expiresAt,
-      attempts: 0
+      name
     });
 
     console.log(`[SMSOTP] Sending OTP to: ${phone}`);
