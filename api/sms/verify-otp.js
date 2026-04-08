@@ -12,7 +12,17 @@ export default async (req, res) => {
   }
 
   try {
-    const storedOtp = await getOtpByPhone(phone);
+    // Format phone number to match what's in database
+    let formattedPhone = phone;
+    if (!formattedPhone.startsWith('+')) {
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '+63' + formattedPhone.substring(1);
+      } else {
+        formattedPhone = '+63' + formattedPhone;
+      }
+    }
+
+    const storedOtp = await getOtpByPhone(formattedPhone);
 
     if (!storedOtp) {
       return res.status(401).json({ error: 'OTP not found. Request a new OTP.' });
@@ -24,7 +34,7 @@ export default async (req, res) => {
     const expiresAt = new Date(expiresAtStr);
     
     if (now > expiresAt) {
-      await deleteOtpByPhone(phone);
+      await deleteOtpByPhone(formattedPhone);
       return res.status(401).json({ error: 'OTP expired. Request a new one.' });
     }
 
@@ -36,7 +46,7 @@ export default async (req, res) => {
     }
 
     // OTP verified - delete it
-    await deleteOtpByPhone(phone);
+    await deleteOtpByPhone(formattedPhone);
 
     console.log(`[SMSOTP] Verified successfully for: ${phone}`);
 
