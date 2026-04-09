@@ -386,17 +386,17 @@ export default function SuperAdminDatabaseDashboard() {
             </div>
 
             {/* Stats bar */}
-            <div className="stats-bar">
-              <div className="stat-card">
+            <div className="stats-bar" style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', width: '100%', marginTop: '24px' }}>
+              <div className="stat-card" style={{ flex: 1 }}>
                 <span className="stat-value">28.3 MB</span>
                 <span className="stat-label">Total size</span>
               </div>
-              <div className="stat-card">
+              <div className="stat-card" style={{ flex: 1 }}>
                 <span className="stat-value">7,236</span>
                 <span className="stat-label">Total records</span>
               </div>
-              <div className="stat-card">
-                <span className="stat-value" style={{fontSize:'14px'}}>03/24/26 · 6:00 PM</span>
+              <div className="stat-card" style={{ flex: 1 }}>
+                <span className="stat-value">03/24/26 · 6:00 PM</span>
                 <span className="stat-label">Last backup</span>
               </div>
             </div>
