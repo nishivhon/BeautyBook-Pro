@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ConfirmExitDialog from "./ConfirmExitDialog";
 
 const CloseIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
@@ -61,6 +62,7 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
   const [socialLinks, setSocialLinks] = useState([]);
   const [newSocialUrl, setNewSocialUrl] = useState("");
   const [newSocialPlatform, setNewSocialPlatform] = useState("facebook");
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -111,6 +113,16 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
     onClose();
   };
 
+  const handleCloseClick = () => {
+    // Always show confirmation dialog when trying to exit
+    setShowConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowConfirm(false);
+    onClose();
+  };
+
   const getPlatformIcon = (platformId) => {
     const platform = SOCIAL_PLATFORMS.find(p => p.id === platformId);
     return platform ? <platform.icon /> : null;
@@ -118,9 +130,8 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
 
   const isAddDisabled = !newSocialUrl.trim() || socialLinks.some(link => link.platform === newSocialPlatform);
 
-  if (!isOpen) return null;
-
   return (
+    <>
     <div
       style={{
         position: "fixed",
@@ -129,13 +140,13 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
         right: 0,
         bottom: 0,
         backgroundColor: "rgba(0, 0, 0, 0.7)",
-        display: "flex",
+        display: isOpen ? "flex" : "none",
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1001,
         fontFamily: "Inter, sans-serif",
       }}
-      onClick={onClose}
+      onClick={handleCloseClick}
     >
       <div
         style={{
@@ -172,7 +183,7 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
             Edit Footer Content
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleCloseClick}
             style={{
               background: "transparent",
               border: "none",
@@ -699,7 +710,7 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
           }}
         >
           <button
-            onClick={onClose}
+            onClick={handleCloseClick}
             style={{
               padding: "12px 24px",
               background: "transparent",
@@ -749,5 +760,14 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
         </div>
       </div>
     </div>
+
+    <ConfirmExitDialog
+      isOpen={showConfirm}
+      onConfirm={handleConfirmExit}
+      onCancel={() => setShowConfirm(false)}
+      title="Close Editor?"
+      message="Are you sure you want to close without saving?"
+    />
+  </>
   );
 }

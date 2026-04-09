@@ -1,5 +1,8 @@
 // ─── Arrow Icons ─────────────────────────────────────────────────────────────
 
+import { useState } from "react";
+import ConfirmExitDialog from "./ConfirmExitDialog";
+
 const UpArrowIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
     <path d="M5 15l7-7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -29,35 +32,76 @@ export default function NavigateSectionsModal({
   setCustomSections,
   onClearSection,
 }) {
-  if (!isOpen) return null;
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleCloseClick = () => {
+    // Always show confirmation dialog when trying to exit
+    setShowConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowConfirm(false);
+    onClose();
+  };
 
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: "rgba(0, 0, 0, 0.6)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 2000,
-    }}>
-      <div style={{
-        background: "#1a1a1a",
-        borderRadius: "12px",
-        padding: "32px",
-        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-        border: "1.5px solid #dd901d",
-        maxWidth: "500px",
-        width: "90%",
-        maxHeight: "80vh",
-        overflowY: "auto",
-        scrollbarWidth: "thin",
-        scrollbarColor: "#dd901d transparent",
-      }}>
-        <h2 style={{ color: "white", marginBottom: "24px", fontSize: "20px", fontWeight: "bold" }}>Navigate Sections</h2>
+    <>
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "rgba(0, 0, 0, 0.6)",
+        display: isOpen ? "flex" : "none",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 2000,
+      }}
+      onClick={handleCloseClick}
+    >
+      <div
+        style={{
+          background: "#1a1a1a",
+          borderRadius: "12px",
+          padding: "32px",
+          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+          border: "1.5px solid #dd901d",
+          maxWidth: "500px",
+          width: "90%",
+          maxHeight: "80vh",
+          overflowY: "auto",
+          scrollbarWidth: "thin",
+          scrollbarColor: "#dd901d transparent",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <h2 style={{ color: "white", fontSize: "20px", fontWeight: "bold", margin: 0 }}>Navigate Sections</h2>
+          <button
+            onClick={handleCloseClick}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#888",
+              cursor: "pointer",
+              fontSize: "24px",
+              padding: "0",
+              width: "28px",
+              height: "28px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => e.target.style.color = "#dd901d"}
+            onMouseLeave={(e) => e.target.style.color = "#888"}
+            title="Close modal"
+          >
+            ×
+          </button>
+        </div>
         
         <p style={{ color: "#888", fontSize: "13px", marginBottom: "20px" }}>Reorder, toggle visibility, and manage section contents</p>
 
@@ -244,7 +288,7 @@ export default function NavigateSectionsModal({
 
         <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
           <button
-            onClick={onClose}
+            onClick={handleCloseClick}
             style={{
               flex: 1,
               padding: "12px",
@@ -265,5 +309,14 @@ export default function NavigateSectionsModal({
         </div>
       </div>
     </div>
+
+    <ConfirmExitDialog
+      isOpen={showConfirm}
+      onConfirm={handleConfirmExit}
+      onCancel={() => setShowConfirm(false)}
+      title="Close Navigator?"
+      message="Are you sure you want to close the section navigator?"
+    />
+  </>
   );
 }

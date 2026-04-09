@@ -1,5 +1,8 @@
 // ─── Plus Icon ───────────────────────────────────────────────────────────────
 
+import React, { useState } from "react";
+import ConfirmExitDialog from "./ConfirmExitDialog";
+
 const PlusIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
     <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -15,33 +18,79 @@ export default function AddCardModal({
   howitworksSteps,
   servicesData,
 }) {
-  if (!isOpen) return null;
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const hasChanges = cardConfig.title.trim() !== "" || 
+                     cardConfig.description.trim() !== "" || 
+                     (cardConfig.items && cardConfig.items.some(item => item.trim() !== ""));
+
+  const handleCloseClick = () => {
+    // Always show confirmation dialog when trying to exit
+    setShowConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowConfirm(false);
+    setCardConfig({ section: "howitworks", title: "", description: "", items: [] });
+    onClose();
+  };
 
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: "rgba(0, 0, 0, 0.6)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 2000,
-    }}>
-      <div style={{
-        background: "#1a1a1a",
-        borderRadius: "12px",
-        padding: "32px",
-        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-        border: "1.5px solid #dd901d",
-        maxWidth: "450px",
-        width: "90%",
-        maxHeight: "80vh",
-        overflowY: "auto",
-      }}>
-        <h2 style={{ color: "white", marginBottom: "20px", fontSize: "20px", fontWeight: "bold" }}>Add Card</h2>
+    <>
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "rgba(0, 0, 0, 0.6)",
+        display: isOpen ? "flex" : "none",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 2000,
+      }}
+      onClick={handleCloseClick}
+    >
+      <div
+        style={{
+          background: "#1a1a1a",
+          borderRadius: "12px",
+          padding: "32px",
+          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+          border: "1.5px solid #dd901d",
+          maxWidth: "450px",
+          width: "90%",
+          maxHeight: "80vh",
+          overflowY: "auto",
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <h2 style={{ color: "white", fontSize: "20px", fontWeight: "bold", margin: 0 }}>Add Card</h2>
+          <button
+            onClick={handleCloseClick}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#888",
+              cursor: "pointer",
+              fontSize: "24px",
+              padding: "0",
+              width: "28px",
+              height: "28px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => e.target.style.color = "#dd901d"}
+            onMouseLeave={(e) => e.target.style.color = "#888"}
+            title="Close modal"
+          >
+            ×
+          </button>
+        </div>
         
         <div style={{ marginBottom: "40px" }}>
           <label style={{ color: "#dd901d", display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "500" }}>Select Section</label>
@@ -183,26 +232,100 @@ export default function AddCardModal({
 
         <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
           <button
-            onClick={onAddCard}
+            onClick={(e) => {
+              // Prevent default button behavior
+              e.preventDefault();
+              
+              // Validate title
+              if (!cardConfig.title || !cardConfig.title.trim()) {
+                alert("Please enter a card title.");
+                return;
+              }
+              
+              // Validate based on section type
+              if (cardConfig.section === "howitworks") {
+                if (!cardConfig.description || !cardConfig.description.trim()) {
+                  alert("Please enter a description for this card.");
+                  return;
+                }
+              } else if (cardConfig.section === "services") {
+                const hasItems = cardConfig.items && cardConfig.items.some(item => item.trim() !== "");
+                if (!hasItems) {
+                  alert("Please add at least one service item.");
+                  return;
+                }
+              }
+              
+              onAddCard();
+            }}
+            disabled={
+              !cardConfig.title || !cardConfig.title.trim() ||
+              (cardConfig.section === "howitworks" && (!cardConfig.description || !cardConfig.description.trim())) ||
+              (cardConfig.section === "services" && (!cardConfig.items || !cardConfig.items.some(item => item.trim() !== "")))
+            }
             style={{
               flex: 1,
               padding: "12px",
-              background: "#dd901d",
+              background: (
+                !cardConfig.title || !cardConfig.title.trim() ||
+                (cardConfig.section === "howitworks" && (!cardConfig.description || !cardConfig.description.trim())) ||
+                (cardConfig.section === "services" && (!cardConfig.items || !cardConfig.items.some(item => item.trim() !== "")))
+              ) ? "#666" : "#dd901d",
               border: "none",
               borderRadius: "6px",
-              color: "#1a1a1a",
+              color: (
+                !cardConfig.title || !cardConfig.title.trim() ||
+                (cardConfig.section === "howitworks" && (!cardConfig.description || !cardConfig.description.trim())) ||
+                (cardConfig.section === "services" && (!cardConfig.items || !cardConfig.items.some(item => item.trim() !== "")))
+              ) ? "#999" : "#1a1a1a",
               fontWeight: "600",
-              cursor: "pointer",
+              cursor: (
+                !cardConfig.title || !cardConfig.title.trim() ||
+                (cardConfig.section === "howitworks" && (!cardConfig.description || !cardConfig.description.trim())) ||
+                (cardConfig.section === "services" && (!cardConfig.items || !cardConfig.items.some(item => item.trim() !== "")))
+              ) ? "not-allowed" : "pointer",
               fontSize: "14px",
               transition: "all 0.2s ease",
+              opacity: (
+                !cardConfig.title || !cardConfig.title.trim() ||
+                (cardConfig.section === "howitworks" && (!cardConfig.description || !cardConfig.description.trim())) ||
+                (cardConfig.section === "services" && (!cardConfig.items || !cardConfig.items.some(item => item.trim() !== "")))
+              ) ? 0.6 : 1,
+              pointerEvents: (
+                !cardConfig.title || !cardConfig.title.trim() ||
+                (cardConfig.section === "howitworks" && (!cardConfig.description || !cardConfig.description.trim())) ||
+                (cardConfig.section === "services" && (!cardConfig.items || !cardConfig.items.some(item => item.trim() !== "")))
+              ) ? "none" : "auto",
             }}
-            onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
-            onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+            onMouseEnter={(e) => {
+              if (
+                cardConfig.title && cardConfig.title.trim() &&
+                !(cardConfig.section === "howitworks" && (!cardConfig.description || !cardConfig.description.trim())) &&
+                !(cardConfig.section === "services" && (!cardConfig.items || !cardConfig.items.some(item => item.trim() !== "")))
+              ) {
+                e.target.style.background = "#c97c1c";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (
+                cardConfig.title && cardConfig.title.trim() &&
+                !(cardConfig.section === "howitworks" && (!cardConfig.description || !cardConfig.description.trim())) &&
+                !(cardConfig.section === "services" && (!cardConfig.items || !cardConfig.items.some(item => item.trim() !== "")))
+              ) {
+                e.target.style.background = "#dd901d";
+              }
+            }}
+            title={
+              !cardConfig.title || !cardConfig.title.trim() ? "Please enter a card title" :
+              (cardConfig.section === "howitworks" && (!cardConfig.description || !cardConfig.description.trim())) ? "Please enter a description" :
+              (cardConfig.section === "services" && (!cardConfig.items || !cardConfig.items.some(item => item.trim() !== ""))) ? "Please add at least one service item" :
+              ""
+            }
           >
             Add Card
           </button>
           <button
-            onClick={onClose}
+            onClick={handleCloseClick}
             style={{
               flex: 1,
               padding: "12px",
@@ -227,5 +350,14 @@ export default function AddCardModal({
         </div>
       </div>
     </div>
+
+    <ConfirmExitDialog
+      isOpen={showConfirm}
+      onConfirm={handleConfirmExit}
+      onCancel={() => setShowConfirm(false)}
+      title="Discard Changes?"
+      message="You have unsaved changes. Are you sure you want to exit without saving?"
+    />
+  </>
   );
 }

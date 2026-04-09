@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ConfirmExitDialog from "./ConfirmExitDialog";
 
 export default function AddTitleModal({
   isOpen,
@@ -8,6 +9,7 @@ export default function AddTitleModal({
 }) {
   const [selectedSection, setSelectedSection] = useState("");
   const [titleText, setTitleText] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (isOpen && sections.length > 0 && !selectedSection) {
@@ -15,15 +17,35 @@ export default function AddTitleModal({
     }
   }, [isOpen, sections, selectedSection]);
 
+  const hasChanges = titleText.trim() !== "";
+
+  const handleCloseClick = () => {
+    // Always show confirmation dialog when trying to exit
+    setShowConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowConfirm(false);
+    setTitleText("");
+    setSelectedSection("");
+    onClose();
+  };
+
   const handleDone = () => {
-    if (selectedSection && titleText.trim()) {
-      onAddTitle(selectedSection, titleText);
-      setTitleText("");
-      setSelectedSection("");
-      onClose();
-    } else {
-      alert("Please select a section and enter a title.");
+    // Validation: Ensure section is selected
+    if (!selectedSection) {
+      alert("Please select a section.");
+      return;
     }
+    // Validation: Ensure title is not empty
+    if (!titleText.trim()) {
+      alert("Please enter a title.");
+      return;
+    }
+    onAddTitle(selectedSection, titleText);
+    setTitleText("");
+    setSelectedSection("");
+    onClose();
   };
 
   const handleCancel = () => {
@@ -32,9 +54,8 @@ export default function AddTitleModal({
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
+    <>
     <div
       style={{
         position: "fixed",
@@ -43,12 +64,12 @@ export default function AddTitleModal({
         right: 0,
         bottom: 0,
         background: "rgba(0, 0, 0, 0.7)",
-        display: "flex",
+        display: isOpen ? "flex" : "none",
         alignItems: "center",
         justifyContent: "center",
         zIndex: 2000,
       }}
-      onClick={onClose}
+      onClick={handleCloseClick}
     >
       <div
         style={{
@@ -63,9 +84,31 @@ export default function AddTitleModal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 style={{ marginTop: 0, marginBottom: "24px", color: "#dd901d" }}>
-          Add Title
-        </h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <h2 style={{ marginTop: 0, marginBottom: 0, color: "#dd901d" }}>Add Title</h2>
+          <button
+            onClick={handleCloseClick}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#888",
+              cursor: "pointer",
+              fontSize: "24px",
+              padding: "0",
+              width: "28px",
+              height: "28px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => e.target.style.color = "#dd901d"}
+            onMouseLeave={(e) => e.target.style.color = "#888"}
+            title="Close modal"
+          >
+            ×
+          </button>
+        </div>
 
         {/* Section Selector */}
         <div style={{ marginBottom: "24px" }}>
@@ -164,25 +207,51 @@ export default function AddTitleModal({
             Cancel
           </button>
           <button
-            onClick={handleDone}
+            onClick={(e) => {
+              e.preventDefault();
+              handleDone();
+            }}
+            disabled={!selectedSection || !titleText.trim()}
             style={{
               padding: "10px 20px",
-              background: "#dd901d",
+              background: (!selectedSection || !titleText.trim()) ? "#666" : "#dd901d",
               border: "none",
               borderRadius: "6px",
-              color: "#1a1a1a",
-              cursor: "pointer",
+              color: (!selectedSection || !titleText.trim()) ? "#999" : "#1a1a1a",
+              cursor: (!selectedSection || !titleText.trim()) ? "not-allowed" : "pointer",
               fontSize: "13px",
               fontWeight: "600",
               transition: "all 0.2s ease",
+              opacity: (!selectedSection || !titleText.trim()) ? 0.6 : 1,
+              pointerEvents: (!selectedSection || !titleText.trim()) ? "none" : "auto",
             }}
-            onMouseEnter={(e) => (e.target.style.background = "#c97c1c")}
-            onMouseLeave={(e) => (e.target.style.background = "#dd901d")}
+            onMouseEnter={(e) => {
+              if (!selectedSection || !titleText.trim()) return;
+              e.target.style.background = "#c97c1c";
+            }}
+            onMouseLeave={(e) => {
+              if (!selectedSection || !titleText.trim()) return;
+              e.target.style.background = "#dd901d";
+            }}
+            title={
+              !selectedSection ? "Please select a section" :
+              !titleText.trim() ? "Please enter a title" :
+              ""
+            }
           >
             Done
           </button>
         </div>
       </div>
     </div>
+
+    <ConfirmExitDialog
+      isOpen={showConfirm}
+      onConfirm={handleConfirmExit}
+      onCancel={() => setShowConfirm(false)}
+      title="Discard Changes?"
+      message="You have unsaved changes. Are you sure you want to exit without saving?"
+    />
+    </>
   );
 }

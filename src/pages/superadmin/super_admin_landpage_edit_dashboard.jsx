@@ -379,12 +379,12 @@ export default function SuperAdminLandingPageEditor() {
   const [editingFooterModal, setEditingFooterModal] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [addCardModal, setAddCardModal] = useState(false);
-  const [cardConfig, setCardConfig] = useState({ section: "howitworks", title: "New Card", description: "", items: [] });
+  const [cardConfig, setCardConfig] = useState({ section: "howitworks", title: "", description: "", items: [] });
   const [navigateSectionsOpen, setNavigateSectionsOpen] = useState(false);
   const [sectionOrder, setSectionOrder] = useState(["hero", "howitworks", "services", "footer"]);
   const [hiddenSections, setHiddenSections] = useState({});
   const [addSectionModal, setAddSectionModal] = useState(false);
-  const [draftSection, setDraftSection] = useState({ title: "New Section", subtitle: "" });
+  const [draftSection, setDraftSection] = useState({ title: "", subtitle: "" });
   const [customSections, setCustomSections] = useState([]);
   const [addSubheadingModal, setAddSubheadingModal] = useState(false);
   const [addTitleModal, setAddTitleModal] = useState(false);
@@ -1881,11 +1881,16 @@ export default function SuperAdminLandingPageEditor() {
           isOpen={addCardModal}
           onClose={() => {
             setAddCardModal(false);
-            setCardConfig({ section: "howitworks", title: "New Card", description: "", items: [] });
+            setCardConfig({ section: "howitworks", title: "", description: "", items: [] });
           }}
           cardConfig={cardConfig}
           setCardConfig={setCardConfig}
           onAddCard={() => {
+            // Validation: Prevent saving empty titles
+            if (!cardConfig.title || !cardConfig.title.trim()) {
+              alert("Card title cannot be empty. Please enter a valid title.");
+              return;
+            }
             if (cardConfig.section === "howitworks") {
               const newStep = {
                 id: Math.max(...howitworksSteps.map(s => s.id), -1) + 1,
@@ -1952,17 +1957,22 @@ export default function SuperAdminLandingPageEditor() {
           isOpen={addSectionModal}
           onClose={() => {
             setAddSectionModal(false);
-            setDraftSection({ title: "New Section", subtitle: "" });
+            setDraftSection({ title: "", subtitle: "" });
           }}
           draftSection={draftSection}
           setDraftSection={setDraftSection}
           onAddSection={() => {
+            // Validation: Prevent saving empty section titles
+            if (!draftSection.title || !draftSection.title.trim()) {
+              alert("Section title cannot be empty. Please enter a valid title.");
+              return;
+            }
             const newId = `custom-${Date.now()}`;
             const newSection = { id: newId, ...draftSection };
             setCustomSections([...customSections, newSection]);
             setSectionOrder([...sectionOrder.slice(0, -1), newId, 'footer']);
             setAddSectionModal(false);
-            setDraftSection({ title: "New Section", subtitle: "" });
+            setDraftSection({ title: "", subtitle: "" });
           }}
         />
 
@@ -1978,6 +1988,15 @@ export default function SuperAdminLandingPageEditor() {
             ...customSections.map(sec => ({ id: sec.id, label: sec.title }))
           ]}
           onAddSubheading={(sectionId, subheadingText) => {
+            // Validation: Prevent saving empty subheadings
+            if (!sectionId) {
+              alert("Please select a section.");
+              return;
+            }
+            if (!subheadingText || !subheadingText.trim()) {
+              alert("Subheading cannot be empty. Please enter a valid subheading.");
+              return;
+            }
             const newSubheading = { id: `sub-${Date.now()}`, text: subheadingText };
             if (sectionId === "hero") {
               setHero({ ...hero, additionalSubheadings: [...(hero.additionalSubheadings || []), newSubheading] });
@@ -2009,6 +2028,15 @@ export default function SuperAdminLandingPageEditor() {
             ...customSections.map(sec => ({ id: sec.id, label: sec.title }))
           ]}
           onAddTitle={(sectionId, titleText) => {
+            // Validation: Prevent saving empty titles
+            if (!sectionId) {
+              alert("Please select a section.");
+              return;
+            }
+            if (!titleText || !titleText.trim()) {
+              alert("Title cannot be empty. Please enter a valid title.");
+              return;
+            }
             const newTitle = { id: `title-${Date.now()}`, text: titleText };
             if (sectionId === "hero") {
               setHero({ ...hero, additionalTitles: [...(hero.additionalTitles || []), newTitle] });

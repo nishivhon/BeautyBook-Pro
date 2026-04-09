@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ConfirmExitDialog from "./ConfirmExitDialog";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -45,6 +46,7 @@ export const ServiceEditModal = ({
   const [localTitle, setLocalTitle] = useState("");
   const [localItems, setLocalItems] = useState([]);
   const [newItemInput, setNewItemInput] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (isOpen && serviceIndex !== null && services && services[serviceIndex]) {
@@ -64,58 +66,11 @@ export const ServiceEditModal = ({
     }
   }, []);
 
-  if (!isOpen) return null;
-  if (serviceIndex === null || !services || !services[serviceIndex]) {
-    return (
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.7)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1001,
-        }}
-        onClick={onClose}
-      >
-        <div
-          style={{
-            backgroundColor: "#1a1a1a",
-            borderRadius: "12px",
-            padding: "28px",
-            color: "#f5f5f5",
-            textAlign: "center",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <p>Unable to load service data. Please try again.</p>
-          <button
-            onClick={onClose}
-            style={{
-              marginTop: "16px",
-              padding: "10px 20px",
-              backgroundColor: "#dd901d",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              color: "#1a1a1a",
-              fontWeight: "600",
-            }}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const service = services[serviceIndex];
+  const service = serviceIndex !== null && services && services[serviceIndex] ? services[serviceIndex] : null;
+  const isValidService = isOpen && serviceIndex !== null && service;
 
   const handleSave = () => {
+    if (!service || serviceIndex === null) return;
     const updated = [...services];
     updated[serviceIndex].title = localTitle;
     updated[serviceIndex].items = localItems;
@@ -123,10 +78,13 @@ export const ServiceEditModal = ({
     onClose();
   };
 
-  const handleCancel = () => {
-    setLocalTitle(services[serviceIndex].title || "");
-    setLocalItems([...(services[serviceIndex].items || [])]);
-    setNewItemInput("");
+  const handleCloseClick = () => {
+    // Always show confirmation dialog when trying to exit
+    setShowConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowConfirm(false);
     onClose();
   };
 
@@ -175,6 +133,7 @@ export const ServiceEditModal = ({
   };
 
   const processFile = (file) => {
+    if (!service || serviceIndex === null) return;
     if (file.type === "image/svg+xml" || file.name.endsWith(".svg")) {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -196,6 +155,7 @@ export const ServiceEditModal = ({
   const isUploadedSvg = service && service.icon && typeof service.icon === "string" && service.icon.startsWith("svg_");
 
   return (
+    <>
     <div
       style={{
         position: "fixed",
@@ -204,14 +164,14 @@ export const ServiceEditModal = ({
         right: 0,
         bottom: 0,
         backgroundColor: "rgba(0, 0, 0, 0.7)",
-        display: "flex",
+        display: isValidService ? "flex" : "none",
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1001,
         fontFamily: "Inter, sans-serif",
         overflow: "hidden",
       }}
-      onClick={onClose}
+      onClick={handleCloseClick}
     >
       <div
         style={{
@@ -229,6 +189,8 @@ export const ServiceEditModal = ({
         className="service-modal-no-scrollbar"
         onClick={(e) => e.stopPropagation()}
       >
+        {service ? (
+          <>
         {/* Header with Close Button */}
         <div
           style={{
@@ -249,7 +211,7 @@ export const ServiceEditModal = ({
             Edit Service
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleCloseClick}
             style={{
               background: "transparent",
               border: "none",
@@ -595,7 +557,7 @@ export const ServiceEditModal = ({
           }}
         >
           <button
-            onClick={handleCancel}
+            onClick={handleCloseClick}
             style={{
               padding: "11px 24px",
               border: "1px solid rgba(221, 144, 29, 0.4)",
@@ -651,7 +613,18 @@ export const ServiceEditModal = ({
             Save
           </button>
         </div>
+          </>
+        ) : null}
       </div>
     </div>
+
+    <ConfirmExitDialog
+      isOpen={showConfirm}
+      onConfirm={handleConfirmExit}
+      onCancel={() => setShowConfirm(false)}
+      title="Close Editor?"
+      message="Are you sure you want to close without saving?"
+    />
+  </>
   );
 };
