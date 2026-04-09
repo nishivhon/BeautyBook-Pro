@@ -256,22 +256,22 @@ export const Register = () => {
         endpoint = `${apiUrl}/sms/send-otp`;
         requestData = { phone, name: fullName };
         successMessage = `OTP sent to ${phone}. Check your messages!`;
-        console.log('📱 Sending SMS OTP to:', phone);
+        console.log('Sending SMS OTP to:', phone);
       } else if (useEmail && !usePhone) {
         // Email only - use Email OTP (NEW)
         endpoint = `${apiUrl}/auth/send-email-otp`;
         requestData = { email, full_name: fullName, phone: phone || "" };
         successMessage = `OTP sent to ${email}. Check your inbox!`;
-        console.log('📧 Sending email OTP to:', email);
+        console.log('Sending email OTP to:', email);
       } else {
         // Both email and phone - send SMS OTP (user can receive via either)
         endpoint = `${apiUrl}/sms/send-otp`;
         requestData = { phone, name: fullName };
         successMessage = `OTP sent to ${phone}. Check your messages!`;
-        console.log('📱 Sending SMS OTP to:', phone);
+        console.log('Sending SMS OTP to:', phone);
       }
 
-      console.log('📋 Data:', requestData);
+      console.log('Data:', requestData);
       
       fetch(endpoint, {
         method: "POST",
@@ -279,11 +279,11 @@ export const Register = () => {
         body: JSON.stringify(requestData)
       })
         .then(res => {
-          console.log('📥 Response status:', res.status);
+          console.log('Response status:', res.status);
           return res.json();
         })
         .then(data => {
-          console.log('📦 Response data:', data);
+          console.log('Response data:', data);
           if (data.message || data.success) {
             setToastMessage(successMessage);
             setShowToast(true);
@@ -348,13 +348,13 @@ export const Register = () => {
       endpoint = `${apiUrl}/sms/verify-otp`;
       verifyData = { phone: pendingPhone, otp: cleanOtp };
       toastMsg = '✅ Phone verified successfully! Proceeding to booking...';
-      console.log('🔐 Verifying SMS OTP for:', pendingPhone);
+      console.log('Verifying SMS OTP for:', pendingPhone);
     } else if (otpType === "email") {
       if (!pendingEmail || !otp) return;
       endpoint = `${apiUrl}/auth/verify-email-otp`;
       verifyData = { email: pendingEmail, otp: cleanOtp };
       toastMsg = '✅ Email verified successfully! Proceeding to booking...';
-      console.log('🔐 Verifying Email OTP for:', pendingEmail);
+      console.log('Verifying Email OTP for:', pendingEmail);
     } else {
       return;
     }
@@ -544,8 +544,8 @@ export const Register = () => {
         }
       }
 
-      console.log('📅 Formatted Date:', appointmentDate);
-      console.log('⏰ Formatted Time:', formattedTime);
+      console.log('Formatted Date:', appointmentDate);
+      console.log('Formatted Time:', formattedTime);
 
       // Get all selected services and join them
       let allServices = [];
@@ -584,7 +584,7 @@ export const Register = () => {
         staff_assigned: stylistName
       };
 
-      console.log('📤 Sending appointment to backend:', appointmentPayload);
+      console.log('Sending appointment to backend:', appointmentPayload);
 
       // POST appointment to backend
       const response = await fetch(`${apiUrl}/appointments/create`, {

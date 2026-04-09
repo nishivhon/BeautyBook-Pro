@@ -133,7 +133,7 @@ export const PremiumServicesModal = ({ onBack, onContinue, initialSelected = [],
     const fetchServices = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/services/category/Premium%20Services');
+        const response = await fetch('/api/services/Premium%20Services');
         if (!response.ok) {
           throw new Error('Failed to fetch services');
         }

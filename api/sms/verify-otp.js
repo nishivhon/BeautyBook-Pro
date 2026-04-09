@@ -1,6 +1,6 @@
-import { smsOtpStorage } from '../storage.js';
+import { getOtpByPhone, deleteOtpByPhone } from '../supabaseOtpClient.js';
 
-export default (req, res) => {
+export default async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -12,35 +12,41 @@ export default (req, res) => {
   }
 
   try {
-    const storedOtp = smsOtpStorage.get(phone);
+    // Format phone number to match what's in database
+    let formattedPhone = phone;
+    if (!formattedPhone.startsWith('+')) {
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '+63' + formattedPhone.substring(1);
+      } else {
+        formattedPhone = '+63' + formattedPhone;
+      }
+    }
+
+    const storedOtp = await getOtpByPhone(formattedPhone);
 
     if (!storedOtp) {
       return res.status(401).json({ error: 'OTP not found. Request a new OTP.' });
     }
 
-    // Check if OTP expired
-    if (Date.now() > storedOtp.expiresAt) {
-      smsOtpStorage.delete(phone);
+    // Check if OTP expired (ensure Z suffix for proper UTC parsing)
+    const now = new Date();
+    const expiresAtStr = storedOtp.expires_at.endsWith('Z') ? storedOtp.expires_at : `${storedOtp.expires_at}Z`;
+    const expiresAt = new Date(expiresAtStr);
+    
+    if (now > expiresAt) {
+      await deleteOtpByPhone(formattedPhone);
       return res.status(401).json({ error: 'OTP expired. Request a new one.' });
-    }
-
-    // Check max attempts
-    if (storedOtp.attempts >= 5) {
-      smsOtpStorage.delete(phone);
-      return res.status(429).json({ error: 'Too many attempts. Request a new OTP.' });
     }
 
     // Verify OTP
     if (storedOtp.otp !== otp) {
-      storedOtp.attempts += 1;
       return res.status(401).json({
-        error: 'Invalid OTP. Please try again.',
-        attemptsLeft: 5 - storedOtp.attempts
+        error: 'Invalid OTP. Please try again.'
       });
     }
 
     // OTP verified - delete it
-    smsOtpStorage.delete(phone);
+    await deleteOtpByPhone(formattedPhone);
 
     console.log(`[SMSOTP] Verified successfully for: ${phone}`);
 
