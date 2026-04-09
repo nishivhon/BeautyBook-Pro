@@ -814,7 +814,34 @@ export default function SuperAdminLandingPageEditor() {
               <span>{hero.badge}</span>
             </div>
 
-            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto" }}>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+              <button
+                onClick={() => setHero({ ...hero, headline1: "Skip The Wait,", headline2: "Book Your Style" })}
+                style={{
+                  position: "absolute",
+                  top: "-12px",
+                  right: "0",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset headline"
+              >
+                ×
+              </button>
               {editingField === "headline-combined" ? (
                 <div style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: "800px", margin: "0 auto", flexDirection: "column", alignItems: "center" }}>
                   <div style={{
@@ -894,22 +921,57 @@ export default function SuperAdminLandingPageEditor() {
               )}
             </div>
 
-            <p className="section-subtitle" style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px" }}>
-              <EditableText
-                value={hero.subheading}
-                onChange={(v) => setHero({ ...hero, subheading: v })}
-                isEditing={editingField === "subheading"}
-                setIsEditing={(val) => setEditingField(val ? "subheading" : null)}
-                isTextarea={true}
-              />
-            </p>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px", position: "relative" }}>
+              <p className="section-subtitle" style={{ flex: 1, margin: 0 }}>
+                <EditableText
+                  value={hero.subheading}
+                  onChange={(v) => setHero({ ...hero, subheading: v })}
+                  isEditing={editingField === "subheading"}
+                  setIsEditing={(val) => setEditingField(val ? "subheading" : null)}
+                  isTextarea={true}
+                />
+              </p>
+              <button
+                onClick={() => setHero({ ...hero, subheading: "A digital appointment and customer management system for barbershops, hair salons, and spas. Book appointments online, reduce wait times, and experience seamless, personalized service—instantly." })}
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  right: "-32px",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset subheading"
+              >
+                ×
+              </button>
+            </div>
 
             {/* Additional Titles */}
             {hero.additionalTitles && hero.additionalTitles.length > 0 && (
               <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
                 {hero.additionalTitles.map((title) => (
-                  <div key={title.id} style={{ position: "relative" }}>
-                    <h2 className="section-title">{title.text}</h2>
+                  <div key={title.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <h2 className="section-title" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `hero-title-${title.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `hero-title-${title.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `hero-title-${title.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={title.text}
+                        onChange={(v) => setHero({ ...hero, additionalTitles: hero.additionalTitles.map(t => t.id === title.id ? { ...t, text: v } : t) })}
+                        isEditing={editingField === `hero-title-${title.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `hero-title-${title.id}` : null)}
+                      />
+                    </h2>
                     <button
                       onClick={() => {
                         setHero({
@@ -919,22 +981,28 @@ export default function SuperAdminLandingPageEditor() {
                       }}
                       style={{
                         position: "absolute",
-                        top: "8px",
+                        top: "-12px",
                         right: "0",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
                         background: "#dc2626",
                         border: "none",
-                        borderRadius: "4px",
-                        padding: "4px 8px",
-                        cursor: "pointer",
                         color: "white",
-                        fontSize: "12px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         transition: "all 0.2s ease",
+                        zIndex: 10,
                       }}
                       onMouseEnter={(e) => e.target.style.background = "#991b1b"}
                       onMouseLeave={(e) => e.target.style.background = "#dc2626"}
                       title="Delete title"
                     >
-                      Delete
+                      ×
                     </button>
                   </div>
                 ))}
@@ -945,8 +1013,17 @@ export default function SuperAdminLandingPageEditor() {
             {hero.additionalSubheadings && hero.additionalSubheadings.length > 0 && (
               <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px", gap: "16px" }}>
                 {hero.additionalSubheadings.map((sub) => (
-                  <div key={sub.id} style={{ position: "relative" }}>
-                    <p className="section-subtitle">{sub.text}</p>
+                  <div key={sub.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <p className="section-subtitle" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `hero-subheading-${sub.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `hero-subheading-${sub.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `hero-subheading-${sub.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={sub.text}
+                        onChange={(v) => setHero({ ...hero, additionalSubheadings: hero.additionalSubheadings.map(s => s.id === sub.id ? { ...s, text: v } : s) })}
+                        isEditing={editingField === `hero-subheading-${sub.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `hero-subheading-${sub.id}` : null)}
+                        isTextarea={true}
+                        size="body"
+                      />
+                    </p>
                     <button
                       onClick={() => {
                         setHero({
@@ -956,22 +1033,28 @@ export default function SuperAdminLandingPageEditor() {
                       }}
                       style={{
                         position: "absolute",
-                        top: "0",
-                        right: "0",
+                        top: "8px",
+                        right: "-32px",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
                         background: "#dc2626",
                         border: "none",
-                        borderRadius: "4px",
-                        padding: "4px 8px",
-                        cursor: "pointer",
                         color: "white",
-                        fontSize: "12px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         transition: "all 0.2s ease",
+                        zIndex: 10,
                       }}
                       onMouseEnter={(e) => e.target.style.background = "#991b1b"}
                       onMouseLeave={(e) => e.target.style.background = "#dc2626"}
                       title="Delete subheading"
                     >
-                      Delete
+                      ×
                     </button>
                   </div>
                 ))}
@@ -1078,30 +1161,95 @@ export default function SuperAdminLandingPageEditor() {
 
           {/* HOW IT WORKS SECTION */}
           <section id="howitworks" className="howitworks-section" style={{display: hiddenSections.howitworks ? "none" : "block", order: sectionOrder.indexOf("howitworks")}}>
-            <h2 className="section-title">
-              <EditableText
-                value={howitworks.title}
-                onChange={(v) => setHowitworks({ ...howitworks, title: v })}
-                isEditing={editingField === "howitworks-title"}
-                setIsEditing={(val) => setEditingField(val ? "howitworks-title" : null)}
-              />
-            </h2>
-            <p className="section-subtitle">
-              <EditableText
-                value={howitworks.subtitle}
-                onChange={(v) => setHowitworks({ ...howitworks, subtitle: v })}
-                isEditing={editingField === "howitworks-subtitle"}
-                setIsEditing={(val) => setEditingField(val ? "howitworks-subtitle" : null)}
-                isTextarea={true}
-              />
-            </p>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+              <h2 className="section-title" style={{ flex: 1, margin: 0, marginBottom: "16px" }}>
+                <EditableText
+                  value={howitworks.title}
+                  onChange={(v) => setHowitworks({ ...howitworks, title: v })}
+                  isEditing={editingField === "howitworks-title"}
+                  setIsEditing={(val) => setEditingField(val ? "howitworks-title" : null)}
+                />
+              </h2>
+              <button
+                onClick={() => setHowitworks({ ...howitworks, title: "How BeautyBook Pro Works" })}
+                style={{
+                  position: "absolute",
+                  top: "-12px",
+                  right: "0",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset title"
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px", position: "relative" }}>
+              <p className="section-subtitle" style={{ flex: 1, margin: 0 }}>
+                <EditableText
+                  value={howitworks.subtitle}
+                  onChange={(v) => setHowitworks({ ...howitworks, subtitle: v })}
+                  isEditing={editingField === "howitworks-subtitle"}
+                  setIsEditing={(val) => setEditingField(val ? "howitworks-subtitle" : null)}
+                  isTextarea={true}
+                />
+              </p>
+              <button
+                onClick={() => setHowitworks({ ...howitworks, subtitle: "Simple, efficient digital booking appointment for modern salon businesses" })}
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  right: "-32px",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset subtitle"
+              >
+                ×
+              </button>
+            </div>
 
             {/* Additional Titles */}
             {howitworks.additionalTitles && howitworks.additionalTitles.length > 0 && (
               <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
                 {howitworks.additionalTitles.map((title) => (
-                  <div key={title.id} style={{ position: "relative" }}>
-                    <h2 className="section-title">{title.text}</h2>
+                  <div key={title.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <h2 className="section-title" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `howitworks-title-${title.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `howitworks-title-${title.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `howitworks-title-${title.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={title.text}
+                        onChange={(v) => setHowitworks({ ...howitworks, additionalTitles: howitworks.additionalTitles.map(t => t.id === title.id ? { ...t, text: v } : t) })}
+                        isEditing={editingField === `howitworks-title-${title.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `howitworks-title-${title.id}` : null)}
+                      />
+                    </h2>
                     <button
                       onClick={() => {
                         setHowitworks({
@@ -1111,22 +1259,28 @@ export default function SuperAdminLandingPageEditor() {
                       }}
                       style={{
                         position: "absolute",
-                        top: "8px",
+                        top: "-12px",
                         right: "0",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
                         background: "#dc2626",
                         border: "none",
-                        borderRadius: "4px",
-                        padding: "4px 8px",
-                        cursor: "pointer",
                         color: "white",
-                        fontSize: "12px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         transition: "all 0.2s ease",
+                        zIndex: 10,
                       }}
                       onMouseEnter={(e) => e.target.style.background = "#991b1b"}
                       onMouseLeave={(e) => e.target.style.background = "#dc2626"}
                       title="Delete title"
                     >
-                      Delete
+                      ×
                     </button>
                   </div>
                 ))}
@@ -1137,8 +1291,17 @@ export default function SuperAdminLandingPageEditor() {
             {howitworks.additionalSubheadings && howitworks.additionalSubheadings.length > 0 && (
               <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
                 {howitworks.additionalSubheadings.map((sub) => (
-                  <div key={sub.id} style={{ position: "relative" }}>
-                    <p className="section-subtitle">{sub.text}</p>
+                  <div key={sub.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <p className="section-subtitle" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `howitworks-subheading-${sub.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `howitworks-subheading-${sub.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `howitworks-subheading-${sub.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={sub.text}
+                        onChange={(v) => setHowitworks({ ...howitworks, additionalSubheadings: howitworks.additionalSubheadings.map(s => s.id === sub.id ? { ...s, text: v } : s) })}
+                        isEditing={editingField === `howitworks-subheading-${sub.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `howitworks-subheading-${sub.id}` : null)}
+                        isTextarea={true}
+                        size="body"
+                      />
+                    </p>
                     <button
                       onClick={() => {
                         setHowitworks({
@@ -1148,22 +1311,28 @@ export default function SuperAdminLandingPageEditor() {
                       }}
                       style={{
                         position: "absolute",
-                        top: "0",
-                        right: "0",
+                        top: "8px",
+                        right: "-32px",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
                         background: "#dc2626",
                         border: "none",
-                        borderRadius: "4px",
-                        padding: "4px 8px",
-                        cursor: "pointer",
                         color: "white",
-                        fontSize: "12px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         transition: "all 0.2s ease",
+                        zIndex: 10,
                       }}
                       onMouseEnter={(e) => e.target.style.background = "#991b1b"}
                       onMouseLeave={(e) => e.target.style.background = "#dc2626"}
                       title="Delete subheading"
                     >
-                      Delete
+                      ×
                     </button>
                   </div>
                 ))}
@@ -1341,30 +1510,95 @@ export default function SuperAdminLandingPageEditor() {
 
           {/* SERVICES SECTION */}
           <section id="services" className="services-section" style={{display: hiddenSections.services ? "none" : "block", order: sectionOrder.indexOf("services")}}>
-            <h2 className="section-title">
-              <EditableText
-                value={services.title}
-                onChange={(v) => setServices({ ...services, title: v })}
-                isEditing={editingField === "services-title"}
-                setIsEditing={(val) => setEditingField(val ? "services-title" : null)}
-              />
-            </h2>
-            <p className="section-subtitle">
-              <EditableText
-                value={services.subtitle}
-                onChange={(v) => setServices({ ...services, subtitle: v })}
-                isEditing={editingField === "services-subtitle"}
-                setIsEditing={(val) => setEditingField(val ? "services-subtitle" : null)}
-                isTextarea={true}
-              />
-            </p>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+              <h2 className="section-title" style={{ flex: 1, margin: 0, marginBottom: "16px" }}>
+                <EditableText
+                  value={services.title}
+                  onChange={(v) => setServices({ ...services, title: v })}
+                  isEditing={editingField === "services-title"}
+                  setIsEditing={(val) => setEditingField(val ? "services-title" : null)}
+                />
+              </h2>
+              <button
+                onClick={() => setServices({ ...services, title: "Our Services" })}
+                style={{
+                  position: "absolute",
+                  top: "-12px",
+                  right: "0",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset title"
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px", position: "relative" }}>
+              <p className="section-subtitle" style={{ flex: 1, margin: 0 }}>
+                <EditableText
+                  value={services.subtitle}
+                  onChange={(v) => setServices({ ...services, subtitle: v })}
+                  isEditing={editingField === "services-subtitle"}
+                  setIsEditing={(val) => setEditingField(val ? "services-subtitle" : null)}
+                  isTextarea={true}
+                />
+              </p>
+              <button
+                onClick={() => setServices({ ...services, subtitle: "Professional grooming services tailored to your style" })}
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  right: "-32px",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset subtitle"
+              >
+                ×
+              </button>
+            </div>
 
             {/* Additional Titles */}
             {services.additionalTitles && services.additionalTitles.length > 0 && (
               <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
                 {services.additionalTitles.map((title) => (
-                  <div key={title.id} style={{ position: "relative" }}>
-                    <h2 className="section-title">{title.text}</h2>
+                  <div key={title.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <h2 className="section-title" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `services-title-${title.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `services-title-${title.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `services-title-${title.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={title.text}
+                        onChange={(v) => setServices({ ...services, additionalTitles: services.additionalTitles.map(t => t.id === title.id ? { ...t, text: v } : t) })}
+                        isEditing={editingField === `services-title-${title.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `services-title-${title.id}` : null)}
+                      />
+                    </h2>
                     <button
                       onClick={() => {
                         setServices({
@@ -1374,22 +1608,28 @@ export default function SuperAdminLandingPageEditor() {
                       }}
                       style={{
                         position: "absolute",
-                        top: "8px",
+                        top: "-12px",
                         right: "0",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
                         background: "#dc2626",
                         border: "none",
-                        borderRadius: "4px",
-                        padding: "4px 8px",
-                        cursor: "pointer",
                         color: "white",
-                        fontSize: "12px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         transition: "all 0.2s ease",
+                        zIndex: 10,
                       }}
                       onMouseEnter={(e) => e.target.style.background = "#991b1b"}
                       onMouseLeave={(e) => e.target.style.background = "#dc2626"}
                       title="Delete title"
                     >
-                      Delete
+                      ×
                     </button>
                   </div>
                 ))}
@@ -1400,8 +1640,17 @@ export default function SuperAdminLandingPageEditor() {
             {services.additionalSubheadings && services.additionalSubheadings.length > 0 && (
               <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
                 {services.additionalSubheadings.map((sub) => (
-                  <div key={sub.id} style={{ position: "relative" }}>
-                    <p className="section-subtitle">{sub.text}</p>
+                  <div key={sub.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <p className="section-subtitle" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `services-subheading-${sub.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `services-subheading-${sub.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `services-subheading-${sub.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={sub.text}
+                        onChange={(v) => setServices({ ...services, additionalSubheadings: services.additionalSubheadings.map(s => s.id === sub.id ? { ...s, text: v } : s) })}
+                        isEditing={editingField === `services-subheading-${sub.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `services-subheading-${sub.id}` : null)}
+                        isTextarea={true}
+                        size="body"
+                      />
+                    </p>
                     <button
                       onClick={() => {
                         setServices({
@@ -1411,22 +1660,28 @@ export default function SuperAdminLandingPageEditor() {
                       }}
                       style={{
                         position: "absolute",
-                        top: "0",
-                        right: "0",
+                        top: "8px",
+                        right: "-32px",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
                         background: "#dc2626",
                         border: "none",
-                        borderRadius: "4px",
-                        padding: "4px 8px",
-                        cursor: "pointer",
                         color: "white",
-                        fontSize: "12px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         transition: "all 0.2s ease",
+                        zIndex: 10,
                       }}
                       onMouseEnter={(e) => e.target.style.background = "#991b1b"}
                       onMouseLeave={(e) => e.target.style.background = "#dc2626"}
                       title="Delete subheading"
                     >
-                      Delete
+                      ×
                     </button>
                   </div>
                 ))}
@@ -1753,8 +2008,15 @@ export default function SuperAdminLandingPageEditor() {
               {footer.additionalTitles && footer.additionalTitles.length > 0 && (
                 <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", marginBottom: "24px", gap: "16px" }}>
                   {footer.additionalTitles.map((title) => (
-                    <div key={title.id} style={{ position: "relative" }}>
-                      <h3 style={{ color: "white", fontSize: "16px", marginBottom: "8px", fontWeight: "600" }}>{title.text}</h3>
+                    <div key={title.id} style={{ position: "relative", display: "inline-block", alignSelf: "flex-start", width: "100%" }}>
+                      <h3 style={{ color: "white", fontSize: "16px", marginBottom: "8px", fontWeight: "600", margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `footer-title-${title.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `footer-title-${title.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `footer-title-${title.id}` && (e.target.style.opacity = "0.9")}>
+                        <EditableText
+                          value={title.text}
+                          onChange={(v) => setFooter({ ...footer, additionalTitles: footer.additionalTitles.map(t => t.id === title.id ? { ...t, text: v } : t) })}
+                          isEditing={editingField === `footer-title-${title.id}`}
+                          setIsEditing={(val) => setEditingField(val ? `footer-title-${title.id}` : null)}
+                        />
+                      </h3>
                       <button
                         onClick={() => {
                           setFooter({
@@ -1764,22 +2026,28 @@ export default function SuperAdminLandingPageEditor() {
                         }}
                         style={{
                           position: "absolute",
-                          top: "0",
+                          top: "-12px",
                           right: "0",
+                          width: "24px",
+                          height: "24px",
+                          borderRadius: "50%",
                           background: "#dc2626",
                           border: "none",
-                          borderRadius: "4px",
-                          padding: "4px 8px",
-                          cursor: "pointer",
                           color: "white",
-                          fontSize: "12px",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                          fontWeight: "bold",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                           transition: "all 0.2s ease",
+                          zIndex: 10,
                         }}
                         onMouseEnter={(e) => e.target.style.background = "#991b1b"}
                         onMouseLeave={(e) => e.target.style.background = "#dc2626"}
                         title="Delete title"
                       >
-                        Delete
+                        ×
                       </button>
                     </div>
                   ))}
