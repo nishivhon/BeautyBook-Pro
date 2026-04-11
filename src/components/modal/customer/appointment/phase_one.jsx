@@ -206,7 +206,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
         {/* Section heading */}
         <div className="appt-section-heading">
           <p className="appt-section-title">Select Date &amp; Time</p>
-          <p className="appt-section-sub">Choose your preferred schedule</p>
+          <p className="appt-section-sub">Pick a slot below, or tap the icons to enter your own date & time</p>
         </div>
 
         {/* ── Date picker ── */}
