@@ -316,6 +316,8 @@ export default function NavigateSectionsModal({
       onCancel={() => setShowConfirm(false)}
       title="Close Navigator?"
       message="Are you sure you want to close the section navigator?"
+      confirmButtonLabel="Close"
+      cancelButtonLabel="Keep Open"
     />
   </>
   );

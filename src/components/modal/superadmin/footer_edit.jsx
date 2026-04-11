@@ -63,6 +63,7 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
   const [newSocialUrl, setNewSocialUrl] = useState("");
   const [newSocialPlatform, setNewSocialPlatform] = useState("facebook");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmType, setConfirmType] = useState("exit"); // "exit" or "save"
 
   useEffect(() => {
     if (isOpen) {
@@ -121,6 +122,16 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
   const handleConfirmExit = () => {
     setShowConfirm(false);
     onClose();
+  };
+
+  const handleConfirmSave = () => {
+    setShowConfirm(false);
+    handleSave();
+  };
+
+  const handleSaveClick = () => {
+    setConfirmType("save");
+    setShowConfirm(true);
   };
 
   const getPlatformIcon = (platformId) => {
@@ -735,7 +746,7 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
             Cancel
           </button>
           <button
-            onClick={handleSave}
+            onClick={handleSaveClick}
             style={{
               padding: "12px 24px",
               background: "#dd901d",
@@ -763,10 +774,19 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
 
     <ConfirmExitDialog
       isOpen={showConfirm}
-      onConfirm={handleConfirmExit}
-      onCancel={() => setShowConfirm(false)}
-      title="Close Editor?"
-      message="Are you sure you want to close without saving?"
+      onConfirm={confirmType === "save" ? handleConfirmSave : handleConfirmExit}
+      onCancel={() => {
+        setShowConfirm(false);
+        setConfirmType("exit");
+      }}
+      title={confirmType === "save" ? "Save Changes?" : "Close Editor?"}
+      message={
+        confirmType === "save"
+          ? "Are you sure you want to save these changes? This action cannot be undone."
+          : "Are you sure you want to close without saving?"
+      }
+      confirmButtonLabel={confirmType === "save" ? "Save Changes" : "Discard Changes"}
+      cancelButtonLabel={confirmType === "save" ? "Cancel" : "Continue Editing"}
     />
   </>
   );

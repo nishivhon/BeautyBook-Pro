@@ -19,18 +19,53 @@ export default function AddCardModal({
   servicesData,
 }) {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmType, setConfirmType] = useState("exit"); // "exit" or "save"
 
   const hasChanges = cardConfig.title.trim() !== "" || 
                      cardConfig.description.trim() !== "" || 
                      (cardConfig.items && cardConfig.items.some(item => item.trim() !== ""));
 
+  const handleAddCard = () => {
+    // Validate title
+    if (!cardConfig.title || !cardConfig.title.trim()) {
+      alert("Please enter a card title.");
+      return;
+    }
+    
+    // Validate based on section type
+    if (cardConfig.section === "howitworks") {
+      if (!cardConfig.description || !cardConfig.description.trim()) {
+        alert("Please enter a description for this card.");
+        return;
+      }
+    } else if (cardConfig.section === "services") {
+      const hasItems = cardConfig.items && cardConfig.items.some(item => item.trim() !== "");
+      if (!hasItems) {
+        alert("Please add at least one service item.");
+        return;
+      }
+    }
+    
+    setConfirmType("save");
+    setShowConfirm(true);
+  };
+
+  const handleConfirmAdd = () => {
+    onAddCard();
+    setShowConfirm(false);
+    setConfirmType("exit");
+    setCardConfig({ section: "howitworks", title: "", description: "", items: [] });
+    onClose();
+  };
+
   const handleCloseClick = () => {
-    // Always show confirmation dialog when trying to exit
+    setConfirmType("exit");
     setShowConfirm(true);
   };
 
   const handleConfirmExit = () => {
     setShowConfirm(false);
+    setConfirmType("exit");
     setCardConfig({ section: "howitworks", title: "", description: "", items: [] });
     onClose();
   };
@@ -232,32 +267,7 @@ export default function AddCardModal({
 
         <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
           <button
-            onClick={(e) => {
-              // Prevent default button behavior
-              e.preventDefault();
-              
-              // Validate title
-              if (!cardConfig.title || !cardConfig.title.trim()) {
-                alert("Please enter a card title.");
-                return;
-              }
-              
-              // Validate based on section type
-              if (cardConfig.section === "howitworks") {
-                if (!cardConfig.description || !cardConfig.description.trim()) {
-                  alert("Please enter a description for this card.");
-                  return;
-                }
-              } else if (cardConfig.section === "services") {
-                const hasItems = cardConfig.items && cardConfig.items.some(item => item.trim() !== "");
-                if (!hasItems) {
-                  alert("Please add at least one service item.");
-                  return;
-                }
-              }
-              
-              onAddCard();
-            }}
+            onClick={handleAddCard}
             disabled={
               !cardConfig.title || !cardConfig.title.trim() ||
               (cardConfig.section === "howitworks" && (!cardConfig.description || !cardConfig.description.trim())) ||
@@ -353,10 +363,19 @@ export default function AddCardModal({
 
     <ConfirmExitDialog
       isOpen={showConfirm}
-      onConfirm={handleConfirmExit}
-      onCancel={() => setShowConfirm(false)}
-      title="Discard Changes?"
-      message="You have unsaved changes. Are you sure you want to exit without saving?"
+      onConfirm={confirmType === "save" ? handleConfirmAdd : handleConfirmExit}
+      onCancel={() => {
+        setShowConfirm(false);
+        setConfirmType("exit");
+      }}
+      title={confirmType === "save" ? "Add Card?" : "Discard Changes?"}
+      message={
+        confirmType === "save"
+          ? "Are you sure you want to add this card? This action cannot be undone."
+          : "You have unsaved changes. Are you sure you want to exit without saving?"
+      }
+      confirmButtonLabel={confirmType === "save" ? "Add Card" : "Discard Changes"}
+      cancelButtonLabel={confirmType === "save" ? "Cancel" : "Continue Editing"}
     />
   </>
   );

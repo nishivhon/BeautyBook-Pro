@@ -10,6 +10,7 @@ export default function AddTitleModal({
   const [selectedSection, setSelectedSection] = useState("");
   const [titleText, setTitleText] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmType, setConfirmType] = useState("exit"); // "exit" or "save"
 
   useEffect(() => {
     if (isOpen && sections.length > 0 && !selectedSection) {
@@ -20,29 +21,35 @@ export default function AddTitleModal({
   const hasChanges = titleText.trim() !== "";
 
   const handleCloseClick = () => {
-    // Always show confirmation dialog when trying to exit
+    setConfirmType("exit");
     setShowConfirm(true);
   };
 
   const handleConfirmExit = () => {
     setShowConfirm(false);
+    setConfirmType("exit");
     setTitleText("");
     setSelectedSection("");
     onClose();
   };
 
   const handleDone = () => {
-    // Validation: Ensure section is selected
     if (!selectedSection) {
       alert("Please select a section.");
       return;
     }
-    // Validation: Ensure title is not empty
     if (!titleText.trim()) {
       alert("Please enter a title.");
       return;
     }
+    setConfirmType("save");
+    setShowConfirm(true);
+  };
+
+  const handleConfirmAdd = () => {
     onAddTitle(selectedSection, titleText);
+    setShowConfirm(false);
+    setConfirmType("exit");
     setTitleText("");
     setSelectedSection("");
     onClose();
@@ -247,10 +254,19 @@ export default function AddTitleModal({
 
     <ConfirmExitDialog
       isOpen={showConfirm}
-      onConfirm={handleConfirmExit}
-      onCancel={() => setShowConfirm(false)}
-      title="Discard Changes?"
-      message="You have unsaved changes. Are you sure you want to exit without saving?"
+      onConfirm={confirmType === "save" ? handleConfirmAdd : handleConfirmExit}
+      onCancel={() => {
+        setShowConfirm(false);
+        setConfirmType("exit");
+      }}
+      title={confirmType === "save" ? "Add Title?" : "Discard Changes?"}
+      message={
+        confirmType === "save"
+          ? "Are you sure you want to add this title? This action cannot be undone."
+          : "You have unsaved changes. Are you sure you want to exit without saving?"
+      }
+      confirmButtonLabel={confirmType === "save" ? "Add Title" : "Discard Changes"}
+      cancelButtonLabel={confirmType === "save" ? "Cancel" : "Continue Editing"}
     />
     </>
   );

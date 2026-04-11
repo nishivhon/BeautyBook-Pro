@@ -10,6 +10,7 @@ export default function AddSubheadingModal({
   const [selectedSection, setSelectedSection] = useState("");
   const [subheadingText, setSubheadingText] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmType, setConfirmType] = useState("exit"); // "exit" or "save"
 
   useEffect(() => {
     if (isOpen && sections.length > 0 && !selectedSection) {
@@ -20,29 +21,35 @@ export default function AddSubheadingModal({
   const hasChanges = subheadingText.trim() !== "";
 
   const handleCloseClick = () => {
-    // Always show confirmation dialog when trying to exit
+    setConfirmType("exit");
     setShowConfirm(true);
   };
 
   const handleConfirmExit = () => {
     setShowConfirm(false);
+    setConfirmType("exit");
     setSubheadingText("");
     setSelectedSection("");
     onClose();
   };
 
   const handleDone = () => {
-    // Validation: Ensure section is selected
     if (!selectedSection) {
       alert("Please select a section.");
       return;
     }
-    // Validation: Ensure subheading is not empty
     if (!subheadingText.trim()) {
       alert("Please enter a subheading.");
       return;
     }
+    setConfirmType("save");
+    setShowConfirm(true);
+  };
+
+  const handleConfirmAdd = () => {
     onAddSubheading(selectedSection, subheadingText);
+    setShowConfirm(false);
+    setConfirmType("exit");
     setSubheadingText("");
     setSelectedSection("");
     onClose();
@@ -247,10 +254,19 @@ export default function AddSubheadingModal({
 
     <ConfirmExitDialog
       isOpen={showConfirm}
-      onConfirm={handleConfirmExit}
-      onCancel={() => setShowConfirm(false)}
-      title="Discard Changes?"
-      message="You have unsaved changes. Are you sure you want to exit without saving?"
+      onConfirm={confirmType === "save" ? handleConfirmAdd : handleConfirmExit}
+      onCancel={() => {
+        setShowConfirm(false);
+        setConfirmType("exit");
+      }}
+      title={confirmType === "save" ? "Add Subheading?" : "Discard Changes?"}
+      message={
+        confirmType === "save"
+          ? "Are you sure you want to add this subheading? This action cannot be undone."
+          : "You have unsaved changes. Are you sure you want to exit without saving?"
+      }
+      confirmButtonLabel={confirmType === "save" ? "Add Subheading" : "Discard Changes"}
+      cancelButtonLabel={confirmType === "save" ? "Cancel" : "Continue Editing"}
     />
     </>
   );

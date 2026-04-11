@@ -47,6 +47,7 @@ export const ServiceEditModal = ({
   const [localItems, setLocalItems] = useState([]);
   const [newItemInput, setNewItemInput] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmType, setConfirmType] = useState("exit"); // "exit" or "save"
 
   useEffect(() => {
     if (isOpen && serviceIndex !== null && services && services[serviceIndex]) {
@@ -70,21 +71,32 @@ export const ServiceEditModal = ({
   const isValidService = isOpen && serviceIndex !== null && service;
 
   const handleSave = () => {
+    // Show confirmation dialog before saving
+    setConfirmType("save");
+    setShowConfirm(true);
+  };
+
+  const handleConfirmSave = () => {
+    // Now actually commit the changes
     if (!service || serviceIndex === null) return;
     const updated = [...services];
     updated[serviceIndex].title = localTitle;
     updated[serviceIndex].items = localItems;
     setServices(updated);
+    setShowConfirm(false);
+    setConfirmType("exit");
     onClose();
   };
 
   const handleCloseClick = () => {
-    // Always show confirmation dialog when trying to exit
+    // Show confirmation dialog when trying to exit without saving
+    setConfirmType("exit");
     setShowConfirm(true);
   };
 
   const handleConfirmExit = () => {
     setShowConfirm(false);
+    setConfirmType("exit");
     onClose();
   };
 
@@ -620,10 +632,19 @@ export const ServiceEditModal = ({
 
     <ConfirmExitDialog
       isOpen={showConfirm}
-      onConfirm={handleConfirmExit}
-      onCancel={() => setShowConfirm(false)}
-      title="Close Editor?"
-      message="Are you sure you want to close without saving?"
+      onConfirm={confirmType === "save" ? handleConfirmSave : handleConfirmExit}
+      onCancel={() => {
+        setShowConfirm(false);
+        setConfirmType("exit");
+      }}
+      title={confirmType === "save" ? "Save Changes?" : "Close Editor?"}
+      message={
+        confirmType === "save"
+          ? "Are you sure you want to save these changes? This action cannot be undone."
+          : "Are you sure you want to close without saving?"
+      }
+      confirmButtonLabel={confirmType === "save" ? "Save Changes" : "Discard Changes"}
+      cancelButtonLabel={confirmType === "save" ? "Cancel" : "Continue Editing"}
     />
   </>
   );

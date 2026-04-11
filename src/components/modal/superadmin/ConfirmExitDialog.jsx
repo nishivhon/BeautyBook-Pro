@@ -4,6 +4,8 @@ export default function ConfirmExitDialog({
   onCancel,
   title = "Discard Changes?",
   message = "Are you sure you want to exit? Any unsaved changes will be lost.",
+  confirmButtonLabel = "Discard Changes",
+  cancelButtonLabel = "Continue Editing",
 }) {
   return (
     <div
@@ -62,7 +64,7 @@ export default function ConfirmExitDialog({
               e.target.style.background = "transparent";
             }}
           >
-            Continue Editing
+            {cancelButtonLabel}
           </button>
           <button
             onClick={onConfirm}
@@ -85,7 +87,7 @@ export default function ConfirmExitDialog({
               e.target.style.background = "#dd901d";
             }}
           >
-            Discard Changes
+            {confirmButtonLabel}
           </button>
         </div>
       </div>

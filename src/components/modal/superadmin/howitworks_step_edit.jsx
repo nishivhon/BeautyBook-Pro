@@ -34,6 +34,7 @@ export const HowItWorksStepEditModal = ({
   const [localTitle, setLocalTitle] = useState("");
   const [localDesc, setLocalDesc] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmType, setConfirmType] = useState("exit"); // "exit" or "save"
 
   useEffect(() => {
     if (isOpen && stepId !== null && howitworksSteps[stepId]) {
@@ -61,6 +62,16 @@ export const HowItWorksStepEditModal = ({
   const handleConfirmExit = () => {
     setShowConfirm(false);
     onClose();
+  };
+
+  const handleConfirmSave = () => {
+    setShowConfirm(false);
+    handleSave();
+  };
+
+  const handleSaveClick = () => {
+    setConfirmType("save");
+    setShowConfirm(true);
   };
 
   const handleDrag = (e) => {
@@ -440,7 +451,7 @@ export const HowItWorksStepEditModal = ({
             Cancel
           </button>
           <button
-            onClick={handleSave}
+            onClick={handleSaveClick}
             style={{
               padding: "11px 24px",
               border: "none",
@@ -478,10 +489,19 @@ export const HowItWorksStepEditModal = ({
 
     <ConfirmExitDialog
       isOpen={showConfirm}
-      onConfirm={handleConfirmExit}
-      onCancel={() => setShowConfirm(false)}
-      title="Close Editor?"
-      message="Are you sure you want to close without saving?"
+      onConfirm={confirmType === "save" ? handleConfirmSave : handleConfirmExit}
+      onCancel={() => {
+        setShowConfirm(false);
+        setConfirmType("exit");
+      }}
+      title={confirmType === "save" ? "Save Changes?" : "Close Editor?"}
+      message={
+        confirmType === "save"
+          ? "Are you sure you want to save these changes? This action cannot be undone."
+          : "Are you sure you want to close without saving?"
+      }
+      confirmButtonLabel={confirmType === "save" ? "Save Changes" : "Discard Changes"}
+      cancelButtonLabel={confirmType === "save" ? "Cancel" : "Continue Editing"}
     />
   </>
   );

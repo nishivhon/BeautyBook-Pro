@@ -9,16 +9,35 @@ export default function AddSectionModal({
   onAddSection,
 }) {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmType, setConfirmType] = useState("exit"); // "exit" or "save"
 
   const hasChanges = draftSection.title.trim() !== "" || draftSection.subtitle.trim() !== "";
 
+  const handleAddSection = () => {
+    if (!draftSection.title || !draftSection.title.trim()) {
+      alert("Please enter a section title.");
+      return;
+    }
+    setConfirmType("save");
+    setShowConfirm(true);
+  };
+
+  const handleConfirmAdd = () => {
+    onAddSection();
+    setShowConfirm(false);
+    setConfirmType("exit");
+    setDraftSection({ title: "", subtitle: "" });
+    onClose();
+  };
+
   const handleCloseClick = () => {
-    // Always show confirmation dialog when trying to exit
+    setConfirmType("exit");
     setShowConfirm(true);
   };
 
   const handleConfirmExit = () => {
     setShowConfirm(false);
+    setConfirmType("exit");
     setDraftSection({ title: "", subtitle: "" });
     onClose();
   };
@@ -125,19 +144,7 @@ export default function AddSectionModal({
 
         <div style={{ display: "flex", gap: "12px" }}>
           <button
-            onClick={(e) => {
-              // Prevent default button behavior
-              e.preventDefault();
-              
-              // Validation: Check if section title is empty
-              if (!draftSection.title || !draftSection.title.trim()) {
-                alert("Please enter a section title.");
-                return;
-              }
-              
-              // Only trigger onAddSection if validation passes
-              onAddSection();
-            }}
+            onClick={handleAddSection}
             disabled={!draftSection.title || !draftSection.title.trim()}
             style={{
               flex: 1,
@@ -196,10 +203,19 @@ export default function AddSectionModal({
 
     <ConfirmExitDialog
       isOpen={showConfirm}
-      onConfirm={handleConfirmExit}
-      onCancel={() => setShowConfirm(false)}
-      title="Discard Changes?"
-      message="You have unsaved changes. Are you sure you want to exit without saving?"
+      onConfirm={confirmType === "save" ? handleConfirmAdd : handleConfirmExit}
+      onCancel={() => {
+        setShowConfirm(false);
+        setConfirmType("exit");
+      }}
+      title={confirmType === "save" ? "Add Section?" : "Discard Changes?"}
+      message={
+        confirmType === "save"
+          ? "Are you sure you want to add this section? This action cannot be undone."
+          : "You have unsaved changes. Are you sure you want to exit without saving?"
+      }
+      confirmButtonLabel={confirmType === "save" ? "Add Section" : "Discard Changes"}
+      cancelButtonLabel={confirmType === "save" ? "Cancel" : "Continue Editing"}
     />
     </>
   );
