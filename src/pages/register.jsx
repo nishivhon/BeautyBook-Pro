@@ -713,7 +713,7 @@ export const Register = () => {
   };
 
   return (
-    <div className="register-container" style={{ height: "100vh", overflow: "hidden" }}>
+    <div className="register-container" style={{ height: "100vh", overflow: "hidden", display: "flex" }}>
 
       {/* ── LEFT PANEL ── */}
       <div className="register-left">
@@ -930,26 +930,51 @@ export const Register = () => {
       </div>
 
       {/* ── RIGHT PANEL ── */}
-      <div className="register-right">
+      <div className="login-right">
 
-        {/* Big amber circle with scissors */}
-        <div className="right-panel-circle">
-          {/* Large scissors for the panel */}
-          <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 60, height: 60 }}>
-            <circle cx="14" cy="40" r="9" stroke="#1a1208" strokeWidth="3" fill="none" />
-            <circle cx="14" cy="20" r="9" stroke="#1a1208" strokeWidth="3" fill="none" />
-            <path d="M22 36 L54 14" stroke="#1a1208" strokeWidth="3" strokeLinecap="round" />
-            <path d="M22 24 L54 46" stroke="#1a1208" strokeWidth="3" strokeLinecap="round" />
-            <circle cx="14" cy="40" r="3.5" fill="#1a1208" />
-            <circle cx="14" cy="20" r="3.5" fill="#1a1208" />
-          </svg>
+        {/* Decorative layers */}
+        <div className="login-orb login-orb-1" />
+        <div className="login-orb login-orb-2" />
+        <div className="login-orb login-orb-3" />
+        <div className="login-right-top-bar" />
+        <div className="login-right-bottom-bar" />
+        <div className="login-ring login-ring-lg" />
+        <div className="login-ring login-ring-sm" />
+
+        {/* Content */}
+        <div className="login-right-content mounted">
+
+          {/* Brand icon */}
+          <div className="login-icon-circle">
+            <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 52, height: 52 }}>
+              <circle cx="14" cy="40" r="9" stroke="#000" strokeWidth="3" fill="none" />
+              <circle cx="14" cy="20" r="9" stroke="#000" strokeWidth="3" fill="none" />
+              <path d="M22 36 L54 14" stroke="#000" strokeWidth="3" strokeLinecap="round" />
+              <path d="M22 24 L54 46" stroke="#000" strokeWidth="3" strokeLinecap="round" />
+              <circle cx="14" cy="40" r="3.5" fill="#000" />
+              <circle cx="14" cy="20" r="3.5" fill="#000" />
+            </svg>
+          </div>
+
+          {/* Heading */}
+          <div className="login-right-heading">
+            <h2 className="login-right-title">
+              Digital Appointment{" "}
+              <span className="accent">System</span>
+            </h2>
+            <p className="login-right-desc">
+              Book your appointments and manage your beauty services with ease. Join our community today.
+            </p>
+          </div>
+
+          {/* Status badge */}
+          <div className="login-status-badge">
+            <span className="login-status-dot" />
+            <span className="login-status-text">
+              System Online · Secure Connection
+            </span>
+          </div>
         </div>
-
-        <h2 className="right-panel-title">Digital Appointment System</h2>
-
-        <p className="right-panel-text">
-          Book appointments and enjoy a seamless salon experience—no waiting in line.
-        </p>
       </div>
 
       {/* Appointment Booking Modal */}
