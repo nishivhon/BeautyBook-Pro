@@ -73,7 +73,7 @@ const FieldBox = ({ label, children }) => (
 );
 
 /** Dark inner input row with left icon */
-const InputRow = ({ icon, placeholder, type = "text", value, onChange }) => (
+const InputRow = ({ icon, placeholder, type = "text", value, onChange, autoComplete = "on" }) => (
   <div className="input-row">
     <div className="input-wrapper">
       {icon}
@@ -82,6 +82,7 @@ const InputRow = ({ icon, placeholder, type = "text", value, onChange }) => (
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        autoComplete={autoComplete}
         className="input-field"
       />
     </div>
@@ -852,7 +853,8 @@ export const Register = () => {
                     textDecoration: toggleHover ? "underline" : "underline",
                     padding: 0,
                     fontFamily: "inherit",
-                    transition: "color 0.2s ease"
+                    transition: "color 0.2s ease",
+                    userSelect: "none"
                   }}
                 >
                   use phone number instead
@@ -891,7 +893,8 @@ export const Register = () => {
                     textDecoration: toggleHover ? "underline" : "underline",
                     padding: 0,
                     fontFamily: "inherit",
-                    transition: "color 0.2s ease"
+                    transition: "color 0.2s ease",
+                    userSelect: "none"
                   }}
                 >
                   use email instead
