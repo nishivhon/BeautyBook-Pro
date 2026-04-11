@@ -112,6 +112,13 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
     setOtpValue(formatted);
   };
 
+  /* handle Enter key press to verify OTP */
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && otpValue.replace(/\s/g, "").length === 6 && !isExpired) {
+      handleVerify();
+    }
+  };
+
   const isExpired  = timeLeft <= 0;
   const isComplete = otpValue.replace(/\s/g, "").length === 6;
 
@@ -174,6 +181,7 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
                   inputMode="numeric"
                   value={otpValue}
                   onChange={handleInput}
+                  onKeyPress={handleKeyPress}
                   placeholder="--- ---"
                   maxLength={7}
                   autoComplete="one-time-code"

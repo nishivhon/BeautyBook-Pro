@@ -131,7 +131,7 @@ export const Register = () => {
 
   // Create a wrapper for navigate that logs and blocks for verified users
   const navigateWithGuard = (path) => {
-    if (verifiedUser !== null && verifiedUser !== undefined && path === "/") {
+    if (verifiedUser !== null && verifiedUser !== undefined && path === "/landpage") {
       return;
     }
     navigate(path);
@@ -311,7 +311,7 @@ export const Register = () => {
     if (verifiedUser !== null && verifiedUser !== undefined) {
       return;
     }
-    navigateWithGuard("/");
+    navigateWithGuard("/landpage");
   };
 
   const handleOtpVerified = (otp) => {
@@ -408,7 +408,7 @@ export const Register = () => {
       if (verifiedUser === null || verifiedUser === undefined) {
         sessionStorage.removeItem("verifiedUser");
         localStorage.removeItem("verifiedUserBackup");
-        navigateWithGuard("/");
+        navigateWithGuard("/landpage");
       }
     }, 1200);
   };
@@ -601,7 +601,7 @@ export const Register = () => {
           if (verifiedUser === null || verifiedUser === undefined) {
             sessionStorage.removeItem("verifiedUser");
             localStorage.removeItem("verifiedUserBackup");
-            navigateWithGuard("/");
+            navigateWithGuard("/landpage");
           }
         }, 2000);
       } else {
@@ -768,8 +768,8 @@ export const Register = () => {
         {/* Content wrapper */}
         <div className="form-wrapper" style={{ pointerEvents: (verifiedUser && showAppointment) || sessionExpired ? "none" : "auto", opacity: (verifiedUser && showAppointment) || sessionExpired ? 0.5 : 1 }}>
 
-        {/* Back button - hidden for verified users with active appointment */}
-        {!verifiedUser && (
+        {/* Back button - hidden only when verified user has active appointment modal */}
+        {!(verifiedUser && showAppointment) && (
           <button
             type="button"
             onClick={handleBack}
