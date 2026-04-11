@@ -108,8 +108,7 @@ export const Register = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail]       = useState("");
   const [phone, setPhone]       = useState("");
-  const [useEmail, setUseEmail] = useState(true);
-  const [usePhone, setUsePhone] = useState(false);
+  const [verificationMode, setVerificationMode] = useState("email"); // "email" or "phone"
   const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors]     = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,6 +126,7 @@ export const Register = () => {
   const [pendingName, setPendingName] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
   const [otpType, setOtpType] = useState("phone"); // "phone" or "email"
+  const [toggleHover, setToggleHover] = useState(false); // Track toggle button hover
 
   // Create a wrapper for navigate that logs and blocks for verified users
   const navigateWithGuard = (path) => {
@@ -217,17 +217,14 @@ export const Register = () => {
       newErrors.fullName = "Full name is required";
     }
 
-    // Validate email if selected
-    if (useEmail) {
+    // Validate email or phone based on mode
+    if (verificationMode === "email") {
       if (!email.trim()) {
         newErrors.email = "Email is required";
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         newErrors.email = "Please enter a valid email";
       }
-    }
-
-    // Validate phone if selected
-    if (usePhone) {
+    } else if (verificationMode === "phone") {
       if (!phone.trim()) {
         newErrors.phone = "Phone number is required";
       } else if (phone.length !== 11) {
@@ -235,40 +232,29 @@ export const Register = () => {
       }
     }
 
-    // Check if at least one notification method is selected
-    if (!useEmail && !usePhone) {
-      newErrors.notification = "Please select at least one notification method";
-    }
-
     setErrors(newErrors);
 
-    // If no errors, send verification via email or SMS
+    // If no errors, send verification
     if (Object.keys(newErrors).length === 0) {
       setIsSubmitting(true);
       
       const apiUrl = import.meta.env.VITE_API_URL;
 
-      // Determine which endpoint to use
+      // Determine which endpoint to use based on mode
       let endpoint, requestData, successMessage;
       
-      if (usePhone && !useEmail) {
-        // Phone only - use SMS OTP
+      if (verificationMode === "phone") {
+        // Phone mode - use SMS OTP
         endpoint = `${apiUrl}/sms/send-otp`;
         requestData = { phone, name: fullName };
         successMessage = `OTP sent to ${phone}. Check your messages!`;
         console.log('Sending SMS OTP to:', phone);
-      } else if (useEmail && !usePhone) {
-        // Email only - use Email OTP (NEW)
+      } else {
+        // Email mode - use Email OTP
         endpoint = `${apiUrl}/auth/send-email-otp`;
         requestData = { email, full_name: fullName, phone: phone || "" };
         successMessage = `OTP sent to ${email}. Check your inbox!`;
         console.log('Sending email OTP to:', email);
-      } else {
-        // Both email and phone - send SMS OTP (user can receive via either)
-        endpoint = `${apiUrl}/sms/send-otp`;
-        requestData = { phone, name: fullName };
-        successMessage = `OTP sent to ${phone}. Check your messages!`;
-        console.log('Sending SMS OTP to:', phone);
       }
 
       console.log('Data:', requestData);
@@ -289,27 +275,18 @@ export const Register = () => {
             setShowToast(true);
             setTimeout(() => { setShowToast(false); }, 10000);
             
-            // Show OTP modal for both email and phone
-            if (usePhone && !useEmail) {
-              // Phone only
+            // Show OTP modal
+            if (verificationMode === "phone") {
               setPendingPhone(phone);
               setPendingName(fullName);
               setPendingEmail("");
               setOtpType("phone");
               setShowOtpModal(true);
-            } else if (useEmail && !usePhone) {
-              // Email only
+            } else {
               setPendingEmail(email);
               setPendingName(fullName);
               setPendingPhone("");
               setOtpType("email");
-              setShowOtpModal(true);
-            } else {
-              // Both email and phone - using SMS OTP
-              setPendingPhone(phone);
-              setPendingName(fullName);
-              setPendingEmail("");
-              setOtpType("phone");
               setShowOtpModal(true);
             }
           } else {
@@ -432,8 +409,7 @@ export const Register = () => {
     setFullName("");
     setEmail("");
     setPhone("");
-    setUseEmail(true);
-    setUsePhone(false);
+    setVerificationMode("email");
     setTimeout(() => {
       if (verifiedUser === null || verifiedUser === undefined) {
         sessionStorage.removeItem("verifiedUser");
@@ -624,8 +600,7 @@ export const Register = () => {
         setFullName("");
         setEmail("");
         setPhone("");
-        setUseEmail(true);
-        setUsePhone(false);
+        setVerificationMode("email");
         setToastMessage("✅ Appointment booked successfully!");
         setShowToast(true);
         setTimeout(() => {
@@ -738,7 +713,7 @@ export const Register = () => {
   };
 
   return (
-    <div className="register-container">
+    <div className="register-container" style={{ height: "100vh", overflow: "hidden" }}>
 
       {/* ── LEFT PANEL ── */}
       <div className="register-left">
@@ -847,63 +822,83 @@ export const Register = () => {
             {errors.fullName && <span className="error-text">{errors.fullName}</span>}
           </FieldBox>
 
-          {/* USE EMAIL TOGGLE */}
-          <ToggleRow
-            label="Use Email for Notification:"
-            checked={useEmail}
-            onToggle={() => {
-              if (useEmail) {
-                setUseEmail(false);
-              } else {
-                setUseEmail(true);
-                setUsePhone(false);
-              }
-            }}
-          />
-
-          {/* EMAIL ADDRESS */}
-          <FieldBox label="Email Address">
-            <InputRow
-              icon={<EnvelopeIcon />}
-              placeholder="you@gmail.com"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-            {errors.email && <span className="error-text">{errors.email}</span>}
-          </FieldBox>
-
-          {/* USE PHONE TOGGLE */}
-          <ToggleRow
-            label="Use Phone No. for Notification:"
-            checked={usePhone}
-            onToggle={() => {
-              if (usePhone) {
-                setUsePhone(false);
-              } else {
-                setUsePhone(true);
-                setUseEmail(false);
-              }
-            }}
-          />
-          {errors.notification && <span className="error-text">{errors.notification}</span>}
-
-          {/* PHONE NUMBER */}
-          <FieldBox label="Phone Number">
-            <InputRow
-              icon={<PhoneIcon />}
-              placeholder="# ### ### ####"
-              type="tel"
-              value={phone}
-              onChange={e => {
-                const numericOnly = e.target.value.replace(/[^0-9]/g, "");
-                if (numericOnly.length <= 11) {
-                  setPhone(numericOnly);
-                }
-              }}
-            />
-            {errors.phone && <span className="error-text">{errors.phone}</span>}
-          </FieldBox>
+          {/* VERIFICATION MODE - EMAIL OR PHONE */}
+          <div style={{ transition: "opacity 0.3s ease" }}>
+            {verificationMode === "email" ? (
+              <FieldBox label="Email Address">
+                <InputRow
+                  icon={<EnvelopeIcon />}
+                  placeholder="you@gmail.com"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                />
+                {errors.email && <span className="error-text">{errors.email}</span>}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVerificationMode("phone");
+                    setErrors({});
+                  }}
+                  onMouseEnter={() => setToggleHover(true)}
+                  onMouseLeave={() => setToggleHover(false)}
+                  style={{
+                    marginTop: "8px",
+                    background: "none",
+                    border: "none",
+                    color: toggleHover ? "#dd901d" : "#999",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    textDecoration: toggleHover ? "underline" : "underline",
+                    padding: 0,
+                    fontFamily: "inherit",
+                    transition: "color 0.2s ease"
+                  }}
+                >
+                  use phone number instead
+                </button>
+              </FieldBox>
+            ) : (
+              <FieldBox label="Phone Number">
+                <InputRow
+                  icon={<PhoneIcon />}
+                  placeholder="# ### ### ####"
+                  type="tel"
+                  value={phone}
+                  onChange={e => {
+                    const numericOnly = e.target.value.replace(/[^0-9]/g, "");
+                    if (numericOnly.length <= 11) {
+                      setPhone(numericOnly);
+                    }
+                  }}
+                />
+                {errors.phone && <span className="error-text">{errors.phone}</span>}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVerificationMode("email");
+                    setErrors({});
+                  }}
+                  onMouseEnter={() => setToggleHover(true)}
+                  onMouseLeave={() => setToggleHover(false)}
+                  style={{
+                    marginTop: "8px",
+                    background: "none",
+                    border: "none",
+                    color: toggleHover ? "#dd901d" : "#999",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    textDecoration: toggleHover ? "underline" : "underline",
+                    padding: 0,
+                    fontFamily: "inherit",
+                    transition: "color 0.2s ease"
+                  }}
+                >
+                  use email instead
+                </button>
+              </FieldBox>
+            )}
+          </div>
 
           {/* CONFIRM BUTTON + REMEMBER ME */}
           <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8 }}>
@@ -913,7 +908,7 @@ export const Register = () => {
               style={{ width: "100%" }}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Sending verification email..." : "Confirm"}
+              {isSubmitting ? "Sending verification..." : "Confirm"}
             </button>
 
             {/* Remember Me */}
