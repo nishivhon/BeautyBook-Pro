@@ -687,6 +687,7 @@ export const Register = () => {
         phone: userPhone,
         stylist: stylistName,
         refNo: "18xxx-xxxx",
+        verificationMethod: verificationMode,
       };
     } catch (error) {
       // Fallback if something goes wrong
@@ -702,6 +703,7 @@ export const Register = () => {
         phone: userPhone,
         stylist: "Any Available Stylist",
         refNo: "18xxx-xxxx",
+        verificationMethod: verificationMode,
       };
     }
   };
@@ -1011,6 +1013,7 @@ export const Register = () => {
             <AppointmentFormPhase4
               onBack={handleAppointmentBackPhase4}
               onConfirm={handlePhase4Confirm}
+              onCancel={handleCancelBooking}
               booking={getFormattedBooking()}
             />
           ) : null}

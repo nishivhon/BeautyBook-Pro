@@ -278,6 +278,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
             onClick={handleCancelClick}
             style={{
               flex: 1,
+              marginRight: "12px",
               padding: "12px 16px",
               background: "transparent",
               color: "#dd901d",

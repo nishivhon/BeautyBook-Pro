@@ -157,8 +157,10 @@ const Divider = () => (
 /* ══════════════════════════════════════════
    MAIN COMPONENT — Phase 4
 ══════════════════════════════════════════ */
-export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) => {
+export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = BOOKING }) => {
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [showReceiptReminder, setShowReceiptReminder] = useState(false);
   // Safety check: if booking is missing, return null
   if (!booking) {
     return <div style={{ padding: "20px", textAlign: "center", color: "#988f81" }}>Loading booking details...</div>;
@@ -183,8 +185,21 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
     return sum + mins;
   }, 0) : 0;
 
+  /* Handle final confirmation */
+  const handleConfirmBooking = () => {
+    setIsConfirmed(true);
+    // Don't call onConfirm yet - wait until user downloads receipt
+  };
+
   /* Generate printable receipt */
   const handleDownloadReceipt = () => {
+    // Show receipt generated - now remind user to save it
+    setShowReceiptReminder(true);
+    generateReceipt();
+  };
+
+  /* Generate the receipt HTML and open print dialog */
+  const generateReceipt = () => {
     const receiptHTML = `
       <!DOCTYPE html>
       <html>
@@ -484,20 +499,24 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
                 <span className="confirm-detail-value">{bookingData?.name || "N/A"}</span>
               </div>
             </div>
-            <div className="confirm-detail-row">
-              <EnvelopeIcon />
-              <div className="confirm-detail-text">
-                <span className="confirm-detail-label">Email</span>
-                <span className="confirm-detail-value">{bookingData?.email || "N/A"}</span>
+            {bookingData?.verificationMethod === 'email' && (
+              <div className="confirm-detail-row">
+                <EnvelopeIcon />
+                <div className="confirm-detail-text">
+                  <span className="confirm-detail-label">Email</span>
+                  <span className="confirm-detail-value">{bookingData?.email || "N/A"}</span>
+                </div>
               </div>
-            </div>
-            <div className="confirm-detail-row">
-              <PhoneIcon />
-              <div className="confirm-detail-text">
-                <span className="confirm-detail-label">Phone No.</span>
-                <span className="confirm-detail-value">{bookingData?.phone || "N/A"}</span>
+            )}
+            {bookingData?.verificationMethod === 'phone' && (
+              <div className="confirm-detail-row">
+                <PhoneIcon />
+                <div className="confirm-detail-text">
+                  <span className="confirm-detail-label">Phone No.</span>
+                  <span className="confirm-detail-value">{bookingData?.phone || "N/A"}</span>
+                </div>
               </div>
-            </div>
+            )}
             <div className="confirm-detail-row">
               <StylistIcon />
               <div className="confirm-detail-text">
@@ -529,16 +548,21 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
 
       {/* ── Footer CTA ── */}
       <div className="appt-footer" style={{ display: "flex", flexDirection: "row", gap: "12px" }}>
-        <button 
-          className="appt-download-receipt-btn"
-          onClick={handleDownloadReceipt}
-        >
-          <DownloadIcon />
-          Download Receipt
-        </button>
-        <button className="appt-continue-btn" onClick={onConfirm}>
-          Confirm
-        </button>
+        {!isConfirmed && (
+          <button className="appt-continue-btn" onClick={handleConfirmBooking} style={{flex: 1}}>
+            Confirm
+          </button>
+        )}
+        {isConfirmed && (
+          <button 
+            className="appt-download-receipt-btn"
+            onClick={handleDownloadReceipt}
+            style={{flex: 1}}
+          >
+            <DownloadIcon />
+            Download Receipt
+          </button>
+        )}
       </div>
     </div>
     </div>
@@ -552,9 +576,26 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
         cancelText="Keep Booking"
         onConfirm={() => {
           setShowBackdropConfirm(false);
-          onBack?.();
+          onCancel?.();
         }}
         onCancel={() => setShowBackdropConfirm(false)}
+      />
+
+      {/* Receipt Reminder Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showReceiptReminder}
+        title="Save Your Booking Info"
+        message={`Have you saved your receipt and reference number?\n\nReference No.: ${bookingData?.refNo || "N/A"}\n\nYou'll need this for check-in.`}
+        confirmText="Yes, Saved"
+        cancelText="Download Again"
+        onConfirm={() => {
+          setShowReceiptReminder(false);
+          onConfirm?.();
+        }}
+        onCancel={() => {
+          setShowReceiptReminder(false);
+          generateReceipt();
+        }}
       />
     </>
   );
