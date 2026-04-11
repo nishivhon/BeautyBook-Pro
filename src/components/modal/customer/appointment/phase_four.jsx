@@ -1,4 +1,10 @@
 /* ══════════════════════════════════════════
+   IMPORTS
+══════════════════════════════════════════ */
+import { useState } from "react";
+import { ConfirmationDialog } from "../confirmation_dialog";
+
+/* ══════════════════════════════════════════
    INLINE SVG ICONS
 ══════════════════════════════════════════ */
 
@@ -152,6 +158,7 @@ const Divider = () => (
    MAIN COMPONENT — Phase 4
 ══════════════════════════════════════════ */
 export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) => {
+  const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   // Safety check: if booking is missing, return null
   if (!booking) {
     return <div style={{ padding: "20px", textAlign: "center", color: "#988f81" }}>Loading booking details...</div>;
@@ -392,19 +399,38 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
   };
 
   return (
-    <div className="appt-root">
-      <BookingHeader onBack={onBack} />
-      <ProgressIndicator currentStep={4} />
+    <>
+      <div 
+        className="appt-backdrop"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowBackdropConfirm(true);
+          }
+        }}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div className="appt-root">
+          <BookingHeader onBack={onBack} />
+          <ProgressIndicator currentStep={4} />
 
-      {/* ── Scrollable body ── */}
-      <div className="appt-body">
-        <div className="appt-section-heading">
-          <p className="appt-section-title">Confirm Booking</p>
-          <p className="appt-section-sub">Review your appointment details</p>
-        </div>
+          {/* ── Scrollable body ── */}
+          <div className="appt-body">
+            <div className="appt-section-heading">
+              <p className="appt-section-title">Confirm Booking</p>
+              <p className="appt-section-sub">Review your appointment details</p>
+            </div>
 
-        {/* ── Confirmation summary card ── */}
-        <div className="confirm-card">
+            {/* ── Confirmation summary card ── */}
+            <div className="confirm-card">
 
           {/* Service Summary Section - matches wireframe */}
           {services.length > 0 && (
@@ -514,8 +540,23 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
           Confirm
         </button>
       </div>
-
     </div>
+    </div>
+
+      {/* Backdrop Click Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showBackdropConfirm}
+        title="Cancel Booking?"
+        message="Are you sure you want to cancel? Your booking progress will be lost."
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        onConfirm={() => {
+          setShowBackdropConfirm(false);
+          onBack?.();
+        }}
+        onCancel={() => setShowBackdropConfirm(false)}
+      />
+    </>
   );
 };
 

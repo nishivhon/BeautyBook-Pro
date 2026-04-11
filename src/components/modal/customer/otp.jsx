@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ConfirmationDialog } from "./confirmation_dialog";
 
 /* ── Lock icon for the OTP input field ── */
 const LockIcon = () => (
@@ -41,6 +42,7 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
   const [timeLeft,   setTimeLeft]   = useState(INITIAL_TIME);
   const [otpValue,   setOtpValue]   = useState("");
   const [isResending, setIsResending] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   /* countdown ticker */
   useEffect(() => {
@@ -115,15 +117,30 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
 
   return (
     /* backdrop */
-    <div className="otp-overlay" onClick={(e) => e.target === e.currentTarget && handleCancel()}>
+    <div 
+      className="otp-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setShowConfirmDialog(true);
+        }
+      }}
+      style={{ pointerEvents: "auto" }}
+    >
 
       {/* modal card */}
-      <div className="otp-modal" role="dialog" aria-modal="true" aria-labelledby="otp-title">
+      <div 
+        className="otp-modal" 
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="otp-title"
+        onClick={(e) => e.stopPropagation()}
+        style={{ pointerEvents: "auto" }}
+      >
 
         {/* ── Header ── */}
         <header className="otp-header">
           <h1 id="otp-title" className="otp-header-title">
-            Phone Verification
+            {otpType === "email" ? "Email Verification" : "Phone Verification"}
           </h1>
           <button
             className="otp-close-btn"
@@ -140,7 +157,7 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
           {/* Instruction */}
           <p className="otp-instruction">
             Enter the 6-digit code sent to your{" "}
-            <strong>phone number</strong>
+            <strong>{otpType === "email" ? "email" : "phone number"}</strong>
           </p>
 
           {/* OTP field */}
@@ -216,6 +233,24 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
 
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div style={{ position: "relative", zIndex: 2000 }}>
+          <ConfirmationDialog
+            isOpen={showConfirmDialog}
+            title="Exit Verification?"
+            message="Are you sure you want to cancel? Your verification will be lost."
+            confirmText="Yes, Exit"
+            cancelText="Continue Verifying"
+            onConfirm={() => {
+              setShowConfirmDialog(false);
+              handleCancel();
+            }}
+            onCancel={() => setShowConfirmDialog(false)}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ConfirmationDialog } from "../../confirmation_dialog";
 
 /* Scissors icon used for all hair service rows */
 const ScissorsIcon = () => (
@@ -127,6 +128,7 @@ export const HairServicesModal = ({ onBack, onContinue, initialSelected = [], is
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -175,7 +177,26 @@ export const HairServicesModal = ({ onBack, onContinue, initialSelected = [], is
   };
 
   return (
-    <div className="appt-root">
+    <>
+      <div
+        className="appt-backdrop"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowBackdropConfirm(true);
+          }
+        }}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div className="appt-root">
 
       <ServiceHeader title="Hair Services" onBack={handleBack} isSaving={isUpdating} />
       <ProgressIndicator currentStep={2} />
@@ -270,6 +291,21 @@ export const HairServicesModal = ({ onBack, onContinue, initialSelected = [], is
       </div>
 
     </div>
+    </div>
+
+      <ConfirmationDialog
+        isOpen={showBackdropConfirm}
+        title="Cancel Service Selection?"
+        message="Are you sure you want to exit? Your service selection will be saved."
+        confirmText="Yes, Exit"
+        cancelText="Keep Selecting"
+        onConfirm={() => {
+          setShowBackdropConfirm(false);
+          onBack?.();
+        }}
+        onCancel={() => setShowBackdropConfirm(false)}
+      />
+    </>
   );
 };
 

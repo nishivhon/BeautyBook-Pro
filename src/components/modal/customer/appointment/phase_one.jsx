@@ -116,9 +116,10 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
 
   const handleBackClick = () => {
-    setShowCancelConfirm(true);
+    setShowBackdropConfirm(true);
   };
 
   const handleContinue = () => {
@@ -176,13 +177,31 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
   };
 
   return (
-    <div className="appt-root">
+    <>
+      <div 
+        className="appt-backdrop"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowBackdropConfirm(true);
+          }
+        }}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div className="appt-root">
+          <BookingHeader onBack={onBack} onBackClick={handleBackClick} />
+          <ProgressIndicator currentStep={1} />
 
-      <BookingHeader onBack={onBack} onBackClick={handleBackClick} />
-      <ProgressIndicator currentStep={1} />
-
-      {/* ── Scrollable body ── */}
-      <div className="appt-body">
+          {/* ── Scrollable body ── */}
+          <div className="appt-body">
 
         {/* Section heading */}
         <div className="appt-section-heading">
@@ -550,8 +569,22 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
           </button>
         </div>
       </div>
+    </div>
+    </div>
 
-      {/* Cancel Confirmation Dialog */}
+      {/* Cancel Confirmation Dialogs */}
+      <ConfirmationDialog
+        isOpen={showBackdropConfirm}
+        title="Cancel Booking?"
+        message="Are you sure you want to cancel? Your scheduling progress will be lost."
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        onConfirm={() => {
+          setShowBackdropConfirm(false);
+          onBack?.();
+        }}
+        onCancel={() => setShowBackdropConfirm(false)}
+      />
       <ConfirmationDialog
         isOpen={showCancelConfirm}
         title="Cancel Booking?"
@@ -564,8 +597,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
         }}
         onCancel={() => setShowCancelConfirm(false)}
       />
-
-    </div>
+    </>
   );
 };
 

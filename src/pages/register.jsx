@@ -366,13 +366,6 @@ export const Register = () => {
           setPendingPhone("");
           setPendingEmail("");
           setPendingName("");
-          
-          // Reset form
-          setFullName("");
-          setEmail("");
-          setPhone("");
-          setUseEmail(true);
-          setUsePhone(false);
         } else {
           console.error('❌ OTP verification failed:', data.error);
           setToastMessage(data.error || 'Invalid OTP. Please try again.');
