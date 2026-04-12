@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { EditServiceModal } from "../../components/modal/admin/edit_service";
@@ -297,7 +297,7 @@ const ServiceItem = ({ name, meta, available, price, onEdit }) => (
 );
 
 /* ── Services list panel ── */
-const ServicesPanel = ({ onEditService }) => {
+const ServicesPanel = ({ serviceGroups, loading, error, onEditService }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
@@ -312,26 +312,43 @@ const ServicesPanel = ({ onEditService }) => {
         </button>
       </div>
 
-      <div className={isExpanded ? "svc-services-scroll" : "svc-services-scroll-limited"}>
-        {/* Show all services grouped by category (both expanded and collapsed) */}
-        {SERVICE_GROUPS.map((group, gi) => (
-          <div key={gi}>
-            <p className="svc-category-label">{group.category}</p>
-            <div className="svc-item-list">
-              {group.items.map((svc, i) => (
-                <ServiceItem 
-                  key={i} 
-                  {...svc} 
-                  onEdit={onEditService}
-                />
-              ))}
+      {/* Loading State */}
+      {loading && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+          Loading services...
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+          Error loading services: {error}
+        </div>
+      )}
+
+      {/* Services List */}
+      {!loading && !error && (
+        <div className={isExpanded ? "svc-services-scroll" : "svc-services-scroll-limited"}>
+          {/* Show all services grouped by category (both expanded and collapsed) */}
+          {serviceGroups.map((group, gi) => (
+            <div key={gi}>
+              <p className="svc-category-label">{group.category}</p>
+              <div className="svc-item-list">
+                {group.items.map((svc, i) => (
+                  <ServiceItem 
+                    key={i} 
+                    {...svc} 
+                    onEdit={onEditService}
+                  />
+                ))}
+              </div>
+              {gi < serviceGroups.length - 1 && (
+                <div className="svc-category-divider" />
+              )}
             </div>
-            {gi < SERVICE_GROUPS.length - 1 && (
-              <div className="svc-category-divider" />
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -392,12 +409,79 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardServices = ({ date }) => {
   const navigate = useNavigate();
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editingService, setEditingService] = useState(null);
   const [isCreatingPromo, setIsCreatingPromo] = useState(false);
   const [isCreatingDiscount, setIsCreatingDiscount] = useState(false);
 
-  // Extract category names from SERVICE_GROUPS
-  const categories = SERVICE_GROUPS.map(group => group.category);
+  // Fetch services from API on component mount
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await fetch('/api/services');
+        if (!res.ok) {
+          throw new Error(`Failed to fetch services: ${res.status}`);
+        }
+
+        const servicesData = await res.json();
+        
+        // Transform services data to include formatted price and availability
+        const transformedServices = servicesData.map(s => {
+          // Handle both 'name' and 'service_name' column variants
+          const serviceName = s.service_name || s.name || 'Unknown';
+          
+          return {
+            id: s.id,
+            name: serviceName,
+            category: s.category || 'Other',
+            description: s.description || s.meta || '',
+            price: s.price ? `₱${parseFloat(s.price).toFixed(2)}` : '₱0.00',
+            estimatedTime: s.estimated_time || s.est_time || '30 mins',
+            available: s.availability !== false,
+            meta: s.description || s.meta || ''
+          };
+        });
+
+        setServices(transformedServices);
+      } catch (err) {
+        console.error('Error fetching services:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+    
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchServices, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Group services by category
+  const groupedServices = services.reduce((acc, service) => {
+    const existing = acc.find(group => group.category === service.category);
+    if (existing) {
+      existing.items.push(service);
+    } else {
+      acc.push({
+        category: service.category,
+        items: [service]
+      });
+    }
+    return acc;
+  }, []);
+
+  // Use grouped services if available, otherwise use SERVICE_GROUPS as fallback
+  const serviceGroups = services.length > 0 ? groupedServices : SERVICE_GROUPS;
+  
+  // Extract category names
+  const categories = serviceGroups.map(group => group.category);
 
   const handleLogout = () => {
     logoutOperator();
@@ -478,7 +562,12 @@ export const AdminDashboardServices = ({ date }) => {
 
         <div className="svc-page-grid">
           {/* Left — Services list */}
-          <ServicesPanel onEditService={handleEditService} />
+          <ServicesPanel 
+            serviceGroups={serviceGroups}
+            loading={loading}
+            error={error}
+            onEditService={handleEditService} 
+          />
 
           {/* Right — Quick actions + Analytics */}
           <div>
