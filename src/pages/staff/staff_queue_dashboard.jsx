@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/tailwind.css";
 
@@ -141,6 +141,16 @@ function useClock() {
     return () => clearInterval(id);
   }, []);
   return time.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+}
+
+// ── Today's date ──────────────────────────────────────────────────────────────
+function useToday() {
+  const [date, setDate] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setDate(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
 }
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
@@ -343,48 +353,82 @@ function StatCard({ value, label }) {
   );
 }
 
-// ── Schedule card ─────────────────────────────────────────────────────────────
-function ScheduleCard({ showToast }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const visible = collapsed ? scheduleData.slice(0, 3) : scheduleData;
+// ── Schedule Row ──────────────────────────────────────────────────────────────
+function ScheduleRow({ stylist, time, client, service, status }) {
+  const isActive = status === "active";
+  const isDone = status === "done";
+
+  const StatusIcon = isDone ? () => <DoneIcon size={14} color="#22c55e" />
+                   : isActive ? () => <PlayIcon size={14} color="#dd901d" />
+                   : () => <NextIcon size={14} color="#988f81" />;
 
   return (
-    <div className="queue-sidebar-panel">
-      <div className="queue-schedule-header">
-        <span className="queue-schedule-title">Today's Schedule</span>
-        <span className="queue-schedule-date">Dec 7, 2024</span>
+    <div className={`live-schedule-row ${isActive ? "live-schedule-row-active" : ""}`}>
+      <div className="live-schedule-left">
+        <div className="live-schedule-stylist">
+          <div className="live-sched-name-row">
+            <span className="live-sched-dot" />
+            <span className="live-schedule-stylist-name">{stylist}</span>
+          </div>
+          <span className="live-schedule-time">{time}</span>
+        </div>
+        <div className="live-schedule-divider-v" />
+        <div className="live-schedule-client">
+          <span className="live-schedule-client-name">{client}</span>
+          <span className="live-schedule-service">{service}</span>
+        </div>
+      </div>
+      <button className="live-schedule-icon-btn" aria-label={status}>
+        <StatusIcon />
+      </button>
+    </div>
+  );
+}
+
+// ── Schedule card ─────────────────────────────────────────────────────────────
+function ScheduleCard({ showToast }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const today = useToday();
+  const activeRowRef = useRef(null);
+
+  useEffect(() => {
+    if (!isExpanded && activeRowRef.current) {
+      setTimeout(() => {
+        const scrollContainer = activeRowRef.current?.closest(".live-schedule-scroll") 
+                             || activeRowRef.current?.closest(".live-schedule-scroll-limited");
+        if (scrollContainer && activeRowRef.current) {
+          // Scroll to show first active row (Juan Dela Cruz) at the top of the viewport
+          const rowPosition = activeRowRef.current.offsetTop;
+          scrollContainer.scrollTop = Math.max(0, rowPosition - 70);
+        }
+      }, 50);
+    }
+  }, [isExpanded]);
+
+  return (
+    <div className="live-schedule-panel">
+      <div className="live-schedule-header">
+        <div className="live-schedule-header-title-row">
+          <h3 className="live-schedule-title">Today's Schedule</h3>
+          <span className="live-schedule-date">{today}</span>
+        </div>
+        <button 
+          className="live-schedule-toggle-btn"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? "See less" : "See more"}
+        </button>
       </div>
 
-      {visible.map((item, i) => {
-        const isActive = item.status === "active";
-        const isDone = item.status === "done";
-
-        return (
-          <div key={i} className={`queue-schedule-item ${isActive ? "active" : ""}`} onClick={() => showToast(`${item.client} — ${item.service}`)}>
-            <span className="queue-schedule-dot queue-schedule-icon-span">
-              {isDone ? (
-                <DoneIcon />
-              ) : isActive ? (
-                <PlayIcon />
-              ) : (
-                <NextIcon color="#988f81" />
-              )}
-            </span>
-            <span className="queue-schedule-time">{item.time}</span>
-            <div className="queue-schedule-divider" />
-            <div className="queue-schedule-details">
-              <div className="queue-schedule-name">{item.stylist}</div>
-              <div className="queue-schedule-service">{item.client} • {item.service}</div>
+      <div className={isExpanded ? "live-schedule-scroll" : "live-schedule-scroll-limited"}>
+        {scheduleData.map((item, i) => {
+          const isFirstActive = scheduleData.slice(0, i).every(d => d.status !== "active") && item.status === "active";
+          return (
+            <div key={i} ref={isFirstActive ? activeRowRef : null}>
+              <ScheduleRow {...item} />
             </div>
-          </div>
-        );
-      })}
-
-      <div className="queue-schedule-footer">
-        <span className="queue-schedule-footer-text">{collapsed ? "Showing partial schedule" : "Showing full schedule"}</span>
-        <button onClick={() => setCollapsed(c => !c)} className="queue-schedule-toggle-btn">
-          {collapsed ? "See more" : "See less"}
-        </button>
+          );
+        })}
       </div>
     </div>
   );
