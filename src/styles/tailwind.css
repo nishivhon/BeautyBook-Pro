@@ -7516,4 +7516,392 @@
     font-family: 'Inter', sans-serif;
     font-weight: 700;
     font-size: 0.875rem;
-  }
+  }/* Staff Service Dashboard Additional Styles */
+
+/* ──────────────────────────────────────────────────────────
+   STAFF SERVICE DASHBOARD
+────────────────────────────────────────────────────────────── */
+
+/* Service Summary Stats */
+.service-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.service-stat-card {
+  background: #231d1a;
+  border: 1px solid rgba(152, 143, 129, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.service-stat-value {
+  font-family: 'IM Fell English', Georgia, serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.service-stat-value-green {
+  color: #22c55e;
+}
+
+.service-stat-value-red {
+  color: #ef4343;
+}
+
+.service-stat-value-amber {
+  color: #dd901d;
+}
+
+.service-stat-label {
+  font-size: 12px;
+  color: #988f81;
+  font-weight: 400;
+}
+
+/* Service Container */
+.service-container {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+.service-list-panel {
+  background: rgba(221, 144, 29, 0.06);
+  border: 1px solid rgba(152, 143, 129, 0.5);
+  border-radius: 14px;
+  padding: 24px 28px;
+}
+
+.service-section {
+  margin-bottom: 28px;
+}
+
+.service-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(152, 143, 129, 0.2);
+}
+
+.service-section-title {
+  font-family: 'IM Fell English', Georgia, serif;
+  font-size: 17px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.service-section-badge {
+  font-size: 11px;
+  color: #988f81;
+  background: rgba(35, 29, 26, 0.6);
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid rgba(152, 143, 129, 0.2);
+}
+
+.service-section-toggle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #988f81;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.service-section-toggle:hover {
+  color: #dd901d;
+}
+
+/* Service Item */
+.service-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(35, 29, 26, 0.6);
+  border: 1px solid rgba(152, 143, 129, 0.2);
+  margin-bottom: 8px;
+  cursor: pointer;
+  opacity: 1;
+  transition: background 0.15s, border-color 0.15s, opacity 0.2s;
+}
+
+.service-item:hover {
+  background: rgba(35, 29, 26, 0.85);
+}
+
+.service-item.unavailable {
+  opacity: 0.65;
+  background: rgba(35, 29, 26, 0.3);
+}
+
+.service-item.unavailable:hover {
+  background: rgba(35, 29, 26, 0.3);
+}
+
+.service-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dd901d;
+}
+
+.service-icon-box.unavailable {
+  background: #231d1a;
+  border: 1px solid rgba(152, 143, 129, 0.2);
+}
+
+.service-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.service-item-name.unavailable {
+  color: #988f81;
+}
+
+.service-item-meta {
+  font-size: 12px;
+  color: #988f81;
+  margin-top: 3px;
+  font-weight: 300;
+}
+
+.service-item-status {
+  text-align: right;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.service-item-status-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #dd901d;
+  margin-bottom: 3px;
+}
+
+.service-item-status-label.unavailable {
+  color: #ef4343;
+}
+
+.service-item-price {
+  font-size: 12px;
+  color: #988f81;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: rgba(152, 143, 129, 0.2);
+  border: 1px solid rgba(152, 143, 129, 0.35);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle-switch.checked {
+  background: rgba(221, 144, 29, 0.5);
+  border-color: #dd901d;
+}
+
+.toggle-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #988f81;
+  transition: left 0.2s, background 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.toggle-switch.checked .toggle-switch-thumb {
+  left: 20px;
+  background: #dd901d;
+}
+
+/* Quick Actions Card */
+.quick-actions-panel {
+  background: rgba(221, 144, 29, 0.06);
+  border: 1px solid rgba(152, 143, 129, 0.5);
+  border-radius: 14px;
+  padding: 22px 24px;
+  align-self: start;
+}
+
+.quick-actions-title {
+  font-family: 'IM Fell English', Georgia, serif;
+  font-size: 17px;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.quick-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  background: transparent;
+  border: 1px solid rgba(152, 143, 129, 0.5);
+  transition: background 0.15s;
+  cursor: pointer;
+}
+
+.quick-action-btn:hover {
+  background: rgba(35, 29, 26, 0.6);
+}
+
+/* Tip Box */
+.quick-actions-tip {
+  margin-top: 20px;
+  padding: 14px;
+  background: rgba(221, 144, 29, 0.08);
+  border: 1px solid rgba(221, 144, 29, 0.15);
+  border-radius: 10px;
+}
+
+.quick-actions-tip-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #dd901d;
+  margin-bottom: 5px;
+}
+
+.quick-actions-tip-text {
+  font-size: 12px;
+  color: #988f81;
+  font-weight: 300;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Header Actions */
+.service-header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.service-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 16px;
+  background: rgba(35, 29, 26, 0.6);
+  border: 1px solid rgba(152, 143, 129, 0.5);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.service-action-btn:hover {
+  background: #231d1a;
+}
+
+/* Toast Notification */
+.service-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: #231d1a;
+  border: 1px solid #dd901d;
+  border-radius: 10px;
+  padding: 13px 20px;
+  font-size: 14px;
+  color: #dd901d;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 999;
+}
+
+.service-toast.hidden {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.service-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Page layout */
+.service-page-root {
+  min-height: 100vh;
+  background: #060605;
+  background-image: radial-gradient(
+    ellipse at 20% 0%,
+    rgba(221, 144, 29, 0.04) 0%,
+    transparent 60%
+  );
+}
+
+.service-page-content {
+  max-width: 1200px;
+  margin: 64px auto 0;
+  padding: 40px 48px;
+}
+
+.service-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.service-page-title-block h1 {
+  font-family: 'IM Fell English', Georgia, serif;
+  font-size: 32px;
+  color: #fff;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.service-page-title-block p {
+  font-size: 14px;
+  color: #988f81;
+  margin-top: 5px;
+  font-weight: 300;
+}
