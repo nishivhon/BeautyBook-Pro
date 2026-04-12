@@ -1,0 +1,273 @@
+import React, { useState, useEffect } from "react";
+import ConfirmExitDialog from "./ConfirmExitDialog";
+
+export default function AddSubheadingModal({
+  isOpen,
+  onClose,
+  sections,
+  onAddSubheading,
+}) {
+  const [selectedSection, setSelectedSection] = useState("");
+  const [subheadingText, setSubheadingText] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmType, setConfirmType] = useState("exit"); // "exit" or "save"
+
+  useEffect(() => {
+    if (isOpen && sections.length > 0 && !selectedSection) {
+      setSelectedSection(sections[0].id);
+    }
+  }, [isOpen, sections, selectedSection]);
+
+  const hasChanges = subheadingText.trim() !== "";
+
+  const handleCloseClick = () => {
+    setConfirmType("exit");
+    setShowConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowConfirm(false);
+    setConfirmType("exit");
+    setSubheadingText("");
+    setSelectedSection("");
+    onClose();
+  };
+
+  const handleDone = () => {
+    if (!selectedSection) {
+      alert("Please select a section.");
+      return;
+    }
+    if (!subheadingText.trim()) {
+      alert("Please enter a subheading.");
+      return;
+    }
+    setConfirmType("save");
+    setShowConfirm(true);
+  };
+
+  const handleConfirmAdd = () => {
+    onAddSubheading(selectedSection, subheadingText);
+    setShowConfirm(false);
+    setConfirmType("exit");
+    setSubheadingText("");
+    setSelectedSection("");
+    onClose();
+  };
+
+  const handleCancel = () => {
+    setSubheadingText("");
+    setSelectedSection("");
+    onClose();
+  };
+
+  return (
+    <>
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "rgba(0, 0, 0, 0.7)",
+        display: isOpen ? "flex" : "none",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 2000,
+      }}
+      onClick={handleCloseClick}
+    >
+      <div
+        style={{
+          background: "#1a1a1a",
+          border: "1.5px solid #dd901d",
+          borderRadius: "12px",
+          padding: "32px",
+          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+          minWidth: "420px",
+          maxWidth: "500px",
+          color: "white",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <h2 style={{ marginTop: 0, marginBottom: 0, color: "#dd901d" }}>Add Subheading</h2>
+          <button
+            onClick={handleCloseClick}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#888",
+              cursor: "pointer",
+              fontSize: "24px",
+              padding: "0",
+              width: "28px",
+              height: "28px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => e.target.style.color = "#dd901d"}
+            onMouseLeave={(e) => e.target.style.color = "#888"}
+            title="Close modal"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Section Selector */}
+        <div style={{ marginBottom: "24px" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "8px",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "#ccc",
+            }}
+          >
+            Select Section
+          </label>
+          <select
+            value={selectedSection}
+            onChange={(e) => setSelectedSection(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              background: "#0a0908",
+              border: "1.5px solid #dd901d",
+              borderRadius: "6px",
+              color: "white",
+              fontSize: "13px",
+              cursor: "pointer",
+              boxSizing: "border-box",
+            }}
+          >
+            <option value="">-- Choose a section --</option>
+            {sections.map((section) => (
+              <option key={section.id} value={section.id}>
+                {section.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Subheading Input */}
+        <div style={{ marginBottom: "24px" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "8px",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "#ccc",
+            }}
+          >
+            Subheading Text
+          </label>
+          <textarea
+            value={subheadingText}
+            onChange={(e) => setSubheadingText(e.target.value)}
+            placeholder="Enter subheading text..."
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              background: "#0a0908",
+              border: "1.5px solid #dd901d",
+              borderRadius: "6px",
+              color: "white",
+              fontSize: "13px",
+              boxSizing: "border-box",
+              minHeight: "80px",
+              fontFamily: "inherit",
+              resize: "vertical",
+            }}
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+          <button
+            onClick={handleCancel}
+            style={{
+              padding: "10px 20px",
+              background: "transparent",
+              border: "1.5px solid #666",
+              borderRadius: "6px",
+              color: "#ccc",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: "500",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = "#999";
+              e.target.style.color = "#fff";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = "#666";
+              e.target.style.color = "#ccc";
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              handleDone();
+            }}
+            disabled={!selectedSection || !subheadingText.trim()}
+            style={{
+              padding: "10px 20px",
+              background: (!selectedSection || !subheadingText.trim()) ? "#666" : "#dd901d",
+              border: "none",
+              borderRadius: "6px",
+              color: (!selectedSection || !subheadingText.trim()) ? "#999" : "#1a1a1a",
+              cursor: (!selectedSection || !subheadingText.trim()) ? "not-allowed" : "pointer",
+              fontSize: "13px",
+              fontWeight: "600",
+              transition: "all 0.2s ease",
+              opacity: (!selectedSection || !subheadingText.trim()) ? 0.6 : 1,
+              pointerEvents: (!selectedSection || !subheadingText.trim()) ? "none" : "auto",
+            }}
+            onMouseEnter={(e) => {
+              if (!selectedSection || !subheadingText.trim()) return;
+              e.target.style.background = "#c97c1c";
+            }}
+            onMouseLeave={(e) => {
+              if (!selectedSection || !subheadingText.trim()) return;
+              e.target.style.background = "#dd901d";
+            }}
+            title={
+              !selectedSection ? "Please select a section" :
+              !subheadingText.trim() ? "Please enter a subheading" :
+              ""
+            }
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ConfirmExitDialog
+      isOpen={showConfirm}
+      onConfirm={confirmType === "save" ? handleConfirmAdd : handleConfirmExit}
+      onCancel={() => {
+        setShowConfirm(false);
+        setConfirmType("exit");
+      }}
+      title={confirmType === "save" ? "Add Subheading?" : "Discard Changes?"}
+      message={
+        confirmType === "save"
+          ? "Are you sure you want to add this subheading? This action cannot be undone."
+          : "You have unsaved changes. Are you sure you want to exit without saving?"
+      }
+      confirmButtonLabel={confirmType === "save" ? "Add Subheading" : "Discard Changes"}
+      cancelButtonLabel={confirmType === "save" ? "Cancel" : "Continue Editing"}
+    />
+    </>
+  );
+}

@@ -50,7 +50,8 @@ A comprehensive digital appointment and customer management system for barbersho
   - User accounts management
   - Database administration
   - Security settings and controls
-  - Landing page content management
+  - Landing page content management with title and section editing
+  - Add custom titles to hero, how-it-works, services, and footer sections
   - Advanced reporting and revenue tracking
   - Multi-section sidebar navigation
 
@@ -105,6 +106,129 @@ npm run build
 npm run preview
 ```
 
+## Deployment
+
+### Vercel Deployment
+
+BeautyBook Pro is configured for deployment on Vercel with optimized routing and API handling.
+
+#### Prerequisites for Deployment
+
+1. **Vercel Account** — Create an account at [vercel.com](https://vercel.com)
+2. **Git Repository** — Push your code to GitHub, GitLab, or Bitbucket
+3. **Environment Variables** — Configure the following in Vercel dashboard:
+   ```
+   VITE_SUPABASE_URL=<your-supabase-url>
+   VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
+   API_BASE_URL=<your-api-endpoint>
+   NODE_ENV=production
+   ```
+
+#### Deployment Steps
+
+1. **Connect Repository**
+   - Go to Vercel dashboard → New Project
+   - Import your GitHub/GitLab repository
+   - Select the project root directory
+
+2. **Configure Environment**
+   - Add all required environment variables
+   - Ensure Node.js version is set to 18 or higher
+
+3. **Deploy**
+   - Click "Deploy"
+   - Vercel automatically builds and deploys on every push to main branch
+
+#### Routing Configuration
+
+The application uses the following routing structure on Vercel:
+
+**Frontend Routes:**
+- `/` — Landing page
+- `/login` — Operator login
+- `/register` — Customer registration
+- `/admin/dashboard` — Admin dashboard (requires admin role)
+- `/admin/dashboard/services` — Services management
+- `/admin/dashboard/live-status` — Real-time queue
+- `/admin/dashboard/staff-status` — Staff monitoring
+- `/superadmin/dashboard` — Super admin dashboard (requires super admin role)
+- `/operators/login` — Operator magic link authentication
+
+**API Routes:**
+Backend API endpoints are configured via environment variable `API_BASE_URL` and handle:
+- `/api/auth/*` — Authentication and operator management
+- `/api/appointments/*` — Appointment booking and management
+- `/api/services/*` — Services CRUD operations
+- `/api/staffs/*` — Staff management
+- `/api/sms/*` — SMS OTP handling
+- `/api/appointments/[category]` — Service-specific appointments
+
+#### Backend Deployment Options
+
+**Option 1: Express Server on Vercel**
+- Deploy backend as separate Vercel project
+- Configure frontend to point to backend API URL
+- Backend handles all database operations
+
+**Option 2: Serverless API Routes**
+- Deploy API routes as Vercel serverless functions
+- Place API files in `/api` directory
+- Automatic routing: `/api/filename` → function handler
+- See `api/` folder structure for available endpoints
+
+#### Environment Variables for Production
+
+Create `.env.production` or configure in Vercel dashboard:
+
+```env
+# Supabase Configuration
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key
+
+# API Configuration
+VITE_API_BASE_URL=https://your-api-domain.com
+API_BASE_URL=https://your-api-domain.com
+
+# Database
+DATABASE_URL=postgresql://user:password@host/database
+
+# Email Delivery
+RESEND_API_KEY=your_resend_key
+
+# Session & Security
+SESSION_SECRET=your_session_secret
+JWT_SECRET=your_jwt_secret
+
+# Environment
+NODE_ENV=production
+```
+
+#### Vercel Configuration
+
+The `vercel.json` file contains deployment configuration:
+- Build commands
+- API rewrites and routing
+- Headers and redirects
+- Environment fallbacks
+
+#### Monitoring & Debugging
+
+- **Vercel Dashboard** — Monitor deployments, logs, and analytics
+- **Browser Console** — Check for frontend errors
+- **Vercel CLI** — Run `vercel logs` to view production logs
+- **Error Tracking** — Magic links and authentication errors logged to console
+
+#### Production Checklist
+
+- [ ] Environment variables configured in Vercel
+- [ ] Supabase URL and keys updated for production database
+- [ ] API endpoints pointed to production backend
+- [ ] Email configuration (Resend) set up for production
+- [ ] Database migrations applied to production database
+- [ ] Magic link credentials updated with production URLs
+- [ ] CORS settings configured for production domain
+- [ ] Security headers configured in `vercel.json`
+
 ## Documentation
 
 - **[Admin Dashboard Guide](docs/ADMIN_DASHBOARD_GUIDE.md)** — Admin features and workflow
@@ -134,11 +258,21 @@ Magic links are now **dynamically generated** with fresh timestamps on each app 
 ### Admin Navigation
 
 All admin dashboards are now fully functional with working navigation:
-- **Home**: `/admin/dashboard` — Main admin dashboard with metrics and charts
+- **Admin Dashboard**: `/admin/dashboard` — Main admin dashboard with metrics and charts
+  - Navigation: Home, Services, Live Status, Staff Status
 - **Services**: `/admin/dashboard/services` — Services management
 - **Live Status**: `/admin/dashboard/live-status` — Real-time appointment queue
 - **Staff Status**: `/admin/dashboard/staff-status` — Staff monitoring
-- **Super Admin**: `/superadmin/dashboard` — Multi-section super admin dashboard
+- **Super Admin**: `/superadmin/dashboard` — Multi-section super admin dashboard with full sidebar navigation
+
+### Landing Page Editor (Super Admin)
+
+The Super Admin dashboard includes a powerful landing page editor that allows you to:
+- Add custom titles to each section (Hero, How It Works, Services, Footer)
+- Edit section headings and descriptions
+- Add subheadings and promotional content
+- Manage content through an intuitive modal interface
+- Preview changes in real-time
 
 ## Contact
 

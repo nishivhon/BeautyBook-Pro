@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ConfirmExitDialog from "./ConfirmExitDialog";
 
 const CloseIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
@@ -61,6 +62,80 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
   const [socialLinks, setSocialLinks] = useState([]);
   const [newSocialUrl, setNewSocialUrl] = useState("");
   const [newSocialPlatform, setNewSocialPlatform] = useState("facebook");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmType, setConfirmType] = useState("exit"); // "exit" or "save"
+  const [validationErrors, setValidationErrors] = useState({});
+  const [showErrors, setShowErrors] = useState(false);
+
+  // Validation Rules
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const isValidUrl = (url) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const isValidPhone = (phone) => {
+    // Phone should contain at least some digits, can have formatting characters
+    const phoneRegex = /^[0-9\s\-\+\(\)]+$/;
+    return phoneRegex.test(phone) && phone.replace(/\D/g, "").length >= 7;
+  };
+
+  const validate = () => {
+    const errors = {};
+
+    // Validate Contact Info fields
+    if (!contactData.address.trim()) {
+      errors.address = "Address is required";
+    } else if (contactData.address.trim().length > 200) {
+      errors.address = "Address must be 200 characters or less";
+    }
+
+    if (!contactData.phone.trim()) {
+      errors.phone = "Phone is required";
+    } else if (contactData.phone.trim().length > 20) {
+      errors.phone = "Phone must be 20 characters or less";
+    } else if (!isValidPhone(contactData.phone)) {
+      errors.phone = "Phone must contain at least 7 digits and valid formatting";
+    }
+
+    if (!contactData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!isValidEmail(contactData.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    if (!contactData.hours.trim()) {
+      errors.hours = "Business hours are required";
+    } else if (contactData.hours.trim().length > 200) {
+      errors.hours = "Business hours must be 200 characters or less";
+    }
+
+    // Validate Social Links
+    if (socialLinks.length === 0) {
+      errors.socialLinks = "Please add at least one social media link";
+    } else {
+      socialLinks.forEach((link, index) => {
+        if (!link.url.trim()) {
+          errors[`social_${index}`] = "Social media URL cannot be empty";
+        } else if (!isValidUrl(link.url)) {
+          errors[`social_${index}`] = "Invalid URL format. Must start with https:// or http://";
+        } else if (link.url.length > 500) {
+          errors[`social_${index}`] = "URL is too long (max 500 characters)";
+        }
+      });
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -75,6 +150,8 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
       setNewSocialUrl("");
       setNewSocialPlatform("facebook");
       setActiveTab("contact");
+      setValidationErrors({});
+      setShowErrors(false);
     }
   }, [isOpen, footer]);
 
@@ -111,6 +188,35 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
     onClose();
   };
 
+  const handleCloseClick = () => {
+    // Always show confirmation dialog when trying to exit
+    setShowConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowConfirm(false);
+    onClose();
+  };
+
+  const handleConfirmSave = () => {
+    setShowConfirm(false);
+    handleSave();
+  };
+
+  const handleSaveClick = () => {
+    if (validate()) {
+      setConfirmType("save");
+      setShowConfirm(true);
+      setShowErrors(false);
+    } else {
+      setShowErrors(true);
+      // Switch to contact tab if error is there
+      if (validationErrors.address || validationErrors.phone || validationErrors.email || validationErrors.hours) {
+        setActiveTab("contact");
+      }
+    }
+  };
+
   const getPlatformIcon = (platformId) => {
     const platform = SOCIAL_PLATFORMS.find(p => p.id === platformId);
     return platform ? <platform.icon /> : null;
@@ -118,9 +224,8 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
 
   const isAddDisabled = !newSocialUrl.trim() || socialLinks.some(link => link.platform === newSocialPlatform);
 
-  if (!isOpen) return null;
-
   return (
+    <>
     <div
       style={{
         position: "fixed",
@@ -129,13 +234,13 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
         right: 0,
         bottom: 0,
         backgroundColor: "rgba(0, 0, 0, 0.7)",
-        display: "flex",
+        display: isOpen ? "flex" : "none",
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1001,
         fontFamily: "Inter, sans-serif",
       }}
-      onClick={onClose}
+      onClick={handleCloseClick}
     >
       <div
         style={{
@@ -172,7 +277,7 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
             Edit Footer Content
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleCloseClick}
             style={{
               background: "transparent",
               border: "none",
@@ -245,6 +350,46 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
 
         {/* Content */}
         <div>
+          {/* Validation Error Summary */}
+          {showErrors && Object.keys(validationErrors).length > 0 && (
+            <div
+              style={{
+                backgroundColor: "rgba(239, 68, 68, 0.15)",
+                border: "1px solid rgba(239, 68, 68, 0.5)",
+                borderRadius: "8px",
+                padding: "12px 14px",
+                marginBottom: "20px",
+                display: "flex",
+                gap: "12px",
+              }}
+            >
+              <div style={{ fontSize: "18px", flexShrink: 0 }}>⚠️</div>
+              <div>
+                <div
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#ef4444",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Validation Error
+                </div>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#dc2626",
+                    lineHeight: "1.4",
+                  }}
+                >
+                  {Object.keys(validationErrors).length === 1
+                    ? "Please fix the error below and try again."
+                    : `Please fix ${Object.keys(validationErrors).length} error(s) below and try again.`}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === "contact" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               {/* Address */}
@@ -269,25 +414,30 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
                   style={{
                     width: "100%",
                     padding: "12px 14px",
-                    border: "1px solid rgba(221, 144, 29, 0.3)",
+                    border: validationErrors.address ? "1px solid #ef4444" : "1px solid rgba(221, 144, 29, 0.3)",
                     borderRadius: "8px",
                     fontSize: "14px",
                     fontFamily: "Inter, sans-serif",
                     boxSizing: "border-box",
-                    backgroundColor: "rgba(221, 144, 29, 0.08)",
+                    backgroundColor: validationErrors.address ? "rgba(239, 68, 68, 0.08)" : "rgba(221, 144, 29, 0.08)",
                     color: "#f5f5f5",
                     transition: "all 0.2s ease",
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                    e.target.style.backgroundColor = "rgba(221, 144, 29, 0.12)";
+                    e.target.style.borderColor = validationErrors.address ? "#ef4444" : "rgba(221, 144, 29, 0.6)";
+                    e.target.style.backgroundColor = validationErrors.address ? "rgba(239, 68, 68, 0.12)" : "rgba(221, 144, 29, 0.12)";
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = "rgba(221, 144, 29, 0.3)";
-                    e.target.style.backgroundColor = "rgba(221, 144, 29, 0.08)";
+                    e.target.style.borderColor = validationErrors.address ? "#ef4444" : "rgba(221, 144, 29, 0.3)";
+                    e.target.style.backgroundColor = validationErrors.address ? "rgba(239, 68, 68, 0.08)" : "rgba(221, 144, 29, 0.08)";
                   }}
                   placeholder="Enter address"
                 />
+                {validationErrors.address && (
+                  <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "6px", fontWeight: "500" }}>
+                    {validationErrors.address}
+                  </div>
+                )}
               </div>
 
               {/* Phone */}
@@ -312,25 +462,30 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
                   style={{
                     width: "100%",
                     padding: "12px 14px",
-                    border: "1px solid rgba(221, 144, 29, 0.3)",
+                    border: validationErrors.phone ? "1px solid #ef4444" : "1px solid rgba(221, 144, 29, 0.3)",
                     borderRadius: "8px",
                     fontSize: "14px",
                     fontFamily: "Inter, sans-serif",
                     boxSizing: "border-box",
-                    backgroundColor: "rgba(221, 144, 29, 0.08)",
+                    backgroundColor: validationErrors.phone ? "rgba(239, 68, 68, 0.08)" : "rgba(221, 144, 29, 0.08)",
                     color: "#f5f5f5",
                     transition: "all 0.2s ease",
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                    e.target.style.backgroundColor = "rgba(221, 144, 29, 0.12)";
+                    e.target.style.borderColor = validationErrors.phone ? "#ef4444" : "rgba(221, 144, 29, 0.6)";
+                    e.target.style.backgroundColor = validationErrors.phone ? "rgba(239, 68, 68, 0.12)" : "rgba(221, 144, 29, 0.12)";
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = "rgba(221, 144, 29, 0.3)";
-                    e.target.style.backgroundColor = "rgba(221, 144, 29, 0.08)";
+                    e.target.style.borderColor = validationErrors.phone ? "#ef4444" : "rgba(221, 144, 29, 0.3)";
+                    e.target.style.backgroundColor = validationErrors.phone ? "rgba(239, 68, 68, 0.08)" : "rgba(221, 144, 29, 0.08)";
                   }}
                   placeholder="Enter phone number"
                 />
+                {validationErrors.phone && (
+                  <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "6px", fontWeight: "500" }}>
+                    {validationErrors.phone}
+                  </div>
+                )}
               </div>
 
               {/* Email */}
@@ -355,25 +510,30 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
                   style={{
                     width: "100%",
                     padding: "12px 14px",
-                    border: "1px solid rgba(221, 144, 29, 0.3)",
+                    border: validationErrors.email ? "1px solid #ef4444" : "1px solid rgba(221, 144, 29, 0.3)",
                     borderRadius: "8px",
                     fontSize: "14px",
                     fontFamily: "Inter, sans-serif",
                     boxSizing: "border-box",
-                    backgroundColor: "rgba(221, 144, 29, 0.08)",
+                    backgroundColor: validationErrors.email ? "rgba(239, 68, 68, 0.08)" : "rgba(221, 144, 29, 0.08)",
                     color: "#f5f5f5",
                     transition: "all 0.2s ease",
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                    e.target.style.backgroundColor = "rgba(221, 144, 29, 0.12)";
+                    e.target.style.borderColor = validationErrors.email ? "#ef4444" : "rgba(221, 144, 29, 0.6)";
+                    e.target.style.backgroundColor = validationErrors.email ? "rgba(239, 68, 68, 0.12)" : "rgba(221, 144, 29, 0.12)";
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = "rgba(221, 144, 29, 0.3)";
-                    e.target.style.backgroundColor = "rgba(221, 144, 29, 0.08)";
+                    e.target.style.borderColor = validationErrors.email ? "#ef4444" : "rgba(221, 144, 29, 0.3)";
+                    e.target.style.backgroundColor = validationErrors.email ? "rgba(239, 68, 68, 0.08)" : "rgba(221, 144, 29, 0.08)";
                   }}
                   placeholder="Enter email address"
                 />
+                {validationErrors.email && (
+                  <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "6px", fontWeight: "500" }}>
+                    {validationErrors.email}
+                  </div>
+                )}
               </div>
 
               {/* Hours */}
@@ -398,31 +558,51 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
                   style={{
                     width: "100%",
                     padding: "12px 14px",
-                    border: "1px solid rgba(221, 144, 29, 0.3)",
+                    border: validationErrors.hours ? "1px solid #ef4444" : "1px solid rgba(221, 144, 29, 0.3)",
                     borderRadius: "8px",
                     fontSize: "14px",
                     fontFamily: "Inter, sans-serif",
                     boxSizing: "border-box",
-                    backgroundColor: "rgba(221, 144, 29, 0.08)",
+                    backgroundColor: validationErrors.hours ? "rgba(239, 68, 68, 0.08)" : "rgba(221, 144, 29, 0.08)",
                     color: "#f5f5f5",
                     transition: "all 0.2s ease",
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                    e.target.style.backgroundColor = "rgba(221, 144, 29, 0.12)";
+                    e.target.style.borderColor = validationErrors.hours ? "#ef4444" : "rgba(221, 144, 29, 0.6)";
+                    e.target.style.backgroundColor = validationErrors.hours ? "rgba(239, 68, 68, 0.12)" : "rgba(221, 144, 29, 0.12)";
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = "rgba(221, 144, 29, 0.3)";
-                    e.target.style.backgroundColor = "rgba(221, 144, 29, 0.08)";
+                    e.target.style.borderColor = validationErrors.hours ? "#ef4444" : "rgba(221, 144, 29, 0.3)";
+                    e.target.style.backgroundColor = validationErrors.hours ? "rgba(239, 68, 68, 0.08)" : "rgba(221, 144, 29, 0.08)";
                   }}
                   placeholder="e.g., Mon-Fri: 8:00 AM - 5:00 PM"
                 />
+                {validationErrors.hours && (
+                  <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "6px", fontWeight: "500" }}>
+                    {validationErrors.hours}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {activeTab === "social" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {validationErrors.socialLinks && (
+                <div
+                  style={{
+                    backgroundColor: "rgba(239, 68, 68, 0.15)",
+                    border: "1px solid rgba(239, 68, 68, 0.5)",
+                    borderRadius: "8px",
+                    padding: "10px 12px",
+                    fontSize: "12px",
+                    color: "#ef4444",
+                    fontWeight: "500",
+                  }}
+                >
+                  {validationErrors.socialLinks}
+                </div>
+              )}
               {/* Add New Social Link */}
               <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "16px", borderBottom: "1px solid rgba(221, 144, 29, 0.2)" }}>
                 {/* Platform Selection */}
@@ -591,92 +771,100 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     {socialLinks.map(link => {
                       const platform = SOCIAL_PLATFORMS.find(p => p.id === link.platform);
+                      const linkIndex = socialLinks.findIndex(l => l.id === link.id);
+                      const linkError = validationErrors[`social_${linkIndex}`];
                       return (
-                        <div
-                          key={link.id}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "12px",
-                            background: "#2a2a2a",
-                            border: "1px solid rgba(221, 144, 29, 0.2)",
-                            borderRadius: "8px",
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
-                            <div
+                        <div key={link.id}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "12px",
+                              background: "#2a2a2a",
+                              border: linkError ? "1px solid #ef4444" : "1px solid rgba(221, 144, 29, 0.2)",
+                              borderRadius: "8px",
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: "32px",
+                                  height: "32px",
+                                  background: "#dd901d",
+                                  borderRadius: "6px",
+                                  color: "#000",
+                                }}
+                              >
+                                <platform.icon />
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                <span
+                                  style={{
+                                    fontSize: "13px",
+                                    fontWeight: "600",
+                                    color: "#dd901d",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.5px",
+                                  }}
+                                >
+                                  {platform.label}
+                                </span>
+                                <a
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    fontSize: "12px",
+                                    color: "#999",
+                                    textDecoration: "none",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {link.url.length > 40 ? link.url.substring(0, 40) + "..." : link.url}
+                                </a>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveSocial(link.id)}
                               style={{
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 width: "32px",
                                 height: "32px",
-                                background: "#dd901d",
+                                background: "transparent",
+                                border: "1px solid #555",
                                 borderRadius: "6px",
-                                color: "#000",
+                                color: "#ef4444",
+                                cursor: "pointer",
+                                transition: "all 0.3s ease",
                               }}
+                              onMouseEnter={(e) => {
+                                e.target.style.background = "#ef4444";
+                                e.target.style.color = "#fff";
+                                e.target.style.borderColor = "#ef4444";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.background = "transparent";
+                                e.target.style.color = "#ef4444";
+                                e.target.style.borderColor = "#555";
+                              }}
+                              title="Delete"
                             >
-                              <platform.icon />
-                            </div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                              <span
-                                style={{
-                                  fontSize: "13px",
-                                  fontWeight: "600",
-                                  color: "#dd901d",
-                                  textTransform: "uppercase",
-                                  letterSpacing: "0.5px",
-                                }}
-                              >
-                                {platform.label}
-                              </span>
-                              <a
-                                href={link.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                  fontSize: "12px",
-                                  color: "#999",
-                                  textDecoration: "none",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {link.url.length > 40 ? link.url.substring(0, 40) + "..." : link.url}
-                              </a>
-                            </div>
+                              <TrashIcon />
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleRemoveSocial(link.id)}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: "32px",
-                              height: "32px",
-                              background: "transparent",
-                              border: "1px solid #555",
-                              borderRadius: "6px",
-                              color: "#ef4444",
-                              cursor: "pointer",
-                              transition: "all 0.3s ease",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.background = "#ef4444";
-                              e.target.style.color = "#fff";
-                              e.target.style.borderColor = "#ef4444";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.background = "transparent";
-                              e.target.style.color = "#ef4444";
-                              e.target.style.borderColor = "#555";
-                            }}
-                            title="Delete"
-                          >
-                            <TrashIcon />
-                          </button>
+                          {linkError && (
+                            <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "6px", fontWeight: "500" }}>
+                              {linkError}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -699,7 +887,7 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
           }}
         >
           <button
-            onClick={onClose}
+            onClick={handleCloseClick}
             style={{
               padding: "12px 24px",
               background: "transparent",
@@ -724,7 +912,7 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
             Cancel
           </button>
           <button
-            onClick={handleSave}
+            onClick={handleSaveClick}
             style={{
               padding: "12px 24px",
               background: "#dd901d",
@@ -749,5 +937,23 @@ export function FooterEditModal({ isOpen, footer, setFooter, onClose }) {
         </div>
       </div>
     </div>
+
+    <ConfirmExitDialog
+      isOpen={showConfirm}
+      onConfirm={confirmType === "save" ? handleConfirmSave : handleConfirmExit}
+      onCancel={() => {
+        setShowConfirm(false);
+        setConfirmType("exit");
+      }}
+      title={confirmType === "save" ? "Save Changes?" : "Close Editor?"}
+      message={
+        confirmType === "save"
+          ? "Are you sure you want to save these changes? This action cannot be undone."
+          : "Are you sure you want to close without saving?"
+      }
+      confirmButtonLabel={confirmType === "save" ? "Save Changes" : "Discard Changes"}
+      cancelButtonLabel={confirmType === "save" ? "Cancel" : "Continue Editing"}
+    />
+  </>
   );
 }

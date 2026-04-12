@@ -4,6 +4,11 @@ import { logoutOperator } from "../../services/operatorAuth";
 import { HowItWorksStepEditModal } from "../../components/modal/superadmin/howitworks_step_edit";
 import { ServiceEditModal } from "../../components/modal/superadmin/service_edit";
 import { FooterEditModal } from "../../components/modal/superadmin/footer_edit";
+import AddCardModal from "../../components/modal/superadmin/AddCardModal";
+import NavigateSectionsModal from "../../components/modal/superadmin/NavigateSectionsModal";
+import AddSectionModal from "../../components/modal/superadmin/AddSectionModal";
+import AddSubheadingModal from "../../components/modal/superadmin/AddSubheadingModal";
+import AddTitleModal from "../../components/modal/superadmin/AddTitleModal";
 
 // ─── Logo Mark SVG ───────────────────────────────────────────────────────────
 const LogoMark = () => (
@@ -183,6 +188,24 @@ const ArrowsIcon = () => (
   </svg>
 );
 
+const UpArrowIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
+    <path d="M5 15l7-7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const DownArrowIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16">
+    <path d="M5 9l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="svg-icon-16" width="20" height="20">
+    <path d="M6 6l12 12M18 6L6 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 // ─── EditableText Component ───────────────────────────────────────────────────
 
 const EditableText = ({ value, onChange, isEditing, setIsEditing, className = "", isTextarea = false, size = "large" }) => {
@@ -302,16 +325,25 @@ export default function SuperAdminLandingPageEditor() {
     headline2: "Book Your Style",
     subheading: "A digital appointment and customer management system for barbershops, hair salons, and spas. Book appointments online, reduce wait times, and experience seamless, personalized service—instantly.",
     ctaText: "Book Appointment",
+    buttons: [],
+    additionalSubheadings: [],
+    additionalTitles: [],
   });
 
   const [howitworks, setHowitworks] = useState({
     title: "How BeautyBook Pro Works",
     subtitle: "Simple, efficient digital booking appointment for modern salon businesses",
+    buttons: [],
+    additionalSubheadings: [],
+    additionalTitles: [],
   });
 
   const [services, setServices] = useState({
     title: "Our Services",
     subtitle: "Professional grooming services tailored to your style",
+    buttons: [],
+    additionalSubheadings: [],
+    additionalTitles: [],
   });
 
   const [footer, setFooter] = useState({
@@ -320,6 +352,8 @@ export default function SuperAdminLandingPageEditor() {
     email: "beautybookpro@gmail.com",
     hours: "Mon-Fri: 8:00 AM - 5:00 PM",
     socialLinks: [],
+    additionalSubheadings: [],
+    additionalTitles: [],
   });
 
   const [howitworksSteps, setHowitworksSteps] = useState([
@@ -344,6 +378,16 @@ export default function SuperAdminLandingPageEditor() {
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
   const [editingFooterModal, setEditingFooterModal] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+  const [addCardModal, setAddCardModal] = useState(false);
+  const [cardConfig, setCardConfig] = useState({ section: "howitworks", title: "", description: "", items: [] });
+  const [navigateSectionsOpen, setNavigateSectionsOpen] = useState(false);
+  const [sectionOrder, setSectionOrder] = useState(["hero", "howitworks", "services", "footer"]);
+  const [hiddenSections, setHiddenSections] = useState({});
+  const [addSectionModal, setAddSectionModal] = useState(false);
+  const [draftSection, setDraftSection] = useState({ title: "", subtitle: "" });
+  const [customSections, setCustomSections] = useState([]);
+  const [addSubheadingModal, setAddSubheadingModal] = useState(false);
+  const [addTitleModal, setAddTitleModal] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
@@ -586,39 +630,7 @@ export default function SuperAdminLandingPageEditor() {
                     >
                       <button
                         onClick={() => {
-                          alert("Add Button - Feature coming soon");
-                          setToolsMenuOpen(false);
-                        }}
-                        style={{
-                          width: "100%",
-                          padding: "12px 16px",
-                          background: "transparent",
-                          border: "none",
-                          color: "white",
-                          textAlign: "left",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          transition: "all 0.2s ease",
-                          borderBottom: "1px solid rgba(221, 144, 29, 0.2)",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "rgba(221, 144, 29, 0.1)";
-                          e.currentTarget.style.color = "#dd901d";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "transparent";
-                          e.currentTarget.style.color = "white";
-                        }}
-                      >
-                        <PlusIcon />
-                        Add Button
-                      </button>
-                      <button
-                        onClick={() => {
-                          alert("Add Cards - Feature coming soon");
+                          setAddCardModal(true);
                           setToolsMenuOpen(false);
                         }}
                         style={{
@@ -650,7 +662,7 @@ export default function SuperAdminLandingPageEditor() {
                       </button>
                       <button
                         onClick={() => {
-                          alert("Add Section - Feature coming soon");
+                          setAddSectionModal(true);
                           setToolsMenuOpen(false);
                         }}
                         style={{
@@ -682,7 +694,7 @@ export default function SuperAdminLandingPageEditor() {
                       </button>
                       <button
                         onClick={() => {
-                          alert("Add Subheading - Feature coming soon");
+                          setAddSubheadingModal(true);
                           setToolsMenuOpen(false);
                         }}
                         style={{
@@ -714,7 +726,7 @@ export default function SuperAdminLandingPageEditor() {
                       </button>
                       <button
                         onClick={() => {
-                          alert("Add Title - Feature coming soon");
+                          setAddTitleModal(true);
                           setToolsMenuOpen(false);
                         }}
                         style={{
@@ -746,7 +758,7 @@ export default function SuperAdminLandingPageEditor() {
                       </button>
                       <button
                         onClick={() => {
-                          alert("Navigate Section - Feature coming soon");
+                          setNavigateSectionsOpen(true);
                           setToolsMenuOpen(false);
                         }}
                         style={{
@@ -795,14 +807,41 @@ export default function SuperAdminLandingPageEditor() {
         </div>
 
         {/* Landing Page Preview */}
-        <main className="dashboard-main" style={{transform: "scale(1.2)", transformOrigin: "top center", marginBottom: "300px"}}>
+        <main className="dashboard-main" style={{transform: "scale(1.2)", transformOrigin: "top center", marginBottom: "300px", display: "flex", flexDirection: "column"}}>
           {/* HERO SECTION */}
-          <section id="home" className="hero-section" style={{paddingTop: "40px"}}>
+          <section id="home" className="hero-section" style={{paddingTop: "40px", display: hiddenSections.hero ? "none" : "block", order: sectionOrder.indexOf("hero")}}>
             <div className="hero-badge">
               <span>{hero.badge}</span>
             </div>
 
-            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto" }}>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+              <button
+                onClick={() => setHero({ ...hero, headline1: "Skip The Wait,", headline2: "Book Your Style" })}
+                style={{
+                  position: "absolute",
+                  top: "-12px",
+                  right: "0",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset headline"
+              >
+                ×
+              </button>
               {editingField === "headline-combined" ? (
                 <div style={{ display: "flex", justifyContent: "center", width: "100%", maxWidth: "800px", margin: "0 auto", flexDirection: "column", alignItems: "center" }}>
                   <div style={{
@@ -882,40 +921,423 @@ export default function SuperAdminLandingPageEditor() {
               )}
             </div>
 
-            <p className="section-subtitle" style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px" }}>
-              <EditableText
-                value={hero.subheading}
-                onChange={(v) => setHero({ ...hero, subheading: v })}
-                isEditing={editingField === "subheading"}
-                setIsEditing={(val) => setEditingField(val ? "subheading" : null)}
-                isTextarea={true}
-              />
-            </p>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px", position: "relative" }}>
+              <p className="section-subtitle" style={{ flex: 1, margin: 0 }}>
+                <EditableText
+                  value={hero.subheading}
+                  onChange={(v) => setHero({ ...hero, subheading: v })}
+                  isEditing={editingField === "subheading"}
+                  setIsEditing={(val) => setEditingField(val ? "subheading" : null)}
+                  isTextarea={true}
+                />
+              </p>
+              <button
+                onClick={() => setHero({ ...hero, subheading: "A digital appointment and customer management system for barbershops, hair salons, and spas. Book appointments online, reduce wait times, and experience seamless, personalized service—instantly." })}
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  right: "-32px",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset subheading"
+              >
+                ×
+              </button>
+            </div>
 
-            <button className="btn-large" style={{width:"auto",padding:"10px 28px",height:"44px",fontSize:"0.9rem"}}>
-              {hero.ctaText}
-            </button>
+            {/* Additional Titles */}
+            {hero.additionalTitles && hero.additionalTitles.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
+                {hero.additionalTitles.map((title) => (
+                  <div key={title.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <h2 className="section-title" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `hero-title-${title.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `hero-title-${title.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `hero-title-${title.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={title.text}
+                        onChange={(v) => setHero({ ...hero, additionalTitles: hero.additionalTitles.map(t => t.id === title.id ? { ...t, text: v } : t) })}
+                        isEditing={editingField === `hero-title-${title.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `hero-title-${title.id}` : null)}
+                      />
+                    </h2>
+                    <button
+                      onClick={() => {
+                        setHero({
+                          ...hero,
+                          additionalTitles: hero.additionalTitles.filter(t => t.id !== title.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "-12px",
+                        right: "0",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
+                        background: "#dc2626",
+                        border: "none",
+                        color: "white",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                        zIndex: 10,
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete title"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Additional Subheadings */}
+            {hero.additionalSubheadings && hero.additionalSubheadings.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px", gap: "16px" }}>
+                {hero.additionalSubheadings.map((sub) => (
+                  <div key={sub.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <p className="section-subtitle" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `hero-subheading-${sub.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `hero-subheading-${sub.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `hero-subheading-${sub.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={sub.text}
+                        onChange={(v) => setHero({ ...hero, additionalSubheadings: hero.additionalSubheadings.map(s => s.id === sub.id ? { ...s, text: v } : s) })}
+                        isEditing={editingField === `hero-subheading-${sub.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `hero-subheading-${sub.id}` : null)}
+                        isTextarea={true}
+                        size="body"
+                      />
+                    </p>
+                    <button
+                      onClick={() => {
+                        setHero({
+                          ...hero,
+                          additionalSubheadings: hero.additionalSubheadings.filter(s => s.id !== sub.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "-32px",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
+                        background: "#dc2626",
+                        border: "none",
+                        color: "white",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                        zIndex: 10,
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete subheading"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", justifyContent: "center", marginBottom: "0" }}>
+              <button 
+                className="btn-large" 
+                style={{width:"auto",padding:"10px 28px",height:"44px",fontSize:"0.9rem"}}
+              >
+                {hero.ctaText}
+              </button>
+            </div>
+
+            {/* Additional Buttons */}
+            {hero.buttons && hero.buttons.length > 0 && (() => {
+              console.log("Rendering buttons:", hero.buttons);
+              return (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center", marginTop: "16px", padding: "16px 0" }}>
+                {hero.buttons.map((btn) => (
+                  <div key={btn.id} style={{ position: "relative", display: "inline-block" }}>
+                    <button
+                      className="btn-large"
+                      style={{
+                        width: "auto",
+                        padding: "10px 28px",
+                        height: "44px",
+                        fontSize: "0.9rem",
+                        border: "1px solid #dd901d",
+                        opacity: 0.8,
+                      }}
+                      onClick={() => setEditingField(`button-${btn.id}`)}
+                    >
+                      {editingField === `button-${btn.id}` ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={btn.text}
+                          onChange={(e) => {
+                            setHero({
+                              ...hero,
+                              buttons: hero.buttons.map(b => b.id === btn.id ? { ...b, text: e.target.value } : b)
+                            });
+                          }}
+                          onBlur={() => setEditingField(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") setEditingField(null);
+                            if (e.key === "Escape") setEditingField(null);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "white",
+                            fontSize: "0.9rem",
+                            fontWeight: "inherit",
+                            textAlign: "center",
+                            outline: "none",
+                            width: "100%",
+                          }}
+                        />
+                      ) : (
+                        btn.text
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHero({
+                          ...hero,
+                          buttons: hero.buttons.filter(b => b.id !== btn.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "-8px",
+                        right: "-8px",
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#dd901d",
+                        border: "none",
+                        color: "#1a1a1a",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                      onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                      title="Delete button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              );
+            })()}
           </section>
 
           {/* HOW IT WORKS SECTION */}
-          <section id="howitworks" className="howitworks-section">
-            <h2 className="section-title">
-              <EditableText
-                value={howitworks.title}
-                onChange={(v) => setHowitworks({ ...howitworks, title: v })}
-                isEditing={editingField === "howitworks-title"}
-                setIsEditing={(val) => setEditingField(val ? "howitworks-title" : null)}
-              />
-            </h2>
-            <p className="section-subtitle">
-              <EditableText
-                value={howitworks.subtitle}
-                onChange={(v) => setHowitworks({ ...howitworks, subtitle: v })}
-                isEditing={editingField === "howitworks-subtitle"}
-                setIsEditing={(val) => setEditingField(val ? "howitworks-subtitle" : null)}
-                isTextarea={true}
-              />
-            </p>
+          <section id="howitworks" className="howitworks-section" style={{display: hiddenSections.howitworks ? "none" : "block", order: sectionOrder.indexOf("howitworks")}}>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+              <h2 className="section-title" style={{ flex: 1, margin: 0, marginBottom: "16px" }}>
+                <EditableText
+                  value={howitworks.title}
+                  onChange={(v) => setHowitworks({ ...howitworks, title: v })}
+                  isEditing={editingField === "howitworks-title"}
+                  setIsEditing={(val) => setEditingField(val ? "howitworks-title" : null)}
+                />
+              </h2>
+              <button
+                onClick={() => setHowitworks({ ...howitworks, title: "How BeautyBook Pro Works" })}
+                style={{
+                  position: "absolute",
+                  top: "-12px",
+                  right: "0",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset title"
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px", position: "relative" }}>
+              <p className="section-subtitle" style={{ flex: 1, margin: 0 }}>
+                <EditableText
+                  value={howitworks.subtitle}
+                  onChange={(v) => setHowitworks({ ...howitworks, subtitle: v })}
+                  isEditing={editingField === "howitworks-subtitle"}
+                  setIsEditing={(val) => setEditingField(val ? "howitworks-subtitle" : null)}
+                  isTextarea={true}
+                />
+              </p>
+              <button
+                onClick={() => setHowitworks({ ...howitworks, subtitle: "Simple, efficient digital booking appointment for modern salon businesses" })}
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  right: "-32px",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset subtitle"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Additional Titles */}
+            {howitworks.additionalTitles && howitworks.additionalTitles.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
+                {howitworks.additionalTitles.map((title) => (
+                  <div key={title.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <h2 className="section-title" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `howitworks-title-${title.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `howitworks-title-${title.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `howitworks-title-${title.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={title.text}
+                        onChange={(v) => setHowitworks({ ...howitworks, additionalTitles: howitworks.additionalTitles.map(t => t.id === title.id ? { ...t, text: v } : t) })}
+                        isEditing={editingField === `howitworks-title-${title.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `howitworks-title-${title.id}` : null)}
+                      />
+                    </h2>
+                    <button
+                      onClick={() => {
+                        setHowitworks({
+                          ...howitworks,
+                          additionalTitles: howitworks.additionalTitles.filter(t => t.id !== title.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "-12px",
+                        right: "0",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
+                        background: "#dc2626",
+                        border: "none",
+                        color: "white",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                        zIndex: 10,
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete title"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Additional Subheadings */}
+            {howitworks.additionalSubheadings && howitworks.additionalSubheadings.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
+                {howitworks.additionalSubheadings.map((sub) => (
+                  <div key={sub.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <p className="section-subtitle" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `howitworks-subheading-${sub.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `howitworks-subheading-${sub.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `howitworks-subheading-${sub.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={sub.text}
+                        onChange={(v) => setHowitworks({ ...howitworks, additionalSubheadings: howitworks.additionalSubheadings.map(s => s.id === sub.id ? { ...s, text: v } : s) })}
+                        isEditing={editingField === `howitworks-subheading-${sub.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `howitworks-subheading-${sub.id}` : null)}
+                        isTextarea={true}
+                        size="body"
+                      />
+                    </p>
+                    <button
+                      onClick={() => {
+                        setHowitworks({
+                          ...howitworks,
+                          additionalSubheadings: howitworks.additionalSubheadings.filter(s => s.id !== sub.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "-32px",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
+                        background: "#dc2626",
+                        border: "none",
+                        color: "white",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                        zIndex: 10,
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete subheading"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div style={{
               display:"grid",gridTemplateColumns:"repeat(3,1fr)",
@@ -947,7 +1369,7 @@ export default function SuperAdminLandingPageEditor() {
                       style={{
                         position: "absolute",
                         top: "8px",
-                        right: "8px",
+                        right: "44px",
                         background: "#dd901d",
                         border: "none",
                         borderRadius: "6px",
@@ -964,6 +1386,31 @@ export default function SuperAdminLandingPageEditor() {
                     >
                       <PencilIcon />
                     </button>
+                    <button
+                      onClick={() => {
+                        setHowitworksSteps(howitworksSteps.filter((_, idx) => idx !== i));
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "8px",
+                        background: "#dc2626",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "6px 8px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.3s ease",
+                        color: "white",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete step"
+                    >
+                      <TrashIcon />
+                    </button>
                     <div className="icon-box">{iconContent}</div>
                     <div className="step-title">{step.title}</div>
                     <p className="step-desc">{step.desc}</p>
@@ -972,28 +1419,274 @@ export default function SuperAdminLandingPageEditor() {
               })}
             </div>
 
+            {/* Additional Buttons for How It Works */}
+            {howitworks.buttons && howitworks.buttons.length > 0 && (() => {
+              return (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center", marginTop: "24px", padding: "16px 0" }}>
+                {howitworks.buttons.map((btn) => (
+                  <div key={btn.id} style={{ position: "relative", display: "inline-block" }}>
+                    <button
+                      className="btn-large"
+                      style={{
+                        width: "auto",
+                        padding: "10px 28px",
+                        height: "44px",
+                        fontSize: "0.9rem",
+                        border: "1px solid #dd901d",
+                        opacity: 0.8,
+                      }}
+                      onClick={() => setEditingField(`howitworks-button-${btn.id}`)}
+                    >
+                      {editingField === `howitworks-button-${btn.id}` ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={btn.text}
+                          onChange={(e) => {
+                            setHowitworks({
+                              ...howitworks,
+                              buttons: howitworks.buttons.map(b => b.id === btn.id ? { ...b, text: e.target.value } : b)
+                            });
+                          }}
+                          onBlur={() => setEditingField(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") setEditingField(null);
+                            if (e.key === "Escape") setEditingField(null);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "white",
+                            fontSize: "0.9rem",
+                            fontWeight: "inherit",
+                            textAlign: "center",
+                            outline: "none",
+                            width: "100%",
+                          }}
+                        />
+                      ) : (
+                        btn.text
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHowitworks({
+                          ...howitworks,
+                          buttons: howitworks.buttons.filter(b => b.id !== btn.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "-8px",
+                        right: "-8px",
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#dd901d",
+                        border: "none",
+                        color: "#1a1a1a",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                      onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                      title="Delete button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              );
+            })()}
 
           </section>
 
           {/* SERVICES SECTION */}
-          <section id="services" className="services-section">
-            <h2 className="section-title">
-              <EditableText
-                value={services.title}
-                onChange={(v) => setServices({ ...services, title: v })}
-                isEditing={editingField === "services-title"}
-                setIsEditing={(val) => setEditingField(val ? "services-title" : null)}
-              />
-            </h2>
-            <p className="section-subtitle">
-              <EditableText
-                value={services.subtitle}
-                onChange={(v) => setServices({ ...services, subtitle: v })}
-                isEditing={editingField === "services-subtitle"}
-                setIsEditing={(val) => setEditingField(val ? "services-subtitle" : null)}
-                isTextarea={true}
-              />
-            </p>
+          <section id="services" className="services-section" style={{display: hiddenSections.services ? "none" : "block", order: sectionOrder.indexOf("services")}}>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+              <h2 className="section-title" style={{ flex: 1, margin: 0, marginBottom: "16px" }}>
+                <EditableText
+                  value={services.title}
+                  onChange={(v) => setServices({ ...services, title: v })}
+                  isEditing={editingField === "services-title"}
+                  setIsEditing={(val) => setEditingField(val ? "services-title" : null)}
+                />
+              </h2>
+              <button
+                onClick={() => setServices({ ...services, title: "Our Services" })}
+                style={{
+                  position: "absolute",
+                  top: "-12px",
+                  right: "0",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset title"
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "32px", position: "relative" }}>
+              <p className="section-subtitle" style={{ flex: 1, margin: 0 }}>
+                <EditableText
+                  value={services.subtitle}
+                  onChange={(v) => setServices({ ...services, subtitle: v })}
+                  isEditing={editingField === "services-subtitle"}
+                  setIsEditing={(val) => setEditingField(val ? "services-subtitle" : null)}
+                  isTextarea={true}
+                />
+              </p>
+              <button
+                onClick={() => setServices({ ...services, subtitle: "Professional grooming services tailored to your style" })}
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  right: "-32px",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
+                }}
+                onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                title="Reset subtitle"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Additional Titles */}
+            {services.additionalTitles && services.additionalTitles.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
+                {services.additionalTitles.map((title) => (
+                  <div key={title.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <h2 className="section-title" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `services-title-${title.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `services-title-${title.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `services-title-${title.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={title.text}
+                        onChange={(v) => setServices({ ...services, additionalTitles: services.additionalTitles.map(t => t.id === title.id ? { ...t, text: v } : t) })}
+                        isEditing={editingField === `services-title-${title.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `services-title-${title.id}` : null)}
+                      />
+                    </h2>
+                    <button
+                      onClick={() => {
+                        setServices({
+                          ...services,
+                          additionalTitles: services.additionalTitles.filter(t => t.id !== title.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "-12px",
+                        right: "0",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
+                        background: "#dc2626",
+                        border: "none",
+                        color: "white",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                        zIndex: 10,
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete title"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Additional Subheadings */}
+            {services.additionalSubheadings && services.additionalSubheadings.length > 0 && (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "800px", marginLeft: "auto", marginRight: "auto", marginBottom: "24px", gap: "16px" }}>
+                {services.additionalSubheadings.map((sub) => (
+                  <div key={sub.id} style={{ position: "relative", display: "inline-block", alignSelf: "center", width: "100%" }}>
+                    <p className="section-subtitle" style={{ margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `services-subheading-${sub.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `services-subheading-${sub.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `services-subheading-${sub.id}` && (e.target.style.opacity = "0.9")}>
+                      <EditableText
+                        value={sub.text}
+                        onChange={(v) => setServices({ ...services, additionalSubheadings: services.additionalSubheadings.map(s => s.id === sub.id ? { ...s, text: v } : s) })}
+                        isEditing={editingField === `services-subheading-${sub.id}`}
+                        setIsEditing={(val) => setEditingField(val ? `services-subheading-${sub.id}` : null)}
+                        isTextarea={true}
+                        size="body"
+                      />
+                    </p>
+                    <button
+                      onClick={() => {
+                        setServices({
+                          ...services,
+                          additionalSubheadings: services.additionalSubheadings.filter(s => s.id !== sub.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "-32px",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
+                        background: "#dc2626",
+                        border: "none",
+                        color: "white",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                        zIndex: 10,
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                      onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                      title="Delete subheading"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:24,maxWidth:800,margin:"0 auto"}}>
               {servicesData.map((svc, i) => (
@@ -1003,7 +1696,7 @@ export default function SuperAdminLandingPageEditor() {
                     style={{
                       position: "absolute",
                       top: "8px",
-                      right: "8px",
+                      right: "44px",
                       background: "#dd901d",
                       border: "none",
                       borderRadius: "6px",
@@ -1020,6 +1713,31 @@ export default function SuperAdminLandingPageEditor() {
                   >
                     <PencilIcon />
                   </button>
+                  <button
+                    onClick={() => {
+                      setServicesData(servicesData.filter((_, idx) => idx !== i));
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      background: "#dc2626",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "6px 8px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.3s ease",
+                      color: "white",
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                    onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                    title="Delete service"
+                  >
+                    <TrashIcon />
+                  </button>
                   <div style={{
                     width:50,height:50,background:"#dd901d",
                     borderRadius:14,padding:10,
@@ -1034,7 +1752,7 @@ export default function SuperAdminLandingPageEditor() {
                   </div>
                   <div className="service-title">{svc.title}</div>
                   <div className="service-items">
-                    {svc.items.map((item, j) => (
+                    {svc.items.slice(0, 4).map((item, j) => (
                       <div key={j} className="service-item">
                         <CheckItem/>
                         <span>{item}</span>
@@ -1044,10 +1762,217 @@ export default function SuperAdminLandingPageEditor() {
                 </div>
               ))}
             </div>
+
+            {/* Additional Buttons for Services */}
+            {services.buttons && services.buttons.length > 0 && (() => {
+              return (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center", marginTop: "24px", padding: "16px 0" }}>
+                {services.buttons.map((btn) => (
+                  <div key={btn.id} style={{ position: "relative", display: "inline-block" }}>
+                    <button
+                      className="btn-large"
+                      style={{
+                        width: "auto",
+                        padding: "10px 28px",
+                        height: "44px",
+                        fontSize: "0.9rem",
+                        border: "1px solid #dd901d",
+                        opacity: 0.8,
+                      }}
+                      onClick={() => setEditingField(`services-button-${btn.id}`)}
+                    >
+                      {editingField === `services-button-${btn.id}` ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={btn.text}
+                          onChange={(e) => {
+                            setServices({
+                              ...services,
+                              buttons: services.buttons.map(b => b.id === btn.id ? { ...b, text: e.target.value } : b)
+                            });
+                          }}
+                          onBlur={() => setEditingField(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") setEditingField(null);
+                            if (e.key === "Escape") setEditingField(null);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "white",
+                            fontSize: "0.9rem",
+                            fontWeight: "inherit",
+                            textAlign: "center",
+                            outline: "none",
+                            width: "100%",
+                          }}
+                        />
+                      ) : (
+                        btn.text
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setServices({
+                          ...services,
+                          buttons: services.buttons.filter(b => b.id !== btn.id)
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "-8px",
+                        right: "-8px",
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#dd901d",
+                        border: "none",
+                        color: "#1a1a1a",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = "#c97c1c"}
+                      onMouseLeave={(e) => e.target.style.background = "#dd901d"}
+                      title="Delete button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              );
+            })()}
           </section>
 
+          {/* Custom Sections */}
+          {customSections.map((section) => {
+            const sectionIndex = sectionOrder.indexOf(section.id);
+            const isEvenPosition = sectionIndex % 2 === 0;
+            const backgroundColor = isEvenPosition ? "#0a0908" : "#14110f";
+            
+            return (
+            <section key={section.id} style={{
+              width: "100%",
+              paddingTop: "40px",
+              paddingBottom: "64px",
+              paddingLeft: "40px",
+              paddingRight: "40px",
+              display: hiddenSections[section.id] ? "none" : "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              backgroundColor: backgroundColor,
+              borderRadius: "0",
+              boxSizing: "border-box",
+              order: sectionIndex,
+              marginBottom: "-24px",
+            }}>
+              <div style={{ width: "100%", textAlign: "center", maxWidth: "800px", margin: "0 auto" }}>
+                <h2 style={{ 
+                  fontSize: "32px", 
+                  fontWeight: "bold", 
+                  color: "white",
+                  cursor: "pointer",
+                  padding: "8px",
+                  borderRadius: "4px",
+                  transition: "all 0.2s ease",
+                  opacity: 0.9,
+                }}
+                onClick={() => setEditingField(`custom-section-${section.id}-title`)}
+                onMouseEnter={(e) => e.target.style.opacity = "1"}
+                onMouseLeave={(e) => e.target.style.opacity = "0.9"}
+                >
+                  {editingField === `custom-section-${section.id}-title` ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={section.title}
+                      onChange={(e) => {
+                        setCustomSections(customSections.map(s => s.id === section.id ? { ...s, title: e.target.value } : s));
+                      }}
+                      onBlur={() => setEditingField(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") setEditingField(null);
+                        if (e.key === "Escape") setEditingField(null);
+                      }}
+                      style={{
+                        fontSize: "32px",
+                        fontWeight: "bold",
+                        backgroundColor: "rgba(221, 144, 29, 0.15)",
+                        border: "2px solid #dd901d",
+                        borderRadius: "4px",
+                        padding: "8px 12px",
+                        color: "#dd901d",
+                        width: "100%",
+                        boxSizing: "border-box",
+                        outline: "none",
+                      }}
+                      placeholder="Section Title"
+                    />
+                  ) : (
+                    section.title
+                  )}
+                </h2>
+                <p style={{
+                  fontSize: "16px",
+                  color: "#999",
+                  cursor: "pointer",
+                  padding: "8px",
+                  borderRadius: "4px",
+                  transition: "all 0.2s ease",
+                  maxWidth: "600px",
+                  margin: "16px auto",
+                  marginBottom: "0",
+                  opacity: 0.85,
+                }}
+                onClick={() => setEditingField(`custom-section-${section.id}-subtitle`)}
+                onMouseEnter={(e) => e.target.style.opacity = "1"}
+                onMouseLeave={(e) => e.target.style.opacity = "0.85"}
+                >
+                  {editingField === `custom-section-${section.id}-subtitle` ? (
+                    <textarea
+                      autoFocus
+                      value={section.subtitle}
+                      onChange={(e) => {
+                        setCustomSections(customSections.map(s => s.id === section.id ? { ...s, subtitle: e.target.value } : s));
+                      }}
+                      onBlur={() => setEditingField(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setEditingField(null);
+                      }}
+                      style={{
+                        fontSize: "16px",
+                        backgroundColor: "rgba(221, 144, 29, 0.15)",
+                        border: "2px solid #dd901d",
+                        borderRadius: "4px",
+                        padding: "8px 12px",
+                        color: "#dd901d",
+                        width: "100%",
+                        boxSizing: "border-box",
+                        outline: "none",
+                        fontFamily: "inherit",
+                        minHeight: "60px",
+                        resize: "vertical",
+                      }}
+                      placeholder="Section Subtitle (Optional)"
+                    />
+                  ) : (
+                    section.subtitle || "(Click to add subtitle)"
+                  )}
+                </p>
+              </div>
+            </section>
+            );
+          })}
+
           {/* FOOTER SECTION */}
-          <footer id="about" className="footer">
+          <footer id="about" className="footer" style={{display: hiddenSections.footer ? "none" : "block", order: 999}}>
             <div style={{maxWidth:860,margin:"0 auto"}}>
               <div className="footer-row">
                 <span className="footer-label">Contact us</span>
@@ -1078,6 +2003,56 @@ export default function SuperAdminLandingPageEditor() {
                   <PencilIcon />
                 </button>
               </div>
+
+              {/* Additional Titles */}
+              {footer.additionalTitles && footer.additionalTitles.length > 0 && (
+                <div style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", marginBottom: "24px", gap: "16px" }}>
+                  {footer.additionalTitles.map((title) => (
+                    <div key={title.id} style={{ position: "relative", display: "inline-block", alignSelf: "flex-start", width: "100%" }}>
+                      <h3 style={{ color: "white", fontSize: "16px", marginBottom: "8px", fontWeight: "600", margin: 0, cursor: "pointer", padding: "8px", borderRadius: "4px", transition: "all 0.2s ease", opacity: editingField === `footer-title-${title.id}` ? 1 : 0.9 }} onMouseEnter={(e) => editingField !== `footer-title-${title.id}` && (e.target.style.opacity = "1")} onMouseLeave={(e) => editingField !== `footer-title-${title.id}` && (e.target.style.opacity = "0.9")}>
+                        <EditableText
+                          value={title.text}
+                          onChange={(v) => setFooter({ ...footer, additionalTitles: footer.additionalTitles.map(t => t.id === title.id ? { ...t, text: v } : t) })}
+                          isEditing={editingField === `footer-title-${title.id}`}
+                          setIsEditing={(val) => setEditingField(val ? `footer-title-${title.id}` : null)}
+                        />
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setFooter({
+                            ...footer,
+                            additionalTitles: footer.additionalTitles.filter(t => t.id !== title.id)
+                          });
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: "-12px",
+                          right: "0",
+                          width: "24px",
+                          height: "24px",
+                          borderRadius: "50%",
+                          background: "#dc2626",
+                          border: "none",
+                          color: "white",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                          fontWeight: "bold",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "all 0.2s ease",
+                          zIndex: 10,
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = "#991b1b"}
+                        onMouseLeave={(e) => e.target.style.background = "#dc2626"}
+                        title="Delete title"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="footer-row">
                 <span className="footer-label">Follow us</span>
@@ -1167,6 +2142,186 @@ export default function SuperAdminLandingPageEditor() {
           footer={footer}
           setFooter={setFooter}
           onClose={() => setEditingFooterModal(false)}
+        />
+
+        {/* Add Card Modal */}
+        <AddCardModal
+          isOpen={addCardModal}
+          onClose={() => {
+            setAddCardModal(false);
+            setCardConfig({ section: "howitworks", title: "", description: "", items: [] });
+          }}
+          cardConfig={cardConfig}
+          setCardConfig={setCardConfig}
+          onAddCard={() => {
+            // Validation: Prevent saving empty titles
+            if (!cardConfig.title || !cardConfig.title.trim()) {
+              alert("Card title cannot be empty. Please enter a valid title.");
+              return;
+            }
+            if (cardConfig.section === "howitworks") {
+              const newStep = {
+                id: Math.max(...howitworksSteps.map(s => s.id), -1) + 1,
+                icon: "calendar",
+                title: cardConfig.title,
+                desc: cardConfig.description,
+              };
+              setHowitworksSteps([...howitworksSteps, newStep]);
+            } else if (cardConfig.section === "services") {
+              const newService = {
+                icon: <StarIcon />,
+                title: cardConfig.title,
+                items: cardConfig.items.filter(item => item.trim() !== ""),
+              };
+              setServicesData([...servicesData, newService]);
+            }
+            setAddCardModal(false);
+            setCardConfig({ section: "howitworks", title: "New Card", description: "", items: [] });
+          }}
+          howitworksSteps={howitworksSteps}
+          servicesData={servicesData}
+        />
+
+        {/* Navigate Sections Modal */}
+        <NavigateSectionsModal
+          isOpen={navigateSectionsOpen}
+          onClose={() => setNavigateSectionsOpen(false)}
+          sectionOrder={sectionOrder}
+          setSectionOrder={setSectionOrder}
+          hiddenSections={hiddenSections}
+          setHiddenSections={setHiddenSections}
+          customSections={customSections}
+          setCustomSections={setCustomSections}
+          onClearSection={(sectionId) => {
+            if (sectionId === "hero") {
+              setHero({
+                badge: "DIGITAL APPOINTMENT SYSTEM",
+                headline1: "Skip The Wait,",
+                headline2: "Book Your Style",
+                subheading: "A digital appointment and customer management system for barbershops, hair salons, and spas. Book appointments online, reduce wait times, and experience seamless, personalized service—instantly.",
+                ctaText: "Book Appointment",
+                buttons: [],
+              });
+            } else if (sectionId === "howitworks") {
+              setHowitworksSteps([
+                { id: 0, icon: "calendar", title: "Book Online", desc: "Select your service, preferred stylist, and convenient time slot" },
+                { id: 1, icon: "bell", title: "Get Notified", desc: "Receive real-time updates and 'Your Turn Soon' alerts" },
+                { id: 2, icon: "check", title: "Enjoy Service", desc: "Arrive on time and skip the traditional waiting queue" },
+              ]);
+            } else if (sectionId === "services") {
+              setServicesData([
+                { icon: <ScissorsIcon/>, title: "Hair Services", items: ["Haircut & Style", "Color Treatment", "Hair Spa", "Keratin Treatment"] },
+                { icon: <NailIcon/>, title: "Nail Services", items: ["Manicure", "Pedicure", "Nail Art", "Gel Extension"] },
+                { icon: <SkinIcon/>, title: "Skin Care Services", items: ["Facial Treatment", "Chemical Peel", "Microdermabrasion", "Hydration Therapy"] },
+                { icon: <MassageIcon/>, title: "Massage Services", items: ["Swedish Massage", "Deep Tissue Massage", "Hot Stone Massage", "Spa Reflexology"] },
+                { icon: <StarIcon/>, title: "Premium Services", items: ["Bridal Package", "Couple's Massage", "Hair & Glow Combo", "VIP Lounge Experience"] },
+              ]);
+            }
+          }}
+        />
+
+        {/* Add Section Modal */}
+        <AddSectionModal
+          isOpen={addSectionModal}
+          onClose={() => {
+            setAddSectionModal(false);
+            setDraftSection({ title: "", subtitle: "" });
+          }}
+          draftSection={draftSection}
+          setDraftSection={setDraftSection}
+          onAddSection={() => {
+            // Validation: Prevent saving empty section titles
+            if (!draftSection.title || !draftSection.title.trim()) {
+              alert("Section title cannot be empty. Please enter a valid title.");
+              return;
+            }
+            const newId = `custom-${Date.now()}`;
+            const newSection = { id: newId, ...draftSection };
+            setCustomSections([...customSections, newSection]);
+            setSectionOrder([...sectionOrder.slice(0, -1), newId, 'footer']);
+            setAddSectionModal(false);
+            setDraftSection({ title: "", subtitle: "" });
+          }}
+        />
+
+        {/* Add Subheading Modal */}
+        <AddSubheadingModal
+          isOpen={addSubheadingModal}
+          onClose={() => setAddSubheadingModal(false)}
+          sections={[
+            { id: "hero", label: "Hero Section" },
+            { id: "howitworks", label: "How It Works" },
+            { id: "services", label: "Services" },
+            { id: "footer", label: "Footer" },
+            ...customSections.map(sec => ({ id: sec.id, label: sec.title }))
+          ]}
+          onAddSubheading={(sectionId, subheadingText) => {
+            // Validation: Prevent saving empty subheadings
+            if (!sectionId) {
+              alert("Please select a section.");
+              return;
+            }
+            if (!subheadingText || !subheadingText.trim()) {
+              alert("Subheading cannot be empty. Please enter a valid subheading.");
+              return;
+            }
+            const newSubheading = { id: `sub-${Date.now()}`, text: subheadingText };
+            if (sectionId === "hero") {
+              setHero({ ...hero, additionalSubheadings: [...(hero.additionalSubheadings || []), newSubheading] });
+            } else if (sectionId === "howitworks") {
+              setHowitworks({ ...howitworks, additionalSubheadings: [...(howitworks.additionalSubheadings || []), newSubheading] });
+            } else if (sectionId === "services") {
+              setServices({ ...services, additionalSubheadings: [...(services.additionalSubheadings || []), newSubheading] });
+            } else if (sectionId === "footer") {
+              setFooter({ ...footer, additionalSubheadings: [...(footer.additionalSubheadings || []), newSubheading] });
+            } else if (sectionId.startsWith("custom-")) {
+              const updatedCustomSections = customSections.map(sec =>
+                sec.id === sectionId ? { ...sec, additionalSubheadings: [...(sec.additionalSubheadings || []), newSubheading] } : sec
+              );
+              setCustomSections(updatedCustomSections);
+            }
+            setAddSubheadingModal(false);
+          }}
+        />
+
+        {/* Add Title Modal */}
+        <AddTitleModal
+          isOpen={addTitleModal}
+          onClose={() => setAddTitleModal(false)}
+          sections={[
+            { id: "hero", label: "Hero Section" },
+            { id: "howitworks", label: "How It Works" },
+            { id: "services", label: "Services" },
+            { id: "footer", label: "Footer" },
+            ...customSections.map(sec => ({ id: sec.id, label: sec.title }))
+          ]}
+          onAddTitle={(sectionId, titleText) => {
+            // Validation: Prevent saving empty titles
+            if (!sectionId) {
+              alert("Please select a section.");
+              return;
+            }
+            if (!titleText || !titleText.trim()) {
+              alert("Title cannot be empty. Please enter a valid title.");
+              return;
+            }
+            const newTitle = { id: `title-${Date.now()}`, text: titleText };
+            if (sectionId === "hero") {
+              setHero({ ...hero, additionalTitles: [...(hero.additionalTitles || []), newTitle] });
+            } else if (sectionId === "howitworks") {
+              setHowitworks({ ...howitworks, additionalTitles: [...(howitworks.additionalTitles || []), newTitle] });
+            } else if (sectionId === "services") {
+              setServices({ ...services, additionalTitles: [...(services.additionalTitles || []), newTitle] });
+            } else if (sectionId === "footer") {
+              setFooter({ ...footer, additionalTitles: [...(footer.additionalTitles || []), newTitle] });
+            } else if (sectionId.startsWith("custom-")) {
+              const updatedCustomSections = customSections.map(sec =>
+                sec.id === sectionId ? { ...sec, additionalTitles: [...(sec.additionalTitles || []), newTitle] } : sec
+              );
+              setCustomSections(updatedCustomSections);
+            }
+            setAddTitleModal(false);
+          }}
         />
       </div>
     </div>

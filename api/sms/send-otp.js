@@ -1,8 +1,7 @@
-import axios from 'axios';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { smsOtpStorage } from '../storage.js';
+import { saveOtp } from '../supabaseOtpClient.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,12 +9,6 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const UNISMS_API_URL = 'https://unismsapi.com/api/sms';
-
-const getUniSmsAuthHeader = () => {
-  const apiKey = process.env.UNISMS_API_KEY;
-  const base64Auth = Buffer.from(`${apiKey}:`).toString('base64');
-  return `Basic ${base64Auth}`;
-};
 
 export default async (req, res) => {
   if (req.method !== 'POST') {
@@ -45,43 +38,69 @@ export default async (req, res) => {
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000;
+    console.log(`[SMSOTP] Generated OTP for ${phone}`);
 
-    // Store OTP
-    smsOtpStorage.set(phone, {
+    // Save OTP to Supabase
+    await saveOtp({
+      phone: formattedPhone,
       otp,
-      expiresAt,
-      attempts: 0
+      name
     });
 
-    console.log(`[SMSOTP] Sending OTP to: ${phone}`);
+    console.log(`[SMSOTP] OTP saved to database for: ${phone}`);
 
-    // Send SMS via UniSMS
-    const message = `Hello ${name}, Your BeautyBook OTP is: ${otp}. Valid for 10 minutes.`;
+    // Send SMS synchronously (wait for result before responding)
+    await sendSmsAsync(formattedPhone, name, otp);
 
-    const response = await axios.post(UNISMS_API_URL, {
-      recipient: formattedPhone,
-      content: message
-    }, {
-      headers: {
-        'Authorization': getUniSmsAuthHeader(),
-        'Content-Type': 'application/json'
-      }
-    });
-
-    console.log(`[SMSOTP] Sent successfully to ${phone}`);
-
+    // Return success immediately to show modal
     res.status(200).json({
       success: true,
-      message: `OTP sent to ${phone}`,
+      message: `OTP generated. Check your SMS.`,
       phone: phone
     });
 
   } catch (error) {
-    console.error(`[SMSOTP] Error sending OTP: ${error.message}`);
-    if (error.response) {
-      console.error(`[SMSOTP] UniSMS Error:`, error.response.data);
-    }
-    res.status(500).json({ error: 'Failed to send OTP. Please try again.' });
+    console.error(`[SMSOTP] Error:`, error);
+    res.status(500).json({ error: 'Failed to generate OTP. Please try again.' });
   }
 };
+
+// Send SMS asynchronously without blocking
+async function sendSmsAsync(formattedPhone, name, otp) {
+  try {
+    const message = `Hello ${name}, Your BeautyBook OTP is: ${otp}. Valid for 10 minutes.`;
+    const payload = {
+      recipient: formattedPhone,
+      content: message
+    };
+
+    const base64Auth = Buffer.from(`${process.env.UNISMS_API_KEY}:`).toString('base64');
+
+    // Create abort controller with 10 second timeout
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch('https://unismsapi.com/api/sms', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${base64Auth}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[SMSOTP] Failed to send SMS: HTTP ${response.status}`);
+      return;
+    }
+
+    const result = await response.json();
+    console.log(`[SMSOTP] SMS sent successfully`);
+  } catch (error) {
+    console.error(`[SMSOTP] Error sending SMS:`, error.message);
+  }
+}

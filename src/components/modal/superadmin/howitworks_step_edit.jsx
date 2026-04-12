@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ConfirmExitDialog from "./ConfirmExitDialog";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -32,6 +33,8 @@ export const HowItWorksStepEditModal = ({
   const [dragActive, setDragActive] = useState(false);
   const [localTitle, setLocalTitle] = useState("");
   const [localDesc, setLocalDesc] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmType, setConfirmType] = useState("exit"); // "exit" or "save"
 
   useEffect(() => {
     if (isOpen && stepId !== null && howitworksSteps[stepId]) {
@@ -40,12 +43,10 @@ export const HowItWorksStepEditModal = ({
     }
   }, [isOpen, stepId, howitworksSteps]);
 
-  if (!isOpen || stepId === null) return null;
-
-  const step = howitworksSteps[stepId];
-  if (!step) return null;
+  const step = isOpen && stepId !== null && howitworksSteps[stepId] ? howitworksSteps[stepId] : null;
 
   const handleSave = () => {
+    if (!step || stepId === null) return;
     const updated = [...howitworksSteps];
     updated[stepId].title = localTitle;
     updated[stepId].desc = localDesc;
@@ -53,10 +54,24 @@ export const HowItWorksStepEditModal = ({
     onClose();
   };
 
-  const handleCancel = () => {
-    setLocalTitle(howitworksSteps[stepId].title || "");
-    setLocalDesc(howitworksSteps[stepId].desc || "");
+  const handleCloseClick = () => {
+    // Always show confirmation dialog when trying to exit
+    setShowConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowConfirm(false);
     onClose();
+  };
+
+  const handleConfirmSave = () => {
+    setShowConfirm(false);
+    handleSave();
+  };
+
+  const handleSaveClick = () => {
+    setConfirmType("save");
+    setShowConfirm(true);
   };
 
   const handleDrag = (e) => {
@@ -87,6 +102,7 @@ export const HowItWorksStepEditModal = ({
   };
 
   const processFile = (file) => {
+    if (!step || stepId === null) return;
     if (file.type === "image/svg+xml" || file.name.endsWith(".svg")) {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -105,9 +121,10 @@ export const HowItWorksStepEditModal = ({
     }
   };
 
-  const isUploadedSvg = step.icon && step.icon.startsWith("svg_");
+  const isUploadedSvg = step && step.icon && step.icon.startsWith("svg_");
 
   return (
+    <>
     <div
       style={{
         position: "fixed",
@@ -116,13 +133,13 @@ export const HowItWorksStepEditModal = ({
         right: 0,
         bottom: 0,
         backgroundColor: "rgba(0, 0, 0, 0.7)",
-        display: "flex",
+        display: isOpen && stepId !== null && step ? "flex" : "none",
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1001,
         fontFamily: "Inter, sans-serif",
       }}
-      onClick={onClose}
+      onClick={handleCloseClick}
     >
       <div
         style={{
@@ -139,6 +156,8 @@ export const HowItWorksStepEditModal = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {step ? (
+          <>
         {/* Header with Close Button */}
         <div
           style={{
@@ -159,7 +178,7 @@ export const HowItWorksStepEditModal = ({
             Edit Step {stepId + 1}
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleCloseClick}
             style={{
               background: "transparent",
               border: "none",
@@ -407,7 +426,7 @@ export const HowItWorksStepEditModal = ({
           }}
         >
           <button
-            onClick={handleCancel}
+            onClick={handleCloseClick}
             style={{
               padding: "11px 24px",
               border: "1px solid rgba(221, 144, 29, 0.4)",
@@ -432,7 +451,7 @@ export const HowItWorksStepEditModal = ({
             Cancel
           </button>
           <button
-            onClick={handleSave}
+            onClick={handleSaveClick}
             style={{
               padding: "11px 24px",
               border: "none",
@@ -463,7 +482,27 @@ export const HowItWorksStepEditModal = ({
             Save
           </button>
         </div>
+          </>
+        ) : null}
       </div>
     </div>
+
+    <ConfirmExitDialog
+      isOpen={showConfirm}
+      onConfirm={confirmType === "save" ? handleConfirmSave : handleConfirmExit}
+      onCancel={() => {
+        setShowConfirm(false);
+        setConfirmType("exit");
+      }}
+      title={confirmType === "save" ? "Save Changes?" : "Close Editor?"}
+      message={
+        confirmType === "save"
+          ? "Are you sure you want to save these changes? This action cannot be undone."
+          : "Are you sure you want to close without saving?"
+      }
+      confirmButtonLabel={confirmType === "save" ? "Save Changes" : "Discard Changes"}
+      cancelButtonLabel={confirmType === "save" ? "Cancel" : "Continue Editing"}
+    />
+  </>
   );
 };

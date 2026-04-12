@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -250,7 +251,9 @@ export default function SuperAdminDatabaseDashboard() {
 
   const handleSaveChanges = () => {
     setShowModal(false);
-    displayToast('Changes saved.');
+    if (modalMode === 'edit') {
+      displayToast('Changes saved.');
+    }
   };
 
   return (
@@ -386,17 +389,17 @@ export default function SuperAdminDatabaseDashboard() {
             </div>
 
             {/* Stats bar */}
-            <div className="stats-bar">
-              <div className="stat-card">
+            <div className="stats-bar" style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', width: '100%', marginTop: '24px' }}>
+              <div className="stat-card" style={{ flex: 1 }}>
                 <span className="stat-value">28.3 MB</span>
                 <span className="stat-label">Total size</span>
               </div>
-              <div className="stat-card">
+              <div className="stat-card" style={{ flex: 1 }}>
                 <span className="stat-value">7,236</span>
                 <span className="stat-label">Total records</span>
               </div>
-              <div className="stat-card">
-                <span className="stat-value" style={{fontSize:'14px'}}>03/24/26 · 6:00 PM</span>
+              <div className="stat-card" style={{ flex: 1 }}>
+                <span className="stat-value">03/24/26 · 6:00 PM</span>
                 <span className="stat-label">Last backup</span>
               </div>
             </div>
@@ -405,58 +408,13 @@ export default function SuperAdminDatabaseDashboard() {
       </div>
 
       {/* ─── MODAL ─── */}
-      {showModal && modalTable && (
-        <div className="modal-backdrop" onClick={(e) => {if(e.target === e.currentTarget) setShowModal(false)}}>
-          <div className="modal">
-            <div className="modal-title">
-              {modalTable.name} — {modalMode === 'view' ? 'View' : 'Edit'}
-            </div>
-            <div className="modal-sub">
-              {modalMode === 'view' 
-                ? `${modalTable.meta} · Last updated: ${modalTable.lastUpdated}`
-                : 'Click any cell to edit. Changes are saved on confirmation.'
-              }
-            </div>
-
-            {/* Table */}
-            <div style={{overflowX:'auto', marginTop:'16px'}}>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    {modalTable.cols.map((col) => (
-                      <th key={col}>{col}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {modalTable.rows.map((row, idx) => {
-                    const rowKeys = Object.keys(row);
-                    return (
-                      <tr key={idx}>
-                        {rowKeys.map((key) => (
-                          <td key={key}>
-                            {modalMode === 'edit' && !key.startsWith('id') 
-                              ? <input defaultValue={row[key]} style={{background:'transparent', border:'none', outline:'none', color:'white', fontSize:'13px', width:'100%'}} />
-                              : row[key]
-                            }
-                          </td>
-                        ))}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setShowModal(false)}>Close</button>
-              <button className="btn-gold" onClick={handleSaveChanges}>
-                {modalMode === 'view' ? 'Close' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DatabaseTableModal
+        showModal={showModal}
+        modalTable={modalTable}
+        modalMode={modalMode}
+        setShowModal={setShowModal}
+        handleSaveChanges={handleSaveChanges}
+      />
 
       {/* ─── TOAST ─── */}
       {showToast && (

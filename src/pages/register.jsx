@@ -73,7 +73,7 @@ const FieldBox = ({ label, children }) => (
 );
 
 /** Dark inner input row with left icon */
-const InputRow = ({ icon, placeholder, type = "text", value, onChange }) => (
+const InputRow = ({ icon, placeholder, type = "text", value, onChange, autoComplete = "on" }) => (
   <div className="input-row">
     <div className="input-wrapper">
       {icon}
@@ -82,6 +82,7 @@ const InputRow = ({ icon, placeholder, type = "text", value, onChange }) => (
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        autoComplete={autoComplete}
         className="input-field"
       />
     </div>
@@ -108,8 +109,7 @@ export const Register = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail]       = useState("");
   const [phone, setPhone]       = useState("");
-  const [useEmail, setUseEmail] = useState(true);
-  const [usePhone, setUsePhone] = useState(false);
+  const [verificationMode, setVerificationMode] = useState("email"); // "email" or "phone"
   const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors]     = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,10 +127,11 @@ export const Register = () => {
   const [pendingName, setPendingName] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
   const [otpType, setOtpType] = useState("phone"); // "phone" or "email"
+  const [toggleHover, setToggleHover] = useState(false); // Track toggle button hover
 
   // Create a wrapper for navigate that logs and blocks for verified users
   const navigateWithGuard = (path) => {
-    if (verifiedUser !== null && verifiedUser !== undefined && path === "/") {
+    if (verifiedUser !== null && verifiedUser !== undefined && path === "/landpage") {
       return;
     }
     navigate(path);
@@ -217,17 +218,14 @@ export const Register = () => {
       newErrors.fullName = "Full name is required";
     }
 
-    // Validate email if selected
-    if (useEmail) {
+    // Validate email or phone based on mode
+    if (verificationMode === "email") {
       if (!email.trim()) {
         newErrors.email = "Email is required";
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         newErrors.email = "Please enter a valid email";
       }
-    }
-
-    // Validate phone if selected
-    if (usePhone) {
+    } else if (verificationMode === "phone") {
       if (!phone.trim()) {
         newErrors.phone = "Phone number is required";
       } else if (phone.length !== 11) {
@@ -235,43 +233,32 @@ export const Register = () => {
       }
     }
 
-    // Check if at least one notification method is selected
-    if (!useEmail && !usePhone) {
-      newErrors.notification = "Please select at least one notification method";
-    }
-
     setErrors(newErrors);
 
-    // If no errors, send verification via email or SMS
+    // If no errors, send verification
     if (Object.keys(newErrors).length === 0) {
       setIsSubmitting(true);
       
       const apiUrl = import.meta.env.VITE_API_URL;
 
-      // Determine which endpoint to use
+      // Determine which endpoint to use based on mode
       let endpoint, requestData, successMessage;
       
-      if (usePhone && !useEmail) {
-        // Phone only - use SMS OTP
+      if (verificationMode === "phone") {
+        // Phone mode - use SMS OTP
         endpoint = `${apiUrl}/sms/send-otp`;
         requestData = { phone, name: fullName };
         successMessage = `OTP sent to ${phone}. Check your messages!`;
-        console.log('📱 Sending SMS OTP to:', phone);
-      } else if (useEmail && !usePhone) {
-        // Email only - use Email OTP (NEW)
+        console.log('Sending SMS OTP to:', phone);
+      } else {
+        // Email mode - use Email OTP
         endpoint = `${apiUrl}/auth/send-email-otp`;
         requestData = { email, full_name: fullName, phone: phone || "" };
         successMessage = `OTP sent to ${email}. Check your inbox!`;
-        console.log('📧 Sending email OTP to:', email);
-      } else {
-        // Both email and phone - send SMS OTP (user can receive via either)
-        endpoint = `${apiUrl}/sms/send-otp`;
-        requestData = { phone, name: fullName };
-        successMessage = `OTP sent to ${phone}. Check your messages!`;
-        console.log('📱 Sending SMS OTP to:', phone);
+        console.log('Sending email OTP to:', email);
       }
 
-      console.log('📋 Data:', requestData);
+      console.log('Data:', requestData);
       
       fetch(endpoint, {
         method: "POST",
@@ -279,37 +266,28 @@ export const Register = () => {
         body: JSON.stringify(requestData)
       })
         .then(res => {
-          console.log('📥 Response status:', res.status);
+          console.log('Response status:', res.status);
           return res.json();
         })
         .then(data => {
-          console.log('📦 Response data:', data);
+          console.log('Response data:', data);
           if (data.message || data.success) {
             setToastMessage(successMessage);
             setShowToast(true);
             setTimeout(() => { setShowToast(false); }, 10000);
             
-            // Show OTP modal for both email and phone
-            if (usePhone && !useEmail) {
-              // Phone only
+            // Show OTP modal
+            if (verificationMode === "phone") {
               setPendingPhone(phone);
               setPendingName(fullName);
               setPendingEmail("");
               setOtpType("phone");
               setShowOtpModal(true);
-            } else if (useEmail && !usePhone) {
-              // Email only
+            } else {
               setPendingEmail(email);
               setPendingName(fullName);
               setPendingPhone("");
               setOtpType("email");
-              setShowOtpModal(true);
-            } else {
-              // Both email and phone - using SMS OTP
-              setPendingPhone(phone);
-              setPendingName(fullName);
-              setPendingEmail("");
-              setOtpType("phone");
               setShowOtpModal(true);
             }
           } else {
@@ -333,7 +311,7 @@ export const Register = () => {
     if (verifiedUser !== null && verifiedUser !== undefined) {
       return;
     }
-    navigateWithGuard("/");
+    navigateWithGuard("/landpage");
   };
 
   const handleOtpVerified = (otp) => {
@@ -348,13 +326,13 @@ export const Register = () => {
       endpoint = `${apiUrl}/sms/verify-otp`;
       verifyData = { phone: pendingPhone, otp: cleanOtp };
       toastMsg = '✅ Phone verified successfully! Proceeding to booking...';
-      console.log('🔐 Verifying SMS OTP for:', pendingPhone);
+      console.log('Verifying SMS OTP for:', pendingPhone);
     } else if (otpType === "email") {
       if (!pendingEmail || !otp) return;
       endpoint = `${apiUrl}/auth/verify-email-otp`;
       verifyData = { email: pendingEmail, otp: cleanOtp };
       toastMsg = '✅ Email verified successfully! Proceeding to booking...';
-      console.log('🔐 Verifying Email OTP for:', pendingEmail);
+      console.log('Verifying Email OTP for:', pendingEmail);
     } else {
       return;
     }
@@ -388,13 +366,6 @@ export const Register = () => {
           setPendingPhone("");
           setPendingEmail("");
           setPendingName("");
-          
-          // Reset form
-          setFullName("");
-          setEmail("");
-          setPhone("");
-          setUseEmail(true);
-          setUsePhone(false);
         } else {
           console.error('❌ OTP verification failed:', data.error);
           setToastMessage(data.error || 'Invalid OTP. Please try again.');
@@ -432,13 +403,12 @@ export const Register = () => {
     setFullName("");
     setEmail("");
     setPhone("");
-    setUseEmail(true);
-    setUsePhone(false);
+    setVerificationMode("email");
     setTimeout(() => {
       if (verifiedUser === null || verifiedUser === undefined) {
         sessionStorage.removeItem("verifiedUser");
         localStorage.removeItem("verifiedUserBackup");
-        navigateWithGuard("/");
+        navigateWithGuard("/landpage");
       }
     }, 1200);
   };
@@ -544,8 +514,8 @@ export const Register = () => {
         }
       }
 
-      console.log('📅 Formatted Date:', appointmentDate);
-      console.log('⏰ Formatted Time:', formattedTime);
+      console.log('Formatted Date:', appointmentDate);
+      console.log('Formatted Time:', formattedTime);
 
       // Get all selected services and join them
       let allServices = [];
@@ -584,7 +554,7 @@ export const Register = () => {
         staff_assigned: stylistName
       };
 
-      console.log('📤 Sending appointment to backend:', appointmentPayload);
+      console.log('Sending appointment to backend:', appointmentPayload);
 
       // POST appointment to backend
       const response = await fetch(`${apiUrl}/appointments/create`, {
@@ -624,15 +594,14 @@ export const Register = () => {
         setFullName("");
         setEmail("");
         setPhone("");
-        setUseEmail(true);
-        setUsePhone(false);
+        setVerificationMode("email");
         setToastMessage("✅ Appointment booked successfully!");
         setShowToast(true);
         setTimeout(() => {
           if (verifiedUser === null || verifiedUser === undefined) {
             sessionStorage.removeItem("verifiedUser");
             localStorage.removeItem("verifiedUserBackup");
-            navigateWithGuard("/");
+            navigateWithGuard("/landpage");
           }
         }, 2000);
       } else {
@@ -718,6 +687,7 @@ export const Register = () => {
         phone: userPhone,
         stylist: stylistName,
         refNo: "18xxx-xxxx",
+        verificationMethod: verificationMode,
       };
     } catch (error) {
       // Fallback if something goes wrong
@@ -733,12 +703,13 @@ export const Register = () => {
         phone: userPhone,
         stylist: "Any Available Stylist",
         refNo: "18xxx-xxxx",
+        verificationMethod: verificationMode,
       };
     }
   };
 
   return (
-    <div className="register-container">
+    <div className="register-container" style={{ height: "100vh", overflow: "hidden", display: "flex" }}>
 
       {/* ── LEFT PANEL ── */}
       <div className="register-left">
@@ -797,8 +768,8 @@ export const Register = () => {
         {/* Content wrapper */}
         <div className="form-wrapper" style={{ pointerEvents: (verifiedUser && showAppointment) || sessionExpired ? "none" : "auto", opacity: (verifiedUser && showAppointment) || sessionExpired ? 0.5 : 1 }}>
 
-        {/* Back button - hidden for verified users with active appointment */}
-        {!verifiedUser && (
+        {/* Back button - hidden only when verified user has active appointment modal */}
+        {!(verifiedUser && showAppointment) && (
           <button
             type="button"
             onClick={handleBack}
@@ -847,63 +818,85 @@ export const Register = () => {
             {errors.fullName && <span className="error-text">{errors.fullName}</span>}
           </FieldBox>
 
-          {/* USE EMAIL TOGGLE */}
-          <ToggleRow
-            label="Use Email for Notification:"
-            checked={useEmail}
-            onToggle={() => {
-              if (useEmail) {
-                setUseEmail(false);
-              } else {
-                setUseEmail(true);
-                setUsePhone(false);
-              }
-            }}
-          />
-
-          {/* EMAIL ADDRESS */}
-          <FieldBox label="Email Address">
-            <InputRow
-              icon={<EnvelopeIcon />}
-              placeholder="you@gmail.com"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-            {errors.email && <span className="error-text">{errors.email}</span>}
-          </FieldBox>
-
-          {/* USE PHONE TOGGLE */}
-          <ToggleRow
-            label="Use Phone No. for Notification:"
-            checked={usePhone}
-            onToggle={() => {
-              if (usePhone) {
-                setUsePhone(false);
-              } else {
-                setUsePhone(true);
-                setUseEmail(false);
-              }
-            }}
-          />
-          {errors.notification && <span className="error-text">{errors.notification}</span>}
-
-          {/* PHONE NUMBER */}
-          <FieldBox label="Phone Number">
-            <InputRow
-              icon={<PhoneIcon />}
-              placeholder="# ### ### ####"
-              type="tel"
-              value={phone}
-              onChange={e => {
-                const numericOnly = e.target.value.replace(/[^0-9]/g, "");
-                if (numericOnly.length <= 11) {
-                  setPhone(numericOnly);
-                }
-              }}
-            />
-            {errors.phone && <span className="error-text">{errors.phone}</span>}
-          </FieldBox>
+          {/* VERIFICATION MODE - EMAIL OR PHONE */}
+          <div style={{ transition: "opacity 0.3s ease" }}>
+            {verificationMode === "email" ? (
+              <FieldBox label="Email Address">
+                <InputRow
+                  icon={<EnvelopeIcon />}
+                  placeholder="you@gmail.com"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                />
+                {errors.email && <span className="error-text">{errors.email}</span>}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVerificationMode("phone");
+                    setErrors({});
+                  }}
+                  onMouseEnter={() => setToggleHover(true)}
+                  onMouseLeave={() => setToggleHover(false)}
+                  style={{
+                    marginTop: "8px",
+                    background: "none",
+                    border: "none",
+                    color: toggleHover ? "#dd901d" : "#999",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    textDecoration: toggleHover ? "underline" : "underline",
+                    padding: 0,
+                    fontFamily: "inherit",
+                    transition: "color 0.2s ease",
+                    userSelect: "none"
+                  }}
+                >
+                  use phone number instead
+                </button>
+              </FieldBox>
+            ) : (
+              <FieldBox label="Phone Number">
+                <InputRow
+                  icon={<PhoneIcon />}
+                  placeholder="# ### ### ####"
+                  type="tel"
+                  value={phone}
+                  onChange={e => {
+                    const numericOnly = e.target.value.replace(/[^0-9]/g, "");
+                    if (numericOnly.length <= 11) {
+                      setPhone(numericOnly);
+                    }
+                  }}
+                />
+                {errors.phone && <span className="error-text">{errors.phone}</span>}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVerificationMode("email");
+                    setErrors({});
+                  }}
+                  onMouseEnter={() => setToggleHover(true)}
+                  onMouseLeave={() => setToggleHover(false)}
+                  style={{
+                    marginTop: "8px",
+                    background: "none",
+                    border: "none",
+                    color: toggleHover ? "#dd901d" : "#999",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    textDecoration: toggleHover ? "underline" : "underline",
+                    padding: 0,
+                    fontFamily: "inherit",
+                    transition: "color 0.2s ease",
+                    userSelect: "none"
+                  }}
+                >
+                  use email instead
+                </button>
+              </FieldBox>
+            )}
+          </div>
 
           {/* CONFIRM BUTTON + REMEMBER ME */}
           <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8 }}>
@@ -913,7 +906,7 @@ export const Register = () => {
               style={{ width: "100%" }}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Sending verification email..." : "Confirm"}
+              {isSubmitting ? "Sending verification..." : "Confirm"}
             </button>
 
             {/* Remember Me */}
@@ -935,26 +928,51 @@ export const Register = () => {
       </div>
 
       {/* ── RIGHT PANEL ── */}
-      <div className="register-right">
+      <div className="login-right">
 
-        {/* Big amber circle with scissors */}
-        <div className="right-panel-circle">
-          {/* Large scissors for the panel */}
-          <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 60, height: 60 }}>
-            <circle cx="14" cy="40" r="9" stroke="#1a1208" strokeWidth="3" fill="none" />
-            <circle cx="14" cy="20" r="9" stroke="#1a1208" strokeWidth="3" fill="none" />
-            <path d="M22 36 L54 14" stroke="#1a1208" strokeWidth="3" strokeLinecap="round" />
-            <path d="M22 24 L54 46" stroke="#1a1208" strokeWidth="3" strokeLinecap="round" />
-            <circle cx="14" cy="40" r="3.5" fill="#1a1208" />
-            <circle cx="14" cy="20" r="3.5" fill="#1a1208" />
-          </svg>
+        {/* Decorative layers */}
+        <div className="login-orb login-orb-1" />
+        <div className="login-orb login-orb-2" />
+        <div className="login-orb login-orb-3" />
+        <div className="login-right-top-bar" />
+        <div className="login-right-bottom-bar" />
+        <div className="login-ring login-ring-lg" />
+        <div className="login-ring login-ring-sm" />
+
+        {/* Content */}
+        <div className="login-right-content mounted">
+
+          {/* Brand icon */}
+          <div className="login-icon-circle">
+            <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 52, height: 52 }}>
+              <circle cx="14" cy="40" r="9" stroke="#000" strokeWidth="3" fill="none" />
+              <circle cx="14" cy="20" r="9" stroke="#000" strokeWidth="3" fill="none" />
+              <path d="M22 36 L54 14" stroke="#000" strokeWidth="3" strokeLinecap="round" />
+              <path d="M22 24 L54 46" stroke="#000" strokeWidth="3" strokeLinecap="round" />
+              <circle cx="14" cy="40" r="3.5" fill="#000" />
+              <circle cx="14" cy="20" r="3.5" fill="#000" />
+            </svg>
+          </div>
+
+          {/* Heading */}
+          <div className="login-right-heading">
+            <h2 className="login-right-title">
+              Digital Appointment{" "}
+              <span className="accent">System</span>
+            </h2>
+            <p className="login-right-desc">
+              Book your appointments and manage your beauty services with ease. Join our community today.
+            </p>
+          </div>
+
+          {/* Status badge */}
+          <div className="login-status-badge">
+            <span className="login-status-dot" />
+            <span className="login-status-text">
+              System Online · Secure Connection
+            </span>
+          </div>
         </div>
-
-        <h2 className="right-panel-title">Digital Appointment System</h2>
-
-        <p className="right-panel-text">
-          Book appointments and enjoy a seamless salon experience—no waiting in line.
-        </p>
       </div>
 
       {/* Appointment Booking Modal */}
@@ -995,6 +1013,7 @@ export const Register = () => {
             <AppointmentFormPhase4
               onBack={handleAppointmentBackPhase4}
               onConfirm={handlePhase4Confirm}
+              onCancel={handleCancelBooking}
               booking={getFormattedBooking()}
             />
           ) : null}

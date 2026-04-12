@@ -3,7 +3,7 @@
  * Handles all API calls related to beauty services
  */
 
-const API_BASE_URL = 'http://localhost:5000/api/services';
+const API_BASE_URL = '/api/services';
 
 /**
  * Fetch all services
@@ -28,7 +28,7 @@ export const fetchAllServices = async () => {
 export const fetchServicesByCategory = async (category) => {
   try {
     const encodedCategory = encodeURIComponent(category);
-    const response = await fetch(`${API_BASE_URL}/category/${encodedCategory}`);
+    const response = await fetch(`${API_BASE_URL}/${encodedCategory}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch ${category} services`);
     }

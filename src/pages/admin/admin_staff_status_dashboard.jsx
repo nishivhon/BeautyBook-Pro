@@ -114,6 +114,12 @@ const DownloadIcon = ({ size = 14, color = "currentColor" }) => (
   </svg>
 );
 
+const CloseIcon = ({ size = 20, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M18 6L6 18M6 6l12 12" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 // ═══════════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════════
@@ -287,18 +293,242 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
   </>
 );
 
+/* ── Status Update Modal ── */
+const StatusUpdateModal = ({ isOpen, staff, onClose, onSave }) => {
+  const [selectedStatus, setSelectedStatus] = useState(staff?.status || "Available");
+  
+  if (!isOpen || !staff) return null;
+
+  const statusOptions = [
+    { label: "Available", color: "#22c55e", class: "staff-status-green" },
+    { label: "In Service", color: "#4387ef", class: "staff-status-blue" },
+    { label: "On Break", color: "#dd901d", class: "staff-status-amber" },
+  ];
+
+  const handleSave = () => {
+    onSave(staff.name, selectedStatus);
+    setSelectedStatus("Available");
+  };
+
+  return (
+    <div 
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.7)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        fontFamily: "Inter, sans-serif",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          backgroundColor: "#1a1a1a",
+          borderRadius: "12px",
+          padding: "32px",
+          maxWidth: "450px",
+          width: "90%",
+          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
+          border: "1px solid rgba(221, 144, 29, 0.2)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#f5f5f5", margin: 0 }}>
+            Update Status
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "8px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#988f81",
+              transition: "color 0.2s ease",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#dd901d"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#988f81"; }}
+          >
+            <CloseIcon size={20} color="currentColor" />
+          </button>
+        </div>
+
+        {/* Staff Name Display */}
+        <div style={{
+          backgroundColor: "rgba(26, 15, 0, 0.5)",
+          borderLeft: "3px solid #dd901d",
+          padding: "12px 14px",
+          borderRadius: "8px",
+          marginBottom: "24px",
+        }}>
+          <p style={{ fontSize: "12px", color: "#988f81", margin: "0 0 4px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            Staff Member
+          </p>
+          <p style={{ fontSize: "16px", fontWeight: "600", color: "#f5f5f5", margin: 0 }}>
+            {staff.name}
+          </p>
+        </div>
+
+        {/* Current Status Display */}
+        <p style={{ fontSize: "12px", color: "#988f81", margin: "0 0 8px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          Current Status
+        </p>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          marginBottom: "24px",
+          padding: "10px 14px",
+          backgroundColor: "rgba(26, 15, 0, 0.5)",
+          border: "1px solid rgba(221, 144, 29, 0.2)",
+          borderRadius: "8px",
+        }}>
+          <div
+            style={{
+              width: "10px",
+              height: "10px",
+              borderRadius: "50%",
+              backgroundColor: staff.status === "Available" ? "#22c55e" : staff.status === "In Service" ? "#4387ef" : "#dd901d",
+            }}
+          />
+          <span style={{ fontSize: "14px", fontWeight: "500", color: "#f5f5f5" }}>
+            {staff.status}
+          </span>
+        </div>
+
+        {/* Status Options */}
+        <p style={{ fontSize: "12px", color: "#988f81", margin: "0 0 12px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          Select New Status
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "28px" }}>
+          {statusOptions.map((option) => (
+            <button
+              key={option.label}
+              onClick={() => setSelectedStatus(option.label)}
+              style={{
+                padding: "12px 16px",
+                border: selectedStatus === option.label ? "2px solid #dd901d" : "1px solid rgba(221, 144, 29, 0.2)",
+                backgroundColor: selectedStatus === option.label ? "rgba(221, 144, 29, 0.15)" : "rgba(26, 15, 0, 0.5)",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#f5f5f5",
+                transition: "all 0.2s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                fontFamily: "Inter, sans-serif",
+              }}
+              onMouseEnter={(e) => {
+                if (selectedStatus !== option.label) {
+                  e.currentTarget.style.backgroundColor = "rgba(26, 15, 0, 0.7)";
+                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.4)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedStatus !== option.label) {
+                  e.currentTarget.style.backgroundColor = "rgba(26, 15, 0, 0.5)";
+                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.2)";
+                }
+              }}
+            >
+              <div
+                style={{
+                  width: "12px",
+                  height: "12px",
+                  borderRadius: "50%",
+                  backgroundColor: option.color,
+                  flexShrink: 0,
+                }}
+              />
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: "flex", gap: "12px" }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              backgroundColor: "transparent",
+              border: "1px solid rgba(221, 144, 29, 0.3)",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              color: "#988f81",
+              transition: "all 0.2s ease",
+              fontFamily: "Inter, sans-serif",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.6)";
+              e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.3)";
+              e.currentTarget.style.backgroundColor = "transparent";
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              backgroundColor: "#dd901d",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              color: "#fff",
+              transition: "all 0.2s ease",
+              fontFamily: "Inter, sans-serif",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#e89f2d";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#dd901d";
+            }}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ── Staff List panel ── */
-const StaffListPanel = () => {
+const StaffListPanel = ({ staff: staffList, onStaffStatusUpdate, statusUpdateModal, onOpenStatusModal, onCloseStatusModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [expandedStaff, setExpandedStaff] = useState(null);
+  const [staff, setStaff] = useState(staffList);
 
   const statuses = ["Available", "In Service", "On Break", "Off Today"];
 
   const filteredStaff = selectedFilter 
-    ? STAFF.filter(s => s.status === selectedFilter)
-    : STAFF;
+    ? staff.filter(s => s.status === selectedFilter)
+    : staff;
 
   const handleFilterSelect = (status) => {
     setSelectedFilter(selectedFilter === status ? null : status);
@@ -307,6 +537,24 @@ const StaffListPanel = () => {
 
   const handleStaffToggle = (staffName) => {
     setExpandedStaff(expandedStaff === staffName ? null : staffName);
+  };
+
+  const handleStatusUpdate = (staffName, newStatus) => {
+    const updatedStaff = staff.map(s => 
+      s.name === staffName 
+        ? { 
+            ...s, 
+            status: newStatus,
+            statusClass: newStatus === "Available" ? "staff-status-green" 
+                       : newStatus === "In Service" ? "staff-status-blue"
+                       : newStatus === "On Break" ? "staff-status-amber"
+                       : "staff-status-tan"
+          }
+        : s
+    );
+    setStaff(updatedStaff);
+    onCloseStatusModal();
+    onStaffStatusUpdate?.(staffName, newStatus);
   };
 
   return (
@@ -434,6 +682,32 @@ const StaffListPanel = () => {
                       {s.details.availableForWalkIn ? "Yes" : "No"}
                     </p>
                   </div>
+
+                  {/* Update Status Button */}
+                  <button
+                    onClick={() => onOpenStatusModal(s)}
+                    style={{
+                      gridColumn: "1 / -1",
+                      marginTop: "12px",
+                      padding: "10px 16px",
+                      backgroundColor: "#dd901d",
+                      border: "none",
+                      borderRadius: "8px",
+                      color: "#fff",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = "#c97a15";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = "#dd901d";
+                    }}
+                  >
+                    Update Status
+                  </button>
                 </div>
               )}
             </div>
@@ -496,10 +770,25 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   const navigate = useNavigate();
   const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [statusUpdateModal, setStatusUpdateModal] = useState({ isOpen: false, staff: null });
 
   const handleLogout = () => {
     logoutOperator();
     navigate("/");
+  };
+
+  const handleStaffStatusUpdate = (staffName, newStatus) => {
+    console.log(`Updated ${staffName} status to ${newStatus}`);
+    // Here you would typically make an API call to update the staff status in your backend
+    // Example: await updateStaffStatus(staffName, newStatus);
+  };
+
+  const openStatusModal = (staffMember) => {
+    setStatusUpdateModal({ isOpen: true, staff: staffMember });
+  };
+
+  const closeStatusModal = () => {
+    setStatusUpdateModal({ isOpen: false, staff: null });
   };
 
   return (
@@ -511,7 +800,13 @@ export const AdminDashboardStaffStatus = ({ date }) => {
 
         <div className="staff-page-grid">
           {/* Left — Staff List */}
-          <StaffListPanel />
+          <StaffListPanel 
+            staff={STAFF}
+            onStaffStatusUpdate={handleStaffStatusUpdate}
+            statusUpdateModal={statusUpdateModal}
+            onOpenStatusModal={openStatusModal}
+            onCloseStatusModal={closeStatusModal}
+          />
 
           {/* Right — Quick Actions + Analytics */}
           <div className="staff-sidebar">
@@ -534,6 +829,29 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       <CalendarAppointmentsModal 
         isOpen={isCalendarOpen} 
         onClose={() => setIsCalendarOpen(false)} 
+      />
+
+      {/* Status Update Modal */}
+      <StatusUpdateModal
+        isOpen={statusUpdateModal.isOpen}
+        staff={statusUpdateModal.staff}
+        onClose={closeStatusModal}
+        onSave={(staffName, newStatus) => {
+          const updatedStaff = STAFF.map(s => 
+            s.name === staffName 
+              ? { 
+                  ...s, 
+                  status: newStatus,
+                  statusClass: newStatus === "Available" ? "staff-status-green" 
+                             : newStatus === "In Service" ? "staff-status-blue"
+                             : newStatus === "On Break" ? "staff-status-amber"
+                             : "staff-status-tan"
+                }
+              : s
+          );
+          handleStaffStatusUpdate(staffName, newStatus);
+          closeStatusModal();
+        }}
       />
     </div>
   );

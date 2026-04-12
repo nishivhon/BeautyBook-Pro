@@ -13,6 +13,7 @@ import SuperAdminUsersDashboard from './pages/superadmin/super_admin_users_dashb
 import SuperAdminDatabaseDashboard from './pages/superadmin/super_admin_database_dashboard'
 import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security_dashboard'
 import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage_edit_dashboard'
+import StaffDashboard from './pages/staff/staff_dashboard'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Homepage />} />
+        <Route path="/landpage" element={<Homepage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/operators/login" element={<LogIn />} />
         <Route
@@ -96,6 +98,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="super admin">
               <SuperAdminLandingPageEditor />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/dashboard"
+          element={
+            <ProtectedRoute requiredRole="staff">
+              <StaffDashboard />
             </ProtectedRoute>
           }
         />

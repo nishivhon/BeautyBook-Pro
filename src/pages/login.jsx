@@ -180,7 +180,7 @@ export const LogIn = () => {
           const roleBasedRoutes = {
             'admin': '/admin/dashboard',
             'super admin': '/superadmin/dashboard',
-            'staff': '/'  // TODO: Create staff dashboard
+            'staff': '/staff/dashboard'
           };
           
           const redirectPath = roleBasedRoutes[result.data.role?.toLowerCase()] || '/';

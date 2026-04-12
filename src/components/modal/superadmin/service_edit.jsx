@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ConfirmExitDialog from "./ConfirmExitDialog";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -45,6 +46,8 @@ export const ServiceEditModal = ({
   const [localTitle, setLocalTitle] = useState("");
   const [localItems, setLocalItems] = useState([]);
   const [newItemInput, setNewItemInput] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmType, setConfirmType] = useState("exit"); // "exit" or "save"
 
   useEffect(() => {
     if (isOpen && serviceIndex !== null && services && services[serviceIndex]) {
@@ -64,69 +67,36 @@ export const ServiceEditModal = ({
     }
   }, []);
 
-  if (!isOpen) return null;
-  if (serviceIndex === null || !services || !services[serviceIndex]) {
-    return (
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.7)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1001,
-        }}
-        onClick={onClose}
-      >
-        <div
-          style={{
-            backgroundColor: "#1a1a1a",
-            borderRadius: "12px",
-            padding: "28px",
-            color: "#f5f5f5",
-            textAlign: "center",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <p>Unable to load service data. Please try again.</p>
-          <button
-            onClick={onClose}
-            style={{
-              marginTop: "16px",
-              padding: "10px 20px",
-              backgroundColor: "#dd901d",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              color: "#1a1a1a",
-              fontWeight: "600",
-            }}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const service = services[serviceIndex];
+  const service = serviceIndex !== null && services && services[serviceIndex] ? services[serviceIndex] : null;
+  const isValidService = isOpen && serviceIndex !== null && service;
 
   const handleSave = () => {
+    // Show confirmation dialog before saving
+    setConfirmType("save");
+    setShowConfirm(true);
+  };
+
+  const handleConfirmSave = () => {
+    // Now actually commit the changes
+    if (!service || serviceIndex === null) return;
     const updated = [...services];
     updated[serviceIndex].title = localTitle;
     updated[serviceIndex].items = localItems;
     setServices(updated);
+    setShowConfirm(false);
+    setConfirmType("exit");
     onClose();
   };
 
-  const handleCancel = () => {
-    setLocalTitle(services[serviceIndex].title || "");
-    setLocalItems([...(services[serviceIndex].items || [])]);
-    setNewItemInput("");
+  const handleCloseClick = () => {
+    // Show confirmation dialog when trying to exit without saving
+    setConfirmType("exit");
+    setShowConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowConfirm(false);
+    setConfirmType("exit");
     onClose();
   };
 
@@ -175,6 +145,7 @@ export const ServiceEditModal = ({
   };
 
   const processFile = (file) => {
+    if (!service || serviceIndex === null) return;
     if (file.type === "image/svg+xml" || file.name.endsWith(".svg")) {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -196,6 +167,7 @@ export const ServiceEditModal = ({
   const isUploadedSvg = service && service.icon && typeof service.icon === "string" && service.icon.startsWith("svg_");
 
   return (
+    <>
     <div
       style={{
         position: "fixed",
@@ -204,14 +176,14 @@ export const ServiceEditModal = ({
         right: 0,
         bottom: 0,
         backgroundColor: "rgba(0, 0, 0, 0.7)",
-        display: "flex",
+        display: isValidService ? "flex" : "none",
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1001,
         fontFamily: "Inter, sans-serif",
         overflow: "hidden",
       }}
-      onClick={onClose}
+      onClick={handleCloseClick}
     >
       <div
         style={{
@@ -229,6 +201,8 @@ export const ServiceEditModal = ({
         className="service-modal-no-scrollbar"
         onClick={(e) => e.stopPropagation()}
       >
+        {service ? (
+          <>
         {/* Header with Close Button */}
         <div
           style={{
@@ -249,7 +223,7 @@ export const ServiceEditModal = ({
             Edit Service
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleCloseClick}
             style={{
               background: "transparent",
               border: "none",
@@ -512,68 +486,75 @@ export const ServiceEditModal = ({
           </div>
 
           {/* Add New Item */}
-          <div style={{ display: "flex", gap: "8px" }}>
-            <input
-              type="text"
-              value={newItemInput}
-              onChange={(e) => setNewItemInput(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  handleAddItem();
-                }
-              }}
-              style={{
-                flex: 1,
-                padding: "10px 12px",
-                border: "1px solid rgba(221, 144, 29, 0.3)",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontFamily: "Inter, sans-serif",
-                boxSizing: "border-box",
-                backgroundColor: "rgba(221, 144, 29, 0.08)",
-                color: "#f5f5f5",
-                transition: "all 0.2s ease",
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                e.target.style.backgroundColor = "rgba(221, 144, 29, 0.12)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "rgba(221, 144, 29, 0.3)";
-                e.target.style.backgroundColor = "rgba(221, 144, 29, 0.08)";
-              }}
-              placeholder="Add new service item"
-            />
-            <button
-              onClick={handleAddItem}
-              style={{
-                padding: "10px 16px",
-                border: "1px solid rgba(221, 144, 29, 0.4)",
-                backgroundColor: "transparent",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: "600",
-                color: "#dd901d",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "6px",
-                transition: "all 0.2s ease",
-              }}
-              onMouseOver={(e) => {
-                e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
-                e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-              }}
-              onMouseOut={(e) => {
-                e.target.style.backgroundColor = "transparent";
-                e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
-              }}
-            >
-              <PlusIcon />
-              Add
-            </button>
-          </div>
+          {localItems.length < 4 && (
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type="text"
+                value={newItemInput}
+                onChange={(e) => setNewItemInput(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddItem();
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  border: "1px solid rgba(221, 144, 29, 0.3)",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  fontFamily: "Inter, sans-serif",
+                  boxSizing: "border-box",
+                  backgroundColor: "rgba(221, 144, 29, 0.08)",
+                  color: "#f5f5f5",
+                  transition: "all 0.2s ease",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
+                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.12)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.3)";
+                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.08)";
+                }}
+                placeholder="Add new service item"
+              />
+              <button
+                onClick={handleAddItem}
+                style={{
+                  padding: "10px 16px",
+                  border: "1px solid rgba(221, 144, 29, 0.4)",
+                  backgroundColor: "transparent",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  color: "#dd901d",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = "transparent";
+                  e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
+                }}
+              >
+                <PlusIcon />
+                Add
+              </button>
+            </div>
+          )}
+          {localItems.length >= 4 && (
+            <div style={{ fontSize: "12px", color: "#888", fontStyle: "italic", marginTop: "8px" }}>
+              Maximum 4 items allowed
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
@@ -588,7 +569,7 @@ export const ServiceEditModal = ({
           }}
         >
           <button
-            onClick={handleCancel}
+            onClick={handleCloseClick}
             style={{
               padding: "11px 24px",
               border: "1px solid rgba(221, 144, 29, 0.4)",
@@ -644,7 +625,27 @@ export const ServiceEditModal = ({
             Save
           </button>
         </div>
+          </>
+        ) : null}
       </div>
     </div>
+
+    <ConfirmExitDialog
+      isOpen={showConfirm}
+      onConfirm={confirmType === "save" ? handleConfirmSave : handleConfirmExit}
+      onCancel={() => {
+        setShowConfirm(false);
+        setConfirmType("exit");
+      }}
+      title={confirmType === "save" ? "Save Changes?" : "Close Editor?"}
+      message={
+        confirmType === "save"
+          ? "Are you sure you want to save these changes? This action cannot be undone."
+          : "Are you sure you want to close without saving?"
+      }
+      confirmButtonLabel={confirmType === "save" ? "Save Changes" : "Discard Changes"}
+      cancelButtonLabel={confirmType === "save" ? "Cancel" : "Continue Editing"}
+    />
+  </>
   );
 };

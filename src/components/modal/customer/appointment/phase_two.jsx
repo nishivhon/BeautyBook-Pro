@@ -314,6 +314,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   const [hasVisitedMassageModal, setHasVisitedMassageModal] = useState(false); // Track if massage modal has been visited
   const [hasVisitedPremiumModal, setHasVisitedPremiumModal] = useState(false); // Track if premium modal has been visited
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
 
   // Initialize state with previously selected services when component mounts or initialData changes
   useEffect(() => {
@@ -467,9 +468,28 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   }
 
   return (
-    <div className="appt-root">
-      <BookingHeader onBack={onBack} />
-      <ProgressIndicator currentStep={2} />
+    <>
+      <div 
+        className="appt-backdrop"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowBackdropConfirm(true);
+          }
+        }}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div className="appt-root">
+          <BookingHeader onBack={onBack} />
+          <ProgressIndicator currentStep={2} />
 
       {/* ── Scrollable body ── */}
       <div className="appt-body">
@@ -553,8 +573,22 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
           </button>
         </div>
       </div>
+    </div>
+  </div>
 
-      {/* Cancel Confirmation Dialog */}
+      {/* Cancel Confirmation Dialogs */}
+      <ConfirmationDialog
+        isOpen={showBackdropConfirm}
+        title="Cancel Booking?"
+        message="Are you sure you want to cancel? Your booking progress will be lost."
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        onConfirm={() => {
+          setShowBackdropConfirm(false);
+          onCancel?.();
+        }}
+        onCancel={() => setShowBackdropConfirm(false)}
+      />
       <ConfirmationDialog
         isOpen={showCancelConfirm}
         title="Cancel Booking?"
@@ -567,7 +601,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
         }}
         onCancel={() => setShowCancelConfirm(false)}
       />
-    </div>
+    </>
   );
 };
 

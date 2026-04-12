@@ -161,6 +161,7 @@ const StylistRow = ({ stylist, isSelected, onSelect }) => {
 export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
   const [selected, setSelected] = useState(null);
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
+  const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [stylists, setStylists] = useState([ANY_STYLIST]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -207,16 +208,34 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
   };
 
   return (
-    <div className="appt-root">
+    <>
+      <div 
+        className="appt-backdrop"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowBackdropConfirm(true);
+          }
+        }}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div className="appt-root">
+          <BookingHeader onBack={handleBack} />
+          <ProgressIndicator currentStep={3} />
 
-      <BookingHeader onBack={handleBack} />
-      <ProgressIndicator currentStep={3} />
-
-      {/* ── Scrollable body ── */}
-      <div className="appt-body">
-        <div className="appt-section-heading">
-          <p className="appt-section-title">Choose a stylist</p>
-          <p className="appt-section-sub">Pick your preferred stylist or choose &quot;Any Available&quot;</p>
+          {/* ── Scrollable body ── */}
+          <div className="appt-body">
+            <div className="appt-section-heading">
+              <p className="appt-section-title">Choose a stylist</p>
+              <p className="appt-section-sub">Pick your preferred stylist or choose &quot;Any Available&quot;</p>
         </div>
 
         {/* Loading state */}
@@ -259,6 +278,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
             onClick={handleCancelClick}
             style={{
               flex: 1,
+              marginRight: "12px",
               padding: "12px 16px",
               background: "transparent",
               color: "#dd901d",
@@ -293,8 +313,22 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
           </button>
         </div>
       </div>
+    </div>
+  </div>
 
-      {/* Cancel Confirmation Dialog */}
+      {/* Cancel Confirmation Dialogs */}
+      <ConfirmationDialog
+        isOpen={showBackdropConfirm}
+        title="Cancel Booking?"
+        message="Are you sure you want to cancel? Your booking progress will be lost."
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        onConfirm={() => {
+          setShowBackdropConfirm(false);
+          onCancel?.();
+        }}
+        onCancel={() => setShowBackdropConfirm(false)}
+      />
       <ConfirmationDialog
         isOpen={showConfirmCancel}
         title="Cancel Booking?"
@@ -307,8 +341,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
         }}
         onCancel={() => setShowConfirmCancel(false)}
       />
-
-    </div>
+    </>
   );
 };
 

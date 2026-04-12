@@ -1,4 +1,12 @@
 /* ══════════════════════════════════════════
+   IMPORTS
+══════════════════════════════════════════ */
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ConfirmationDialog } from "../confirmation_dialog";
+import { Toast } from "../../../toast";
+
+/* ══════════════════════════════════════════
    INLINE SVG ICONS
 ══════════════════════════════════════════ */
 
@@ -93,9 +101,15 @@ const STEPS = [
 ══════════════════════════════════════════ */
 
 /* ── Header ── */
-const BookingHeader = ({ onBack }) => (
+const BookingHeader = ({ onBack, isConfirmed }) => (
   <header className="appt-header">
-    <button className="appt-back-btn" onClick={onBack} aria-label="Go back">
+    <button 
+      className="appt-back-btn" 
+      onClick={onBack} 
+      aria-label="Go back"
+      disabled={isConfirmed}
+      style={{ opacity: isConfirmed ? 0.5 : 1, cursor: isConfirmed ? "not-allowed" : "pointer" }}
+    >
       <BackArrowIcon />
       Back
     </button>
@@ -151,7 +165,13 @@ const Divider = () => (
 /* ══════════════════════════════════════════
    MAIN COMPONENT — Phase 4
 ══════════════════════════════════════════ */
-export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) => {
+export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = BOOKING }) => {
+  const navigate = useNavigate();
+  const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [showReceiptReminder, setShowReceiptReminder] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showConfirmationToast, setShowConfirmationToast] = useState(false);
   // Safety check: if booking is missing, return null
   if (!booking) {
     return <div style={{ padding: "20px", textAlign: "center", color: "#988f81" }}>Loading booking details...</div>;
@@ -176,8 +196,22 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
     return sum + mins;
   }, 0) : 0;
 
+  /* Handle final confirmation */
+  const handleConfirmBooking = () => {
+    setIsConfirmed(true);
+    setShowConfirmationToast(true);
+    // Don't call onConfirm yet - wait until user downloads receipt
+  };
+
   /* Generate printable receipt */
   const handleDownloadReceipt = () => {
+    // Show receipt generated - now remind user to save it
+    setShowReceiptReminder(true);
+    generateReceipt();
+  };
+
+  /* Generate the receipt HTML and open print dialog */
+  const generateReceipt = () => {
     const receiptHTML = `
       <!DOCTYPE html>
       <html>
@@ -392,19 +426,54 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
   };
 
   return (
-    <div className="appt-root">
-      <BookingHeader onBack={onBack} />
-      <ProgressIndicator currentStep={4} />
+    <>
+      {/* ── Toast Notifications (Top Fixed Position) ── */}
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 99999, pointerEvents: "none" }}>
+        <Toast 
+          message="Booking Confirmed!" 
+          type="success" 
+          duration={2000} 
+          isVisible={showConfirmationToast} 
+        />
+        <Toast 
+          message="Booking Successful!" 
+          type="success" 
+          duration={2000} 
+          isVisible={showSuccessToast} 
+        />
+      </div>
 
-      {/* ── Scrollable body ── */}
-      <div className="appt-body">
-        <div className="appt-section-heading">
-          <p className="appt-section-title">Confirm Booking</p>
-          <p className="appt-section-sub">Review your appointment details</p>
-        </div>
+      <div 
+        className="appt-backdrop"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowBackdropConfirm(true);
+          }
+        }}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div className="appt-root">
+          <BookingHeader onBack={onBack} isConfirmed={isConfirmed} />
+          <ProgressIndicator currentStep={4} />
 
-        {/* ── Confirmation summary card ── */}
-        <div className="confirm-card">
+          {/* ── Scrollable body ── */}
+          <div className="appt-body">
+            <div className="appt-section-heading">
+              <p className="appt-section-title">Confirm Booking</p>
+              <p className="appt-section-sub">Review your appointment details</p>
+            </div>
+
+            {/* ── Confirmation summary card ── */}
+            <div className="confirm-card">
 
           {/* Service Summary Section - matches wireframe */}
           {services.length > 0 && (
@@ -458,20 +527,24 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
                 <span className="confirm-detail-value">{bookingData?.name || "N/A"}</span>
               </div>
             </div>
-            <div className="confirm-detail-row">
-              <EnvelopeIcon />
-              <div className="confirm-detail-text">
-                <span className="confirm-detail-label">Email</span>
-                <span className="confirm-detail-value">{bookingData?.email || "N/A"}</span>
+            {bookingData?.verificationMethod === 'email' && (
+              <div className="confirm-detail-row">
+                <EnvelopeIcon />
+                <div className="confirm-detail-text">
+                  <span className="confirm-detail-label">Email</span>
+                  <span className="confirm-detail-value">{bookingData?.email || "N/A"}</span>
+                </div>
               </div>
-            </div>
-            <div className="confirm-detail-row">
-              <PhoneIcon />
-              <div className="confirm-detail-text">
-                <span className="confirm-detail-label">Phone No.</span>
-                <span className="confirm-detail-value">{bookingData?.phone || "N/A"}</span>
+            )}
+            {bookingData?.verificationMethod === 'phone' && (
+              <div className="confirm-detail-row">
+                <PhoneIcon />
+                <div className="confirm-detail-text">
+                  <span className="confirm-detail-label">Phone No.</span>
+                  <span className="confirm-detail-value">{bookingData?.phone || "N/A"}</span>
+                </div>
               </div>
-            </div>
+            )}
             <div className="confirm-detail-row">
               <StylistIcon />
               <div className="confirm-detail-text">
@@ -503,19 +576,61 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, booking = BOOKING }) 
 
       {/* ── Footer CTA ── */}
       <div className="appt-footer" style={{ display: "flex", flexDirection: "row", gap: "12px" }}>
-        <button 
-          className="appt-download-receipt-btn"
-          onClick={handleDownloadReceipt}
-        >
-          <DownloadIcon />
-          Download Receipt
-        </button>
-        <button className="appt-continue-btn" onClick={onConfirm}>
-          Confirm
-        </button>
+        {!isConfirmed && (
+          <button className="appt-continue-btn" onClick={handleConfirmBooking} style={{flex: 1}}>
+            Confirm
+          </button>
+        )}
+        {isConfirmed && (
+          <button 
+            className="appt-download-receipt-btn"
+            onClick={handleDownloadReceipt}
+            style={{flex: 1}}
+          >
+            <DownloadIcon />
+            Download Receipt
+          </button>
+        )}
       </div>
-
     </div>
+    </div>
+
+      {/* Backdrop Click Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showBackdropConfirm}
+        title="Cancel Booking?"
+        message="Are you sure you want to cancel? Your booking progress will be lost."
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        onConfirm={() => {
+          setShowBackdropConfirm(false);
+          onCancel?.();
+        }}
+        onCancel={() => setShowBackdropConfirm(false)}
+      />
+
+      {/* Receipt Reminder Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showReceiptReminder}
+        title="Save Your Booking Info"
+        message={`Have you saved your receipt and reference number?\n\nReference No.: ${bookingData?.refNo || "N/A"}\n\nYou'll need this for check-in.`}
+        confirmText="Yes, Saved"
+        cancelText="Download Again"
+        onConfirm={() => {
+          setShowReceiptReminder(false);
+          setShowSuccessToast(true);
+          // Close modal and redirect to landpage after a short delay
+          setTimeout(() => {
+            onCancel?.();
+            navigate("/");
+          }, 2000);
+        }}
+        onCancel={() => {
+          setShowReceiptReminder(false);
+          generateReceipt();
+        }}
+      />
+    </>
   );
 };
 
