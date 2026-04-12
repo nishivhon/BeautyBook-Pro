@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import CustomerHistoryModal from "../../components/modal/admin/customer_history";
@@ -256,42 +256,58 @@ const AdminNavbar = ({ onLogout }) => {
 };
 
 /* ── Page header + stat cards ── */
-const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
-  <>
-    <div className="dash-page-header">
-      <div className="dash-page-title-block">
-        <h1 className="dash-page-title">Admin Dashboard</h1>
-        <p className="dash-page-subtitle">BeautyBook Pro · {date}</p>
-      </div>
-      <div className="dash-page-actions">
-        <button className="dash-action-btn">
-          <BellIcon size={14} color="#fff" />
-          Notifications
-        </button>
-        <button className="dash-action-btn">
-          <SettingsIcon size={14} color="#fff" />
-          Settings
-        </button>
-      </div>
-    </div>
+const PageHeader = ({ date = "Saturday, Dec 7, 2024", stats = { available: 0, inService: 0, onBreak: 0, offToday: 0 }, loading = false, error = null }) => {
+  // Create dynamic stats array
+  const dynamicStats = [
+    { Icon: AvailableIcon,  iconColor: "#22c55e", value: `${stats.available}`, label: "Available Stylist", labelClass: "staff-stat-label-green" },
+    { Icon: InServiceIcon,  iconColor: "#4387ef", value: `${stats.inService}`, label: "In Service",         labelClass: "staff-stat-label-blue"  },
+    { Icon: OnBreakIcon,    iconColor: "#dd901d", value: `${stats.onBreak}`, label: "On Break",           labelClass: "staff-stat-label-amber" },
+    { Icon: OffTodayIcon,   iconColor: "#988f81", value: `${stats.offToday}`, label: "Off Today",          labelClass: "staff-stat-label-tan"   },
+  ];
 
-    <div className="staff-stats-row">
-      {STATS.map(({ Icon, iconColor, value, label, labelClass }, i) => (
-        <div key={i} className="dash-stat-card">
-          <div className="dash-stat-top">
-            <div className="dash-stat-icon-box">
-              <Icon size={20} color={iconColor} />
+  return (
+    <>
+      <div className="dash-page-header">
+        <div className="dash-page-title-block">
+          <h1 className="dash-page-title">Admin Dashboard</h1>
+          <p className="dash-page-subtitle">BeautyBook Pro · {date}</p>
+        </div>
+        <div className="dash-page-actions">
+          <button className="dash-action-btn">
+            <BellIcon size={14} color="#fff" />
+            Notifications
+          </button>
+          <button className="dash-action-btn">
+            <SettingsIcon size={14} color="#fff" />
+            Settings
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ padding: '10px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '4px', marginBottom: '10px' }}>
+          Error loading staff: {error}
+        </div>
+      )}
+
+      <div className="staff-stats-row">
+        {dynamicStats.map(({ Icon, iconColor, value, label, labelClass }, i) => (
+          <div key={i} className="dash-stat-card">
+            <div className="dash-stat-top">
+              <div className="dash-stat-icon-box">
+                <Icon size={20} color={iconColor} />
+              </div>
+            </div>
+            <div className="dash-stat-bottom">
+              <p className="dash-stat-value">{loading ? '—' : value}</p>
+              <p className={labelClass}>{label}</p>
             </div>
           </div>
-          <div className="dash-stat-bottom">
-            <p className="dash-stat-value">{value}</p>
-            <p className={labelClass}>{label}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  </>
-);
+        ))}
+      </div>
+    </>
+  );
+};
 
 /* ── Status Update Modal ── */
 const StatusUpdateModal = ({ isOpen, staff, onClose, onSave }) => {
@@ -517,12 +533,17 @@ const StatusUpdateModal = ({ isOpen, staff, onClose, onSave }) => {
 };
 
 /* ── Staff List panel ── */
-const StaffListPanel = ({ staff: staffList, onStaffStatusUpdate, statusUpdateModal, onOpenStatusModal, onCloseStatusModal }) => {
+const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate, statusUpdateModal, onOpenStatusModal, onCloseStatusModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [expandedStaff, setExpandedStaff] = useState(null);
   const [staff, setStaff] = useState(staffList);
+
+  // Update staff when staffList changes
+  useEffect(() => {
+    setStaff(staffList);
+  }, [staffList]);
 
   const statuses = ["Available", "In Service", "On Break", "Off Today"];
 
@@ -601,9 +622,25 @@ const StaffListPanel = ({ staff: staffList, onStaffStatusUpdate, statusUpdateMod
         </div>
       </div>
 
-      <div className={isExpanded ? "staff-member-scroll" : "staff-member-scroll-limited"}>
-        {filteredStaff.length > 0 ? (
-          filteredStaff.map((s, i) => (
+      {/* Loading State */}
+      {loading && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+          Loading staff data...
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+          Error loading staff: {error}
+        </div>
+      )}
+
+      {/* Staff List */}
+      {!loading && !error && (
+        <div className={isExpanded ? "staff-member-scroll" : "staff-member-scroll-limited"}>
+          {filteredStaff.length > 0 ? (
+            filteredStaff.map((s, i) => (
             <div key={i}>
               <div className="staff-member-row">
                 <div className="staff-member-left">
@@ -712,12 +749,13 @@ const StaffListPanel = ({ staff: staffList, onStaffStatusUpdate, statusUpdateMod
               )}
             </div>
           ))
-        ) : (
-          <div className="staff-no-results">
-            <p>No staff found with this status</p>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="staff-no-results">
+              <p>No staff found with this status</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -768,9 +806,106 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardStaffStatus = ({ date }) => {
   const navigate = useNavigate();
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [statusUpdateModal, setStatusUpdateModal] = useState({ isOpen: false, staff: null });
+
+  // Fetch staff data on component mount
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const res = await fetch('/api/staffs');
+        if (!res.ok) {
+          throw new Error(`Failed to fetch staff: ${res.status}`);
+        }
+        
+        const staffData = await res.json();
+        
+        // Transform staff data to match the dashboard format
+        const transformedStaff = staffData.map((s, index) => {
+          // Determine status based on in_service column
+          // Priority: check in_service first, then fallback to status
+          let status = 'Available';
+          let statusClass = 'staff-status-green';
+          let subStatus = 'Available';
+
+          // Normalize the in_service value (trim whitespace)
+          const inServiceValue = (s.in_service || '').trim().toLowerCase();
+          const statusValue = (s.status || '').trim().toLowerCase();
+          
+          // Get the name - handle both 'name' and 'names' column variants
+          const staffName = s.names || s.name || 'Unknown';
+
+          console.log(`Processing staff: ${staffName} | status: ${statusValue} | in_service: ${inServiceValue}`);
+
+          // Check in_service column first for specific statuses
+          if (inServiceValue === 'in-service') {
+            status = 'In Service';
+            statusClass = 'staff-status-blue';
+            subStatus = 'Serving: ' + (s.current_client || 'Client');
+          } else if (inServiceValue === 'on-break') {
+            status = 'On Break';
+            statusClass = 'staff-status-amber';
+            subStatus = 'On Break';
+          } else if (inServiceValue === 'off') {
+            status = 'Off Today';
+            statusClass = 'staff-status-tan';
+            subStatus = 'Off Today';
+          } else if (statusValue === 'avail' || inServiceValue === 'avail') {
+            // If no specific in_service status, check status column for 'avail'
+            status = 'Available';
+            statusClass = 'staff-status-green';
+            subStatus = 'Available';
+          }
+
+          return {
+            initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
+            name: staffName,
+            status: status,
+            statusClass: statusClass,
+            subStatus: subStatus,
+            details: {
+              currentClient: s.current_client || 'None',
+              startOfService: s.start_time || '—',
+              serviceDone: s.current_service || '—',
+              timeOfBreak: s.break_time || '—',
+              timeOfClockIn: s.clock_in_time || '—',
+              upNextClient: s.next_client || 'None',
+              noOfClientToday: s.clients_today || 0,
+              availableForWalkIn: statusValue === 'avail' || inServiceValue === 'avail'
+            }
+          };
+        });
+
+        setStaff(transformedStaff);
+      } catch (err) {
+        console.error('Error fetching staff:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStaff();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchStaff, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calculate stats based on staff data
+  const stats = {
+    available: staff.filter(s => s.statusClass === 'staff-status-green').length,
+    inService: staff.filter(s => s.statusClass === 'staff-status-blue').length,
+    onBreak: staff.filter(s => s.statusClass === 'staff-status-amber').length,
+    offToday: staff.filter(s => s.statusClass === 'staff-status-tan').length
+  };
 
   const handleLogout = () => {
     logoutOperator();
@@ -796,12 +931,14 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       <AdminNavbar onLogout={handleLogout} />
 
       <main className="dash-main">
-        <PageHeader date={date} />
+        <PageHeader date={date} stats={stats} loading={loading} error={error} />
 
         <div className="staff-page-grid">
           {/* Left — Staff List */}
           <StaffListPanel 
-            staff={STAFF}
+            staff={staff}
+            loading={loading}
+            error={error}
             onStaffStatusUpdate={handleStaffStatusUpdate}
             statusUpdateModal={statusUpdateModal}
             onOpenStatusModal={openStatusModal}

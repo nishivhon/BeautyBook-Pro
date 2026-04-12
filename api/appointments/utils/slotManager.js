@@ -40,6 +40,7 @@ export const bookSlot = async (date, time, customerName = null, customerContact 
       customer_contact: customerContact,
       assigned_staff: assignedStaff,
       services: services.length > 0 ? services : [],
+      status: 'pending',
       updated_at: new Date().toISOString() 
     };
 
@@ -88,6 +89,7 @@ export const releaseSlot = async (date, time) => {
         customer_name: null,
         customer_contact: null,
         services: [],
+        status: 'pending',
         updated_at: new Date().toISOString() 
       })
       .eq('date', date)
@@ -163,6 +165,89 @@ export const getAvailableSlots = async (date) => {
     return data || [];
   } catch (error) {
     console.error('[SlotManager] Error in getAvailableSlots:', error.message);
+    return [];
+  }
+};
+
+/**
+ * Update slot status
+ * @param {string} date - Date in YYYY-MM-DD format
+ * @param {string} time - Time in HH:MM format (24-hour)
+ * @param {string} newStatus - New status: 'pending', 'current', 'done', 'cancelled'
+ * @returns {Promise<boolean>} - True if update successful
+ */
+export const updateSlotStatus = async (date, time, newStatus) => {
+  try {
+    const validStatuses = ['pending', 'current', 'done', 'cancelled'];
+    if (!validStatuses.includes(newStatus)) {
+      console.error(`[SlotManager] Invalid status: ${newStatus}`);
+      return false;
+    }
+
+    const supabase = getSupabaseClient();
+    console.log(`[SlotManager] Updating slot status: ${date} ${time} → ${newStatus}`);
+
+    const { data, error } = await supabase
+      .from('available_slots')
+      .update({ 
+        status: newStatus,
+        updated_at: new Date().toISOString() 
+      })
+      .eq('date', date)
+      .eq('time_slot', time)
+      .select();
+
+    if (error) {
+      console.error('[SlotManager] Error updating slot status:', error);
+      return false;
+    }
+
+    if (!data || data.length === 0) {
+      console.warn(`[SlotManager] Slot not found: ${date} ${time}`);
+      return false;
+    }
+
+    console.log(`[SlotManager] Slot status updated successfully: ${newStatus}`);
+    return true;
+  } catch (error) {
+    console.error('[SlotManager] Error in updateSlotStatus:', error.message);
+    return false;
+  }
+};
+
+/**
+ * Get slots by status for a date range
+ * @param {string} status - Status to filter by: 'pending', 'current', 'done', 'cancelled'
+ * @param {string} fromDate - Start date in YYYY-MM-DD format (optional)
+ * @param {string} toDate - End date in YYYY-MM-DD format (optional)
+ * @returns {Promise<Array>} - Array of slots matching the status
+ */
+export const getSlotsByStatus = async (status, fromDate = null, toDate = null) => {
+  try {
+    const supabase = getSupabaseClient();
+    let query = supabase
+      .from('available_slots')
+      .select('*')
+      .eq('status', status);
+
+    if (fromDate) {
+      query = query.gte('date', fromDate);
+    }
+
+    if (toDate) {
+      query = query.lte('date', toDate);
+    }
+
+    const { data, error } = await query.order('date', { ascending: false }).order('time_slot', { ascending: true });
+
+    if (error) {
+      console.error(`[SlotManager] Error fetching slots by status ${status}:`, error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('[SlotManager] Error in getSlotsByStatus:', error.message);
     return [];
   }
 };

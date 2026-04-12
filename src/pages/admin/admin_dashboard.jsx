@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { AddWalkInModal } from "../../components/modal/admin/add_walkin";
@@ -259,6 +259,61 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
 const LiveQueue = ({ onOpenWalkInModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
+  const [currentAppointments, setCurrentAppointments] = useState([]);
+  const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch appointments data on component mount
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch current appointments
+        const currentRes = await fetch('/api/appointments/read/by-status?status=current');
+        if (!currentRes.ok) {
+          throw new Error(`Current appointments fetch failed: ${currentRes.status}`);
+        }
+        const currentData = await currentRes.json();
+        
+        // Fetch pending appointments
+        const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
+        if (!pendingRes.ok) {
+          throw new Error(`Pending appointments fetch failed: ${pendingRes.status}`);
+        }
+        const pendingData = await pendingRes.json();
+
+        if (currentData.success) {
+          setCurrentAppointments(currentData.appointments || []);
+        }
+        if (pendingData.success) {
+          setPendingAppointments(pendingData.appointments || []);
+        }
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppointments();
+    
+    // Only refresh if component is still mounted
+    let isMounted = true;
+    const interval = setInterval(() => {
+      if (isMounted) {
+        fetchAppointments();
+      }
+    }, 60000); // 60 seconds
+    
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleCompleteService = (itemId, customerName, service) => {
     console.log(`Service completed for ${customerName}: ${service}`);
@@ -267,140 +322,45 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
     // You could also remove the item from the queue or update its status
   };
 
-  const QUEUE_SECTIONS = [
+  // Transform appointments to queue item format
+  const formatQueueItems = (appointments, type) => {
+    return appointments.map((apt, index) => ({
+      id: apt.id,
+      type: type,
+      number: index + 1,
+      name: apt.name,
+      service: `${apt.service} • ${apt.staff}`,
+      statusTop: type === 'active' ? 'Now' : `${Math.random() * 40 | 0} mins`,
+      statusSub: type === 'active' ? 'In Progress' : 'Waiting',
+      details: {
+        serviceSelected: apt.service,
+        currentService: type === 'active' ? 'In Progress' : 'Pending',
+        startTime: apt.time,
+        estimatedTime: '45 mins'
+      }
+    }));
+  };
+
+  const currentItems = formatQueueItems(currentAppointments, 'active');
+  
+  // Filter pending items to only show today's appointments with actual bookings (not empty slots)
+  const today = new Date().toISOString().split('T')[0];
+  const todayPendingAppointments = pendingAppointments.filter(apt => 
+    apt.date === today && apt.name && apt.name !== 'Unknown'
+  );
+  const pendingItems = formatQueueItems(todayPendingAppointments, 'waiting');
+
+  // Create queue sections - only include sections with items
+  const queueSections = [
     {
       label: "Current",
-      items: [
-        { 
-          id: 1,
-          type: "active", 
-          name: "Juan Dela Cruz", 
-          service: "Haircut • Mike S.",      
-          statusTop: "Now", 
-          statusSub: "In Progress",
-          details: {
-            serviceSelected: "Hair cuts",
-            currentService: "Hair cuts",
-            startTime: "10:15 AM",
-            estimatedTime: "30 mins"
-          }
-        },
-        { 
-          id: 2,
-          type: "active", 
-          name: "Pedro Santos",   
-          service: "Beard Trim • John D.",   
-          statusTop: "Now", 
-          statusSub: "In Progress",
-          details: {
-            serviceSelected: "Beard trimming",
-            currentService: "Beard trimming",
-            startTime: "10:20 AM",
-            estimatedTime: "25 mins"
-          }
-        },
-        { 
-          id: 3,
-          type: "active", 
-          name: "Maria Garcia",   
-          service: "Hair Color • Carlos R.",  
-          statusTop: "Now", 
-          statusSub: "In Progress",
-          details: {
-            serviceSelected: "Hair color",
-            currentService: "Hair color",
-            startTime: "10:00 AM",
-            estimatedTime: "60 mins"
-          }
-        },
-      ],
+      items: currentItems
     },
     {
       label: "Up Next",
-      items: [
-        { 
-          id: 4,
-          type: "waiting",   
-          number: 1, 
-          name: "Anna Reyes",   
-          service: "Full Service • Mike S.",     
-          statusTop: "20 mins", 
-          statusSub: "Waiting",
-          details: {
-            serviceSelected: "Hair cuts, Hair color",
-            currentService: "Pending",
-            startTime: "10:45 AM",
-            estimatedTime: "90 mins"
-          }
-        },
-        { 
-          id: 5,
-          type: "cancelled", 
-          number: 2, 
-          name: "Miguel Torres",
-          service: "Haircut • Available Stylist", 
-          statusTop: null,      
-          statusSub: "Cancelled",
-          details: {
-            serviceSelected: "Hair cuts",
-            currentService: "Cancelled",
-            startTime: "N/A",
-            estimatedTime: "N/A"
-          }
-        },
-        { 
-          id: 6,
-          type: "waiting",   
-          number: 3, 
-          name: "James Wilson",  
-          service: "Beard Trim • Carlos R.",    
-          statusTop: "35 mins", 
-          statusSub: "Waiting",
-          details: {
-            serviceSelected: "Beard trimming",
-            currentService: "Pending",
-            startTime: "11:00 AM",
-            estimatedTime: "25 mins"
-          }
-        },
-      ],
-    },
-    {
-      label: "On Deck",
-      items: [
-        { 
-          id: 7,
-          type: "waiting",   
-          number: 4, 
-          name: "Sofia Rivera", 
-          service: "Full Service • Mike S.",  
-          statusTop: "1hr 10 mins", 
-          statusSub: "Waiting",
-          details: {
-            serviceSelected: "Manicure, Pedicure",
-            currentService: "Pending",
-            startTime: "11:30 AM",
-            estimatedTime: "120 mins"
-          }
-        },
-        { 
-          id: 8,
-          type: "cancelled", 
-          number: 5, 
-          name: "Leo Cruz",     
-          service: "Haircut • John D.",       
-          statusTop: null,          
-          statusSub: "Cancelled",
-          details: {
-            serviceSelected: "Hair cuts",
-            currentService: "Cancelled",
-            startTime: "N/A",
-            estimatedTime: "N/A"
-          }
-        },
-      ],
-    },
-  ];
+      items: pendingItems
+    }
+  ].filter(section => section.items.length > 0); // Only show sections with items
 
   const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, onCompleteService }) => {
     const isActive = type === "active";
@@ -530,19 +490,39 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+          Loading appointments...
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+          Error loading appointments: {error}
+        </div>
+      )}
+
       {/* Sections */}
-      <div className={isExpanded ? "live-queue-scroll" : "live-queue-scroll-limited"}>
-        {QUEUE_SECTIONS.map((section, si) => (
-          <div key={si}>
-            <p className="live-section-label">{section.label}</p>
-            <div className="live-queue-group">
-              {section.items.map((item, ii) => (
-                <QueueItem key={ii} {...item} onCompleteService={handleCompleteService} />
-              ))}
+      {!loading && !error && (
+        <div className={isExpanded ? "live-queue-scroll" : "live-queue-scroll-limited"}>
+          {queueSections.map((section, si) => (
+            <div key={si}>
+              <p className="live-section-label">{section.label}</p>
+              <div className="live-queue-group">
+                {section.items.length === 0 ? (
+                  <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
+                ) : (
+                  section.items.map((item, ii) => (
+                    <QueueItem key={ii} {...item} onCompleteService={handleCompleteService} />
+                  ))
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

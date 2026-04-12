@@ -361,17 +361,91 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 const LiveQueuePanel = ({ onOpenWalkInModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
+  const [currentAppointments, setCurrentAppointments] = useState([]);
+  const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch appointments data on component mount
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch current appointments
+        const currentRes = await fetch('/api/appointments/read/by-status?status=current');
+        const currentData = await currentRes.json();
+        
+        // Fetch pending appointments
+        const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
+        const pendingData = await pendingRes.json();
+
+        if (currentData.success) {
+          setCurrentAppointments(currentData.appointments || []);
+        }
+        if (pendingData.success) {
+          setPendingAppointments(pendingData.appointments || []);
+        }
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppointments();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchAppointments, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleExpandToggle = (id) => {
     setExpandedItemId(expandedItemId === id ? null : id);
   };
 
-  const handleCompleteService = (itemId, customerName, service) => {
+  const handleCompleteService = async (itemId, customerName, service) => {
     console.log(`Service completed for ${customerName}: ${service}`);
     // Here you can integrate with your API to mark the service as complete
     // For now, just logging the data
     // You could also remove the item from the queue or update its status
   };
+
+  // Transform appointments to queue item format
+  const formatQueueItems = (appointments, type) => {
+    return appointments.map((apt, index) => ({
+      id: apt.id,
+      type: type,
+      number: index + 1,
+      name: apt.name,
+      service: `${apt.service} • ${apt.staff}`,
+      statusTop: type === 'active' ? 'Now' : `${Math.random() * 40 | 0} mins`,
+      statusSub: type === 'active' ? 'In Progress' : 'Waiting',
+      details: {
+        serviceSelected: apt.service,
+        currentService: type === 'active' ? 'In Progress' : 'Pending',
+        startTime: apt.time,
+        estimatedTime: '45 mins'
+      }
+    }));
+  };
+
+  const currentItems = formatQueueItems(currentAppointments, 'active');
+  const pendingItems = formatQueueItems(pendingAppointments, 'waiting');
+
+  // Create queue sections - only Current and Up Next, no On Deck
+  const queueSections = [
+    {
+      label: "Current",
+      items: currentItems
+    },
+    {
+      label: "Up Next",
+      items: pendingItems
+    }
+  ];
 
   return (
     <div className="live-queue-panel">
@@ -402,25 +476,45 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+          Loading appointments...
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+          Error loading appointments: {error}
+        </div>
+      )}
+
       {/* Sections */}
-      <div className={isExpanded ? "live-queue-scroll" : "live-queue-scroll-limited"}>
-        {QUEUE_SECTIONS.map((section, si) => (
-          <div key={si}>
-            <p className="live-section-label">{section.label}</p>
-            <div className="live-queue-group">
-              {section.items.map((item, ii) => (
-                <QueueItem 
-                  key={ii} 
-                  {...item}
-                  isExpanded={expandedItemId === item.id}
-                  onExpandToggle={handleExpandToggle}
-                  onCompleteService={handleCompleteService}
-                />
-              ))}
+      {!loading && !error && (
+        <div className={isExpanded ? "live-queue-scroll" : "live-queue-scroll-limited"}>
+          {queueSections.map((section, si) => (
+            <div key={si}>
+              <p className="live-section-label">{section.label}</p>
+              <div className="live-queue-group">
+                {section.items.length === 0 ? (
+                  <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
+                ) : (
+                  section.items.map((item, ii) => (
+                    <QueueItem 
+                      key={ii} 
+                      {...item}
+                      isExpanded={expandedItemId === item.id}
+                      onExpandToggle={handleExpandToggle}
+                      onCompleteService={handleCompleteService}
+                    />
+                  ))
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
