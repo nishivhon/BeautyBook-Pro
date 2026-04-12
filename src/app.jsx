@@ -15,6 +15,7 @@ import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security
 import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage_edit_dashboard'
 import StaffDashboard from './pages/staff/staff_dashboard'
 import StaffServices from './pages/staff/staff_service_dashboard'
+import StaffQueueDashboard from './pages/staff/staff_queue_dashboard'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function App() {
@@ -115,6 +116,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="staff">
               <StaffServices />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/queue"
+          element={
+            <ProtectedRoute requiredRole="staff">
+              <StaffQueueDashboard />
             </ProtectedRoute>
           }
         />

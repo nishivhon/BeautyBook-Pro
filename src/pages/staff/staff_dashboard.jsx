@@ -123,8 +123,7 @@ function StaffNav({ onLogout }) {
     if (link === "Services") {
       navigate("/staff/services");
     } else if (link === "Queue") {
-      // Navigate to queue page if it exists
-      navigate("/staff/dashboard");
+      navigate("/staff/queue");
     } else {
       navigate("/staff/dashboard");
     }
