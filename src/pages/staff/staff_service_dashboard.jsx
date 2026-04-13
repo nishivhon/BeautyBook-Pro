@@ -202,8 +202,6 @@ function ServiceItem({ service, category, onToggle, showToast }) {
 
 // ── Service section ───────────────────────────────────────────────────────────
 function ServiceSection({ category, label, services, onToggle, showToast }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const visible = collapsed ? services.slice(0, 2) : services;
   const available = services.filter(s => s.available).length;
 
   return (
@@ -215,17 +213,9 @@ function ServiceSection({ category, label, services, onToggle, showToast }) {
             {available}/{services.length} available
           </span>
         </div>
-        {services.length > 2 && (
-          <button
-            onClick={() => setCollapsed(c => !c)}
-            className="service-section-toggle"
-          >
-            {collapsed ? "See all" : "See less"}
-          </button>
-        )}
       </div>
 
-      {visible.map(s => (
+      {services.map(s => (
         <ServiceItem
           key={s.id}
           service={s}
@@ -366,6 +356,7 @@ function Toast({ toast }) {
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function StaffServices() {
   const [services, setServices] = useState(initialServices);
+  const [isExpanded, setIsExpanded] = useState(true);
   const { toast, show: showToast } = useToast();
 
   const toggle = (id) => {
@@ -425,16 +416,27 @@ export default function StaffServices() {
         <div className="dash-content-grid">
           {/* Left — services list */}
           <div className="service-list-panel">
-            {Object.entries(services).map(([cat, list]) => (
-              <ServiceSection
-                key={cat}
-                category={cat}
-                label={categoryMeta[cat]?.label || cat}
-                services={list}
-                onToggle={toggle}
-                showToast={showToast}
-              />
-            ))}
+            <div className="service-list-panel-header">
+              <h3 className="service-list-panel-title">Services</h3>
+              <button
+                className="service-list-panel-toggle"
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                {isExpanded ? "See less" : "See more"}
+              </button>
+            </div>
+            <div className={isExpanded ? "service-list-scroll" : "service-list-scroll-limited"}>
+              {Object.entries(services).map(([cat, list]) => (
+                <ServiceSection
+                  key={cat}
+                  category={cat}
+                  label={categoryMeta[cat]?.label || cat}
+                  services={list}
+                  onToggle={toggle}
+                  showToast={showToast}
+                />
+              ))}
+            </div>
           </div>
 
           {/* Right — quick actions sidebar */}
