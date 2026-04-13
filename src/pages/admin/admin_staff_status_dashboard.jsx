@@ -894,9 +894,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
 
     fetchStaff();
     
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchStaff, 30000);
-    return () => clearInterval(interval);
+    return () => {};
   }, []);
 
   // Calculate stats based on staff data

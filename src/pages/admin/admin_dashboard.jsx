@@ -214,7 +214,7 @@ const AdminNavbar = ({ onLogout }) => {
   );
 };
 
-const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
+const PageHeader = ({ date = "Saturday, Dec 7, 2024", stats }) => (
   <>
     <div className="dash-page-header">
       <div className="dash-page-title-block">
@@ -234,7 +234,7 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
     </div>
 
     <div className="dash-stats-row">
-      {STATS.map(({ Icon, badge, badgeType, value, label }, i) => (
+      {stats.map(({ Icon, badge, badgeType, value, label }, i) => (
         <div key={i} className="dash-stat-card">
           <div className="dash-stat-top">
             <div className="dash-stat-icon-box">
@@ -301,18 +301,7 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
 
     fetchAppointments();
     
-    // Only refresh if component is still mounted
-    let isMounted = true;
-    const interval = setInterval(() => {
-      if (isMounted) {
-        fetchAppointments();
-      }
-    }, 60000); // 60 seconds
-    
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    return () => {};
   }, []);
 
   const handleCompleteService = (itemId, customerName, service) => {
@@ -606,6 +595,74 @@ const AnalyticsPanel = () => (
 export const AdminDashboard = ({ date }) => {
   const navigate = useNavigate();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [currentAppointments, setCurrentAppointments] = useState([]);
+  const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [doneAppointments, setDoneAppointments] = useState([]);
+  const [stats, setStats] = useState([
+    { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: "0",      label: "Today's Appointments" },
+    { Icon: QueueIcon,    badge: null,      badgeType: null,    value: "0",       label: "In Queue Now"         },
+    { Icon: RevenueIcon,  badge: "+15%",    badgeType: "green", value: "₱12,450", label: "Revenue Today"        },
+    { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
+  ]);
+
+  // Fetch appointments on component mount
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        // Fetch current appointments
+        const currentRes = await fetch('/api/appointments/read/by-status?status=current');
+        if (currentRes.ok) {
+          const currentData = await currentRes.json();
+          const current = currentData.appointments || [];
+          setCurrentAppointments(current);
+        }
+        
+        // Fetch pending appointments
+        const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
+        if (pendingRes.ok) {
+          const pendingData = await pendingRes.json();
+          const pending = pendingData.appointments || [];
+          setPendingAppointments(pending);
+        }
+
+        // Fetch done appointments
+        const doneRes = await fetch('/api/appointments/read/by-status?status=done');
+        if (doneRes.ok) {
+          const doneData = await doneRes.json();
+          const done = doneData.appointments || [];
+          setDoneAppointments(done);
+        }
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
+
+  // Calculate stats dynamically
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Total appointments for today (current + pending + done)
+    const todayAppointments = [
+      ...currentAppointments.filter(apt => apt.date === today),
+      ...pendingAppointments.filter(apt => apt.date === today),
+      ...doneAppointments.filter(apt => apt.date === today)
+    ];
+    
+    const totalToday = todayAppointments.length;
+    
+    // Pending/In Queue count for today (only pending status)
+    const inQueueCount = pendingAppointments.filter(apt => apt.date === today).length;
+
+    setStats([
+      { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: totalToday.toString(),      label: "Today's Appointments" },
+      { Icon: QueueIcon,    badge: null,      badgeType: null,    value: inQueueCount.toString(),       label: "In Queue Now"         },
+      { Icon: RevenueIcon,  badge: "+15%",    badgeType: "green", value: "₱12,450", label: "Revenue Today"        },
+      { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
+    ]);
+  }, [currentAppointments, pendingAppointments, doneAppointments]);
 
   const handleLogout = () => {
     // Clear operator session
@@ -625,7 +682,7 @@ export const AdminDashboard = ({ date }) => {
       <AdminNavbar onLogout={handleLogout} />
 
       <main className="dash-main">
-        <PageHeader date={date} />
+        <PageHeader date={date} stats={stats} />
 
         <div className="dash-content-grid">
           <LiveQueue 

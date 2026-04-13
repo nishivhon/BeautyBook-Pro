@@ -397,9 +397,7 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
 
     fetchAppointments();
     
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchAppointments, 30000);
-    return () => clearInterval(interval);
+    return () => {};
   }, []);
 
   const handleExpandToggle = (id) => {

@@ -458,9 +458,7 @@ export const AdminDashboardServices = ({ date }) => {
 
     fetchServices();
     
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchServices, 60000);
-    return () => clearInterval(interval);
+    return () => {};
   }, []);
 
   // Group services by category
