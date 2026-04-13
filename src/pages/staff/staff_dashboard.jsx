@@ -116,6 +116,18 @@ const queueData = [
 
 function StaffNav({ onLogout }) {
   const navigate = useNavigate();
+  const [active, setActive] = useState("Home");
+
+  const handleNavigation = (link) => {
+    setActive(link);
+    if (link === "Services") {
+      navigate("/staff/services");
+    } else if (link === "Queue") {
+      navigate("/staff/queue");
+    } else {
+      navigate("/staff/dashboard");
+    }
+  };
   
   return (
     <header className="admin-navbar">
@@ -126,9 +138,24 @@ function StaffNav({ onLogout }) {
         <span className="admin-nav-brand">BeautyBook Pro</span>
       </div>
       <nav className="admin-nav-links">
-        <button className="admin-nav-link active">Home</button>
-        <button className="admin-nav-link">Services</button>
-        <button className="admin-nav-link">Queue</button>
+        <button 
+          className={`admin-nav-link ${active === "Home" ? "active" : ""}`}
+          onClick={() => handleNavigation("Home")}
+        >
+          Home
+        </button>
+        <button 
+          className={`admin-nav-link ${active === "Services" ? "active" : ""}`}
+          onClick={() => handleNavigation("Services")}
+        >
+          Services
+        </button>
+        <button 
+          className={`admin-nav-link ${active === "Queue" ? "active" : ""}`}
+          onClick={() => handleNavigation("Queue")}
+        >
+          Queue
+        </button>
       </nav>
       <div className="admin-nav-right">
         <div className="admin-nav-user">
