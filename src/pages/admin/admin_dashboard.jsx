@@ -154,10 +154,10 @@ const STAFF = [
 ];
 
 const SUMMARY = [
-  { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: 16 },
-  { Icon: InProgressIcon,  color: "#4387ef", label: "In Progress", value: 3  },
-  { Icon: PendingIcon,     color: "#dd901d", label: "Pending",     value: 5  },
-  { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: 2  },
+  { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: 0 },
+  { Icon: InProgressIcon,  color: "#4387ef", label: "In Progress", value: 0  },
+  { Icon: PendingIcon,     color: "#dd901d", label: "Pending",     value: 0  },
+  { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: 0  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -214,20 +214,28 @@ const AdminNavbar = ({ onLogout }) => {
   );
 };
 
-const PageHeader = ({ date = "Saturday, Dec 7, 2024", stats }) => (
-  <>
-    <div className="dash-page-header">
-      <div className="dash-page-title-block">
-        <h1 className="dash-page-title">Admin Dashboard</h1>
-        <p className="dash-page-subtitle">BeautyBook Pro · {date}</p>
-      </div>
-      <div className="dash-page-actions">
-        <button className="dash-action-btn">
-          <BellIcon size={14} color="#fff" />
-          Notifications
-        </button>
-        <button className="dash-action-btn">
-          <SettingsIcon size={14} color="#fff" />
+const PageHeader = ({ stats }) => {
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
+  return (
+    <>
+      <div className="dash-page-header">
+        <div className="dash-page-title-block">
+          <h1 className="dash-page-title">Admin Dashboard</h1>
+          <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
+        </div>
+        <div className="dash-page-actions">
+          <button className="dash-action-btn">
+            <BellIcon size={14} color="#fff" />
+            Notifications
+          </button>
+          <button className="dash-action-btn">
+            <SettingsIcon size={14} color="#fff" />
           Settings
         </button>
       </div>
@@ -253,8 +261,9 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024", stats }) => (
         </div>
       ))}
     </div>
-  </>
-);
+    </>
+  );
+};
 
 const LiveQueue = ({ onOpenWalkInModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -313,21 +322,35 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
 
   // Transform appointments to queue item format
   const formatQueueItems = (appointments, type) => {
-    return appointments.map((apt, index) => ({
-      id: apt.id,
-      type: type,
-      number: index + 1,
-      name: apt.name,
-      service: `${apt.service} • ${apt.staff}`,
-      statusTop: type === 'active' ? 'Now' : `${Math.random() * 40 | 0} mins`,
-      statusSub: type === 'active' ? 'In Progress' : 'Waiting',
-      details: {
-        serviceSelected: apt.service,
-        currentService: type === 'active' ? 'In Progress' : 'Pending',
-        startTime: apt.time,
-        estimatedTime: '45 mins'
-      }
-    }));
+    const formatTimeToAmPm = (time24) => {
+      if (!time24) return '';
+      const [hours, minutes] = time24.split(':');
+      const hour = parseInt(hours, 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:${minutes}${ampm}`;
+    };
+
+    return appointments.map((apt, index) => {
+      // Extract service name - should come from API now
+      const serviceName = apt.service || 'Service';
+      
+      return {
+        id: apt.id,
+        type: type,
+        number: index + 1,
+        name: apt.name,
+        service: `${serviceName} • ${apt.staff}`,
+        statusTop: type === 'active' ? 'Now' : formatTimeToAmPm(apt.time),
+        statusSub: type === 'active' ? 'In Progress' : 'Waiting',
+        details: {
+          serviceSelected: serviceName,
+          currentService: type === 'active' ? 'In Progress' : 'Pending',
+          startTime: apt.time,
+          estimatedTime: '45 mins'
+        }
+      };
+    });
   };
 
   const currentItems = formatQueueItems(currentAppointments, 'active');
@@ -518,6 +541,90 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
 
 const StaffStatus = () => {
   const navigate = useNavigate();
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const [resStaff, resSlots] = await Promise.all([
+          fetch('/api/staffs'),
+          fetch('/api/appointments/read/slots')
+        ]);
+        
+        if (!resStaff.ok) {
+          throw new Error(`Failed to fetch staff: ${resStaff.status}`);
+        }
+        
+        const staffData = await resStaff.json();
+        
+        // Handle slots response - ensure it's an array
+        const slotsData = resSlots.ok ? await resSlots.json() : null;
+        const allSlots = Array.isArray(slotsData) ? slotsData : [];
+
+        // Format time helper
+        const formatTimeToAmPm = (time24) => {
+          if (!time24) return 'N/A';
+          const [hours, minutes] = time24.split(':');
+          const hour = parseInt(hours, 10);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const hour12 = hour % 12 || 12;
+          return `${hour12}:${minutes}${ampm}`;
+        };
+
+        // Transform staff data to match the dashboard format
+        const transformedStaff = staffData.map((s) => {
+          // Get the name - handle both 'name' and 'names' column variants
+          const staffName = s.names || s.name || 'Unknown';
+          
+          // Determine status based on in_service column
+          let dotClass = 'dash-staff-status-dot-gray';
+          let subStatus = 'Available';
+          
+          const inServiceValue = (s.in_service || '').trim().toLowerCase();
+          
+          if (inServiceValue === 'in-service') {
+            dotClass = 'dash-staff-status-dot-green';
+            subStatus = `Serving: ${s.current_client || 'Client'}`;
+          } else if (inServiceValue === 'on-break') {
+            dotClass = 'dash-staff-status-dot-amber';
+            subStatus = 'On Break';
+          } else if (inServiceValue === 'off') {
+            dotClass = 'dash-staff-status-dot-red';
+            subStatus = 'Off Today';
+          } else {
+            dotClass = 'dash-staff-status-dot-green';
+            subStatus = 'Available';
+          }
+
+          // Find next slot for this staff from available_slots table
+          const nextSlot = allSlots.find(slot => slot.assigned_staff === staffName);
+          const nextTime = nextSlot ? formatTimeToAmPm(nextSlot.time_slot) : 'N/A';
+
+          return {
+            initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
+            name: staffName,
+            subStatus: subStatus,
+            dotClass: dotClass,
+            nextTime: nextTime
+          };
+        });
+
+        setStaff(transformedStaff);
+      } catch (err) {
+        console.error('Error fetching staff:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStaff();
+  }, []);
 
   const handleManageClick = () => {
     navigate("/admin/dashboard/staff-status");
@@ -529,46 +636,104 @@ const StaffStatus = () => {
         <h3 className="dash-sidebar-title">Staff Status</h3>
         <button className="dash-panel-manage-btn" onClick={handleManageClick}>Manage</button>
       </div>
-    <div className="dash-staff-list">
-      {STAFF.map((s, i) => (
-        <div key={i} className="dash-staff-row">
-          <div className="dash-staff-left">
-            <div className="dash-staff-avatar-wrap">
-              <div className="dash-staff-avatar">{s.initial}</div>
-              <span className={`dash-staff-status-dot ${s.dotClass}`} />
-            </div>
-            <div className="dash-staff-info">
-              <span className="dash-staff-name">{s.name}</span>
-              <span className="dash-staff-substatus">{s.subStatus}</span>
-            </div>
-          </div>
-          <div className="dash-staff-right">
-            <span className="dash-staff-next-label">Next:</span>
-            <span className="dash-staff-next-time">{s.nextTime}</span>
-          </div>
+      
+      {loading && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+          Loading staff...
         </div>
-      ))}
+      )}
+      
+      {error && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+          Error loading staff
+        </div>
+      )}
+      
+      {!loading && !error && (
+        <div className="dash-staff-list">
+          {staff.map((s, i) => (
+            <div key={i} className="dash-staff-row">
+              <div className="dash-staff-left">
+                <div className="dash-staff-avatar-wrap">
+                  <div className="dash-staff-avatar">{s.initial}</div>
+                  <span className={`dash-staff-status-dot ${s.dotClass}`} />
+                </div>
+                <div className="dash-staff-info">
+                  <span className="dash-staff-name">{s.name}</span>
+                  <span className="dash-staff-substatus">{s.subStatus}</span>
+                </div>
+              </div>
+              <div className="dash-staff-right">
+                <span className="dash-staff-next-label">Next:</span>
+                <span className="dash-staff-next-time">{s.nextTime}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-  </div>
   );
 };
 
-const SummaryPanel = () => (
-  <div className="dash-sidebar-panel">
-    <h3 className="dash-sidebar-title">Summary</h3>
-    <div className="dash-summary-list">
-      {SUMMARY.map(({ Icon, color, label, value }, i) => (
-        <div key={i} className="dash-summary-row">
-          <div className="dash-summary-left">
-            <Icon size={18} color={color} />
-            <span className="dash-summary-label">{label}</span>
+const SummaryPanel = () => {
+  const [summary, setSummary] = useState([
+    { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: 0 },
+    { Icon: InProgressIcon,  color: "#4387ef", label: "In Progress", value: 0  },
+    { Icon: PendingIcon,     color: "#dd901d", label: "Pending",     value: 0  },
+    { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: 0  },
+  ]);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const [resCompleted, resInProgress, resPending, resCancelled] = await Promise.all([
+          fetch('/api/appointments/read/by-status?status=done'),
+          fetch('/api/appointments/read/by-status?status=current'),
+          fetch('/api/appointments/read/by-status?status=pending'),
+          fetch('/api/appointments/read/by-status?status=cancelled')
+        ]);
+
+        const completedData = resCompleted.ok ? await resCompleted.json() : {};
+        const inProgressData = resInProgress.ok ? await resInProgress.json() : {};
+        const pendingData = resPending.ok ? await resPending.json() : {};
+        const cancelledData = resCancelled.ok ? await resCancelled.json() : {};
+
+        // Extract counts from the API response structure (has count property and appointments array)
+        const completedCount = completedData.count || (Array.isArray(completedData.appointments) ? completedData.appointments.length : 0);
+        const inProgressCount = inProgressData.count || (Array.isArray(inProgressData.appointments) ? inProgressData.appointments.length : 0);
+        const pendingCount = pendingData.count || (Array.isArray(pendingData.appointments) ? pendingData.appointments.length : 0);
+        const cancelledCount = cancelledData.count || (Array.isArray(cancelledData.appointments) ? cancelledData.appointments.length : 0);
+
+        setSummary([
+          { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: completedCount },
+          { Icon: InProgressIcon,  color: "#4387ef", label: "In Progress", value: inProgressCount  },
+          { Icon: PendingIcon,     color: "#dd901d", label: "Pending",     value: pendingCount  },
+          { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: cancelledCount  },
+        ]);
+      } catch (error) {
+      }
+    };
+
+    fetchSummary();
+  }, []);
+
+  return (
+    <div className="dash-sidebar-panel">
+      <h3 className="dash-sidebar-title">Summary</h3>
+      <div className="dash-summary-list">
+        {summary.map(({ Icon, color, label, value }, i) => (
+          <div key={i} className="dash-summary-row">
+            <div className="dash-summary-left">
+              <Icon size={18} color={color} />
+              <span className="dash-summary-label">{label}</span>
+            </div>
+            <span className="dash-summary-value">{value}</span>
           </div>
-          <span className="dash-summary-value">{value}</span>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const AnalyticsPanel = () => (
   <div className="dash-sidebar-panel">

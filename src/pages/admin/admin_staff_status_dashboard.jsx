@@ -256,7 +256,14 @@ const AdminNavbar = ({ onLogout }) => {
 };
 
 /* ── Page header + stat cards ── */
-const PageHeader = ({ date = "Saturday, Dec 7, 2024", stats = { available: 0, inService: 0, onBreak: 0, offToday: 0 }, loading = false, error = null }) => {
+const PageHeader = ({ stats = { available: 0, inService: 0, onBreak: 0, offToday: 0 }, loading = false, error = null }) => {
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
   // Create dynamic stats array
   const dynamicStats = [
     { Icon: AvailableIcon,  iconColor: "#22c55e", value: `${stats.available}`, label: "Available Stylist", labelClass: "staff-stat-label-green" },
@@ -270,7 +277,7 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024", stats = { available: 0, in
       <div className="dash-page-header">
         <div className="dash-page-title-block">
           <h1 className="dash-page-title">Admin Dashboard</h1>
-          <p className="dash-page-subtitle">BeautyBook Pro · {date}</p>
+          <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
         </div>
         <div className="dash-page-actions">
           <button className="dash-action-btn">

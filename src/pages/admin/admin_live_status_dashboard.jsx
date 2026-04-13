@@ -218,12 +218,20 @@ const AdminNavbar = ({ onLogout }) => {
 };
 
 /* ── Page header + stat cards ── */
-const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
-  <>
-    <div className="dash-page-header">
-      <div className="dash-page-title-block">
-        <h1 className="dash-page-title">Admin Dashboard</h1>
-        <p className="dash-page-subtitle">BeautyBook Pro · {date}</p>
+const PageHeader = () => {
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
+  return (
+    <>
+      <div className="dash-page-header">
+        <div className="dash-page-title-block">
+          <h1 className="dash-page-title">Live Status</h1>
+          <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
       </div>
       <div className="dash-page-actions">
         <button className="dash-action-btn">
@@ -252,8 +260,9 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
         </div>
       ))}
     </div>
-  </>
-);
+    </>
+  );
+};
 
 /* ── Single queue item ── */
 const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService }) => {
