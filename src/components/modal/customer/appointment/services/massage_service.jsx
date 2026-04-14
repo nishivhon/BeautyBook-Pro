@@ -137,12 +137,17 @@ export const MassageServicesModal = ({ onBack, onContinue, initialSelected = [],
     const fetchServices = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/services/Massage%20Services');
+        // Fetch all services and filter for "Massage Services" category
+        const response = await fetch('/api/services');
         if (!response.ok) {
           throw new Error('Failed to fetch services');
         }
-        const data = await response.json();
-        setServices(data.map(formatService));
+        const allServices = await response.json();
+        // Filter for Massage Services category
+        const massageServices = allServices.filter(
+          (service) => service.category === 'Massage Services'
+        );
+        setServices(massageServices.map(formatService));
         setError(null);
       } catch (err) {
         console.error('Error fetching massage services:', err);

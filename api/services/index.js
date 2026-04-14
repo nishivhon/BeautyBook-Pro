@@ -6,7 +6,6 @@ export default async (req, res) => {
   }
 
   try {
-    // Create a fresh Supabase client for this request
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
       process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY

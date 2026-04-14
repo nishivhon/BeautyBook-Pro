@@ -133,12 +133,17 @@ export const SkincareServicesModal = ({ onBack, onContinue, initialSelected = []
     const fetchServices = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/services/Skin%20Care%20Services');
+        // Fetch all services and filter for "Skin Care Services" category
+        const response = await fetch('/api/services');
         if (!response.ok) {
           throw new Error('Failed to fetch services');
         }
-        const data = await response.json();
-        setServices(data.map(formatService));
+        const allServices = await response.json();
+        // Filter for Skin Care Services category
+        const skincareServices = allServices.filter(
+          (service) => service.category === 'Skin Care Services'
+        );
+        setServices(skincareServices.map(formatService));
         setError(null);
       } catch (err) {
         console.error('Error fetching skincare services:', err);

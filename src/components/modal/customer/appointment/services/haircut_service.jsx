@@ -134,12 +134,17 @@ export const HairServicesModal = ({ onBack, onContinue, initialSelected = [], is
     const fetchServices = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/services/Hair%20Services');
+        // Fetch all services and filter for "Hair Services" category
+        const response = await fetch('/api/services');
         if (!response.ok) {
           throw new Error('Failed to fetch services');
         }
-        const data = await response.json();
-        setServices(data.map(formatService));
+        const allServices = await response.json();
+        // Filter for Hair Services category
+        const hairServices = allServices.filter(
+          (service) => service.category === 'Hair Services'
+        );
+        setServices(hairServices.map(formatService));
         setError(null);
       } catch (err) {
         console.error('Error fetching hair services:', err);

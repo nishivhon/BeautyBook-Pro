@@ -276,7 +276,7 @@ const PageHeader = () => {
 };
 
 /* ── Single service item row ── */
-const ServiceItem = ({ name, meta, available, price, onEdit }) => (
+const ServiceItem = ({ id, name, category, meta, available, price, onEdit }) => (
   <div className="svc-item-row">
     <div className="svc-item-left">
       <div className="svc-item-icon-box">
@@ -297,7 +297,7 @@ const ServiceItem = ({ name, meta, available, price, onEdit }) => (
       <button 
         className="svc-item-edit-btn" 
         aria-label="Edit service"
-        onClick={() => onEdit({ name, meta, available, price })}
+        onClick={() => onEdit({ id, name, category, meta, available, price })}
       >
         <EditIcon size={14} color="currentColor" />
       </button>
@@ -510,22 +510,135 @@ export const AdminDashboardServices = ({ date }) => {
     });
   };
 
-  const handleSaveService = (formData) => {
+  const handleSaveService = async (formData) => {
     const { _isNew, ...serviceData } = formData;
-    if (_isNew) {
-      console.log("New service created:", serviceData);
-      // Here you can integrate with your API to create the service
-    } else {
-      console.log("Service updated:", serviceData);
-      // Here you can integrate with your API to update the service
+    
+    try {
+      setError(null);
+
+      if (_isNew) {
+        // Create new service via POST to /api/services/create
+        console.log("Creating new service:", serviceData);
+        
+        // Strip currency symbol from price (e.g., "₱6767.67" -> 6767.67)
+        const priceValue = typeof serviceData.price === 'string'
+          ? parseFloat(serviceData.price.replace(/[₱\s]/g, ''))
+          : parseFloat(serviceData.price);
+
+        const res = await fetch('/api/services/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service_name: serviceData.name,
+            category: serviceData.category,
+            description: serviceData.meta,
+            price: isNaN(priceValue) ? 0 : priceValue,
+            availability: serviceData.available
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to create service: ${res.status}`);
+        }
+
+        const newService = await res.json();
+        console.log("Service created successfully:", newService);
+        
+        // Add new service to list
+        setServices(prev => [...prev, {
+          id: newService.id,
+          name: newService.service_name || newService.name,
+          category: newService.category,
+          description: newService.description,
+          price: `₱${parseFloat(newService.price).toFixed(2)}`,
+          available: newService.availability !== false,
+          meta: newService.description
+        }]);
+
+      } else {
+        // Update existing service via PUT to /api/services/update
+        console.log("Updating service:", serviceData);
+        
+        if (!serviceData.id) {
+          throw new Error("Service ID is required for update");
+        }
+
+        // Strip currency symbol from price (e.g., "₱6767.67" -> 6767.67)
+        const priceValue = typeof serviceData.price === 'string' 
+          ? parseFloat(serviceData.price.replace(/[₱\s]/g, '')) 
+          : parseFloat(serviceData.price);
+
+        const res = await fetch(`/api/services/update?id=${serviceData.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: serviceData.name,
+            category: serviceData.category,
+            description: serviceData.meta,
+            price: isNaN(priceValue) ? 0 : priceValue,
+            available: serviceData.available
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to update service: ${res.status}`);
+        }
+
+        const updatedService = await res.json();
+        console.log("Service updated successfully:", updatedService);
+        
+        // Update service in list
+        setServices(prev => prev.map(svc => 
+          svc.id === serviceData.id 
+            ? {
+                ...svc,
+                name: serviceData.name,
+                category: serviceData.category,
+                description: serviceData.meta,
+                price: `₱${parseFloat(serviceData.price).toFixed(2)}`,
+                available: serviceData.available,
+                meta: serviceData.meta
+              }
+            : svc
+        ));
+      }
+
+      setEditingService(null);
+    } catch (err) {
+      console.error('Error saving service:', err);
+      setError(err.message);
     }
-    setEditingService(null);
   };
 
-  const handleRemoveService = (service) => {
-    console.log("Service removed:", service);
-    // Here you can integrate with your API to delete the service
-    setEditingService(null);
+  const handleRemoveService = async (service) => {
+    if (!service.id) {
+      console.error("Cannot delete service: no ID");
+      setError("Service ID is required for deletion");
+      return;
+    }
+
+    try {
+      setError(null);
+      console.log("Deleting service:", service.id);
+
+      const res = await fetch(`/api/services/delete?id=${service.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to delete service: ${res.status}`);
+      }
+
+      console.log("Service deleted successfully");
+      
+      // Remove service from list
+      setServices(prev => prev.filter(svc => svc.id !== service.id));
+      setEditingService(null);
+    } catch (err) {
+      console.error('Error deleting service:', err);
+      setError(err.message);
+    }
   };
 
   const handleCloseModal = () => {
