@@ -151,6 +151,20 @@ const AddServiceIcon = () => (
   </svg>
 );
 
+const CloseDialogIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const WarningIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L2 20h20L12 2z" stroke="#d97706" strokeWidth="1.5" strokeLinejoin="round"/>
+    <line x1="12" y1="9" x2="12" y2="13" stroke="#d97706" strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="12" cy="17" r="1" fill="#d97706"/>
+  </svg>
+);
+
 // ── Data ──────────────────────────────────────────────────────────────────────
 const initialServices = {
   haircut: [
@@ -219,9 +233,20 @@ function Toggle({ checked, onChange }) {
 }
 
 // ── Service item ──────────────────────────────────────────────────────────────
-function ServiceItem({ service, category, onToggle, showToast }) {
+function ServiceItem({ service, category, onToggle, showToast, onRequestConfirmation }) {
   const IconComp = categoryIconMap[category] || HaircutSvcIcon;
   
+  const handleToggle = () => {
+    // If service is available and being turned off, show confirmation
+    if (service.available) {
+      onRequestConfirmation(service);
+    } else {
+      // If already unavailable, just toggle back to available
+      onToggle(service.id);
+      showToast(`${service.name} now available`);
+    }
+  };
+
   return (
     <div
       className={`service-item ${!service.available ? "unavailable" : ""}`}
@@ -252,17 +277,14 @@ function ServiceItem({ service, category, onToggle, showToast }) {
       {/* Toggle */}
       <Toggle
         checked={service.available}
-        onChange={() => {
-          onToggle(service.id);
-          showToast(`${service.name} marked as ${service.available ? "unavailable" : "available"}`);
-        }}
+        onChange={handleToggle}
       />
     </div>
   );
 }
 
 // ── Service section ───────────────────────────────────────────────────────────
-function ServiceSection({ category, label, services, onToggle, showToast }) {
+function ServiceSection({ category, label, services, onToggle, showToast, onRequestConfirmation }) {
   const available = services.filter(s => s.available).length;
 
   return (
@@ -283,6 +305,7 @@ function ServiceSection({ category, label, services, onToggle, showToast }) {
           category={category}
           onToggle={onToggle}
           showToast={showToast}
+          onRequestConfirmation={onRequestConfirmation}
         />
       ))}
     </div>
@@ -413,12 +436,146 @@ function Toast({ toast }) {
   );
 }
 
+// ── Confirmation Dialog ────────────────────────────────────────────────────────
+function ConfirmUnavailableServiceDialog({ isOpen, service, onConfirm, onCancel }) {
+  if (!isOpen || !service) return null;
+
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+    }}>
+      <div style={{
+        backgroundColor: "#231d1a",
+        borderRadius: "12px",
+        padding: "32px",
+        maxWidth: "400px",
+        width: "90%",
+        boxShadow: "0 20px 55px rgba(0, 0, 0, 0.6)",
+        border: "1px solid rgba(152, 143, 129, 0.2)",
+      }}>
+        {/* Close button */}
+        <button
+          onClick={onCancel}
+          style={{
+            position: "absolute",
+            top: "16px",
+            right: "16px",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "#988f81",
+            padding: "4px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <CloseDialogIcon />
+        </button>
+
+        {/* Icon and title */}
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          marginBottom: "24px",
+        }}>
+          <div style={{ marginBottom: "16px" }}>
+            <WarningIcon />
+          </div>
+          <h2 style={{
+            color: "#f5f5f5",
+            fontSize: "18px",
+            fontWeight: "600",
+            margin: "0 0 8px 0",
+            textAlign: "center",
+          }}>
+            Mark "{service?.name}" as Unavailable?
+          </h2>
+        </div>
+
+        {/* Message */}
+        <p style={{
+          color: "#c7b8ad",
+          fontSize: "14px",
+          lineHeight: "1.6",
+          margin: "0 0 24px 0",
+          textAlign: "center",
+        }}>
+          This service will be hidden from client bookings. Your admin will be notified of this change. You can mark it available again anytime.
+        </p>
+
+        {/* Buttons */}
+        <div style={{
+          display: "flex",
+          gap: "12px",
+        }}>
+          <button
+            onClick={onCancel}
+            style={{
+              flex: 1,
+              padding: "12px",
+              borderRadius: "8px",
+              border: "1px solid rgba(152, 143, 129, 0.3)",
+              backgroundColor: "transparent",
+              color: "#c7b8ad",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "500",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={e => {
+              e.target.backgroundColor = "rgba(152, 143, 129, 0.1)";
+              e.target.style.borderColor = "rgba(152, 143, 129, 0.5)";
+            }}
+            onMouseLeave={e => {
+              e.target.style.backgroundColor = "transparent";
+              e.target.style.borderColor = "rgba(152, 143, 129, 0.3)";
+            }}
+          >
+            Keep Available
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              flex: 1,
+              padding: "12px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "#d97706",
+              color: "#ffffff",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={e => e.target.style.backgroundColor = "#c86b00"}
+            onMouseLeave={e => e.target.style.backgroundColor = "#d97706"}
+          >
+            Make Unavailable
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function StaffServices() {
   const [services, setServices] = useState(initialServices);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isClientRequestsOpen, setIsClientRequestsOpen] = useState(false);
   const [isRequestServiceOpen, setIsRequestServiceOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, service: null });
   const { toast, show: showToast } = useToast();
 
   const toggle = (id) => {
@@ -429,6 +586,22 @@ export default function StaffServices() {
       }
       return updated;
     });
+  };
+
+  const handleToggleClick = (service) => {
+    setConfirmDialog({ isOpen: true, service });
+  };
+
+  const handleConfirmUnavailable = () => {
+    if (confirmDialog.service) {
+      toggle(confirmDialog.service.id);
+      showToast(`${confirmDialog.service.name} marked as unavailable. Admin notified.`);
+      setConfirmDialog({ isOpen: false, service: null });
+    }
+  };
+
+  const handleCancelUnavailable = () => {
+    setConfirmDialog({ isOpen: false, service: null });
   };
 
   return (
@@ -496,6 +669,7 @@ export default function StaffServices() {
                   services={list}
                   onToggle={toggle}
                   showToast={showToast}
+                  onRequestConfirmation={handleToggleClick}
                 />
               ))}
             </div>
@@ -522,6 +696,13 @@ export default function StaffServices() {
         onClose={() => setIsRequestServiceOpen(false)}
         showToast={showToast}
         systemServices={services}
+      />
+
+      <ConfirmUnavailableServiceDialog
+        isOpen={confirmDialog.isOpen}
+        service={confirmDialog.service}
+        onConfirm={handleConfirmUnavailable}
+        onCancel={handleCancelUnavailable}
       />
 
       <Toast toast={toast} />
