@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import CustomerHistoryModal from "../../components/modal/admin/customer_history";
+import CalendarAppointmentsModal from "../../components/modal/admin/calendar_appointments";
 import "../../styles/tailwind.css";
 
 // ── SVG Icons ──────────────────────────────────────────────────────────────────
@@ -516,15 +518,15 @@ function ScheduleCard({ showToast }) {
   );
 }
 
-function QuickActionsCard({ showToast }) {
+function QuickActionsCard({ showToast, onOpenCustomerHistory, onOpenCalendar }) {
   return (
     <div style={{ background: "rgba(221, 144, 29, 0.06)", border: "1px solid rgba(152, 143, 129, 0.3)", borderRadius: "16px", padding: "24px" }}>
       <div style={{ fontSize: "16px", color: "#fff", fontWeight: "500", marginBottom: "16px" }}>Quick Actions</div>
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        <button onClick={()=>showToast("Opening customer history…")} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px", borderRadius: "12px", fontWeight: "bold", fontSize: "14px", background: "#dd901d", color: "#000", border: "none", cursor: "pointer" }}>
+        <button onClick={onOpenCustomerHistory} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px", borderRadius: "12px", fontWeight: "bold", fontSize: "14px", background: "#dd901d", color: "#000", border: "none", cursor: "pointer" }}>
           <CustomerHistoryIcon size={17} color="#000" /> My Customer History
         </button>
-        <button onClick={()=>showToast("Opening calendar…")} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px", borderRadius: "12px", fontWeight: "500", fontSize: "14px", background: "transparent", color: "#fff", border: "1px solid rgba(152, 143, 129, 0.3)", cursor: "pointer" }}>
+        <button onClick={onOpenCalendar} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px", borderRadius: "12px", fontWeight: "500", fontSize: "14px", background: "transparent", color: "#fff", border: "1px solid rgba(152, 143, 129, 0.3)", cursor: "pointer" }}>
           <QuickActionCalendarIcon size={17} color="#fff" /> My Calendar
         </button>
       </div>
@@ -559,6 +561,8 @@ export default function StaffDashboard() {
   const elapsed = useElapsed(22, 39);
   const [completed, setCompleted] = useState(false);
   const { toast, show: showToast } = useToast();
+  const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -602,13 +606,23 @@ export default function StaffDashboard() {
             <QueueCard showToast={showToast}/>
           </div>
           <div className="dash-sidebar">
-            <StatsCard/>
+            <QuickActionsCard showToast={showToast} onOpenCustomerHistory={() => setIsCustomerHistoryOpen(true)} onOpenCalendar={() => setIsCalendarOpen(true)}/>
             <ScheduleCard showToast={showToast}/>
-            <QuickActionsCard showToast={showToast}/>
+            <StatsCard/>
           </div>
         </div>
       </main>
       <Toast toast={toast}/>
+      <CustomerHistoryModal 
+        isOpen={isCustomerHistoryOpen} 
+        onClose={() => setIsCustomerHistoryOpen(false)} 
+        staffName="Mike Santos"
+      />
+      <CalendarAppointmentsModal 
+        isOpen={isCalendarOpen} 
+        onClose={() => setIsCalendarOpen(false)} 
+        staffName="Mike Santos"
+      />
     </div>
   );
 }

@@ -99,14 +99,19 @@ const CUSTOMER_HISTORY_DATA = [
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 
-export const CustomerHistoryModal = ({ isOpen, onClose }) => {
+export const CustomerHistoryModal = ({ isOpen, onClose, staffName = null }) => {
   const [filterType, setFilterType] = useState("all");
   const [expandedCustomer, setExpandedCustomer] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const getFilteredData = () => {
     const today = new Date();
-    const data = CUSTOMER_HISTORY_DATA;
+    let data = CUSTOMER_HISTORY_DATA;
+
+    // Filter by staff if staffName is provided
+    if (staffName) {
+      data = data.filter(item => item.stylist === staffName);
+    }
 
     if (filterType === "all") return data;
 
@@ -154,7 +159,7 @@ export const CustomerHistoryModal = ({ isOpen, onClose }) => {
         padding: "32px",
         width: "90%",
         maxWidth: "700px",
-        maxHeight: "80vh",
+        height: "80vh",
         boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
         border: "1px solid rgba(221, 144, 29, 0.2)",
         display: "flex",
