@@ -8397,11 +8397,14 @@
   align-items: center;
   justify-content: center;
   background: #dd901d;
+  border: 2px solid #dd901d;
+  box-shadow: 0 0 8px rgba(221, 144, 29, 0.3);
 }
 
 .service-icon-box.unavailable {
   background: #231d1a;
   border: 1px solid rgba(152, 143, 129, 0.2);
+  box-shadow: none;
 }
 
 .service-item-info {
