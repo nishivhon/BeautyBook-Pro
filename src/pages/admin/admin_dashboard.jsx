@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { AddWalkInModal } from "../../components/modal/admin/add_walkin";
@@ -154,10 +154,10 @@ const STAFF = [
 ];
 
 const SUMMARY = [
-  { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: 16 },
-  { Icon: InProgressIcon,  color: "#4387ef", label: "In Progress", value: 3  },
-  { Icon: PendingIcon,     color: "#dd901d", label: "Pending",     value: 5  },
-  { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: 2  },
+  { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: 0 },
+  { Icon: InProgressIcon,  color: "#4387ef", label: "In Progress", value: 0  },
+  { Icon: PendingIcon,     color: "#dd901d", label: "Pending",     value: 0  },
+  { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: 0  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -214,27 +214,35 @@ const AdminNavbar = ({ onLogout }) => {
   );
 };
 
-const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
-  <>
-    <div className="dash-page-header">
-      <div className="dash-page-title-block">
-        <h1 className="dash-page-title">Admin Dashboard</h1>
-        <p className="dash-page-subtitle">BeautyBook Pro · {date}</p>
-      </div>
-      <div className="dash-page-actions">
-        <button className="dash-action-btn">
-          <BellIcon size={14} color="#fff" />
-          Notifications
-        </button>
-        <button className="dash-action-btn">
-          <SettingsIcon size={14} color="#fff" />
+const PageHeader = ({ stats }) => {
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
+  return (
+    <>
+      <div className="dash-page-header">
+        <div className="dash-page-title-block">
+          <h1 className="dash-page-title">Admin Dashboard</h1>
+          <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
+        </div>
+        <div className="dash-page-actions">
+          <button className="dash-action-btn">
+            <BellIcon size={14} color="#fff" />
+            Notifications
+          </button>
+          <button className="dash-action-btn">
+            <SettingsIcon size={14} color="#fff" />
           Settings
         </button>
       </div>
     </div>
 
     <div className="dash-stats-row">
-      {STATS.map(({ Icon, badge, badgeType, value, label }, i) => (
+      {stats.map(({ Icon, badge, badgeType, value, label }, i) => (
         <div key={i} className="dash-stat-card">
           <div className="dash-stat-top">
             <div className="dash-stat-icon-box">
@@ -253,12 +261,57 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
         </div>
       ))}
     </div>
-  </>
-);
+    </>
+  );
+};
 
 const LiveQueue = ({ onOpenWalkInModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
+  const [currentAppointments, setCurrentAppointments] = useState([]);
+  const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch appointments data on component mount
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch current appointments
+        const currentRes = await fetch('/api/appointments/read/by-status?status=current');
+        if (!currentRes.ok) {
+          throw new Error(`Current appointments fetch failed: ${currentRes.status}`);
+        }
+        const currentData = await currentRes.json();
+        
+        // Fetch pending appointments
+        const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
+        if (!pendingRes.ok) {
+          throw new Error(`Pending appointments fetch failed: ${pendingRes.status}`);
+        }
+        const pendingData = await pendingRes.json();
+
+        if (currentData.success) {
+          setCurrentAppointments(currentData.appointments || []);
+        }
+        if (pendingData.success) {
+          setPendingAppointments(pendingData.appointments || []);
+        }
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppointments();
+    
+    return () => {};
+  }, []);
 
   const handleCompleteService = (itemId, customerName, service) => {
     console.log(`Service completed for ${customerName}: ${service}`);
@@ -267,140 +320,59 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
     // You could also remove the item from the queue or update its status
   };
 
-  const QUEUE_SECTIONS = [
+  // Transform appointments to queue item format
+  const formatQueueItems = (appointments, type) => {
+    const formatTimeToAmPm = (time24) => {
+      if (!time24) return '';
+      const [hours, minutes] = time24.split(':');
+      const hour = parseInt(hours, 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:${minutes}${ampm}`;
+    };
+
+    return appointments.map((apt, index) => {
+      // Extract service name - should come from API now
+      const serviceName = apt.service || 'Service';
+      
+      return {
+        id: apt.id,
+        type: type,
+        number: index + 1,
+        name: apt.name,
+        service: `${serviceName} • ${apt.staff}`,
+        statusTop: type === 'active' ? 'Now' : formatTimeToAmPm(apt.time),
+        statusSub: type === 'active' ? 'In Progress' : 'Waiting',
+        details: {
+          serviceSelected: serviceName,
+          currentService: type === 'active' ? 'In Progress' : 'Pending',
+          startTime: apt.time,
+          estimatedTime: '45 mins'
+        }
+      };
+    });
+  };
+
+  const currentItems = formatQueueItems(currentAppointments, 'active');
+  
+  // Filter pending items to only show today's appointments with actual bookings (not empty slots)
+  const today = new Date().toISOString().split('T')[0];
+  const todayPendingAppointments = pendingAppointments.filter(apt => 
+    apt.date === today && apt.name && apt.name !== 'Unknown'
+  );
+  const pendingItems = formatQueueItems(todayPendingAppointments, 'waiting');
+
+  // Create queue sections - only include sections with items
+  const queueSections = [
     {
       label: "Current",
-      items: [
-        { 
-          id: 1,
-          type: "active", 
-          name: "Juan Dela Cruz", 
-          service: "Haircut • Mike S.",      
-          statusTop: "Now", 
-          statusSub: "In Progress",
-          details: {
-            serviceSelected: "Hair cuts",
-            currentService: "Hair cuts",
-            startTime: "10:15 AM",
-            estimatedTime: "30 mins"
-          }
-        },
-        { 
-          id: 2,
-          type: "active", 
-          name: "Pedro Santos",   
-          service: "Beard Trim • John D.",   
-          statusTop: "Now", 
-          statusSub: "In Progress",
-          details: {
-            serviceSelected: "Beard trimming",
-            currentService: "Beard trimming",
-            startTime: "10:20 AM",
-            estimatedTime: "25 mins"
-          }
-        },
-        { 
-          id: 3,
-          type: "active", 
-          name: "Maria Garcia",   
-          service: "Hair Color • Carlos R.",  
-          statusTop: "Now", 
-          statusSub: "In Progress",
-          details: {
-            serviceSelected: "Hair color",
-            currentService: "Hair color",
-            startTime: "10:00 AM",
-            estimatedTime: "60 mins"
-          }
-        },
-      ],
+      items: currentItems
     },
     {
       label: "Up Next",
-      items: [
-        { 
-          id: 4,
-          type: "waiting",   
-          number: 1, 
-          name: "Anna Reyes",   
-          service: "Full Service • Mike S.",     
-          statusTop: "20 mins", 
-          statusSub: "Waiting",
-          details: {
-            serviceSelected: "Hair cuts, Hair color",
-            currentService: "Pending",
-            startTime: "10:45 AM",
-            estimatedTime: "90 mins"
-          }
-        },
-        { 
-          id: 5,
-          type: "cancelled", 
-          number: 2, 
-          name: "Miguel Torres",
-          service: "Haircut • Available Stylist", 
-          statusTop: null,      
-          statusSub: "Cancelled",
-          details: {
-            serviceSelected: "Hair cuts",
-            currentService: "Cancelled",
-            startTime: "N/A",
-            estimatedTime: "N/A"
-          }
-        },
-        { 
-          id: 6,
-          type: "waiting",   
-          number: 3, 
-          name: "James Wilson",  
-          service: "Beard Trim • Carlos R.",    
-          statusTop: "35 mins", 
-          statusSub: "Waiting",
-          details: {
-            serviceSelected: "Beard trimming",
-            currentService: "Pending",
-            startTime: "11:00 AM",
-            estimatedTime: "25 mins"
-          }
-        },
-      ],
-    },
-    {
-      label: "On Deck",
-      items: [
-        { 
-          id: 7,
-          type: "waiting",   
-          number: 4, 
-          name: "Sofia Rivera", 
-          service: "Full Service • Mike S.",  
-          statusTop: "1hr 10 mins", 
-          statusSub: "Waiting",
-          details: {
-            serviceSelected: "Manicure, Pedicure",
-            currentService: "Pending",
-            startTime: "11:30 AM",
-            estimatedTime: "120 mins"
-          }
-        },
-        { 
-          id: 8,
-          type: "cancelled", 
-          number: 5, 
-          name: "Leo Cruz",     
-          service: "Haircut • John D.",       
-          statusTop: null,          
-          statusSub: "Cancelled",
-          details: {
-            serviceSelected: "Hair cuts",
-            currentService: "Cancelled",
-            startTime: "N/A",
-            estimatedTime: "N/A"
-          }
-        },
-      ],
-    },
-  ];
+      items: pendingItems
+    }
+  ].filter(section => section.items.length > 0); // Only show sections with items
 
   const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, onCompleteService }) => {
     const isActive = type === "active";
@@ -530,25 +502,129 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+          Loading appointments...
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+          Error loading appointments: {error}
+        </div>
+      )}
+
       {/* Sections */}
-      <div className={isExpanded ? "live-queue-scroll" : "live-queue-scroll-limited"}>
-        {QUEUE_SECTIONS.map((section, si) => (
-          <div key={si}>
-            <p className="live-section-label">{section.label}</p>
-            <div className="live-queue-group">
-              {section.items.map((item, ii) => (
-                <QueueItem key={ii} {...item} onCompleteService={handleCompleteService} />
-              ))}
+      {!loading && !error && (
+        <div className={isExpanded ? "live-queue-scroll" : "live-queue-scroll-limited"}>
+          {queueSections.map((section, si) => (
+            <div key={si}>
+              <p className="live-section-label">{section.label}</p>
+              <div className="live-queue-group">
+                {section.items.length === 0 ? (
+                  <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
+                ) : (
+                  section.items.map((item, ii) => (
+                    <QueueItem key={ii} {...item} onCompleteService={handleCompleteService} />
+                  ))
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 const StaffStatus = () => {
   const navigate = useNavigate();
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const [resStaff, resSlots] = await Promise.all([
+          fetch('/api/staffs'),
+          fetch('/api/appointments/read/slots')
+        ]);
+        
+        if (!resStaff.ok) {
+          throw new Error(`Failed to fetch staff: ${resStaff.status}`);
+        }
+        
+        const staffData = await resStaff.json();
+        
+        // Handle slots response - ensure it's an array
+        const slotsData = resSlots.ok ? await resSlots.json() : null;
+        const allSlots = Array.isArray(slotsData) ? slotsData : [];
+
+        // Format time helper
+        const formatTimeToAmPm = (time24) => {
+          if (!time24) return 'N/A';
+          const [hours, minutes] = time24.split(':');
+          const hour = parseInt(hours, 10);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const hour12 = hour % 12 || 12;
+          return `${hour12}:${minutes}${ampm}`;
+        };
+
+        // Transform staff data to match the dashboard format
+        const transformedStaff = staffData.map((s) => {
+          // Get the name - handle both 'name' and 'names' column variants
+          const staffName = s.names || s.name || 'Unknown';
+          
+          // Determine status based on in_service column
+          let dotClass = 'dash-staff-status-dot-gray';
+          let subStatus = 'Available';
+          
+          const inServiceValue = (s.in_service || '').trim().toLowerCase();
+          
+          if (inServiceValue === 'in-service') {
+            dotClass = 'dash-staff-status-dot-green';
+            subStatus = `Serving: ${s.current_client || 'Client'}`;
+          } else if (inServiceValue === 'on-break') {
+            dotClass = 'dash-staff-status-dot-amber';
+            subStatus = 'On Break';
+          } else if (inServiceValue === 'off') {
+            dotClass = 'dash-staff-status-dot-red';
+            subStatus = 'Off Today';
+          } else {
+            dotClass = 'dash-staff-status-dot-green';
+            subStatus = 'Available';
+          }
+
+          // Find next slot for this staff from available_slots table
+          const nextSlot = allSlots.find(slot => slot.assigned_staff === staffName);
+          const nextTime = nextSlot ? formatTimeToAmPm(nextSlot.time_slot) : 'N/A';
+
+          return {
+            initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
+            name: staffName,
+            subStatus: subStatus,
+            dotClass: dotClass,
+            nextTime: nextTime
+          };
+        });
+
+        setStaff(transformedStaff);
+      } catch (err) {
+        console.error('Error fetching staff:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStaff();
+  }, []);
 
   const handleManageClick = () => {
     navigate("/admin/dashboard/staff-status");
@@ -560,46 +636,104 @@ const StaffStatus = () => {
         <h3 className="dash-sidebar-title">Staff Status</h3>
         <button className="dash-panel-manage-btn" onClick={handleManageClick}>Manage</button>
       </div>
-    <div className="dash-staff-list">
-      {STAFF.map((s, i) => (
-        <div key={i} className="dash-staff-row">
-          <div className="dash-staff-left">
-            <div className="dash-staff-avatar-wrap">
-              <div className="dash-staff-avatar">{s.initial}</div>
-              <span className={`dash-staff-status-dot ${s.dotClass}`} />
-            </div>
-            <div className="dash-staff-info">
-              <span className="dash-staff-name">{s.name}</span>
-              <span className="dash-staff-substatus">{s.subStatus}</span>
-            </div>
-          </div>
-          <div className="dash-staff-right">
-            <span className="dash-staff-next-label">Next:</span>
-            <span className="dash-staff-next-time">{s.nextTime}</span>
-          </div>
+      
+      {loading && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+          Loading staff...
         </div>
-      ))}
+      )}
+      
+      {error && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+          Error loading staff
+        </div>
+      )}
+      
+      {!loading && !error && (
+        <div className="dash-staff-list">
+          {staff.map((s, i) => (
+            <div key={i} className="dash-staff-row">
+              <div className="dash-staff-left">
+                <div className="dash-staff-avatar-wrap">
+                  <div className="dash-staff-avatar">{s.initial}</div>
+                  <span className={`dash-staff-status-dot ${s.dotClass}`} />
+                </div>
+                <div className="dash-staff-info">
+                  <span className="dash-staff-name">{s.name}</span>
+                  <span className="dash-staff-substatus">{s.subStatus}</span>
+                </div>
+              </div>
+              <div className="dash-staff-right">
+                <span className="dash-staff-next-label">Next:</span>
+                <span className="dash-staff-next-time">{s.nextTime}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-  </div>
   );
 };
 
-const SummaryPanel = () => (
-  <div className="dash-sidebar-panel">
-    <h3 className="dash-sidebar-title">Summary</h3>
-    <div className="dash-summary-list">
-      {SUMMARY.map(({ Icon, color, label, value }, i) => (
-        <div key={i} className="dash-summary-row">
-          <div className="dash-summary-left">
-            <Icon size={18} color={color} />
-            <span className="dash-summary-label">{label}</span>
+const SummaryPanel = () => {
+  const [summary, setSummary] = useState([
+    { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: 0 },
+    { Icon: InProgressIcon,  color: "#4387ef", label: "In Progress", value: 0  },
+    { Icon: PendingIcon,     color: "#dd901d", label: "Pending",     value: 0  },
+    { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: 0  },
+  ]);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const [resCompleted, resInProgress, resPending, resCancelled] = await Promise.all([
+          fetch('/api/appointments/read/by-status?status=done'),
+          fetch('/api/appointments/read/by-status?status=current'),
+          fetch('/api/appointments/read/by-status?status=pending'),
+          fetch('/api/appointments/read/by-status?status=cancelled')
+        ]);
+
+        const completedData = resCompleted.ok ? await resCompleted.json() : {};
+        const inProgressData = resInProgress.ok ? await resInProgress.json() : {};
+        const pendingData = resPending.ok ? await resPending.json() : {};
+        const cancelledData = resCancelled.ok ? await resCancelled.json() : {};
+
+        // Extract counts from the API response structure (has count property and appointments array)
+        const completedCount = completedData.count || (Array.isArray(completedData.appointments) ? completedData.appointments.length : 0);
+        const inProgressCount = inProgressData.count || (Array.isArray(inProgressData.appointments) ? inProgressData.appointments.length : 0);
+        const pendingCount = pendingData.count || (Array.isArray(pendingData.appointments) ? pendingData.appointments.length : 0);
+        const cancelledCount = cancelledData.count || (Array.isArray(cancelledData.appointments) ? cancelledData.appointments.length : 0);
+
+        setSummary([
+          { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: completedCount },
+          { Icon: InProgressIcon,  color: "#4387ef", label: "In Progress", value: inProgressCount  },
+          { Icon: PendingIcon,     color: "#dd901d", label: "Pending",     value: pendingCount  },
+          { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: cancelledCount  },
+        ]);
+      } catch (error) {
+      }
+    };
+
+    fetchSummary();
+  }, []);
+
+  return (
+    <div className="dash-sidebar-panel">
+      <h3 className="dash-sidebar-title">Summary</h3>
+      <div className="dash-summary-list">
+        {summary.map(({ Icon, color, label, value }, i) => (
+          <div key={i} className="dash-summary-row">
+            <div className="dash-summary-left">
+              <Icon size={18} color={color} />
+              <span className="dash-summary-label">{label}</span>
+            </div>
+            <span className="dash-summary-value">{value}</span>
           </div>
-          <span className="dash-summary-value">{value}</span>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const AnalyticsPanel = () => (
   <div className="dash-sidebar-panel">
@@ -626,6 +760,74 @@ const AnalyticsPanel = () => (
 export const AdminDashboard = ({ date }) => {
   const navigate = useNavigate();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [currentAppointments, setCurrentAppointments] = useState([]);
+  const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [doneAppointments, setDoneAppointments] = useState([]);
+  const [stats, setStats] = useState([
+    { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: "0",      label: "Today's Appointments" },
+    { Icon: QueueIcon,    badge: null,      badgeType: null,    value: "0",       label: "In Queue Now"         },
+    { Icon: RevenueIcon,  badge: "+15%",    badgeType: "green", value: "₱12,450", label: "Revenue Today"        },
+    { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
+  ]);
+
+  // Fetch appointments on component mount
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        // Fetch current appointments
+        const currentRes = await fetch('/api/appointments/read/by-status?status=current');
+        if (currentRes.ok) {
+          const currentData = await currentRes.json();
+          const current = currentData.appointments || [];
+          setCurrentAppointments(current);
+        }
+        
+        // Fetch pending appointments
+        const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
+        if (pendingRes.ok) {
+          const pendingData = await pendingRes.json();
+          const pending = pendingData.appointments || [];
+          setPendingAppointments(pending);
+        }
+
+        // Fetch done appointments
+        const doneRes = await fetch('/api/appointments/read/by-status?status=done');
+        if (doneRes.ok) {
+          const doneData = await doneRes.json();
+          const done = doneData.appointments || [];
+          setDoneAppointments(done);
+        }
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
+
+  // Calculate stats dynamically
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Total appointments for today (current + pending + done)
+    const todayAppointments = [
+      ...currentAppointments.filter(apt => apt.date === today),
+      ...pendingAppointments.filter(apt => apt.date === today),
+      ...doneAppointments.filter(apt => apt.date === today)
+    ];
+    
+    const totalToday = todayAppointments.length;
+    
+    // Pending/In Queue count for today (only pending status)
+    const inQueueCount = pendingAppointments.filter(apt => apt.date === today).length;
+
+    setStats([
+      { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: totalToday.toString(),      label: "Today's Appointments" },
+      { Icon: QueueIcon,    badge: null,      badgeType: null,    value: inQueueCount.toString(),       label: "In Queue Now"         },
+      { Icon: RevenueIcon,  badge: "+15%",    badgeType: "green", value: "₱12,450", label: "Revenue Today"        },
+      { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
+    ]);
+  }, [currentAppointments, pendingAppointments, doneAppointments]);
 
   const handleLogout = () => {
     // Clear operator session
@@ -645,7 +847,7 @@ export const AdminDashboard = ({ date }) => {
       <AdminNavbar onLogout={handleLogout} />
 
       <main className="dash-main">
-        <PageHeader date={date} />
+        <PageHeader date={date} stats={stats} />
 
         <div className="dash-content-grid">
           <LiveQueue 

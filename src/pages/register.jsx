@@ -633,7 +633,11 @@ export const Register = () => {
     try {
       const stylistName = appointmentData?.stylist?.name || "Any Available Stylist";
       const scheduleInfo = appointmentData?.schedule;
-      const dateTime = scheduleInfo?.dateTime || `${scheduleInfo?.date?.date || "Not Selected"} | ${scheduleInfo?.time || "N/A"}`;
+      
+      // Extract date and time separately
+      const dateISO = scheduleInfo?.dateISO || scheduleInfo?.date?.date || null;
+      const timeValue = scheduleInfo?.time || null;
+      const dateTime = `${scheduleInfo?.date?.date || "Not Selected"} | ${timeValue || "N/A"}`;
       
       // Extract individual selected services from all categories
       let allServices = [];
@@ -682,6 +686,8 @@ export const Register = () => {
       return {
         services: formattedServices,
         dateTime: dateTime,
+        date: dateISO,
+        time: timeValue,
         name: userName,
         email: userEmail,
         phone: userPhone,

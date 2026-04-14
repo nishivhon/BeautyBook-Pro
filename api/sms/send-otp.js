@@ -26,6 +26,12 @@ export default async (req, res) => {
   }
 
   try {
+    // Check if API key is configured
+    if (!process.env.UNISMS_API_KEY) {
+      console.error('[SMSOTP] UNISMS_API_KEY is not configured!');
+      return res.status(500).json({ error: 'SMS service is not configured. Please contact support.' });
+    }
+
     // Format phone number
     let formattedPhone = phone;
     if (!formattedPhone.startsWith('+')) {
@@ -49,8 +55,13 @@ export default async (req, res) => {
 
     console.log(`[SMSOTP] OTP saved to database for: ${phone}`);
 
-    // Send SMS synchronously (wait for result before responding)
-    await sendSmsAsync(formattedPhone, name, otp);
+    // Send SMS and wait for result
+    const smsSent = await sendSmsAsync(formattedPhone, name, otp);
+
+    if (!smsSent) {
+      console.error('[SMSOTP] Failed to send SMS');
+      return res.status(500).json({ error: 'Failed to send SMS. Please try again.' });
+    }
 
     // Return success immediately to show modal
     res.status(200).json({
@@ -65,7 +76,7 @@ export default async (req, res) => {
   }
 };
 
-// Send SMS asynchronously without blocking
+// Send SMS asynchronously and return success status
 async function sendSmsAsync(formattedPhone, name, otp) {
   try {
     const message = `Hello ${name}, Your BeautyBook OTP is: ${otp}. Valid for 10 minutes.`;
@@ -94,13 +105,15 @@ async function sendSmsAsync(formattedPhone, name, otp) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[SMSOTP] Failed to send SMS: HTTP ${response.status}`);
-      return;
+      console.error(`[SMSOTP] Failed to send SMS: HTTP ${response.status} - ${errorText}`);
+      return false;
     }
 
     const result = await response.json();
-    console.log(`[SMSOTP] SMS sent successfully`);
+    console.log(`[SMSOTP] SMS sent successfully to ${formattedPhone}`);
+    return true;
   } catch (error) {
     console.error(`[SMSOTP] Error sending SMS:`, error.message);
+    return false;
   }
 }

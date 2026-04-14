@@ -26,6 +26,17 @@ export default async (req, res) => {
   }
 
   try {
+    // Check if API key is configured
+    if (!BREVO_API_KEY) {
+      console.error('[EmailOTP] BREVO_API_KEY is not configured!');
+      return res.status(500).json({ error: 'Email service is not configured. Please contact support.' });
+    }
+
+    if (!BREVO_SENDER_EMAIL) {
+      console.error('[EmailOTP] BREVO_SENDER_EMAIL is not configured!');
+      return res.status(500).json({ error: 'Email service is not configured. Please contact support.' });
+    }
+
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -41,8 +52,13 @@ export default async (req, res) => {
 
     console.log(`[EmailOTP] OTP saved to database for: ${email}`);
 
-    // Send email synchronously (wait for result before responding)
-    await sendEmailAsync(email, full_name, otp);
+    // Send email and wait for result
+    const emailSent = await sendEmailAsync(email, full_name, otp);
+
+    if (!emailSent) {
+      console.error('[EmailOTP] Failed to send email');
+      return res.status(500).json({ error: 'Failed to send email. Please try again.' });
+    }
 
     // Return success immediately to show modal
     res.status(200).json({
@@ -57,7 +73,7 @@ export default async (req, res) => {
   }
 };
 
-// Send email asynchronously without blocking
+// Send email asynchronously and return success status
 async function sendEmailAsync(email, full_name, otp) {
   try {
     const emailBody = {
@@ -106,13 +122,15 @@ async function sendEmailAsync(email, full_name, otp) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[EmailOTP] Failed to send email: HTTP ${response.status}`);
-      return;
+      console.error(`[EmailOTP] Failed to send email: HTTP ${response.status} - ${errorText}`);
+      return false;
     }
 
     const result = await response.json();
-    console.log(`[EmailOTP] Email sent successfully`);
+    console.log(`[EmailOTP] Email sent successfully to ${email}`);
+    return true;
   } catch (error) {
     console.error(`[EmailOTP] Error sending email:`, error.message);
+    return false;
   }
 }

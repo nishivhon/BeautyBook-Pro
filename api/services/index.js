@@ -1,4 +1,4 @@
-import { getAllServices } from '../../server/src/services/booking/read/serviceService.js';
+import { createClient } from '@supabase/supabase-js';
 
 export default async (req, res) => {
   if (req.method !== 'GET') {
@@ -6,11 +6,27 @@ export default async (req, res) => {
   }
 
   try {
-    console.log('[Services] Fetching all services');
-    const services = await getAllServices();
-    console.log(`[Services] Found ${services.length} services`);
+    // Create a fresh Supabase client for this request
+    const supabase = createClient(
+      process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+      process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+    );
 
-    res.status(200).json(services);
+    console.log('[Services] Fetching all services from Supabase');
+    
+    const { data: services, error } = await supabase
+      .from('services')
+      .select('*')
+      .order('category', { ascending: true });
+
+    if (error) {
+      console.error('[Services] Supabase error:', error);
+      throw error;
+    }
+
+    console.log(`[Services] Found ${services?.length || 0} services`);
+
+    res.status(200).json(services || []);
   } catch (error) {
     console.error(`[Services] Error: ${error.message}`);
     res.status(500).json({ error: 'Failed to fetch services', details: error.message });
