@@ -98,6 +98,24 @@ const SkipForwardIcon = ({ size = 20, color = "#000" }) => (
   </svg>
 );
 
+const CustomerHistoryIcon = ({ size = 17, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <path d="M12 6v6l3 3" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M18 16l-2 2 2 2M22 16l-2 2 2 2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const QuickActionCalendarIcon = ({ size = 17, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect x="3" y="4" width="18" height="18" rx="3" stroke={color} strokeWidth="1.8" />
+    <path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="8" cy="15" r="1" fill={color} />
+    <circle cx="12" cy="15" r="1" fill={color} />
+    <circle cx="16" cy="15" r="1" fill={color} />
+  </svg>
+);
+
 function useElapsed(startMins = 22, startSecs = 39) {
   const [secs, setSecs] = useState(startMins * 60 + startSecs);
   useEffect(() => {
@@ -504,10 +522,10 @@ function QuickActionsCard({ showToast }) {
       <div style={{ fontSize: "16px", color: "#fff", fontWeight: "500", marginBottom: "16px" }}>Quick Actions</div>
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
         <button onClick={()=>showToast("Opening customer history…")} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px", borderRadius: "12px", fontWeight: "bold", fontSize: "14px", background: "#dd901d", color: "#000", border: "none", cursor: "pointer" }}>
-          📋 My Customer History
+          <CustomerHistoryIcon size={17} color="#000" /> My Customer History
         </button>
         <button onClick={()=>showToast("Opening calendar…")} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px", borderRadius: "12px", fontWeight: "500", fontSize: "14px", background: "transparent", color: "#fff", border: "1px solid rgba(152, 143, 129, 0.3)", cursor: "pointer" }}>
-          📅 My Calendar
+          <QuickActionCalendarIcon size={17} color="#fff" /> My Calendar
         </button>
       </div>
     </div>
