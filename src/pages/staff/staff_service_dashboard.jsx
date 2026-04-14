@@ -835,11 +835,10 @@ export default function StaffServices() {
         </div>
 
         {/* Summary bar */}
-        <div className="dash-stats-row">
+        <div className="service-stats-row">
           {[
             { value: (() => Object.values(services).flat().filter(s => s.available).length)(), label: "Available now", color: "service-stat-value-green" },
             { value: (() => Object.values(services).flat().filter(s => !s.available).length)(), label: "Unavailable", color: "service-stat-value-red" },
-            { value: `${Math.round((Object.values(services).flat().filter(s => s.available).length / Object.values(services).flat().length) * 100)}%`, label: "Availability rate", color: "service-stat-value-amber" },
             { value: Object.values(services).flat().length, label: "Total services", color: "" },
           ].map(({ value, label, color }) => (
             <div key={label} className="dash-stat-card">

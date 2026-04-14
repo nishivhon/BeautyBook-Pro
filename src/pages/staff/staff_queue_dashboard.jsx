@@ -476,6 +476,26 @@ export default function StaffQueueDashboard() {
           </div>
         </div>
 
+        {/* My Statistics - Metric Cards */}
+        <div className="dash-stats-row">
+          <div className="dash-stat-card">
+            <p className="dash-stat-value">2</p>
+            <p className="dash-stat-label">Completed</p>
+          </div>
+          <div className="dash-stat-card">
+            <p className="dash-stat-value">2</p>
+            <p className="dash-stat-label">Remaining</p>
+          </div>
+          <div className="dash-stat-card">
+            <p className="dash-stat-value">₱680</p>
+            <p className="dash-stat-label">Earned</p>
+          </div>
+          <div className="dash-stat-card">
+            <p className="dash-stat-value">1</p>
+            <p className="dash-stat-label">Cancelled</p>
+          </div>
+        </div>
+
         {/* Two-column layout */}
         <div className="queue-grid">
           {/* Left — Live Queue */}
@@ -483,17 +503,6 @@ export default function StaffQueueDashboard() {
 
           {/* Right column */}
           <div className="queue-sidebar">
-            {/* My Statistics */}
-            <div className="queue-sidebar-panel">
-              <div className="queue-sidebar-title">My Statistics</div>
-              <div className="queue-stats-grid">
-                <StatCard value="2" label="Completed" />
-                <StatCard value="2" label="Remaining" />
-                <StatCard value="₱680" label="Earned" />
-                <StatCard value="1" label="Cancelled" />
-              </div>
-            </div>
-
             {/* Today's Schedule */}
             <ScheduleCard showToast={showToast}/>
           </div>
