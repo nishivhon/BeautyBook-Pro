@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ClientRequestsModal from "../../components/modal/staff/client_requests";
 import "../../styles/tailwind.css";
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
@@ -308,10 +309,9 @@ function SummaryBar({ services }) {
 }
 
 // ── Quick actions ─────────────────────────────────────────────────────────────
-function QuickActionsCard({ showToast }) {
+function QuickActionsCard({ showToast, onOpenClientRequests }) {
   const actions = [
-    { icon: <MyServicesIcon />, label: "My Services", onClick: () => showToast("Opening service settings…") },
-    { icon: <ClientRequestIcon />, label: "Check Client Requests", onClick: () => showToast("2 pending client requests") },
+    { icon: <ClientRequestIcon />, label: "Check Client Requests", onClick: onOpenClientRequests },
     { icon: <AddServiceIcon />, label: "Request New Service", onClick: () => showToast("Request sent to admin") },
   ];
 
@@ -357,6 +357,7 @@ function Toast({ toast }) {
 export default function StaffServices() {
   const [services, setServices] = useState(initialServices);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isClientRequestsOpen, setIsClientRequestsOpen] = useState(false);
   const { toast, show: showToast } = useToast();
 
   const toggle = (id) => {
@@ -441,10 +442,18 @@ export default function StaffServices() {
 
           {/* Right — quick actions sidebar */}
           <div className="dash-sidebar">
-            <QuickActionsCard showToast={showToast} />
+            <QuickActionsCard 
+              showToast={showToast}
+              onOpenClientRequests={() => setIsClientRequestsOpen(true)}
+            />
           </div>
         </div>
       </main>
+
+      <ClientRequestsModal 
+        isOpen={isClientRequestsOpen}
+        onClose={() => setIsClientRequestsOpen(false)}
+      />
 
       <Toast toast={toast} />
     </div>
