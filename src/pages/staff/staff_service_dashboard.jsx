@@ -165,6 +165,16 @@ const WarningIcon = () => (
   </svg>
 );
 
+const TrashIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M3 6h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M5 6l1 14a2 2 0 002 2h8a2 2 0 002-2l1-14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
 // ── Data ──────────────────────────────────────────────────────────────────────
 const initialServices = {
   haircut: [
@@ -233,7 +243,7 @@ function Toggle({ checked, onChange }) {
 }
 
 // ── Service item ──────────────────────────────────────────────────────────────
-function ServiceItem({ service, category, onToggle, showToast, onRequestConfirmation }) {
+function ServiceItem({ service, category, onToggle, showToast, onRequestConfirmation, onRequestRemove }) {
   const IconComp = categoryIconMap[category] || HaircutSvcIcon;
   
   const handleToggle = () => {
@@ -274,17 +284,48 @@ function ServiceItem({ service, category, onToggle, showToast, onRequestConfirma
         <div className="service-item-price">{service.price}</div>
       </div>
 
-      {/* Toggle */}
-      <Toggle
-        checked={service.available}
-        onChange={handleToggle}
-      />
+      {/* Actions */}
+      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        {/* Remove button */}
+        <button
+          onClick={() => onRequestRemove(service)}
+          style={{
+            background: "rgba(239, 68, 68, 0.1)",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            borderRadius: "6px",
+            padding: "6px 8px",
+            cursor: "pointer",
+            color: "#ef4444",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+            e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+            e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
+          }}
+          title="Remove service"
+        >
+          <TrashIcon />
+        </button>
+
+        {/* Toggle */}
+        <Toggle
+          checked={service.available}
+          onChange={handleToggle}
+        />
+      </div>
     </div>
   );
 }
 
 // ── Service section ───────────────────────────────────────────────────────────
-function ServiceSection({ category, label, services, onToggle, showToast, onRequestConfirmation }) {
+function ServiceSection({ category, label, services, onToggle, showToast, onRequestConfirmation, onRequestRemove }) {
   const available = services.filter(s => s.available).length;
 
   return (
@@ -306,6 +347,7 @@ function ServiceSection({ category, label, services, onToggle, showToast, onRequ
           onToggle={onToggle}
           showToast={showToast}
           onRequestConfirmation={onRequestConfirmation}
+          onRequestRemove={onRequestRemove}
         />
       ))}
     </div>
@@ -569,6 +611,139 @@ function ConfirmUnavailableServiceDialog({ isOpen, service, onConfirm, onCancel 
   );
 }
 
+// ── Remove Service Dialog ──────────────────────────────────────────────────────
+function ConfirmRemoveServiceDialog({ isOpen, service, onConfirm, onCancel }) {
+  if (!isOpen || !service) return null;
+
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 10000,
+    }}>
+      <div style={{
+        backgroundColor: "#231d1a",
+        borderRadius: "12px",
+        padding: "32px",
+        maxWidth: "400px",
+        width: "90%",
+        boxShadow: "0 20px 55px rgba(0, 0, 0, 0.6)",
+        border: "1px solid rgba(239, 68, 68, 0.2)",
+      }}>
+        {/* Close button */}
+        <button
+          onClick={onCancel}
+          style={{
+            position: "absolute",
+            top: "16px",
+            right: "16px",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "#988f81",
+            padding: "4px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <CloseDialogIcon />
+        </button>
+
+        {/* Icon and title */}
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          marginBottom: "24px",
+        }}>
+          <div style={{ marginBottom: "16px", color: "#ef4444" }}>
+            <TrashIcon />
+          </div>
+          <h2 style={{
+            color: "#f5f5f5",
+            fontSize: "18px",
+            fontWeight: "600",
+            margin: "0 0 8px 0",
+            textAlign: "center",
+          }}>
+            Remove "{service?.name}"?
+          </h2>
+        </div>
+
+        {/* Message */}
+        <p style={{
+          color: "#c7b8ad",
+          fontSize: "14px",
+          lineHeight: "1.6",
+          margin: "0 0 24px 0",
+          textAlign: "center",
+        }}>
+          This service will be permanently removed from your service list. Your admin will be notified of this removal. This action cannot be undone.
+        </p>
+
+        {/* Buttons */}
+        <div style={{
+          display: "flex",
+          gap: "12px",
+        }}>
+          <button
+            onClick={onCancel}
+            style={{
+              flex: 1,
+              padding: "12px",
+              borderRadius: "8px",
+              border: "1px solid rgba(152, 143, 129, 0.3)",
+              backgroundColor: "transparent",
+              color: "#c7b8ad",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "500",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={e => {
+              e.target.backgroundColor = "rgba(152, 143, 129, 0.1)";
+              e.target.style.borderColor = "rgba(152, 143, 129, 0.5)";
+            }}
+            onMouseLeave={e => {
+              e.target.style.backgroundColor = "transparent";
+              e.target.style.borderColor = "rgba(152, 143, 129, 0.3)";
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              flex: 1,
+              padding: "12px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "#ef4444",
+              color: "#ffffff",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={e => e.target.style.backgroundColor = "#dc2626"}
+            onMouseLeave={e => e.target.style.backgroundColor = "#ef4444"}
+          >
+            Remove Service
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function StaffServices() {
   const [services, setServices] = useState(initialServices);
@@ -576,6 +751,7 @@ export default function StaffServices() {
   const [isClientRequestsOpen, setIsClientRequestsOpen] = useState(false);
   const [isRequestServiceOpen, setIsRequestServiceOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, service: null });
+  const [confirmRemoveDialog, setConfirmRemoveDialog] = useState({ isOpen: false, service: null });
   const { toast, show: showToast } = useToast();
 
   const toggle = (id) => {
@@ -588,8 +764,22 @@ export default function StaffServices() {
     });
   };
 
+  const remove = (id) => {
+    setServices(prev => {
+      const updated = {};
+      for (const [cat, list] of Object.entries(prev)) {
+        updated[cat] = list.filter(s => s.id !== id);
+      }
+      return updated;
+    });
+  };
+
   const handleToggleClick = (service) => {
     setConfirmDialog({ isOpen: true, service });
+  };
+
+  const handleRemoveClick = (service) => {
+    setConfirmRemoveDialog({ isOpen: true, service });
   };
 
   const handleConfirmUnavailable = () => {
@@ -602,6 +792,18 @@ export default function StaffServices() {
 
   const handleCancelUnavailable = () => {
     setConfirmDialog({ isOpen: false, service: null });
+  };
+
+  const handleConfirmRemove = () => {
+    if (confirmRemoveDialog.service) {
+      remove(confirmRemoveDialog.service.id);
+      showToast(`${confirmRemoveDialog.service.name} removed. Admin notified.`);
+      setConfirmRemoveDialog({ isOpen: false, service: null });
+    }
+  };
+
+  const handleCancelRemove = () => {
+    setConfirmRemoveDialog({ isOpen: false, service: null });
   };
 
   return (
@@ -670,6 +872,7 @@ export default function StaffServices() {
                   onToggle={toggle}
                   showToast={showToast}
                   onRequestConfirmation={handleToggleClick}
+                  onRequestRemove={handleRemoveClick}
                 />
               ))}
             </div>
@@ -703,6 +906,13 @@ export default function StaffServices() {
         service={confirmDialog.service}
         onConfirm={handleConfirmUnavailable}
         onCancel={handleCancelUnavailable}
+      />
+
+      <ConfirmRemoveServiceDialog
+        isOpen={confirmRemoveDialog.isOpen}
+        service={confirmRemoveDialog.service}
+        onConfirm={handleConfirmRemove}
+        onCancel={handleCancelRemove}
       />
 
       <Toast toast={toast} />
