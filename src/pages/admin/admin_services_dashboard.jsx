@@ -113,13 +113,6 @@ const NAV_ITEMS = [
   { label: "Staff Status", active: false },
 ];
 
-const STATS = [
-  { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: "24",       label: "Today's Appointments" },
-  { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱12,450",  label: "Revenue Today"        },
-  { Icon: ScissorsIcon, badge: null,    badgeType: null,    value: "14",        label: "Promo Bookings Today" },
-  { Icon: LoyaltyIcon,  badge: "+5",    badgeType: "green", value: "12",        label: "Loyalty Cards Activated" },
-];
-
 const SERVICE_GROUPS = [
   {
     category: "Hair Services",
@@ -224,7 +217,7 @@ const AdminNavbar = ({ onLogout }) => {
 };
 
 /* ── Page header + stat cards ── */
-const PageHeader = () => {
+const PageHeader = ({ stats }) => {
   const todayDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -252,7 +245,7 @@ const PageHeader = () => {
     </div>
 
     <div className="svc-stats-row">
-      {STATS.map(({ Icon, badge, badgeType, value, label }, i) => (
+      {stats.map(({ Icon, badge, badgeType, value, label }, i) => (
         <div key={i} className="dash-stat-card">
           <div className="dash-stat-top">
             <div className="dash-stat-icon-box">
@@ -424,6 +417,67 @@ export const AdminDashboardServices = ({ date }) => {
   const [editingService, setEditingService] = useState(null);
   const [isCreatingPromo, setIsCreatingPromo] = useState(false);
   const [isCreatingDiscount, setIsCreatingDiscount] = useState(false);
+  const [stats, setStats] = useState([
+    { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: "0",       label: "Today's Appointments" },
+    { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱0.00",   label: "Revenue Today"        },
+    { Icon: ScissorsIcon, badge: null,    badgeType: null,    value: "0",       label: "Promo Bookings Today" },
+    { Icon: LoyaltyIcon,  badge: "+5",    badgeType: "green", value: "0",       label: "Loyalty Cards Activated" },
+  ]);
+  const [appointmentData, setAppointmentData] = useState({
+    current: [],
+    pending: [],
+    done: []
+  });
+
+  // Fetch appointments data
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const [currentRes, pendingRes, doneRes] = await Promise.all([
+          fetch('/api/appointments/read/by-status?status=current'),
+          fetch('/api/appointments/read/by-status?status=pending'),
+          fetch('/api/appointments/read/by-status?status=done')
+        ]);
+
+        const [currentData, pendingData, doneData] = await Promise.all([
+          currentRes.json(),
+          pendingRes.json(),
+          doneRes.json()
+        ]);
+
+        setAppointmentData({
+          current: currentData.appointments || [],
+          pending: pendingData.appointments || [],
+          done: doneData.appointments || []
+        });
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
+
+  // Calculate stats dynamically
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Total appointments for today
+    const todayAppointments = [
+      ...appointmentData.current.filter(apt => apt.date === today),
+      ...appointmentData.pending.filter(apt => apt.date === today),
+      ...appointmentData.done.filter(apt => apt.date === today)
+    ];
+    
+    const totalToday = todayAppointments.length;
+
+    setStats([
+      { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: totalToday.toString(), label: "Today's Appointments" },
+      { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱12,450",   label: "Revenue Today"        },
+      { Icon: ScissorsIcon, badge: null,    badgeType: null,    value: "0",       label: "Promo Bookings Today" },
+      { Icon: LoyaltyIcon,  badge: "+5",    badgeType: "green", value: "0",       label: "Loyalty Cards Activated" },
+    ]);
+  }, [appointmentData]);
 
   // Fetch services from API on component mount
   useEffect(() => {
@@ -678,7 +732,7 @@ export const AdminDashboardServices = ({ date }) => {
       <AdminNavbar onLogout={handleLogout} />
 
       <main className="dash-main">
-        <PageHeader date={date} />
+        <PageHeader stats={stats} />
 
         <div className="svc-page-grid">
           {/* Left — Services list */}
