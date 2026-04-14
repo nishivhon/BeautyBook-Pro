@@ -1,5 +1,35 @@
 import { useState } from "react";
 
+// Scrollbar styles
+const scrollbarStyles = `
+  .client-requests-scrollable::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .client-requests-scrollable::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .client-requests-scrollable::-webkit-scrollbar-thumb {
+    background: var(--color-amber, #dd901d);
+    border-radius: 3px;
+  }
+
+  .client-requests-scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgb(221, 144, 29);
+  }
+`;
+
+// Add styles to document
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = scrollbarStyles;
+  if (!document.querySelector('style[data-client-requests]')) {
+    styleElement.setAttribute('data-client-requests', 'true');
+    document.head.appendChild(styleElement);
+  }
+}
+
 // Icons
 const CloseIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -177,17 +207,17 @@ function StatusBadge({ status }) {
   const statusStyles = {
     pending: {
       bgColor: "rgba(218, 165, 32, 0.15)",
-      textColor: "#d4a500",
+      textColor: "#f59e0b",
       label: "Pending",
     },
     confirmed: {
       bgColor: "rgba(46, 204, 113, 0.15)",
-      textColor: "#2ecc71",
+      textColor: "#10b981",
       label: "Confirmed",
     },
     completed: {
       bgColor: "rgba(52, 152, 219, 0.15)",
-      textColor: "#3498db",
+      textColor: "#3b82f6",
       label: "Completed",
     },
   };
@@ -226,35 +256,35 @@ function ClientRequestItem({ request, onSelect, isSelected }) {
       onClick={() => onSelect(request)}
       style={{
         padding: "16px",
-        borderBottom: "1px solid rgba(152, 143, 129, 0.2)",
+        borderBottom: "1px solid rgba(221, 144, 29, 0.15)",
         cursor: "pointer",
-        backgroundColor: isSelected ? "rgba(35, 29, 26, 0.4)" : "transparent",
+        backgroundColor: isSelected ? "rgba(221, 144, 29, 0.1)" : "transparent",
         transition: "background-color 0.2s ease",
-        borderLeft: isSelected ? "3px solid #d4a500" : "3px solid transparent",
+        borderLeft: isSelected ? "3px solid #dd901d" : "3px solid transparent",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = "rgba(35, 29, 26, 0.3)";
+        e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.08)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = isSelected ? "rgba(35, 29, 26, 0.4)" : "transparent";
+        e.currentTarget.style.backgroundColor = isSelected ? "rgba(221, 144, 29, 0.1)" : "transparent";
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
         <div>
-          <h4 style={{ margin: "0 0 4px 0", color: "#f5e6d3", fontSize: "15px", fontWeight: "600" }}>
+          <h4 style={{ margin: "0 0 4px 0", color: "#f5f5f5", fontSize: "15px", fontWeight: "600" }}>
             {request.clientName}
           </h4>
-          <p style={{ margin: "0 0 4px 0", color: "#a5957d", fontSize: "12px", textTransform: "capitalize" }}>
+          <p style={{ margin: "0 0 4px 0", color: "#b0ada5", fontSize: "12px", textTransform: "capitalize" }}>
             {displayCategory}
           </p>
-          <p style={{ margin: "0", color: "#a5957d", fontSize: "13px" }}>
+          <p style={{ margin: "0", color: "#b0ada5", fontSize: "13px" }}>
             {displayService}
           </p>
         </div>
         <StatusBadge status={request.status} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "12px", color: "#a5957d" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "12px", color: "#b0ada5" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <CalendarIcon />
           {request.requestedDate}
@@ -276,7 +306,7 @@ function ClientRequestDetails({ request, onBack }) {
       <div
         style={{
           padding: "16px",
-          borderBottom: "1px solid rgba(152, 143, 129, 0.2)",
+          borderBottom: "1px solid rgba(221, 144, 29, 0.15)",
           display: "flex",
           alignItems: "center",
           gap: "12px",
@@ -285,9 +315,9 @@ function ClientRequestDetails({ request, onBack }) {
         <button
           onClick={onBack}
           style={{
-            background: "rgba(35, 29, 26, 0.5)",
-            border: "1px solid rgba(152, 143, 129, 0.2)",
-            color: "#f5e6d3",
+            background: "rgba(221, 144, 29, 0.1)",
+            border: "1px solid rgba(221, 144, 29, 0.2)",
+            color: "#f5f5f5",
             padding: "8px",
             borderRadius: "6px",
             cursor: "pointer",
@@ -299,17 +329,17 @@ function ClientRequestDetails({ request, onBack }) {
           <BackIcon />
         </button>
         <div>
-          <h3 style={{ margin: "0", color: "#f5e6d3", fontSize: "16px", fontWeight: "600" }}>
+          <h3 style={{ margin: "0", color: "#f5f5f5", fontSize: "16px", fontWeight: "600" }}>
             {request.clientName}
           </h3>
-          <p style={{ margin: "0", color: "#a5957d", fontSize: "12px" }}>
+          <p style={{ margin: "0", color: "#b0ada5", fontSize: "12px" }}>
             Service Request Details
           </p>
         </div>
       </div>
 
       {/* Details content */}
-      <div style={{ padding: "20px", color: "#f5e6d3" }}>
+      <div style={{ padding: "20px", color: "#f5f5f5" }}>
         {/* Status badge */}
         <div style={{ marginBottom: "20px" }}>
           <StatusBadge status={request.status} />
@@ -317,18 +347,18 @@ function ClientRequestDetails({ request, onBack }) {
 
         {/* Client info */}
         <div style={{ marginBottom: "20px" }}>
-          <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", fontWeight: "600", color: "#d4a500", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", fontWeight: "600", color: "#dd901d", textTransform: "uppercase", letterSpacing: "0.5px" }}>
             Client Information
           </h4>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "14px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#a5957d" }}>
-              <div style={{ width: "24px", height: "24px", backgroundColor: "rgba(152, 143, 129, 0.2)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#b0ada5" }}>
+              <div style={{ width: "24px", height: "24px", backgroundColor: "rgba(221, 144, 29, 0.15)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <UserIcon />
               </div>
               <span>{request.clientName}</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#a5957d" }}>
-              <div style={{ width: "24px", height: "24px", backgroundColor: "rgba(152, 143, 129, 0.2)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#b0ada5" }}>
+              <div style={{ width: "24px", height: "24px", backgroundColor: "rgba(221, 144, 29, 0.15)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <PhoneIcon />
               </div>
               <span>{request.phoneNumber}</span>
@@ -338,7 +368,7 @@ function ClientRequestDetails({ request, onBack }) {
 
         {/* Service info */}
         <div style={{ marginBottom: "20px" }}>
-          <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", fontWeight: "600", color: "#d4a500", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", fontWeight: "600", color: "#dd901d", textTransform: "uppercase", letterSpacing: "0.5px" }}>
             Service Details
           </h4>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "14px" }}>
@@ -348,46 +378,46 @@ function ClientRequestDetails({ request, onBack }) {
                 {request.services.map((svc, idx) => (
                   <div key={idx}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                      <span style={{ color: "#a5957d" }}>Category {idx + 1}:</span>
+                      <span style={{ color: "#b0ada5" }}>Category {idx + 1}:</span>
                       <span style={{ fontWeight: "600" }}>{categoryLabels[svc.category] || svc.category}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: idx !== request.services.length - 1 ? "12px" : "0" }}>
-                      <span style={{ color: "#a5957d" }}>Service {idx + 1}:</span>
+                      <span style={{ color: "#b0ada5" }}>Service {idx + 1}:</span>
                       <span style={{ fontWeight: "600" }}>{svc.name}</span>
                     </div>
                     {idx !== request.services.length - 1 && (
-                      <div style={{ height: "1px", background: "rgba(152, 143, 129, 0.2)", margin: "12px 0" }} />
+                      <div style={{ height: "1px", background: "rgba(221, 144, 29, 0.15)", margin: "12px 0" }} />
                     )}
                   </div>
                 ))}
-                <div style={{ height: "1px", background: "rgba(152, 143, 129, 0.2)", margin: "12px 0" }} />
+                <div style={{ height: "1px", background: "rgba(221, 144, 29, 0.15)", margin: "12px 0" }} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "#a5957d" }}>Total Duration:</span>
+                  <span style={{ color: "#b0ada5" }}>Total Duration:</span>
                   <span style={{ fontWeight: "600" }}>{request.duration}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "#a5957d" }}>Total Price:</span>
-                  <span style={{ fontWeight: "600", color: "#d4a500" }}>{request.estimatedPrice}</span>
+                  <span style={{ color: "#b0ada5" }}>Total Price:</span>
+                  <span style={{ fontWeight: "600", color: "#dd901d" }}>{request.estimatedPrice}</span>
                 </div>
               </>
             ) : (
               // Single service request
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "#a5957d" }}>Category:</span>
+                  <span style={{ color: "#b0ada5" }}>Category:</span>
                   <span style={{ fontWeight: "600" }}>{categoryLabels[request.serviceCategory] || request.serviceCategory}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "#a5957d" }}>Service:</span>
+                  <span style={{ color: "#b0ada5" }}>Service:</span>
                   <span style={{ fontWeight: "600" }}>{request.serviceName}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "#a5957d" }}>Duration:</span>
+                  <span style={{ color: "#b0ada5" }}>Duration:</span>
                   <span style={{ fontWeight: "600" }}>{request.duration}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "#a5957d" }}>Estimated Price:</span>
-                  <span style={{ fontWeight: "600", color: "#d4a500" }}>{request.estimatedPrice}</span>
+                  <span style={{ color: "#b0ada5" }}>Estimated Price:</span>
+                  <span style={{ fontWeight: "600", color: "#dd901d" }}>{request.estimatedPrice}</span>
                 </div>
               </>
             )}
@@ -396,15 +426,15 @@ function ClientRequestDetails({ request, onBack }) {
 
         {/* Schedule info */}
         <div style={{ marginBottom: "20px" }}>
-          <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", fontWeight: "600", color: "#d4a500", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", fontWeight: "600", color: "#dd901d", textTransform: "uppercase", letterSpacing: "0.5px" }}>
             Requested Schedule
           </h4>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "14px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#a5957d" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#b0ada5" }}>
               <CalendarIcon />
               <span>{request.requestedDate}</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#a5957d" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#b0ada5" }}>
               <ClockIcon />
               <span>{request.requestedTime}</span>
             </div>
@@ -439,9 +469,9 @@ function ClientRequestDetails({ request, onBack }) {
                 style={{
                   flex: 1,
                   padding: "12px",
-                  backgroundColor: "rgba(152, 143, 129, 0.2)",
-                  color: "#f5e6d3",
-                  border: "1px solid rgba(152, 143, 129, 0.3)",
+                  backgroundColor: "rgba(221, 144, 29, 0.15)",
+                  color: "#f5f5f5",
+                  border: "1px solid rgba(221, 144, 29, 0.3)",
                   borderRadius: "6px",
                   fontWeight: "600",
                   cursor: "pointer",
@@ -500,15 +530,15 @@ export default function ClientRequestsModal({ isOpen, onClose }) {
     >
       <div
         style={{
-          backgroundColor: "#2a251f",
-          borderRadius: "8px",
+          backgroundColor: "#1a1a1a",
+          borderRadius: "12px",
           width: "90%",
           maxWidth: "800px",
           maxHeight: "80vh",
           display: "flex",
           flexDirection: "column",
           boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-          border: "1px solid rgba(152, 143, 129, 0.2)",
+          border: "1px solid rgba(221, 144, 29, 0.2)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -516,24 +546,24 @@ export default function ClientRequestsModal({ isOpen, onClose }) {
         <div
           style={{
             padding: "16px 20px",
-            borderBottom: "1px solid rgba(152, 143, 129, 0.2)",
+            borderBottom: "1px solid rgba(221, 144, 29, 0.15)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
-          <h2 style={{ margin: "0", color: "#f5e6d3", fontSize: "18px", fontWeight: "600" }}>
+          <h2 style={{ margin: "0", color: "#f5f5f5", fontSize: "18px", fontWeight: "600" }}>
             Client Requests
-            <span style={{ color: "#a5957d", marginLeft: "8px", fontSize: "14px", fontWeight: "400" }}>
+            <span style={{ color: "#b0ada5", marginLeft: "8px", fontSize: "14px", fontWeight: "400" }}>
               ({clientRequests.length} pending)
             </span>
           </h2>
           <button
             onClick={onClose}
             style={{
-              background: "rgba(35, 29, 26, 0.5)",
-              border: "1px solid rgba(152, 143, 129, 0.2)",
-              color: "#f5e6d3",
+              background: "rgba(221, 144, 29, 0.1)",
+              border: "1px solid rgba(221, 144, 29, 0.2)",
+              color: "#f5f5f5",
               padding: "8px",
               borderRadius: "6px",
               cursor: "pointer",
@@ -550,7 +580,7 @@ export default function ClientRequestsModal({ isOpen, onClose }) {
         <div style={{ flex: "1", display: "flex", overflow: "hidden" }}>
           {selectedRequest === null ? (
             // List view
-            <div style={{ flex: "1", overflowY: "auto", width: "100%" }}>
+            <div style={{ flex: "1", overflowY: "auto", width: "100%" }} className="client-requests-scrollable">
               {clientRequests.length === 0 ? (
                 <div
                   style={{
@@ -577,7 +607,7 @@ export default function ClientRequestsModal({ isOpen, onClose }) {
             </div>
           ) : (
             // Detail view
-            <div style={{ flex: "1", overflowY: "auto", width: "100%" }}>
+            <div style={{ flex: "1", overflowY: "auto", width: "100%" }} className="client-requests-scrollable">
               <ClientRequestDetails
                 request={selectedRequest}
                 onBack={() => setSelectedRequest(null)}

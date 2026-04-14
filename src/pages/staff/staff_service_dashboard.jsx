@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ClientRequestsModal from "../../components/modal/staff/client_requests";
+import RequestNewServiceModal from "../../components/modal/staff/request_new_service";
 import "../../styles/tailwind.css";
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
@@ -107,30 +108,43 @@ const AddServiceIcon = () => (
 // ── Data ──────────────────────────────────────────────────────────────────────
 const initialServices = {
   haircut: [
-    { id:1, name:"Classic Haircut",           meta:"30 mins · Standard cut & style",         price:"₱150", available:true },
-    { id:2, name:"Premium Haircut & Beard",    meta:"60 mins · Cut, beard trim, & hot towel", price:"₱250", available:true },
-    { id:3, name:"Clipper Fade",               meta:"50 mins · Precision fade & styling",     price:"₱180", available:false },
-  ],
-  styling: [
-    { id:4, name:"Hair Color & Style",         meta:"90 mins · Full color service",            price:"₱500", available:true },
-    { id:5, name:"Beard Grooming",             meta:"30 mins · Trim, shape, & oil",            price:"₱80",  available:true },
-    { id:6, name:"Full Service Package",       meta:"120 mins · Hair, beard, & facial",        price:"₱350", available:true },
+    { id:1, name:"Hair cuts",           meta:"Classic cut with styling",         price:"₱150", available:true },
+    { id:2, name:"Hair color",           meta:"Full hair color service",          price:"₱500", available:true },
+    { id:3, name:"Hair treatment",       meta:"Full hair treatment",              price:"₱400", available:false },
+    { id:4, name:"Beard trimming",       meta:"Trim and beard shaping",           price:"₱100", available:true },
   ],
   nails: [
-    { id:7, name:"Classic Manicure",           meta:"45 mins · Clean, shape, & polish",        price:"₱200", available:true },
-    { id:8, name:"Gel Pedicure",               meta:"60 mins · Soak, shape, & gel coat",       price:"₱320", available:false },
+    { id:5, name:"Manicure",             meta:"Care & beautification for fingernails", price:"₱200", available:true },
+    { id:6, name:"Pedicure",             meta:"Care & beautification for toenails",    price:"₱250", available:true },
+    { id:7, name:"Nail enhancement",     meta:"Artificial nail application",           price:"₱300", available:false },
+    { id:8, name:"Nail art & design",    meta:"Arts & Design for nails",               price:"₱350", available:true },
   ],
   skincare: [
-    { id:9,  name:"Deep Cleanse Facial",       meta:"60 mins · Exfoliate & hydrate",           price:"₱600", available:true },
-    { id:10, name:"Brightening Treatment",     meta:"75 mins · Vitamin C infusion",            price:"₱750", available:true },
+    { id:9,  name:"Facial treatment",    meta:"Care & beautification for face & skin", price:"₱600", available:true },
+    { id:10, name:"Advance treatment",   meta:"High-tech solutions for skin concerns",  price:"₱800", available:true },
+    { id:11, name:"Specialized facials", meta:"Targeted care for specific skin needs",  price:"₱700", available:true },
+    { id:12, name:"Body treatment",      meta:"Full-body skincare services",           price:"₱900", available:false },
+  ],
+  massage: [
+    { id:13, name:"Swedish massage",     meta:"Gently stroke for relaxation",          price:"₱500", available:true },
+    { id:14, name:"Deep tissue massage", meta:"Intense pressure for muscle knots",     price:"₱700", available:true },
+    { id:15, name:"Hot stone massage",   meta:"Heated stones to melt tension",         price:"₱650", available:false },
+    { id:16, name:"Foot reflexology",    meta:"Pressure points for overall wellness",  price:"₱400", available:true },
+  ],
+  premium: [
+    { id:17, name:"Bridal package",      meta:"Full wedding day beauty",               price:"₱2000", available:true },
+    { id:18, name:"Couple's Massage",    meta:"Relaxation for 2",                      price:"₱1200", available:true },
+    { id:19, name:"Hair & glow combo",   meta:"Scalp treatment + facial",              price:"₱900", available:true },
+    { id:20, name:"VIP experience",      meta:"Private room + drinks",                 price:"₱1500", available:false },
   ],
 };
 
 const categoryMeta = {
-  haircut:  { label:"Haircut Services",    icon:"haircut"  },
-  styling:  { label:"Styling & Color",     icon:"styling"  },
+  haircut:  { label:"Hair Services",        icon:"haircut"  },
   nails:    { label:"Nail Services",       icon:"nails"    },
   skincare: { label:"Skin Care Services",  icon:"skincare" },
+  massage:  { label:"Massage Services",    icon:"massage"  },
+  premium:  { label:"Premium Services",    icon:"premium"  },
 };
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -309,10 +323,10 @@ function SummaryBar({ services }) {
 }
 
 // ── Quick actions ─────────────────────────────────────────────────────────────
-function QuickActionsCard({ showToast, onOpenClientRequests }) {
+function QuickActionsCard({ showToast, onOpenClientRequests, onOpenRequestService }) {
   const actions = [
     { icon: <ClientRequestIcon />, label: "Check Client Requests", onClick: onOpenClientRequests },
-    { icon: <AddServiceIcon />, label: "Request New Service", onClick: () => showToast("Request sent to admin") },
+    { icon: <AddServiceIcon />, label: "Request New Service", onClick: onOpenRequestService },
   ];
 
   return (
@@ -358,6 +372,7 @@ export default function StaffServices() {
   const [services, setServices] = useState(initialServices);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isClientRequestsOpen, setIsClientRequestsOpen] = useState(false);
+  const [isRequestServiceOpen, setIsRequestServiceOpen] = useState(false);
   const { toast, show: showToast } = useToast();
 
   const toggle = (id) => {
@@ -445,6 +460,7 @@ export default function StaffServices() {
             <QuickActionsCard 
               showToast={showToast}
               onOpenClientRequests={() => setIsClientRequestsOpen(true)}
+              onOpenRequestService={() => setIsRequestServiceOpen(true)}
             />
           </div>
         </div>
@@ -453,6 +469,13 @@ export default function StaffServices() {
       <ClientRequestsModal 
         isOpen={isClientRequestsOpen}
         onClose={() => setIsClientRequestsOpen(false)}
+      />
+
+      <RequestNewServiceModal 
+        isOpen={isRequestServiceOpen}
+        onClose={() => setIsRequestServiceOpen(false)}
+        showToast={showToast}
+        systemServices={services}
       />
 
       <Toast toast={toast} />
