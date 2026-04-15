@@ -615,4 +615,573 @@
   button[type="button"] {
     font-size: 0.72rem;
   }
+
+  /* ═══════════════════════════════════════════
+     MODAL RESPONSIVENESS - APPOINTMENT, OTP, DIALOGS
+     ═══════════════════════════════════════════ */
+
+  /* Appointment Modal - Tablet (768px and down) */
+  .appt-root {
+    min-width: auto;
+    width: calc(100vw - 32px);
+    max-width: 100%;
+    height: auto;
+    max-height: 85vh;
+  }
+
+  .appt-overlay {
+    padding: 16px;
+  }
+
+  .appt-header {
+    padding: 0 20px;
+    height: 52px;
+    gap: 8px;
+  }
+
+  .appt-back-btn {
+    font-size: 0.95rem;
+    min-width: fit-content;
+  }
+
+  .appt-header-title {
+    font-size: 0.9rem;
+  }
+
+  .appt-progress {
+    padding: 10px 16px;
+    gap: 6px;
+  }
+
+  .appt-progress-track {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .appt-step-circle {
+    width: 30px;
+    height: 30px;
+    font-size: 0.75rem;
+  }
+
+  .appt-step-line {
+    width: 35px;
+  }
+
+  .appt-progress-labels {
+    width: 100%;
+    gap: 2px;
+    overflow-x: auto;
+  }
+
+  .appt-step-label {
+    width: auto;
+    padding: 0 6px;
+    font-size: 0.6rem;
+  }
+
+  .appt-body {
+    padding: 16px 16px 12px;
+    gap: 14px;
+  }
+
+  .appt-section-title {
+    font-size: 1.1rem;
+  }
+
+  .appt-section-sub {
+    font-size: 0.72rem;
+  }
+
+  .appt-footer {
+    padding: 12px 16px 14px;
+    gap: 10px;
+  }
+
+  .appt-cancel-btn,
+  .appt-continue-btn,
+  .appt-download-receipt-btn {
+    height: 44px;
+    font-size: 0.95rem;
+  }
+
+  /* Time Grid & Date Row Mobile */
+  .appt-picker-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+
+  .appt-time-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 6px 0;
+    width: 100%;
+  }
+
+  .appt-time-chip {
+    padding: 8px 6px;
+    font-size: 0.75rem;
+    width: 100%;
+    pointer-events: auto;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .appt-time-chip:active {
+    transform: scale(0.95);
+  }
+
+  .appt-date-row {
+    display: flex;
+    gap: 8px;
+    padding: 6px 0;
+    scrollbar-color: rgba(221, 144, 29, 0.4) transparent;
+    width: 100%;
+    pointer-events: auto;
+  }
+
+  .appt-date-row::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .appt-date-row::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .appt-date-row::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.4);
+    border-radius: 3px;
+  }
+
+  .appt-date-row::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 0.6);
+  }
+
+  .appt-date-card {
+    width: 76px;
+    padding: 12px 8px;
+  }
+
+  /* Progress Indicator Centering */
+  .appt-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .appt-progress-track {
+    display: flex;
+    justify-content: center;
+  }
+
+  .appt-progress-labels {
+    justify-content: center;
+  }
+
+  /* Scrollbar Styling for Mobile */
+  .appt-body {
+    scrollbar-color: rgba(221, 144, 29, 0.4) transparent;
+  }
+
+  .appt-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .appt-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .appt-body::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.4);
+    border-radius: 3px;
+  }
+
+  .appt-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 0.6);
+  }
+
+  /* OTP Modal - Tablet (768px and down) */
+  .otp-modal {
+    max-width: calc(100vw - 32px);
+    width: 100%;
+  }
+
+  .otp-overlay {
+    padding: 16px;
+  }
+
+  .otp-header {
+    padding: 0 16px;
+    height: 48px;
+  }
+
+  .otp-header-title {
+    font-size: 0.9rem;
+  }
+
+  .otp-close-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .otp-body {
+    padding: 20px 16px;
+    gap: 16px;
+  }
+
+  .otp-instruction {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .otp-field-box {
+    gap: 8px;
+  }
+
+  .otp-field-label {
+    font-size: 0.65rem;
+  }
+
+  .otp-input-wrap {
+    height: 48px;
+  }
+
+  .otp-input-inner {
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .otp-input {
+    font-size: 1rem;
+  }
+
+  .otp-meta-row {
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .otp-meta-label {
+    font-size: 0.75rem;
+  }
+
+  .otp-timer {
+    font-size: 0.8rem;
+  }
+
+  .otp-resend-btn {
+    font-size: 0.8rem;
+  }
+
+  .otp-actions {
+    gap: 8px;
+  }
+
+  .otp-btn-cancel,
+  .otp-btn-verify {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    border-radius: 10px;
+  }
+}
+
+/* Phones (480px and down) */
+@media (max-width: 480px) {
+
+  /* Appointment Modal - Phone */
+  .appt-root {
+    width: calc(100vw - 24px);
+    max-height: 90vh;
+  }
+
+  .appt-overlay {
+    padding: 12px;
+  }
+
+  .appt-header {
+    padding: 0 12px;
+    height: 48px;
+  }
+
+  .appt-back-btn {
+    font-size: 0.85rem;
+    min-width: auto;
+  }
+
+  .appt-header-title {
+    font-size: 0.8rem;
+  }
+
+  .appt-progress {
+    padding: 8px 12px;
+    gap: 4px;
+  }
+
+  .appt-step-circle {
+    width: 26px;
+    height: 26px;
+    font-size: 0.65rem;
+  }
+
+  .appt-step-line {
+    width: 24px;
+  }
+
+  .appt-progress-labels {
+    width: 100%;
+  }
+
+  .appt-step-label {
+    padding: 0 3px;
+    font-size: 0.5rem;
+    width: auto;
+  }
+
+  .appt-body {
+    padding: 12px 12px 10px;
+    gap: 12px;
+  }
+
+  .appt-section-title {
+    font-size: 0.95rem;
+  }
+
+  .appt-section-sub {
+    font-size: 0.65rem;
+  }
+
+  .appt-footer {
+    padding: 10px 12px 12px;
+    gap: 8px;
+  }
+
+  .appt-cancel-btn,
+  .appt-continue-btn,
+  .appt-download-receipt-btn {
+    height: 40px;
+    font-size: 0.85rem;
+  }
+
+  /* Time Grid & Date Row Phone */
+  .appt-picker-group {
+    width: 100%;
+  }
+
+  .appt-time-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    padding: 4px 0;
+    width: 100%;
+  }
+
+  .appt-time-chip {
+    padding: 6px 4px;
+    font-size: 0.7rem;
+    width: 100%;
+    pointer-events: auto;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .appt-time-chip:active {
+    transform: scale(0.95);
+  }
+
+  .appt-date-row {
+    display: flex;
+    gap: 6px;
+    padding: 4px 0;
+    scrollbar-color: rgba(221, 144, 29, 0.5) transparent;
+    width: 100%;
+    pointer-events: auto;
+  }
+
+  .appt-date-row::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .appt-date-row::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .appt-date-row::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.5);
+    border-radius: 2px;
+  }
+
+  .appt-date-row::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 0.7);
+  }
+
+  .appt-date-card {
+    width: 68px;
+    padding: 10px 6px;
+  }
+
+  .appt-date-day {
+    font-size: 0.6rem;
+  }
+
+  .appt-date-num {
+    font-size: 0.8rem;
+  }
+
+  /* Progress Indicator Centering - Phone */
+  .appt-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .appt-progress-track {
+    display: flex;
+    justify-content: center;
+  }
+
+  .appt-progress-labels {
+    justify-content: center;
+  }
+
+  /* Scrollbar Styling for Phone */
+  .appt-body {
+    scrollbar-color: rgba(221, 144, 29, 0.5) transparent;
+  }
+
+  .appt-body::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .appt-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .appt-body::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.5);
+    border-radius: 2px;
+  }
+
+  .appt-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 0.7);
+  }
+
+  /* OTP Modal - Phone */
+  .otp-modal {
+    max-width: calc(100vw - 24px);
+  }
+
+  .otp-overlay {
+    padding: 12px;
+  }
+
+  .otp-header {
+    padding: 0 12px;
+    height: 44px;
+  }
+
+  .otp-header-title {
+    font-size: 0.8rem;
+  }
+
+  .otp-close-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .otp-body {
+    padding: 16px 12px;
+    gap: 14px;
+  }
+
+  .otp-instruction {
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+
+  .otp-field-box {
+    gap: 6px;
+  }
+
+  .otp-field-label {
+    font-size: 0.6rem;
+  }
+
+  .otp-input-wrap {
+    height: 44px;
+  }
+
+  .otp-input-inner {
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .otp-input {
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+  }
+
+  .otp-meta-row {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .otp-meta-label {
+    font-size: 0.7rem;
+  }
+
+  .otp-timer {
+    font-size: 0.75rem;
+  }
+
+  .otp-resend-btn {
+    font-size: 0.75rem;
+  }
+
+  .otp-actions {
+    gap: 6px;
+  }
+
+  .otp-btn-cancel,
+  .otp-btn-verify {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+
+  /* Confirmation Dialog & Session Expired Modal - Phone */
+  /* Targets inline styled modals with common patterns */
+  div[style*="position: fixed"][style*="inset: 0"] > div[style*="background: white"],
+  div[style*="position: fixed"][style*="top: 0"][style*="zIndex: 999"] > div {
+    width: calc(100vw - 28px) !important;
+    max-width: 100% !important;
+    padding: 24px 20px !important;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+
+  div[style*="position: fixed"][style*="inset: 0"] > div[style*="background: white"] h2,
+  div[style*="position: fixed"][style*="top: 0"][style*="zIndex: 999"] > div h2 {
+    font-size: 18px !important;
+  }
+
+  div[style*="position: fixed"][style*="inset: 0"] > div[style*="background: white"] p,
+  div[style*="position: fixed"][style*="top: 0"][style*="zIndex: 999"] > div p {
+    font-size: 13px !important;
+  }
+
+  div[style*="position: fixed"][style*="inset: 0"] > div[style*="background: white"] button,
+  div[style*="position: fixed"][style*="top: 0"][style*="zIndex: 999"] > div button {
+    padding: 10px 16px !important;
+    font-size: 13px !important;
+    width: 100%;
+  }
 }

@@ -313,17 +313,24 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                 {dateOptions.length === 0 ? (
                   <p style={{ color: "#988f81", textAlign: "center", padding: "20px" }}>No available dates</p>
                 ) : (
-                  dateOptions.map((item, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedDate(selectedDate === i ? null : i)}
-                      className={`appt-date-card${selectedDate === i ? " selected" : ""}`}
-                      aria-pressed={selectedDate === i}
-                    >
-                      <span className="appt-date-day">{item.day}</span>
-                      <span className="appt-date-num">{item.dateLabel}</span>
-                    </button>
-                  ))
+                  dateOptions.map((item, i) => {
+                    const handleDateSelect = () => setSelectedDate(selectedDate === i ? null : i);
+                    return (
+                      <button
+                        key={i}
+                        onClick={handleDateSelect}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          handleDateSelect();
+                        }}
+                        className={`appt-date-card${selectedDate === i ? " selected" : ""}`}
+                        aria-pressed={selectedDate === i}
+                      >
+                        <span className="appt-date-day">{item.day}</span>
+                        <span className="appt-date-num">{item.dateLabel}</span>
+                      </button>
+                    );
+                  })
                 )}
               </div>
             )
@@ -478,14 +485,18 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                 ) : (
                   ALL_TIME_SLOTS.map((time, i) => {
                     const isDisabled = unavailableTimes.includes(time);
+                    const handleTimeSelect = () => !isDisabled && setSelectedTime(selectedTime === i ? null : i);
                     return (
                       <button
                         key={i}
-                        onClick={() => !isDisabled && setSelectedTime(selectedTime === i ? null : i)}
+                        onClick={handleTimeSelect}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          handleTimeSelect();
+                        }}
                         className={`appt-time-chip${selectedTime === i ? " selected" : ""}${isDisabled ? " disabled" : ""}`}
                         aria-pressed={selectedTime === i}
-                        disabled={isDisabled}
-                        style={isDisabled ? { opacity: 0.6, cursor: "not-allowed" } : {}}
+                        style={isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "auto" } : { pointerEvents: "auto" }}
                       >
                         {convertTo12HourFormat(time)}
                       </button>
