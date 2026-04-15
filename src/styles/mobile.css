@@ -1,0 +1,422 @@
+/* ──────────────────────────────────────
+   MOBILE RESPONSIVE STYLES
+   Island mobile-first responsive design
+────────────────────────────────────── */
+
+/* Mobile Menu Styles */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-white);
+  padding: 8px;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.mobile-menu-btn:hover {
+  color: var(--color-amber);
+}
+
+.nav-links-desktop {
+  display: flex;
+}
+
+.btn-nav-desktop {
+  display: block;
+}
+
+.mobile-menu {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  right: 0;
+  background: var(--bg-dark);
+  border-bottom: 1px solid rgba(221, 144, 29, 0.1);
+  display: none;
+  flex-direction: column;
+  padding: 12px 0;
+  z-index: 49;
+  animation: slideDown 0.2s ease forwards;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-menu-link {
+  padding: 12px 20px;
+  color: var(--color-tan);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: color 0.2s, background-color 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.mobile-menu-link:hover {
+  color: var(--color-amber);
+  background-color: rgba(221, 144, 29, 0.05);
+  border-left-color: var(--color-amber);
+}
+
+.btn-mobile-cta {
+  margin: 12px 20px 0;
+  width: auto;
+  display: block;
+}
+
+/* Tablet and larger phones (768px and down) */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 20px;
+    height: 48px;
+  }
+
+  .nav-links-desktop {
+    display: none;
+  }
+
+  .btn-nav-desktop {
+    display: none;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .mobile-menu {
+    display: flex;
+    top: 48px;
+  }
+
+  .hero-section {
+    padding: 30px 16px 40px;
+    margin-top: 48px;
+  }
+
+  .hero-badge {
+    margin-bottom: 20px;
+    padding: 4px 18px;
+  }
+
+  .hero-badge span {
+    font-size: 0.65rem;
+  }
+
+  .hero-title {
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    margin-bottom: 16px;
+  }
+
+  .hero-text {
+    font-size: 0.83rem;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    max-width: 100%;
+  }
+
+  .btn-hero {
+    padding: 9px 24px;
+    font-size: 0.8rem;
+    height: 40px;
+  }
+
+  .howitworks-section {
+    padding: 25px 16px;
+  }
+
+  .services-section {
+    padding: 25px 16px;
+  }
+
+  .section-title {
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+  }
+
+  .section-subtitle {
+    font-size: 0.83rem;
+    margin-bottom: 20px;
+  }
+
+  .step-card {
+    padding: 13px;
+    border-radius: 8px;
+  }
+
+  .icon-box {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 10px;
+  }
+
+  .step-title {
+    font-size: 0.93rem;
+    margin-bottom: 5px;
+  }
+
+  .step-desc {
+    font-size: 0.74rem;
+    line-height: 1.4;
+  }
+
+  .service-card {
+    padding: 13px;
+  }
+
+  .service-title {
+    font-size: 0.88rem;
+    margin-bottom: 6px;
+  }
+
+  .service-item {
+    font-size: 0.7rem;
+    gap: 5px;
+  }
+
+  .footer {
+    padding: 14px 16px 10px;
+  }
+
+  .footer-row {
+    gap: 10px;
+    margin-bottom: 9px;
+  }
+
+  .footer-label {
+    font-size: 0.83rem;
+    min-width: auto;
+  }
+
+  .footer-text {
+    font-size: 0.68rem;
+  }
+
+  .copyright {
+    font-size: 0.63rem;
+    line-height: 1.3;
+  }
+
+  .section-flex-col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  /* Grid layout adjustments for mobile */
+  .grid-3col {
+    display: contents;
+  }
+
+  .grid-2col {
+    display: contents;
+  }
+
+  .grid-auto {
+    display: contents;
+  }
+}
+
+/* Phones (480px and down) */
+@media (max-width: 480px) {
+  .navbar {
+    height: 44px;
+    padding: 0 12px;
+  }
+
+  .mobile-menu {
+    top: 44px;
+  }
+
+  .mobile-menu-btn {
+    padding: 6px;
+  }
+
+  .flex-center-gap-2 {
+    gap: 5px;
+  }
+
+  .logo-badge {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+  }
+
+  .brand-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .btn-nav {
+    padding: 2px 8px;
+    height: 26px;
+    font-size: 0.6rem;
+  }
+
+  .hero-section {
+    padding: 18px 12px 28px;
+    margin-top: 44px;
+  }
+
+  .hero-badge {
+    padding: 3px 14px;
+    margin-bottom: 14px;
+  }
+
+  .hero-badge span {
+    font-size: 0.55rem;
+    letter-spacing: 0.05em;
+  }
+
+  .hero-title {
+    font-size: clamp(1.1rem, 5vw, 1.4rem);
+    line-height: 1.1;
+    margin-bottom: 11px;
+  }
+
+  .hero-text {
+    font-size: 0.72rem;
+    line-height: 1.45;
+    margin-bottom: 18px;
+    max-width: 100%;
+  }
+
+  .btn-hero {
+    padding: 8px 18px;
+    height: 34px;
+    font-size: 0.68rem;
+  }
+
+  .howitworks-section {
+    padding: 18px 10px;
+  }
+
+  .services-section {
+    padding: 18px 10px;
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+    margin-bottom: 5px;
+  }
+
+  .section-subtitle {
+    font-size: 0.7rem;
+    margin-bottom: 16px;
+  }
+
+  .step-card {
+    padding: 11px;
+  }
+
+  .icon-box {
+    width: 38px;
+    height: 38px;
+    padding: 7px;
+    margin-bottom: 8px;
+  }
+
+  .step-title {
+    font-size: 0.8rem;
+    margin-bottom: 3px;
+  }
+
+  .step-desc {
+    font-size: 0.65rem;
+    line-height: 1.35;
+  }
+
+  .service-card {
+    padding: 11px;
+  }
+
+  .service-title {
+    font-size: 0.75rem;
+    margin-bottom: 5px;
+  }
+
+  .service-items {
+    gap: 2px;
+  }
+
+  .service-item {
+    font-size: 0.6rem;
+    gap: 4px;
+  }
+
+  .svc-icon-box {
+    width: 38px;
+    height: 38px;
+    padding: 7px;
+    margin-bottom: 7px;
+    border-radius: 10px;
+  }
+
+  .footer {
+    padding: 10px 10px 8px;
+  }
+
+  .footer-row {
+    gap: 6px;
+    margin-bottom: 7px;
+    flex-wrap: wrap;
+  }
+
+  .footer-label {
+    font-size: 0.7rem;
+    min-width: auto;
+    flex-basis: 100%;
+    margin-bottom: 3px;
+  }
+
+  .footer-text {
+    font-size: 0.6rem;
+  }
+
+  .social-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .copyright {
+    font-size: 0.55rem;
+    line-height: 1.3;
+    padding-top: 8px;
+  }
+
+  .section-flex-col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .grid-3col {
+    display: contents;
+  }
+
+  .grid-2col {
+    display: contents;
+  }
+
+  .grid-auto {
+    display: contents;
+  }
+
+  .nav-link {
+    display: none;
+  }
+}

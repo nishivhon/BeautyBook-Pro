@@ -627,9 +627,9 @@
   .flex-center-gap-1 { display: flex; align-items: center; gap: 2px; }
 
   /* Grid layouts */
-  .grid-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; max-width: 860px; margin: 0 auto; }
-  .grid-2col { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; max-width: 572px; }
-  .grid-auto { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .grid-3col { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; max-width: 860px; margin: 0 auto; }
+  .grid-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; max-width: 572px; }
+  .grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
 
   /* Service card icon box */
   .svc-icon-box { width: 50px; height: 50px; background: #dd901d; border-radius: 14px; padding: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
@@ -645,7 +645,7 @@
   .section-flex-col { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
 
   /* App wrapper */
-  .app-wrapper { background: #0a0908; min-height: 100vh; width: 100%; zoom: 125%; transform-origin: top left; }
+  .app-wrapper { background: #0a0908; min-height: 100vh; width: 100%; }
 
   /* Editable text styling */
   .editable-text-container { display: flex; justify-content: center; width: 100%; max-width: 800px; margin: 0 auto; flex-direction: column; align-items: center; }

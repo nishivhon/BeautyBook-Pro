@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './app'
 import './styles/tailwind.css'
+import './styles/mobile.css'
 // GLOBAL NAVIGATION INTERCEPTOR - Blocks redirect to / for email link users
 const originalPush = window.history.pushState;
 const originalReplace = window.history.replaceState;
