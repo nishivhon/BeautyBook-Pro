@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
-import { generateMagicToken } from "../../services/magicLink";
-import CreateAccountModal from "../../components/modal/superadmin/create_account";
+import AddStaffModal from "../../components/modal/superadmin/add_staff";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -114,7 +113,7 @@ const GlobeIcon = ({ color = "currentColor" }) => (
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
-  { id: "user-accounts", label: "User Accounts", icon: NavUserIcon },
+  { id: "staff-management", label: "Staff Management", icon: NavUserIcon },
   { id: "database", label: "Database", icon: DatabaseIcon },
   { id: "security", label: "Security", icon: ShieldIcon },
   { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
@@ -129,48 +128,52 @@ export default function SuperAdminUsersDashboard() {
     return saved !== null ? JSON.parse(saved) : true;
   });
   const [mounted, setMounted] = useState(false);
-  const [activeNav, setActiveNav] = useState("user-accounts");
+  const [activeNav, setActiveNav] = useState("staff-management");
 
   // Persist sidebar state to localStorage
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
   }, [sidebarExpanded]);
   
+  const [availableServices] = useState([
+    { id: 1, name: 'Hair Cut', category: 'Hair' },
+    { id: 2, name: 'Hair Coloring', category: 'Hair' },
+    { id: 3, name: 'Hair Treatment', category: 'Hair' },
+    { id: 4, name: 'Manicure', category: 'Nail' },
+    { id: 5, name: 'Pedicure', category: 'Nail' },
+    { id: 6, name: 'Facial', category: 'Skincare' },
+    { id: 7, name: 'Massage', category: 'Massage' },
+    { id: 8, name: 'Waxing', category: 'Skincare' },
+  ]);
+
   const [staffData] = useState([
-    { id:1, initial:'A', name:'Anna Cruz',      email:'annacruz@gmail.com',      role:'Admin',  status:'Active',   lastLogin:'Last Active 2 hrs ago' },
-    { id:2, initial:'M', name:'Mike Santos',    email:'mikesantos@gmail.com',     role:'Staff',  status:'Active',   lastLogin:'Last Active 2 hrs ago' },
-    { id:3, initial:'L', name:'Lea Mendoza',    email:'leamendoza@gmail.com',     role:'Staff',  status:'Active',   lastLogin:'Last Active 5 hrs ago' },
-    { id:4, initial:'R', name:'Ramon Reyes',    email:'ramonreyes@gmail.com',     role:'Staff',  status:'Active',   lastLogin:'Last Active 1 day ago'  },
-    { id:5, initial:'C', name:'Carla Bautista', email:'carlabautista@gmail.com',  role:'Staff',  status:'Inactive', lastLogin:'Last Active 3 days ago' },
+    { id:1, initial:'A', name:'Anna Cruz',      specialty:'Hair',     services:[1,2,3],  status:'Active' },
+    { id:2, initial:'M', name:'Mike Santos',    specialty:'Nail',     services:[4,5],    status:'Active' },
+    { id:3, initial:'L', name:'Lea Mendoza',    specialty:'Skincare', services:[6,8],    status:'Active' },
+    { id:4, initial:'R', name:'Ramon Reyes',    specialty:'Massage',  services:[7],      status:'Active' },
+    { id:5, initial:'C', name:'Carla Bautista', specialty:'Hair',     services:[1,2],    status:'Inactive' },
   ]);
   
   const [filteredStaff, setFilteredStaff] = useState(staffData);
   const [searchValue, setSearchValue] = useState("");
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [formData, setFormData] = useState({ name: "", specialty: "", services: [], status: "" });
   const [showModal, setShowModal] = useState(false);
-  const [linkEmail, setLinkEmail] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [dropdownResults, setDropdownResults] = useState([]);
   const [confirmExit, setConfirmExit] = useState(false);
-  const [formData, setFormData] = useState({ name: "", email: "", role: "", password: "", confirmPassword: "" });
   const [isEditing, setIsEditing] = useState(false);
   const [editingStaffId, setEditingStaffId] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState(null);
-  const [linkSearchValue, setLinkSearchValue] = useState("");
-  const [linkSearchResults, setLinkSearchResults] = useState([]);
-  const [showLinkSearchDropdown, setShowLinkSearchDropdown] = useState(false);
 
   // Check if form has any data
   const hasFormData = useCallback(() => {
     return formData.name.trim() !== "" || 
-           formData.email.trim() !== "" || 
-           formData.role.trim() !== "" || 
-           formData.password.trim() !== "" || 
-           formData.confirmPassword.trim() !== "";
+           formData.specialty.trim() !== "" || 
+           formData.services.length > 0 || 
+           formData.status.trim() !== "";
   }, [formData]);
 
   // Handle modal close with confirmation
@@ -179,13 +182,11 @@ export default function SuperAdminUsersDashboard() {
   }, []);
 
   const handleConfirmExit = () => {
-    setFormData({ name: "", email: "", role: "", password: "", confirmPassword: "" });
+    setFormData({ name: "", specialty: "", services: [], status: "" });
     setConfirmExit(false);
     setShowModal(false);
     setIsEditing(false);
     setEditingStaffId(null);
-    setShowPassword(false);
-    setShowConfirmPassword(false);
   };
 
   useEffect(() => {
@@ -197,15 +198,16 @@ export default function SuperAdminUsersDashboard() {
     return () => clearTimeout(t);
   }, []);
 
-  // Email validation helper
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const handleLogout = () => {
     logoutOperator();
     navigate("/operators/login");
+  };
+
+  const getServiceNames = (serviceIds) => {
+    return availableServices
+      .filter(s => serviceIds.includes(s.id))
+      .map(s => s.name)
+      .join(", ");
   };
 
   const handleSearch = (value) => {
@@ -218,7 +220,7 @@ export default function SuperAdminUsersDashboard() {
     } else {
       const results = staffData
         .filter(s => 
-          s.name.toLowerCase().startsWith(lower) || s.email.toLowerCase().startsWith(lower)
+          s.name.toLowerCase().startsWith(lower) || s.specialty.toLowerCase().startsWith(lower)
         )
         .sort((a, b) => a.name.localeCompare(b.name));
       setDropdownResults(results);
@@ -238,57 +240,9 @@ export default function SuperAdminUsersDashboard() {
     setTimeout(() => setShowToast(false), 2800);
   };
 
-  const handleGenerateLink = () => {
-    // Check if a staff member was selected from dropdown
-    const selectedStaff = staffData.find(s => s.name === linkSearchValue);
-    
-    if (selectedStaff) {
-      // Generate link using proper token from magicLink service
-      const token = generateMagicToken(selectedStaff.email);
-      const link = `http://localhost:5173/operators/login?token=${token}`;
-      navigator.clipboard?.writeText(link).catch(()=>{});
-      setLinkSearchValue(link);
-      displayToast(`Link copied for ${selectedStaff.name}!`);
-      return;
-    }
-    
-    // If no staff selected, treat as manual email entry
-    const val = linkSearchValue.trim();
-    if (!val) {
-      displayToast('Please enter an email or select a user.');
-      return;
-    }
-    if (!validateEmail(val)) {
-      displayToast('Please enter a valid email address.');
-      return;
-    }
-    const token = generateMagicToken(val);
-    const link = `http://localhost:5173/operators/login?token=${token}`;
-    navigator.clipboard?.writeText(link).catch(()=>{});
-    setLinkSearchValue(link);
-    displayToast('Link copied: ' + link.slice(0,40) + '…');
-  };
-
-  const handleCreateAccount = () => {
-    if (!formData.name || !formData.email || !formData.role || !formData.password || !formData.confirmPassword) {
+  const handleAddStaff = () => {
+    if (!formData.name || !formData.specialty || formData.services.length === 0 || !formData.status) {
       displayToast("Please fill in all fields");
-      return;
-    }
-    if (!validateEmail(formData.email)) {
-      displayToast("Please enter a valid email address.");
-      return;
-    }
-    if (formData.password.length < 8) {
-      displayToast("Password must be at least 8 characters long.");
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      displayToast("Passwords do not match.");
-      return;
-    }
-    const emailExists = staffData.some(staff => staff.email.toLowerCase() === formData.email.toLowerCase());
-    if (emailExists) {
-      displayToast("This email is already registered.");
       return;
     }
     // Add new staff to the list
@@ -296,15 +250,14 @@ export default function SuperAdminUsersDashboard() {
       id: staffData.length + 1,
       initial: formData.name.charAt(0).toUpperCase(),
       name: formData.name,
-      email: formData.email,
-      role: formData.role,
-      status: "Active",
-      lastLogin: "Last Active just now"
+      specialty: formData.specialty,
+      services: formData.services,
+      status: formData.status
     };
     // Reset form and close modal
-    setFormData({ name: "", email: "", role: "", password: "", confirmPassword: "" });
+    setFormData({ name: "", specialty: "", services: [], status: "" });
     setShowModal(false);
-    displayToast(`Account created for ${formData.name}!`);
+    displayToast(`Staff member ${formData.name} added successfully!`);
   };
 
   const handleEditStaff = (staff) => {
@@ -312,40 +265,24 @@ export default function SuperAdminUsersDashboard() {
     setEditingStaffId(staff.id);
     setFormData({
       name: staff.name,
-      email: staff.email,
-      role: staff.role,
-      password: "",
-      confirmPassword: ""
+      specialty: staff.specialty,
+      services: staff.services || [],
+      status: staff.status
     });
     setShowModal(true);
   };
 
-  const handleUpdateAccount = () => {
-    if (!formData.name || !formData.email || !formData.role) {
-      displayToast("Please fill in name, email, and role");
+  const handleUpdateStaff = () => {
+    if (!formData.name || !formData.specialty || formData.services.length === 0 || !formData.status) {
+      displayToast("Please fill in all fields");
       return;
-    }
-    if (!validateEmail(formData.email)) {
-      displayToast("Please enter a valid email address.");
-      return;
-    }
-    // If password is being changed, validate it
-    if (formData.password || formData.confirmPassword) {
-      if (formData.password.length < 8) {
-        displayToast("Password must be at least 8 characters long.");
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        displayToast("Passwords do not match.");
-        return;
-      }
     }
     // Update logic would go here
-    setFormData({ name: "", email: "", role: "", password: "", confirmPassword: "" });
+    setFormData({ name: "", specialty: "", services: [], status: "" });
     setShowModal(false);
     setIsEditing(false);
     setEditingStaffId(null);
-    displayToast(`Account updated for ${formData.name}!`);
+    displayToast(`Staff member ${formData.name} updated successfully!`);
   };
 
   const handleDeleteStaff = (staff) => {
@@ -361,38 +298,7 @@ export default function SuperAdminUsersDashboard() {
     }
   };
 
-  const handleLinkSearch = (value) => {
-    setLinkSearchValue(value);
-    const lower = value.toLowerCase().trim();
-    if (!lower) {
-      setShowLinkSearchDropdown(false);
-      setLinkSearchResults([]);
-    } else {
-      const results = staffData
-        .filter(s => 
-          s.name.toLowerCase().startsWith(lower) || s.email.toLowerCase().startsWith(lower)
-        )
-        .sort((a, b) => a.name.localeCompare(b.name));
-      setLinkSearchResults(results);
-      setShowLinkSearchDropdown(results.length > 0);
-    }
-  };
 
-  const handleGenerateLinkFromSearch = (staff) => {
-    const roleNormalized = staff.role.toLowerCase().replace(/\s+/g, '_');
-    const link = `https://beautybook.pro/magic/${btoa(staff.email).slice(0,14)}?role=${roleNormalized}`;
-    navigator.clipboard?.writeText(link).catch(()=>{});
-    setLinkSearchValue(link);
-    setShowLinkSearchDropdown(false);
-    setLinkSearchResults([]);
-    displayToast(`Link copied for ${staff.name}!`);
-  };
-
-  const handleSelectFromLinkDropdown = (staff) => {
-    setLinkSearchValue(staff.name);
-    setShowLinkSearchDropdown(false);
-    setLinkSearchResults([]);
-  };
 
   return (
     <div className="super-admin-container">
@@ -429,7 +335,7 @@ export default function SuperAdminUsersDashboard() {
               <button
                 key={item.id}
                 onClick={() => {
-                  if (item.id === "user-accounts") {
+                  if (item.id === "staff-management") {
                     setActiveNav(item.id);
                   } else if (item.id === "dashboard") {
                     navigate("/superadmin/dashboard");
@@ -467,7 +373,7 @@ export default function SuperAdminUsersDashboard() {
         {/* Header */}
         <header className="dashboard-header">
           <div className="header-title-section">
-            <h1 className="header-main-title">User Accounts Management</h1>
+            <h1 className="header-main-title">Staff Management</h1>
             <p className="header-subtitle">BeautyBook Pro • Saturday, Dec 7, 2024</p>
           </div>
           <div className="header-actions">
@@ -489,7 +395,7 @@ export default function SuperAdminUsersDashboard() {
             <div className="panel-header">
               <div className="panel-title">
                 <UserIcon />
-                User Management
+                Staff Management
               </div>
               <div className="table-controls">
                 <div className="search-wrap" style={{ position: "relative" }}>
@@ -582,17 +488,17 @@ export default function SuperAdminUsersDashboard() {
                     </div>
                   )}
                 </div>
-                <button className="btn-gold" onClick={() => setShowModal(true)}>Create Account</button>
+                <button className="btn-gold" onClick={() => setShowModal(true)}>Add Staff</button>
               </div>
             </div>
 
             {/* Table */}
             <div className="table-wrapper">
               <div className="table-head">
-                <div className="th-user">User</div>
-                <div className="th-role">Roles</div>
-                <div className="th-status">Status</div>
-                <div className="th-login">Last Log in</div>
+                <div className="th-user">Staff Member</div>
+                <div className="th-role">Specialty</div>
+                <div className="th-status">Services</div>
+                <div className="th-login">Status</div>
                 <div className="th-actions">Actions</div>
               </div>
 
@@ -607,24 +513,23 @@ export default function SuperAdminUsersDashboard() {
                         </div>
                         <div className="user-info">
                           <span className="user-name">{staff.name}</span>
-                          <span className="user-email">{staff.email}</span>
                         </div>
                       </div>
 
                       <div className="badge">
-                        <span className={`badge-inner ${staff.role === 'Admin' ? 'badge-admin' : 'badge-staff'}`}>
-                          {staff.role}
+                        <span className="badge-inner badge-staff">
+                          {staff.specialty}
                         </span>
+                      </div>
+
+                      <div className="last-login-cell">
+                        <span className="last-login-badge">{getServiceNames(staff.services)}</span>
                       </div>
 
                       <div className="badge">
                         <span className={`badge-inner ${staff.status === 'Active' ? 'badge-active' : 'badge-inactive'}`}>
                           {staff.status}
                         </span>
-                      </div>
-
-                      <div className="last-login-cell">
-                        <span className="last-login-badge">{staff.lastLogin}</span>
                       </div>
 
                       <div className="actions-cell">
@@ -638,143 +543,23 @@ export default function SuperAdminUsersDashboard() {
                     </div>
                   ))
                 ) : (
-                  <div className="table-empty">No users found.</div>
+                  <div className="table-empty">No staff members found.</div>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* Login Link Generator Panel */}
-          <div className="dashboard-panel">
-            <div className="panel-header-simple">
-              <div className="panel-title">
-                <LinkIcon />
-                Log In Link Generator
-              </div>
-            </div>
-
-            <p className="panel-description">
-              Search for an account and generate a one-time login link.
-            </p>
-
-            <div className="link-gen-body">
-              <div style={{ position: "relative", flex: 1 }}>
-                <input 
-                  type="text"
-                  placeholder="Select user or enter email"
-                  value={linkSearchValue}
-                  onChange={(e) => handleLinkSearch(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    backgroundColor: "rgba(26, 15, 0, 0.5)",
-                    border: "1px solid rgba(221, 144, 29, 0.3)",
-                    borderRadius: "8px",
-                    color: "#f5f5f5",
-                    fontSize: "14px",
-                    fontFamily: "Inter, sans-serif",
-                    boxSizing: "border-box",
-                    transition: "border-color 0.2s ease"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
-                  onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
-                />
-                
-                {/* Search Results Dropdown - appears above input */}
-                {showLinkSearchDropdown && linkSearchValue && (
-                  <div className="link-dropdown-scroll" style={{
-                    position: "absolute",
-                    bottom: "100%",
-                    left: 0,
-                    right: 0,
-                    marginBottom: "8px",
-                    backgroundColor: "#1a1a1a",
-                    border: "1px solid rgba(221, 144, 29, 0.3)",
-                    borderRadius: "8px",
-                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
-                    zIndex: 100,
-                    maxHeight: "300px",
-                    overflowY: "auto",
-                    fontFamily: "Inter, sans-serif",
-                    scrollbarWidth: "thin",
-                    scrollbarColor: "rgba(221, 144, 29, 0.2) transparent"
-                  }}>
-                    {linkSearchResults.map((staff, index) => (
-                      <div 
-                        key={staff.id} 
-                        onClick={() => handleSelectFromLinkDropdown(staff)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "12px 16px",
-                          borderBottom: index !== linkSearchResults.length - 1 ? "1px solid rgba(221, 144, 29, 0.1)" : "none",
-                          gap: "12px",
-                          cursor: "pointer",
-                          transition: "background-color 0.2s ease"
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.08)"}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                      >
-                        <div style={{
-                          flex: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px"
-                        }}>
-                          <div style={{
-                            width: "36px",
-                            height: "36px",
-                            borderRadius: "6px",
-                            backgroundColor: "rgba(221, 144, 29, 0.15)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            color: "#dd901d"
-                          }}>
-                            {staff.initial}
-                          </div>
-                          <div>
-                            <div style={{
-                              fontSize: "13px",
-                              fontWeight: "600",
-                              color: "#f5f5f5"
-                            }}>
-                              {staff.name}
-                            </div>
-                            <div style={{
-                              fontSize: "11px",
-                              color: "#988f81"
-                            }}>
-                              {staff.email}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <button className="btn-gold" onClick={handleGenerateLink}>Generate Link</button>
             </div>
           </div>
         </main>
       </div>
 
       {/* ─── MODAL ─── */}
-      <CreateAccountModal 
+      <AddStaffModal 
         showModal={showModal}
         onClose={handleModalClose}
         formData={formData}
         setFormData={setFormData}
-        handleCreateAccount={isEditing ? handleUpdateAccount : handleCreateAccount}
+        handleAddStaff={isEditing ? handleUpdateStaff : handleAddStaff}
         isEditing={isEditing}
-        showPassword={showPassword}
-        togglePasswordVisibility={() => setShowPassword(!showPassword)}
-        showConfirmPassword={showConfirmPassword}
-        toggleConfirmPasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
+        availableServices={availableServices}
       />
 
       {/* ─── DELETE CONFIRMATION DIALOG ─── */}
@@ -806,13 +591,13 @@ export default function SuperAdminUsersDashboard() {
               fontWeight: "700",
               color: "#f5f5f5",
               margin: "0 0 16px 0"
-            }}>Delete Account?</h3>
+            }}>Delete Staff Member?</h3>
             <p style={{
               fontSize: "14px",
               color: "#988f81",
               margin: "0 0 8px 0",
               lineHeight: "1.5"
-            }}>Are you sure you want to delete the account for <span style={{ color: "#dd901d", fontWeight: "600" }}>{staffToDelete.name}</span>? This action cannot be undone.</p>
+            }}>Are you sure you want to delete <span style={{ color: "#dd901d", fontWeight: "600" }}>{staffToDelete.name}</span>? This action cannot be undone.</p>
             <div style={{
               display: "flex",
               gap: "12px",
@@ -906,7 +691,7 @@ export default function SuperAdminUsersDashboard() {
               color: "#988f81",
               margin: "0 0 24px 0",
               lineHeight: "1.5"
-            }}>You have unsaved data. Are you sure you want to exit without creating the account?</p>
+            }}>You have unsaved data. Are you sure you want to exit without adding the staff member?</p>
             <div style={{
               display: "flex",
               gap: "12px",
