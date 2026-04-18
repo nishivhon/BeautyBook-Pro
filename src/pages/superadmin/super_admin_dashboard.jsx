@@ -963,7 +963,7 @@ const CancelledChart = () => {
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
-  { id: "user-accounts", label: "User Accounts", icon: UserIcon },
+  { id: "staff-management", label: "Staff Management", icon: UserIcon },
   { id: "database", label: "Database", icon: DatabaseIcon },
   { id: "security", label: "Security", icon: ShieldIcon },
   { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
@@ -1189,7 +1189,7 @@ export default function SuperAdminDashboard() {
               <button
                 key={item.id}
                 onClick={() => {
-                  if (item.id === "user-accounts") {
+                  if (item.id === "staff-management") {
                     navigate("/superadmin/users");
                   } else if (item.id === "database") {
                     navigate("/superadmin/database");
