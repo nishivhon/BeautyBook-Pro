@@ -355,10 +355,6 @@ export default function SuperAdminDatabaseDashboard() {
                   <ExportIcon />
                   Export All
                 </button>
-                <button className="btn-gold" onClick={handleBackup}>
-                  <BackupIcon />
-                  Backup
-                </button>
               </div>
             </div>
 
@@ -378,10 +374,6 @@ export default function SuperAdminDatabaseDashboard() {
                     <button className="row-btn" onClick={() => openViewModal(table.id)}>
                       <ViewIcon />
                       View
-                    </button>
-                    <button className="row-btn edit-btn" onClick={() => openEditModal(table.id)}>
-                      <EditIconSmall />
-                      Edit
                     </button>
                   </div>
                 </div>
