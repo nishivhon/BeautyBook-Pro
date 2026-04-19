@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ConfirmationDialog } from "../confirmation_dialog";
 import { fetchStaffWithAnyOption } from "../../../../services/staffApi";
 
@@ -158,7 +158,7 @@ const StylistRow = ({ stylist, isSelected, onSelect }) => {
 /* ══════════════════════════════════════════
    MAIN COMPONENT — Phase 3
 ══════════════════════════════════════════ */
-export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
+export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialData }) => {
   const [selected, setSelected] = useState(null);
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
@@ -166,7 +166,12 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch staff from API on component mount
+  // Extract ALL service categories from initialData (Phase 2)
+  const selectedCategories = useMemo(() => 
+    initialData?.services?.services?.map(s => s.title) || []
+  , [initialData?.services?.services]);
+
+  // Fetch staff from API on component mount and filter by category
   useEffect(() => {
     const fetchStylists = async () => {
       try {
@@ -174,11 +179,18 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
         setError(null);
         
         const response = await fetchStaffWithAnyOption();
+        const filteredStaff = response.staff || [];
+        
+        // Filter staff: if categories selected, show only staff matching ANY of those categories
+        // If no categories selected, show all staff
+        const staffToShow = selectedCategories.length > 0
+          ? filteredStaff.filter(staff => selectedCategories.includes(staff.category_specialty))
+          : filteredStaff;
         
         // Build stylists array with "Any available" option first
         const transformedStylists = [
           response.any,
-          ...(response.staff || []).map(transformStaffToStylist)
+          ...staffToShow.map(transformStaffToStylist)
         ];
         
         setStylists(transformedStylists);
@@ -193,7 +205,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel }) => {
     };
 
     fetchStylists();
-  }, []);
+  }, [selectedCategories]);
 
   const handleContinue = () => {
     onContinue?.({ stylist: stylists.find((s) => s.id === selected) });

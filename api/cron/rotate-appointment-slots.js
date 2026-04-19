@@ -14,8 +14,8 @@ const supabase = createClient(
 );
 
 export default async (req, res) => {
-  // Verify this is called by Supabase (optional but recommended)
-  if (req.method !== 'POST') {
+  // Allow both POST (scheduled cron) and GET (manual testing)
+  if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
