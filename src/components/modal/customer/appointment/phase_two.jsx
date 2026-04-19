@@ -61,8 +61,8 @@ const PremiumIcon = () => (
 const SERVICES = [
   { id: 1, title: "Hair Services",     desc: "Haircuts, Hair Styling, Hair Color, & Hair Treatment", Icon: HairIcon     },
   { id: 2, title: "Nail Services",     desc: "Manicure, pedicure & nail art",                        Icon: NailIcon     },
-  { id: 3, title: "Skincare",          desc: "Facials, treatments & body care",                      Icon: SkincareIcon },
-  { id: 4, title: "Massage services",  desc: "Relaxation & therapeutic bodywork",                    Icon: MassageIcon  },
+  { id: 3, title: "Skin Care Services",          desc: "Facials, treatments & body care",                      Icon: SkincareIcon },
+  { id: 4, title: "Massage Services",  desc: "Relaxation & therapeutic bodywork",                    Icon: MassageIcon  },
   { id: 5, title: "Premium Services",  desc: "Exclusive packages & VIP experiences",                 Icon: PremiumIcon  },
 ];
 

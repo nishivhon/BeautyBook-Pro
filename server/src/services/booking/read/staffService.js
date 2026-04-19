@@ -6,7 +6,7 @@ import { querySupabase } from '../../../db/supabaseClient.js';
 export const getAllStaff = async () => {
   try {
     const result = await querySupabase('staffs', {
-      select: 'id, names, status',
+      select: 'id, names, status, category_specialty',
       order: 'names.asc',
     });
     return result;
@@ -21,7 +21,7 @@ export const getAllStaff = async () => {
 export const getStaffById = async (id) => {
   try {
     const result = await querySupabase('staffs', {
-      select: 'id, names, status',
+      select: 'id, names, status, category_specialty',
       filter: { id },
       limit: 1,
     });
@@ -38,7 +38,7 @@ export const getStaffById = async (id) => {
 export const getAvailableStaff = async () => {
   try {
     const result = await querySupabase('staffs', {
-      select: 'id, names, status',
+      select: 'id, names, status, category_specialty',
       filter: { status: 'avail' },
       order: 'names.asc',
     });
@@ -61,6 +61,7 @@ export const getStaffWithAnyOption = async () => {
       id: s.id,
       names: s.names,
       status: s.status,
+      category_specialty: s.category_specialty,
       unavailable: s.status !== 'avail',
     }));
     

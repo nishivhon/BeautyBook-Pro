@@ -1014,6 +1014,7 @@ export const Register = () => {
               onBack={handleAppointmentBackPhase3}
               onContinue={handlePhase3Continue}
               onCancel={handleCancelBooking}
+              initialData={appointmentData}
             />
           ) : appointmentPhase === 4 ? (
             <AppointmentFormPhase4

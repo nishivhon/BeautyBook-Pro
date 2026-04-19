@@ -14,8 +14,8 @@ const supabase = createClient(
 );
 
 export default async (req, res) => {
-  // Verify this is called by Supabase (optional but recommended)
-  if (req.method !== 'POST') {
+  // Allow both POST (scheduled cron) and GET (manual testing)
+  if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -42,6 +42,19 @@ export default async (req, res) => {
         .insert(pastSlots);
 
       if (insertError) throw insertError;
+
+      // Update any pending appointments to NULL status before deleting
+      const { error: updateError } = await supabase
+        .from('available_slots')
+        .update({ status: null })
+        .lt('date', today)
+        .eq('status', 'pending');
+
+      if (updateError) {
+        console.warn('[CronJob] Warning updating pending appointments to NULL:', updateError.message);
+      } else {
+        console.log('[CronJob] Updated pending appointments to NULL status');
+      }
 
       // Delete from available_slots
       const { error: deleteError } = await supabase
