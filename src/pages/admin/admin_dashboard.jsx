@@ -809,6 +809,11 @@ export const AdminDashboard = ({ date }) => {
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     
+    console.log('[AdminDash] Today:', today);
+    console.log('[AdminDash] Current appointments:', currentAppointments.map(a => ({ name: a.name, date: a.date })));
+    console.log('[AdminDash] Pending appointments:', pendingAppointments.map(a => ({ name: a.name, date: a.date })));
+    console.log('[AdminDash] Done appointments:', doneAppointments.map(a => ({ name: a.name, date: a.date })));
+    
     // Total appointments for today (current + pending + done)
     const todayAppointments = [
       ...currentAppointments.filter(apt => apt.date === today),
@@ -820,6 +825,8 @@ export const AdminDashboard = ({ date }) => {
     
     // Pending/In Queue count for today (only pending status)
     const inQueueCount = pendingAppointments.filter(apt => apt.date === today).length;
+
+    console.log('[AdminDash] Total today:', totalToday, 'In queue:', inQueueCount);
 
     setStats([
       { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: totalToday.toString(),      label: "Today's Appointments" },

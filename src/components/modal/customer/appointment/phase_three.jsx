@@ -181,11 +181,17 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
         const response = await fetchStaffWithAnyOption();
         const filteredStaff = response.staff || [];
         
+        console.log('[Phase3] Selected categories:', selectedCategories);
+        console.log('[Phase3] All staff specialties:', filteredStaff.map(s => ({ name: s.names, specialty: s.category_specialty })));
+        
         // Filter staff: if categories selected, show only staff matching ANY of those categories
         // If no categories selected, show all staff
         const staffToShow = selectedCategories.length > 0
           ? filteredStaff.filter(staff => selectedCategories.includes(staff.category_specialty))
           : filteredStaff;
+        
+        console.log('[Phase3] Filtered staff count:', staffToShow.length);
+        console.log('[Phase3] Staff to show:', staffToShow.map(s => s.names));
         
         // Build stylists array with "Any available" option first
         const transformedStylists = [

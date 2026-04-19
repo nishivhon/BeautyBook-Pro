@@ -43,6 +43,19 @@ export default async (req, res) => {
 
       if (insertError) throw insertError;
 
+      // Update any pending appointments to NULL status before deleting
+      const { error: updateError } = await supabase
+        .from('available_slots')
+        .update({ status: null })
+        .lt('date', today)
+        .eq('status', 'pending');
+
+      if (updateError) {
+        console.warn('[CronJob] Warning updating pending appointments to NULL:', updateError.message);
+      } else {
+        console.log('[CronJob] Updated pending appointments to NULL status');
+      }
+
       // Delete from available_slots
       const { error: deleteError } = await supabase
         .from('available_slots')
