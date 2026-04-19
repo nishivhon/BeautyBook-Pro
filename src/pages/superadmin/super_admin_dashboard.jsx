@@ -133,11 +133,11 @@ const DownloadIcon = () => (
 
 const AppointmentLineChart = () => {
   const data = [
-    { day: "Mon", value: 24 },
-    { day: "Tue", value: 29 },
-    { day: "Wed", value: 31 },
-    { day: "Thur", value: 35 },
-    { day: "Fri", value: 42 },
+    { time: "9 AM", value: 3 },
+    { time: "10 AM", value: 5 },
+    { time: "11 AM", value: 4 },
+    { time: "12 PM", value: 6 },
+    { time: "1 PM", value: 4 },
   ];
 
   const width = 520;
@@ -147,8 +147,8 @@ const AppointmentLineChart = () => {
   const paddingTop = 16;
   const paddingBottom = 44;
 
-  const minVal = 20;
-  const maxVal = 45;
+  const minVal = 0;
+  const maxVal = 8;
 
   const chartW = width - paddingLeft - paddingRight;
   const chartH = height - paddingTop - paddingBottom;
@@ -156,7 +156,7 @@ const AppointmentLineChart = () => {
   const toX = (i) => paddingLeft + (i / (data.length - 1)) * chartW;
   const toY = (v) => paddingTop + chartH - ((v - minVal) / (maxVal - minVal)) * chartH;
 
-  const yLines = [20, 25, 30, 35, 40, 45];
+  const yLines = [0, 2, 4, 6, 8];
 
   const pointsStr = data.map((d, i) => `${toX(i)},${toY(d.value)}`).join(" ");
 
@@ -226,7 +226,7 @@ const AppointmentLineChart = () => {
 
       {/* Data points */}
       {data.map((d, i) => (
-        <g key={d.day}>
+        <g key={d.time}>
           <circle cx={toX(i)} cy={toY(d.value)} r="5" fill="#0a0908" stroke="#DD901D" strokeWidth="2.5" />
           <circle cx={toX(i)} cy={toY(d.value)} r="2" fill="#DD901D" />
         </g>
@@ -235,7 +235,7 @@ const AppointmentLineChart = () => {
       {/* X-axis labels */}
       {data.map((d, i) => (
         <text
-          key={d.day}
+          key={d.time}
           x={toX(i)}
           y={paddingTop + chartH + 22}
           textAnchor="middle"
@@ -243,7 +243,7 @@ const AppointmentLineChart = () => {
           fontSize="11"
           fontFamily="Inter, sans-serif"
         >
-          {d.day}
+          {d.time}
         </text>
       ))}
     </svg>
@@ -545,10 +545,11 @@ const WaitingTimeChart = () => {
 
 const PromoBookingsChart = () => {
   const data = [
-    { promo: "20% Off", bookings: 5, color: "#DD901D" },
-    { promo: "Buy 2 Get 1", bookings: 4, color: "#DD901D" },
-    { promo: "Referral", bookings: 3, color: "#DD901D" },
-    { promo: "Bundle Deal", bookings: 2, color: "#DD901D" },
+    { time: "9 AM", revenue: 450, color: "#DD901D" },
+    { time: "10 AM", revenue: 650, color: "#DD901D" },
+    { time: "11 AM", revenue: 380, color: "#DD901D" },
+    { time: "12 PM", revenue: 820, color: "#DD901D" },
+    { time: "1 PM", revenue: 720, color: "#DD901D" },
   ];
 
   const width = 520;
@@ -558,18 +559,28 @@ const PromoBookingsChart = () => {
   const paddingTop = 16;
   const paddingBottom = 44;
 
-  const maxBookings = Math.max(...data.map(d => d.bookings));
+  const maxRevenue = Math.max(...data.map(d => d.revenue));
   const chartW = width - paddingLeft - paddingRight;
   const chartH = height - paddingTop - paddingBottom;
-  const barWidth = chartW / data.length * 0.65;
-  const barSpacing = chartW / data.length;
 
-  const toY = (count) => paddingTop + chartH - (count / maxBookings) * chartH;
+  const toX = (i) => paddingLeft + (i / (data.length - 1)) * chartW;
+  const toY = (v) => paddingTop + chartH - ((v / maxRevenue) * chartH);
+
+  const yLines = [0, 200, 400, 600, 800, 1000];
+  const pointsStr = data.map((d, i) => `${toX(i)},${toY(d.revenue)}`).join(" ");
+
+  const areaPath = `M ${toX(0)},${toY(data[0].revenue)} ` +
+    data.slice(1).map((d, i) => `L ${toX(i + 1)},${toY(d.revenue)}`).join(" ") +
+    ` L ${toX(data.length - 1)},${paddingTop + chartH} L ${toX(0)},${paddingTop + chartH} Z`;
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
       <defs>
-        <filter id="barGlow">
+        <linearGradient id="promoGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#DD901D" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#DD901D" stopOpacity="0.03" />
+        </linearGradient>
+        <filter id="glow">
           <feGaussianBlur stdDeviation="2" result="coloredBlur" />
           <feMerge>
             <feMergeNode in="coloredBlur" />
@@ -578,34 +589,28 @@ const PromoBookingsChart = () => {
         </filter>
       </defs>
 
-      {[0, 1, 2, 3, 4, 5].map((v) => (
+      {yLines.map((v) => (
         <g key={v}>
           <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
           <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
-            {v}
+            ₱{v}
           </text>
         </g>
       ))}
 
-      {data.map((d, i) => {
-        const barX = paddingLeft + i * barSpacing + (barSpacing - barWidth) / 2;
-        const barY = toY(d.bookings);
-        const barH = height - paddingTop - paddingBottom - barY + paddingTop;
-
-        return (
-          <g key={d.promo}>
-            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.85" filter="url(#barGlow)" />
-            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.3" />
-            <text x={barX + barWidth / 2} y={barY - 8} textAnchor="middle" fill="#DD901D" fontSize="13" fontWeight="600" fontFamily="Inter, sans-serif">
-              {d.bookings}
-            </text>
-          </g>
-        );
-      })}
+      <path d={areaPath} fill="url(#promoGrad)" />
+      <polyline points={pointsStr} fill="none" stroke="#DD901D" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" filter="url(#glow)" />
 
       {data.map((d, i) => (
-        <text key={d.promo} x={paddingLeft + i * barSpacing + barSpacing / 2} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="9" fontFamily="Inter, sans-serif">
-          <tspan x={paddingLeft + i * barSpacing + barSpacing / 2} dy="0">{d.promo.split(" ")[0]}</tspan>
+        <g key={d.time}>
+          <circle cx={toX(i)} cy={toY(d.revenue)} r="5" fill="#0a0908" stroke="#DD901D" strokeWidth="2.5" />
+          <circle cx={toX(i)} cy={toY(d.revenue)} r="2" fill="#DD901D" />
+        </g>
+      ))}
+
+      {data.map((d, i) => (
+        <text key={d.time} x={toX(i)} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+          {d.time}
         </text>
       ))}
     </svg>
@@ -616,30 +621,42 @@ const PromoBookingsChart = () => {
 
 const LoyaltyCardsChart = () => {
   const data = [
-    { level: "Gold", activated: 8, color: "#DD901D" },
-    { level: "Silver", activated: 3, color: "#DD901D" },
-    { level: "Bronze", activated: 1, color: "#DD901D" },
+    { time: "9 AM", discountAmount: 250, color: "#DD901D" },
+    { time: "10 AM", discountAmount: 420, color: "#DD901D" },
+    { time: "11 AM", discountAmount: 180, color: "#DD901D" },
+    { time: "12 PM", discountAmount: 550, color: "#DD901D" },
+    { time: "1 PM", discountAmount: 380, color: "#DD901D" },
   ];
 
   const width = 520;
   const height = 300;
   const paddingLeft = 48;
   const paddingRight = 20;
-  const paddingTop = 16;
+  const paddingTop = 40;
   const paddingBottom = 44;
 
-  const maxActivated = Math.max(...data.map(d => d.activated));
+  const maxDiscount = Math.max(...data.map(d => d.discountAmount));
   const chartW = width - paddingLeft - paddingRight;
   const chartH = height - paddingTop - paddingBottom;
-  const barWidth = chartW / data.length * 0.6;
-  const barSpacing = chartW / data.length;
 
-  const toY = (count) => paddingTop + chartH - (count / maxActivated) * chartH;
+  const toX = (i) => paddingLeft + (i / (data.length - 1)) * chartW;
+  const toY = (v) => paddingTop + chartH - ((v / maxDiscount) * chartH);
+
+  const yLines = [0, 200, 400, 600];
+  const pointsStr = data.map((d, i) => `${toX(i)},${toY(d.discountAmount)}`).join(" ");
+
+  const areaPath = `M ${toX(0)},${toY(data[0].discountAmount)} ` +
+    data.slice(1).map((d, i) => `L ${toX(i + 1)},${toY(d.discountAmount)}`).join(" ") +
+    ` L ${toX(data.length - 1)},${paddingTop + chartH} L ${toX(0)},${paddingTop + chartH} Z`;
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
       <defs>
-        <filter id="barGlow">
+        <linearGradient id="discountGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#DD901D" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#DD901D" stopOpacity="0.03" />
+        </linearGradient>
+        <filter id="glow">
           <feGaussianBlur stdDeviation="2" result="coloredBlur" />
           <feMerge>
             <feMergeNode in="coloredBlur" />
@@ -648,34 +665,28 @@ const LoyaltyCardsChart = () => {
         </filter>
       </defs>
 
-      {[0, 2, 4, 6, 8].map((v) => (
+      {yLines.map((v) => (
         <g key={v}>
           <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
           <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
-            {v}
+            ₱{v}
           </text>
         </g>
       ))}
 
-      {data.map((d, i) => {
-        const barX = paddingLeft + i * barSpacing + (barSpacing - barWidth) / 2;
-        const barY = toY(d.activated);
-        const barH = height - paddingTop - paddingBottom - barY + paddingTop;
-
-        return (
-          <g key={d.level}>
-            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.85" filter="url(#barGlow)" />
-            <rect x={barX} y={barY} width={barWidth} height={barH} fill={d.color} rx="4" opacity="0.3" />
-            <text x={barX + barWidth / 2} y={barY - 8} textAnchor="middle" fill="#DD901D" fontSize="13" fontWeight="600" fontFamily="Inter, sans-serif">
-              {d.activated}
-            </text>
-          </g>
-        );
-      })}
+      <path d={areaPath} fill="url(#discountGrad)" />
+      <polyline points={pointsStr} fill="none" stroke="#DD901D" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" filter="url(#glow)" />
 
       {data.map((d, i) => (
-        <text key={d.level} x={paddingLeft + i * barSpacing + barSpacing / 2} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
-          {d.level}
+        <g key={d.time}>
+          <circle cx={toX(i)} cy={toY(d.discountAmount)} r="5" fill="#0a0908" stroke="#DD901D" strokeWidth="2.5" />
+          <circle cx={toX(i)} cy={toY(d.discountAmount)} r="2" fill="#DD901D" />
+        </g>
+      ))}
+
+      {data.map((d, i) => (
+        <text key={d.time} x={toX(i)} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
+          {d.time}
         </text>
       ))}
     </svg>
@@ -969,98 +980,62 @@ const NAV_ITEMS = [
   { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
-// ─── Metrics Carousel Data ────────────────────────────────────────────────
+// ─── Metrics Carousel Data (9 cards, showing 4 at a time) ──────────────────
 
-const METRICS_SETS = [
+const METRICS_CARDS = [
   {
-    id: "page1",
-    name: "Metrics",
-    cards: [
-      {
-        icon: <CalendarIcon />,
-        value: "24",
-        label: "Today's Appointments",
-        badge: { text: "+3", type: "green" },
-      },
-      {
-        icon: <QueueIcon />,
-        value: "8",
-        label: "In Queue Now",
-        badge: null,
-      },
-      {
-        icon: <RevenueIcon />,
-        value: "₱12,450",
-        label: "Revenue Today",
-        badge: { text: "+15%", type: "green" },
-      },
-      {
-        icon: <ClockIcon />,
-        value: "18 mins",
-        label: "Avg. Waiting Time",
-        badge: { text: "-5mins", type: "blue" },
-      },
-    ],
+    icon: <CalendarIcon />,
+    value: "24",
+    label: "Today's Appointments",
+    badge: { text: "+3", type: "green" },
   },
   {
-    id: "page2",
-    name: "Metrics",
-    cards: [
-      {
-        icon: <ScissorsIcon />,
-        value: "14",
-        label: "Promo Bookings Today",
-        badge: null,
-      },
-      {
-        icon: <CalendarIcon />,
-        value: "12",
-        label: "Loyalty Cards Activated",
-        badge: { text: "+5", type: "green" },
-      },
-      {
-        icon: <CalendarIcon />,
-        value: "16",
-        label: "Completed",
-        badge: null,
-      },
-      {
-        icon: <QueueIcon />,
-        value: "3",
-        label: "In Progress",
-        badge: null,
-      },
-    ],
+    icon: <QueueIcon />,
+    value: "8",
+    label: "In Queue Now",
+    badge: null,
   },
   {
-    id: "page3",
-    name: "Metrics",
-    cards: [
-      {
-        icon: <ClockIcon />,
-        value: "5",
-        label: "Pending",
-        badge: null,
-      },
-      {
-        icon: <RevenueIcon />,
-        value: "2",
-        label: "Cancelled",
-        badge: null,
-      },
-      {
-        icon: <CalendarIcon />,
-        value: "24",
-        label: "Today's Appointments",
-        badge: { text: "+3", type: "green" },
-      },
-      {
-        icon: <QueueIcon />,
-        value: "8",
-        label: "In Queue Now",
-        badge: null,
-      },
-    ],
+    icon: <RevenueIcon />,
+    value: "₱12,450",
+    label: "Revenue Today",
+    badge: { text: "+15%", type: "green" },
+  },
+  {
+    icon: <ClockIcon />,
+    value: "18 mins",
+    label: "Avg. Waiting Time",
+    badge: { text: "-5mins", type: "blue" },
+  },
+  {
+    icon: <ScissorsIcon />,
+    value: "14",
+    label: "Promo Bookings Today",
+    badge: null,
+  },
+  {
+    icon: <ScissorsIcon />,
+    value: "₱1,780",
+    label: "Discounts Applied Today",
+    badge: { text: "+12%", type: "green" },
+  },
+  {
+    icon: <CalendarIcon />,
+    value: "16",
+    label: "Completed",
+    badge: null,
+  },
+  {
+    icon: <QueueIcon />,
+    value: "3",
+    label: "In Progress",
+    badge: null,
+  },
+  {
+    icon: <RevenueIcon />,
+    value: "2",
+    label: "Cancelled",
+    badge: null,
   },
 ];
 
@@ -1130,14 +1105,20 @@ export default function SuperAdminDashboard() {
 
   // Metrics carousel handlers
   const handlePrevMetrics = () => {
-    setMetricsIndex((prev) => (prev === 0 ? METRICS_SETS.length - 1 : prev - 1));
+    setMetricsIndex((prev) => (prev === 0 ? METRICS_CARDS.length - 1 : prev - 1));
   };
 
   const handleNextMetrics = () => {
-    setMetricsIndex((prev) => (prev === METRICS_SETS.length - 1 ? 0 : prev + 1));
+    setMetricsIndex((prev) => (prev === METRICS_CARDS.length - 1 ? 0 : prev + 1));
   };
 
-  const currentMetrics = METRICS_SETS[metricsIndex];
+  // Get 4 cards starting from metricsIndex, wrapping around if needed
+  const visibleMetrics = [
+    METRICS_CARDS[metricsIndex],
+    METRICS_CARDS[(metricsIndex + 1) % METRICS_CARDS.length],
+    METRICS_CARDS[(metricsIndex + 2) % METRICS_CARDS.length],
+    METRICS_CARDS[(metricsIndex + 3) % METRICS_CARDS.length],
+  ];
 
   // Analytics carousel handlers
   const handlePrevAnalytics = () => {
@@ -1251,12 +1232,12 @@ export default function SuperAdminDashboard() {
           <div className="dash-stats-carousel-container">
             {/* Carousel Header - Title Only */}
             <div className="dash-stats-carousel-header">
-              <h3 className="dash-stats-set-title">{currentMetrics.name}</h3>
+              <h3 className="dash-stats-set-title">Metrics</h3>
             </div>
 
-            {/* Metrics Cards */}
+            {/* Metrics Cards - Display 4 at a time */}
             <div className="dash-stats-row">
-              {currentMetrics.cards.map((m, idx) => (
+              {visibleMetrics.map((m, idx) => (
                 <div
                   key={`${metricsIndex}-${idx}`}
                   className="dash-stat-card"
@@ -1273,14 +1254,12 @@ export default function SuperAdminDashboard() {
                       setSelectedChart("waitingTime");
                     } else if (label === "Promo Bookings Today") {
                       setSelectedChart("promoBookings");
-                    } else if (label === "Loyalty Cards Activated") {
-                      setSelectedChart("loyaltyCards");
+                    } else if (label === "Discounts Applied Today") {
+                      setSelectedChart("discounts");
                     } else if (label === "Completed") {
                       setSelectedChart("completed");
                     } else if (label === "In Progress") {
                       setSelectedChart("inProgress");
-                    } else if (label === "Pending") {
-                      setSelectedChart("pending");
                     } else if (label === "Cancelled") {
                       setSelectedChart("cancelled");
                     }
@@ -1322,14 +1301,14 @@ export default function SuperAdminDashboard() {
                   </svg>
                 </button>
 
-                {/* Carousel Dots */}
+                {/* Carousel Dots - 9 dots for 9 cards */}
                 <div className="dash-stats-carousel-dots">
-                  {METRICS_SETS.map((_, idx) => (
+                  {METRICS_CARDS.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setMetricsIndex(idx)}
                       className={`stats-carousel-dot ${idx === metricsIndex ? "active" : ""}`}
-                      title={`View ${METRICS_SETS[idx].name}`}
+                      title={`View card ${idx + 1}`}
                     />
                   ))}
                 </div>
@@ -1366,6 +1345,7 @@ export default function SuperAdminDashboard() {
                   {selectedChart === "inProgress" && "In Progress Appointments"}
                   {selectedChart === "pending" && "Pending Appointments"}
                   {selectedChart === "cancelled" && "Cancelled Appointments"}
+                  {selectedChart === "discounts" && "Discounts Applied Today"}
                 </h2>
                 <div className="chart-divider" />
               </div>
@@ -1377,7 +1357,7 @@ export default function SuperAdminDashboard() {
                 {selectedChart === "revenue" && <RevenueChart />}
                 {selectedChart === "waitingTime" && <WaitingTimeChart />}
                 {selectedChart === "promoBookings" && <PromoBookingsChart />}
-                {selectedChart === "loyaltyCards" && <LoyaltyCardsChart />}
+                {selectedChart === "discounts" && <LoyaltyCardsChart />}
                 {selectedChart === "completed" && <CompletedChart />}
                 {selectedChart === "inProgress" && <InProgressChart />}
                 {selectedChart === "pending" && <PendingChart />}

@@ -148,14 +148,64 @@ const PlusIcon = ({ size = 16, color = "currentColor" }) => (
 );
 
 // ═══════════════════════════════════════════════════════════════════
+// ICON COMPONENTS FOR SIDEBAR
+// ═══════════════════════════════════════════════════════════════════
+
+const LogoIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="7" cy="7" r="3.5" stroke="#000" strokeWidth="2"/>
+    <circle cx="7" cy="15" r="3.5" stroke="#000" strokeWidth="2"/>
+    <path d="M9.8 8.8l7 7M9.8 13.2L17 6.2" stroke="#000" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+const DashboardIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+    <rect x="10" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+    <rect x="1" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+    <rect x="10" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+  </svg>
+);
+
+const GridIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 2h5v5H2zM11 2h5v5h-5zM2 11h5v5H2zM11 11h5v5h-5z" stroke={color} strokeWidth="1.6" strokeLinejoin="round"/>
+  </svg>
+);
+
+const ActivityIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M1 9h16M1 1h16v14H1z" stroke={color} strokeWidth="1.6"/>
+    <circle cx="9" cy="6" r="2" fill={color}/>
+  </svg>
+);
+
+const UserGroupIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="6" cy="5" r="3" stroke={color} strokeWidth="1.6"/>
+    <circle cx="12" cy="7" r="2.5" stroke={color} strokeWidth="1.5"/>
+    <path d="M1 16c0-2.5 1.8-4 5-4s5 1.5 5 4" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M10 14c0-1.5 1-2.5 3-2.5s3 1 3 2.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const LogOutIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M7 15H3.5A1.5 1.5 0 012 13.5v-9A1.5 1.5 0 013.5 3H7" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M12 12l4-3-4-3M16 9H7" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+// ═══════════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════════
 
 const NAV_ITEMS = [
-  { label: "Home",         active: false },
-  { label: "Services",     active: false },
-  { label: "Live Status",  active: false },
-  { label: "Staff Status", active: true  },
+  { id: "home", label: "Dashboard", icon: DashboardIcon },
+  { id: "services", label: "Services", icon: GridIcon },
+  { id: "live-status", label: "Live Status", icon: ActivityIcon },
+  { id: "staff-status", label: "Staff Status", icon: UserGroupIcon },
 ];
 
 const STATS = [
@@ -234,6 +284,92 @@ const STAFF = [
 // ═══════════════════════════════════════════════════════════════════
 
 /* ── Navbar ── */
+/* ── Sidebar ── */
+const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpanded, onLogout }) => {
+  const navigate = useNavigate();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleNavClick = (itemId) => {
+    setActiveNav(itemId);
+    if (itemId === "home") {
+      navigate("/admin/dashboard");
+    } else if (itemId === "services") {
+      navigate("/admin/dashboard/services");
+    } else if (itemId === "live-status") {
+      navigate("/admin/dashboard/live-status");
+    } else if (itemId === "staff-status") {
+      navigate("/admin/dashboard/staff-status");
+    }
+  };
+
+  const handleLogout = () => {
+    logoutOperator();
+    navigate("/");
+  };
+
+  return (
+    <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
+      opacity: mounted ? 1 : 0,
+      transform: mounted ? "translateX(0)" : "translateX(-16px)",
+      transition: "all 0.5s ease"
+    }}>
+      {/* Logo + Toggle */}
+      <div className="sidebar-logo-section">
+        <button 
+          onClick={() => setSidebarExpanded(!sidebarExpanded)}
+          className="logo-toggle-btn"
+          title="Toggle sidebar"
+        >
+          <div className="logo-badge">
+            <LogoIcon />
+          </div>
+        </button>
+        {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
+      </div>
+
+      {/* Admin pill */}
+      {sidebarExpanded && (
+        <div className="admin-badge-pill">
+          <div className="admin-badge-circle">A</div>
+          <span className="admin-badge-text">Administrator</span>
+        </div>
+      )}
+
+      {/* Nav items */}
+      <nav className="sidebar-nav">
+        {NAV_ITEMS.map((item) => {
+          const isActive = activeNav === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleNavClick(item.id)}
+              className={`nav-button ${isActive ? "active" : ""}`}
+              title={item.label}
+            >
+              <item.icon color={isActive ? "#000" : "currentColor"} />
+              {sidebarExpanded && <span>{item.label}</span>}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Log Out */}
+      <div className="sidebar-logout-section">
+        <button onClick={handleLogout} className="logout-button" title="Log out">
+          <LogOutIcon />
+          {sidebarExpanded && <span>Log Out</span>}
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+/* ── Navbar ── */
 const AdminNavbar = ({ onLogout }) => {
   const navigate = useNavigate();
 
@@ -261,8 +397,8 @@ const AdminNavbar = ({ onLogout }) => {
       <nav className="admin-nav-links">
         {NAV_ITEMS.map((item) => (
           <button 
-            key={item.label} 
-            className={`admin-nav-link ${item.active ? "active" : ""}`}
+            key={item.id} 
+            className={`admin-nav-link ${item.id === "staff-status" ? "active" : ""}`}
             onClick={() => handleNavigation(item.label)}
           >
             {item.label}
@@ -283,7 +419,7 @@ const AdminNavbar = ({ onLogout }) => {
 };
 
 /* ── Page header + stat cards ── */
-const PageHeader = ({ stats = { available: 0, inService: 0, onBreak: 0, offToday: 0 }, loading = false, error = null }) => {
+const PageTitle = () => {
   const todayDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -291,6 +427,28 @@ const PageHeader = ({ stats = { available: 0, inService: 0, onBreak: 0, offToday
     day: 'numeric'
   });
 
+  return (
+    <div className="dash-page-header">
+      <div className="dash-page-title-block">
+        <h1 className="dash-page-title">Staff Status</h1>
+        <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
+      </div>
+      <div className="dash-page-actions">
+        <button className="dash-action-btn">
+          <BellIcon size={14} color="#fff" />
+          Notifications
+        </button>
+        <button className="dash-action-btn">
+          <SettingsIcon size={14} color="#fff" />
+          Settings
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ── Metric cards for hero section ── */
+const PageMetrics = ({ stats = { available: 0, inService: 0, onBreak: 0, offToday: 0 }, loading = false, error = null }) => {
   // Create dynamic stats array
   const dynamicStats = [
     { Icon: AvailableIcon,  iconColor: "#22c55e", value: `${stats.available}`, label: "Available Stylist", labelClass: "staff-stat-label-green" },
@@ -301,29 +459,11 @@ const PageHeader = ({ stats = { available: 0, inService: 0, onBreak: 0, offToday
 
   return (
     <>
-      <div className="dash-page-header">
-        <div className="dash-page-title-block">
-          <h1 className="dash-page-title">Admin Dashboard</h1>
-          <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
-        </div>
-        <div className="dash-page-actions">
-          <button className="dash-action-btn">
-            <BellIcon size={14} color="#fff" />
-            Notifications
-          </button>
-          <button className="dash-action-btn">
-            <SettingsIcon size={14} color="#fff" />
-            Settings
-          </button>
-        </div>
-      </div>
-
       {error && (
         <div style={{ padding: '10px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '4px', marginBottom: '10px' }}>
           Error loading staff: {error}
         </div>
       )}
-
       <div className="staff-stats-row">
         {dynamicStats.map(({ Icon, iconColor, value, label, labelClass }, i) => (
           <div key={i} className="dash-stat-card">
@@ -655,6 +795,22 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [statusUpdateModal, setStatusUpdateModal] = useState({ isOpen: false, staff: null });
   const [manageServiceModal, setManageServiceModal] = useState({ isOpen: false, staff: null });
+  const [activeNav, setActiveNav] = useState("staff-status");
+  const [mounted, setMounted] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    const saved = localStorage.getItem('adminSidebarExpanded');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  // Persist sidebar state to localStorage
+  useEffect(() => {
+    localStorage.setItem('adminSidebarExpanded', JSON.stringify(sidebarExpanded));
+  }, [sidebarExpanded]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 80);
+    return () => clearTimeout(t);
+  }, []);
 
   // Sample service categories and services data
   // TODO: Replace with actual API call to fetch categories and services
@@ -824,13 +980,42 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   };
 
   return (
-    <div className="dash-root">
-      <AdminNavbar onLogout={handleLogout} />
+    <div className="super-admin-container">
+      {/* Sidebar */}
+      <AdminSidebar 
+        activeNav={activeNav}
+        setActiveNav={setActiveNav}
+        sidebarExpanded={sidebarExpanded}
+        setSidebarExpanded={setSidebarExpanded}
+        onLogout={handleLogout}
+      />
 
-      <main className="dash-main">
-        <PageHeader date={date} stats={stats} loading={loading} error={error} />
+      {/* Main Content */}
+      <div className="super-admin-main">
+        {/* Dashboard Header - Fixed Title and Actions */}
+        <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
+          <div>
+            <h1 className="dash-page-title">Staff Status</h1>
+            <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+          </div>
+          <div className="dash-page-actions">
+            <button className="dash-action-btn">
+              <BellIcon size={14} color="#fff" />
+              Notifications
+            </button>
+            <button className="dash-action-btn">
+              <SettingsIcon size={14} color="#fff" />
+              Settings
+            </button>
+          </div>
+        </header>
 
-        <div className="staff-page-grid">
+        <main className="dashboard-main">
+          {/* Metrics Cards - Hero Section */}
+          <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+            <PageMetrics stats={stats} loading={loading} error={error} />
+          </div>
+          <div className="staff-page-grid">
           {/* Left — Staff List */}
           <StaffListPanel 
             staff={staff}
@@ -852,7 +1037,8 @@ export const AdminDashboardStaffStatus = ({ date }) => {
             <AnalyticsPanel />
           </div>
         </div>
-      </main>
+        </main>
+      </div>
 
       {/* Customer History Modal */}
       <CustomerHistoryModal 
@@ -906,3 +1092,4 @@ export const AdminDashboardStaffStatus = ({ date }) => {
 };
 
 export default AdminDashboardStaffStatus;
+
