@@ -11,19 +11,20 @@ export default async (req, res) => {
   }
 
   try {
-    const { service_name, category, description, price, availability } = req.body;
+    const { service_name, name, category, description, price, availability } = req.body;
+    const serviceName = service_name || name; // Support both field names
 
-    console.log('[Services:Create] Creating new service:', { service_name, category, price });
+    console.log('[Services:Create] Creating new service:', { serviceName, category, price });
 
     // Validate required fields
-    if (!service_name || !category) {
+    if (!serviceName || !category) {
       return res.status(400).json({ 
-        error: 'Missing required fields: service_name, category' 
+        error: 'Missing required fields: name/service_name, category' 
       });
     }
 
     const insertData = {
-      service_name,
+      name: serviceName,
       category,
       description: description || '',
       price: parseFloat(price) || 0,

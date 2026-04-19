@@ -5781,7 +5781,7 @@
   /* ── Stat cards row (status-specific colors) ── */
   .live-stats-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     width: 100%;
   }
@@ -6138,9 +6138,16 @@
 
   .live-schedule-header {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 8px;
     margin-bottom: 4px;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .live-schedule-toggle-btn {
+    margin-top: 0;
+    align-self: flex-start;
   }
 
   .live-schedule-header > div:not(.live-schedule-header-title-row) {

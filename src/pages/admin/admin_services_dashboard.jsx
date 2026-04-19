@@ -495,8 +495,8 @@ export const AdminDashboardServices = ({ date }) => {
         
         // Transform services data to include formatted price and availability
         const transformedServices = servicesData.map(s => {
-          // Handle both 'name' and 'service_name' column variants
-          const serviceName = s.service_name || s.name || 'Unknown';
+          // Database uses 'name' column
+          const serviceName = s.name || 'Unknown';
           
           return {
             id: s.id,
@@ -583,6 +583,7 @@ export const AdminDashboardServices = ({ date }) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            name: serviceData.name,
             service_name: serviceData.name,
             category: serviceData.category,
             description: serviceData.meta,
@@ -601,7 +602,7 @@ export const AdminDashboardServices = ({ date }) => {
         // Add new service to list
         setServices(prev => [...prev, {
           id: newService.id,
-          name: newService.service_name || newService.name,
+          name: newService.name,
           category: newService.category,
           description: newService.description,
           price: `₱${parseFloat(newService.price).toFixed(2)}`,

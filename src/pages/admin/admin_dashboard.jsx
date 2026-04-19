@@ -544,6 +544,7 @@ const StaffStatus = () => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -634,7 +635,12 @@ const StaffStatus = () => {
     <div className="dash-sidebar-panel">
       <div className="dash-sidebar-header">
         <h3 className="dash-sidebar-title">Staff Status</h3>
-        <button className="dash-panel-manage-btn" onClick={handleManageClick}>Manage</button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button className="dash-panel-manage-btn" onClick={handleManageClick} style={{ color: "#fff" }}>Manage</button>
+          <button className="dash-panel-manage-btn" onClick={() => setIsExpanded(!isExpanded)}>
+            {isExpanded ? "See less" : "See more"}
+          </button>
+        </div>
       </div>
       
       {loading && (
@@ -650,7 +656,7 @@ const StaffStatus = () => {
       )}
       
       {!loading && !error && (
-        <div className="dash-staff-list">
+        <div className="dash-staff-list" style={{ maxHeight: isExpanded ? "none" : "200px", overflow: "hidden" }}>
           {staff.map((s, i) => (
             <div key={i} className="dash-staff-row">
               <div className="dash-staff-left">

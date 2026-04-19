@@ -123,7 +123,6 @@ const NAV_ITEMS = [
 const STATS = [
   { Icon: CheckCircleIcon, iconColor: "#22c55e", value: "16", label: "Completed",   labelClass: "live-stat-label-green" },
   { Icon: InProgressIcon,  iconColor: "#4387ef", value: "3",  label: "In Progress", labelClass: "live-stat-label-blue"  },
-  { Icon: PendingIcon,     iconColor: "#dd901d", value: "5",  label: "Pending",     labelClass: "live-stat-label-amber" },
   { Icon: CancelledIcon,   iconColor: "#ef4444", value: "2",  label: "Cancelled",   labelClass: "live-stat-label-red"   },
 ];
 

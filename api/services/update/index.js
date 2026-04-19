@@ -29,7 +29,7 @@ export default async (req, res) => {
 
     // Prepare update data - handle both 'description' and 'meta' field names
     const updateData = {
-      service_name: name,
+      name: name,
       category,
       description: description || meta || '',
       price: parseFloat(price) || 0,
