@@ -347,7 +347,7 @@ const PageMetrics = () => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService }) => {
+const QueueItem = ({ id, type, number, name, staff, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -360,7 +360,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
   const handleCompleteService = () => {
     if (onCompleteService) {
-      onCompleteService(id, name, service);
+      onCompleteService(id, name, service, staff);
     }
   };
 
@@ -449,7 +449,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
 
 /* ── Live Queue panel ── */
-const LiveQueuePanel = ({ onOpenWalkInModal }) => {
+const LiveQueuePanel = ({ onOpenWalkInModal, onServiceCompleted }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
@@ -495,7 +495,7 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
     setExpandedItemId(expandedItemId === id ? null : id);
   };
 
-  const handleCompleteService = async (itemId, customerName, service) => {
+  const handleCompleteService = async (itemId, customerName, service, staffName) => {
     try {
       console.log(`[LiveQueue] Completing service for ${customerName}: ${service}`);
       
@@ -504,7 +504,8 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: itemId,
-          status: 'done'
+          status: 'done',
+          staffName: staffName
         })
       });
 
@@ -518,6 +519,11 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
       // Remove from current appointments locally without reloading
       setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
       setExpandedItemId(null);
+      
+      // Trigger schedule panel refresh
+      if (onServiceCompleted) {
+        onServiceCompleted();
+      }
     } catch (error) {
       console.error(`[LiveQueue] Error completing service:`, error);
       alert('Failed to mark service as complete: ' + error.message);
@@ -531,6 +537,7 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
       type: type,
       number: index + 1,
       name: apt.name,
+      staff: apt.staff,
       service: `${apt.service} • ${apt.staff}`,
       statusTop: type === 'active' ? 'Now' : convertTo12HourFormat(apt.time),
       statusSub: type === 'active' ? 'In Progress' : 'Waiting',
@@ -631,17 +638,38 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
 };
 
 /* ── Single schedule row ── */
-const ScheduleRow = ({ stylist, time, client, service, status, dotClass }) => {
+const ScheduleRow = ({ stylist, time, client, service, status, dotClass, staffStatus }) => {
   const isActive = status === "active";
   const isDone   = status === "done";
   const isNext   = status === "next";
+  const isOff    = staffStatus === "off";
 
   const StatusIcon = isDone   ? () => <DoneIcon size={14} color="#22c55e" />
                    : isActive ? () => <PlayIcon size={14} color="#dd901d" />
                    :            () => <NextIcon size={14} color="#988f81" />;
 
   return (
-    <div className={`live-schedule-row ${isActive ? "live-schedule-row-active" : ""}`}>
+    <div 
+      className={`live-schedule-row ${isActive ? "live-schedule-row-active" : ""}`}
+      style={{
+        opacity: isOff ? 0.5 : 1,
+        position: 'relative'
+      }}
+    >
+      {isOff && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(128, 128, 128, 0.3)',
+          borderRadius: '8px',
+          zIndex: 1,
+          pointerEvents: 'none'
+        }} />
+      )}
+      
       <div className="live-schedule-left">
         <div className="live-schedule-stylist">
           <div className="live-sched-name-row">
@@ -664,7 +692,7 @@ const ScheduleRow = ({ stylist, time, client, service, status, dotClass }) => {
 };
 
 /* ── Today's Schedule panel ── */
-const SchedulePanel = ({ date = "Dec 7, 2024" }) => {
+const SchedulePanel = ({ date = "Dec 7, 2024", refreshTrigger = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -705,13 +733,27 @@ const SchedulePanel = ({ date = "Dec 7, 2024" }) => {
             apt.staff === s.names || apt.staff === s.id
           );
 
+          const staffStatus = s.status; // 'off', 'avail', 'no slots'
+          const inService = (s.in_service || '').toLowerCase(); // 'avail', 'in-service', etc.
+
+          // Determine dot color based on in_service field
+          let dotColor = 'live-sched-dot-amber'; // default
+          if (staffStatus === 'off') {
+            dotColor = 'live-sched-dot-grey';
+          } else if (inService === 'avail') {
+            dotColor = 'live-sched-dot-green';
+          } else if (inService === 'in-service') {
+            dotColor = 'live-sched-dot-yellow';
+          }
+
           return {
             stylist: s.names || `Staff ${index + 1}`,
             time: appointment?.time ? convertTo12HourFormat(appointment.time) : '—',
             client: appointment?.name || 'No appointment',
             service: appointment?.service || 'N/A',
             status: appointment ? (currentAppointments.includes(appointment) ? 'active' : 'next') : 'next',
-            dotClass: currentAppointments.includes(appointment) ? 'live-sched-dot-green' : 'live-sched-dot-amber'
+            staffStatus: staffStatus,
+            dotClass: dotColor
           };
         });
 
@@ -726,7 +768,7 @@ const SchedulePanel = ({ date = "Dec 7, 2024" }) => {
     };
 
     fetchScheduleData();
-  }, []);
+  }, [refreshTrigger]);
 
   const scheduleToDisplay = schedule.length > 0 ? schedule : SCHEDULE;
 
@@ -795,6 +837,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   const [showWalkInModal, setShowWalkInModal] = useState(false);
   const [activeNav, setActiveNav] = useState("live-status");
   const [mounted, setMounted] = useState(false);
+  const [scheduleRefreshTrigger, setScheduleRefreshTrigger] = useState(0);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -860,11 +903,11 @@ export const AdminDashboardLiveStatus = ({ date }) => {
 
         <div className="live-page-grid">
           {/* Left — Live Queue */}
-          <LiveQueuePanel onOpenWalkInModal={() => setShowWalkInModal(true)} />
+          <LiveQueuePanel onOpenWalkInModal={() => setShowWalkInModal(true)} onServiceCompleted={() => setScheduleRefreshTrigger(prev => prev + 1)} />
 
           {/* Right — Schedule + Analytics */}
           <div className="live-sidebar">
-            <SchedulePanel date={new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} />
+            <SchedulePanel date={new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} refreshTrigger={scheduleRefreshTrigger} />
             <AnalyticsPanel />
           </div>
         </div>

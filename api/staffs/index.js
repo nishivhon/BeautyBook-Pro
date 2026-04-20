@@ -22,7 +22,7 @@ export default async (req, res) => {
     
     const { data: staff, error } = await supabase
       .from('staffs')
-      .select('id, names, status, category_specialty')
+      .select('id, names, status, category_specialty, in_service')
       .order('id', { ascending: true });
 
     if (error) {

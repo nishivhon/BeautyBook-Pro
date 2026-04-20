@@ -8,7 +8,7 @@ export default async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { id, status } = req.body;
+  const { id, status, staffName } = req.body;
 
   if (!id || !status) {
     return res.status(400).json({ error: 'ID and status are required' });
@@ -33,6 +33,7 @@ export default async (req, res) => {
 
     console.log(`[UpdateStatus] Updating appointment ${id} to status: ${status}`);
 
+    // Update appointment status
     const { data, error } = await supabase
       .from('available_slots')
       .update({ status })
@@ -45,6 +46,23 @@ export default async (req, res) => {
     }
 
     console.log(`[UpdateStatus] Successfully updated appointment ${id}`);
+
+    // If status is 'done' and staffName is provided, update staff in_service to 'avail'
+    if (status === 'done' && staffName) {
+      console.log(`[UpdateStatus] Updating staff ${staffName} in_service to avail`);
+      
+      const { error: staffError } = await supabase
+        .from('staffs')
+        .update({ in_service: 'avail' })
+        .eq('names', staffName);
+
+      if (staffError) {
+        console.error('[UpdateStatus] Staff update error:', staffError);
+        // Don't fail the request if staff update fails - appointment status was already updated
+      } else {
+        console.log(`[UpdateStatus] Successfully updated staff ${staffName} in_service`);
+      }
+    }
 
     res.status(200).json({
       success: true,
