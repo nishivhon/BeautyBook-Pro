@@ -98,7 +98,8 @@ export default async (req, res) => {
           newSlots.push({
             date: targetDate,
             time_slot: time,
-            availability: true
+            availability: true,
+            status: null
           });
         });
 
@@ -107,7 +108,8 @@ export default async (req, res) => {
           newSlots.push({
             date: targetDate,
             time_slot: time,
-            availability: true
+            availability: true,
+            status: null
           });
         });
 

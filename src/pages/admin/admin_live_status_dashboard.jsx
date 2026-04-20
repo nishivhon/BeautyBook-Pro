@@ -510,7 +510,7 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
       number: index + 1,
       name: apt.name,
       service: `${apt.service} • ${apt.staff}`,
-      statusTop: type === 'active' ? 'Now' : `${Math.random() * 40 | 0} mins`,
+      statusTop: type === 'active' ? 'Now' : convertTo12HourFormat(apt.time),
       statusSub: type === 'active' ? 'In Progress' : 'Waiting',
       details: {
         serviceSelected: apt.service,
@@ -644,6 +644,69 @@ const ScheduleRow = ({ stylist, time, client, service, status, dotClass }) => {
 /* ── Today's Schedule panel ── */
 const SchedulePanel = ({ date = "Dec 7, 2024" }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [schedule, setSchedule] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchScheduleData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch staff data
+        const staffRes = await fetch('/api/staffs');
+        const staff = await staffRes.json();
+        console.log('[SchedulePanel] Fetched staff:', staff);
+
+        // Fetch current and pending appointments
+        const currentRes = await fetch('/api/appointments/read/by-status?status=current');
+        const currentData = await currentRes.json();
+        const currentAppointments = currentData.appointments || [];
+
+        const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
+        const pendingData = await pendingRes.json();
+        const pendingAppointments = pendingData.appointments || [];
+
+        // Combine and sort by time
+        const allAppointments = [...currentAppointments, ...pendingAppointments].sort((a, b) => {
+          if (!a.time) return 1;
+          if (!b.time) return -1;
+          return a.time.localeCompare(b.time);
+        });
+        console.log('[SchedulePanel] Fetched appointments:', allAppointments);
+
+        // Build schedule by matching staff with appointments
+        const scheduleData = staff.map((s, index) => {
+          // Find appointment for this staff member (prefer current over pending)
+          const appointment = currentAppointments.find(apt => 
+            apt.staff === s.names || apt.staff === s.id
+          ) || pendingAppointments.find(apt => 
+            apt.staff === s.names || apt.staff === s.id
+          );
+
+          return {
+            stylist: s.names || `Staff ${index + 1}`,
+            time: appointment?.time ? convertTo12HourFormat(appointment.time) : '—',
+            client: appointment?.name || 'No appointment',
+            service: appointment?.service || 'N/A',
+            status: appointment ? (currentAppointments.includes(appointment) ? 'active' : 'next') : 'next',
+            dotClass: currentAppointments.includes(appointment) ? 'live-sched-dot-green' : 'live-sched-dot-amber'
+          };
+        });
+
+        setSchedule(scheduleData);
+      } catch (error) {
+        console.error('[SchedulePanel] Error fetching schedule:', error);
+        // Fall back to hardcoded data
+        setSchedule(SCHEDULE);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchScheduleData();
+  }, []);
+
+  const scheduleToDisplay = schedule.length > 0 ? schedule : SCHEDULE;
 
   return (
     <div className="live-schedule-panel">
@@ -661,13 +724,26 @@ const SchedulePanel = ({ date = "Dec 7, 2024" }) => {
       </div>
 
       <div className={isExpanded ? "live-schedule-scroll" : "live-schedule-scroll-limited"}>
-        {SCHEDULE.map((item, i) => (
-          <ScheduleRow key={i} {...item} />
-        ))}
+        {loading ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>Loading schedule...</div>
+        ) : (
+          scheduleToDisplay.map((item, i) => (
+            <ScheduleRow key={i} {...item} />
+          ))
+        )}
       </div>
     </div>
   );
 };
+
+// Helper function to convert 24-hour time to 12-hour format
+function convertTo12HourFormat(time24) {
+  if (!time24) return '—';
+  const [hours, minutes] = time24.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hours12 = hours % 12 || 12;
+  return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
 
 /* ── Analytics panel ── */
 const AnalyticsPanel = () => (
@@ -766,7 +842,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
 
           {/* Right — Schedule + Analytics */}
           <div className="live-sidebar">
-            <SchedulePanel date="Dec 7, 2024" />
+            <SchedulePanel date={new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} />
             <AnalyticsPanel />
           </div>
         </div>
