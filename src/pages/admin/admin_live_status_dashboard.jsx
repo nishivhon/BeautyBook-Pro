@@ -496,10 +496,32 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
   };
 
   const handleCompleteService = async (itemId, customerName, service) => {
-    console.log(`Service completed for ${customerName}: ${service}`);
-    // Here you can integrate with your API to mark the service as complete
-    // For now, just logging the data
-    // You could also remove the item from the queue or update its status
+    try {
+      console.log(`[LiveQueue] Completing service for ${customerName}: ${service}`);
+      
+      const response = await fetch('/api/appointments/update/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: itemId,
+          status: 'done'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to mark service as complete: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`[LiveQueue] Service marked as complete:`, result);
+      
+      // Remove from current appointments locally without reloading
+      setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
+      setExpandedItemId(null);
+    } catch (error) {
+      console.error(`[LiveQueue] Error completing service:`, error);
+      alert('Failed to mark service as complete: ' + error.message);
+    }
   };
 
   // Transform appointments to queue item format
