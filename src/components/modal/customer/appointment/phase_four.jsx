@@ -689,6 +689,10 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
         onCancel={() => {
           setShowReceiptReminder(false);
           generateReceipt();
+          // Reopen the dialog after a brief delay so user can download again
+          setTimeout(() => {
+            setShowReceiptReminder(true);
+          }, 100);
         }}
       />
     </>
