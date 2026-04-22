@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { AddWalkInModal } from "../../components/modal/admin/add_walkin";
+import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -106,6 +107,13 @@ const DownloadIcon = ({ size = 14, color = "currentColor" }) => (
     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     <polyline points="7 10 12 15 17 10" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     <line x1="12" y1="15" x2="12" y2="3" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
+const ProceedIcon = ({ size = 14, color = "#fff" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M10 8l6 4-6 4V8z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
   </svg>
 );
 
@@ -347,7 +355,7 @@ const PageMetrics = () => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService }) => {
+const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, onProceedClick, isProceedEnabled = true }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -361,6 +369,12 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
   const handleCompleteService = () => {
     if (onCompleteService) {
       onCompleteService(id, name, service);
+    }
+  };
+
+  const handleProceed = () => {
+    if (onProceedClick && isProceedEnabled) {
+      onProceedClick(id, name, service);
     }
   };
 
@@ -439,6 +453,44 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
                 Complete Service
               </button>
             )}
+
+            {showProceedButton && !isActive && (
+              <button
+                onClick={handleProceed}
+                disabled={!isProceedEnabled}
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  background: isProceedEnabled ? "#dd901d" : "#ccc",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.9rem",
+                  fontWeight: "600",
+                  cursor: isProceedEnabled ? "pointer" : "not-allowed",
+                  fontFamily: "Inter, sans-serif",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  transition: "all 0.2s ease",
+                  opacity: isProceedEnabled ? 1 : 0.6,
+                }}
+                onMouseOver={(e) => {
+                  if (isProceedEnabled) {
+                    e.target.style.backgroundColor = "#c47a14";
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (isProceedEnabled) {
+                    e.target.style.backgroundColor = "#dd901d";
+                  }
+                }}
+              >
+                <ProceedIcon size={14} color="#fff" />
+                Proceed
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -449,7 +501,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
 
 /* ── Live Queue panel ── */
-const LiveQueuePanel = ({ onOpenWalkInModal }) => {
+const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
@@ -589,15 +641,21 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
                 {section.items.length === 0 ? (
                   <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
                 ) : (
-                  section.items.map((item, ii) => (
-                    <QueueItem 
-                      key={ii} 
-                      {...item}
-                      isExpanded={expandedItemId === item.id}
-                      onExpandToggle={handleExpandToggle}
-                      onCompleteService={handleCompleteService}
-                    />
-                  ))
+                  section.items.map((item, ii) => {
+                    const isUpNext = section.label === "Up Next";
+                    return (
+                      <QueueItem 
+                        key={ii} 
+                        {...item}
+                        isExpanded={expandedItemId === item.id}
+                        onExpandToggle={handleExpandToggle}
+                        onCompleteService={handleCompleteService}
+                        showProceedButton={isUpNext}
+                        isProceedEnabled={ii < 3}
+                        onProceedClick={onProceedClick}
+                      />
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -695,6 +753,8 @@ const AnalyticsPanel = () => (
 export const AdminDashboardLiveStatus = ({ date }) => {
   const navigate = useNavigate();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [proceedConfirmId, setProceedConfirmId] = useState(null);
+  const [proceedConfirmData, setProceedConfirmData] = useState(null);
   const [activeNav, setActiveNav] = useState("live-status");
   const [mounted, setMounted] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
@@ -716,6 +776,12 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     console.log("Walk-in added:", walkInData);
     // Here you can integrate with your API or state management
     // For now, just logging the data
+  };
+
+  const handleCompleteServiceFromDialog = (itemId, customerName, service) => {
+    // Call the completion logic here
+    console.log(`Service completed for ${customerName}: ${service}`);
+    setProceedConfirmId(null);
   };
 
   useEffect(() => {
@@ -762,7 +828,13 @@ export const AdminDashboardLiveStatus = ({ date }) => {
 
         <div className="live-page-grid">
           {/* Left — Live Queue */}
-          <LiveQueuePanel onOpenWalkInModal={() => setShowWalkInModal(true)} />
+          <LiveQueuePanel 
+            onOpenWalkInModal={() => setShowWalkInModal(true)}
+            onProceedClick={(id, name, service) => {
+              setProceedConfirmId(id);
+              setProceedConfirmData({ name, service });
+            }}
+          />
 
           {/* Right — Schedule + Analytics */}
           <div className="live-sidebar">
@@ -779,6 +851,18 @@ export const AdminDashboardLiveStatus = ({ date }) => {
         onClose={() => setShowWalkInModal(false)}
         onSubmit={handleAddWalkIn}
       />
+
+      {proceedConfirmId && (
+        <ConfirmationDialog
+          isOpen={true}
+          title="Move to Serving?"
+          message={`Confirm that a stylist is available and ready to serve ${proceedConfirmData?.name} for ${proceedConfirmData?.service}.`}
+          confirmText="Yes, Proceed"
+          cancelText="Cancel"
+          onConfirm={() => handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData.name, proceedConfirmData.service)}
+          onCancel={() => setProceedConfirmId(null)}
+        />
+      )}
     </div>
   );
 };

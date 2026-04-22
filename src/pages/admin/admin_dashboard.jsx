@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { AddWalkInModal } from "../../components/modal/admin/add_walkin";
+import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -116,6 +117,13 @@ const DownloadIcon = ({ size = 14, color = "currentColor" }) => (
     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     <polyline points="7 10 12 15 17 10" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     <line x1="12" y1="15" x2="12" y2="3" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
+const ProceedIcon = ({ size = 14, color = "#fff" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M10 8l6 4-6 4V8z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
   </svg>
 );
 
@@ -347,7 +355,7 @@ const PageMetrics = ({ stats }) => (
   </div>
 );
 
-const LiveQueue = ({ onOpenWalkInModal }) => {
+const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
@@ -456,7 +464,7 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
     }
   ].filter(section => section.items.length > 0); // Only show sections with items
 
-  const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, onCompleteService }) => {
+  const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, onCompleteService, showProceedButton = false, onProceed, isProceedEnabled = true, onProceedClick }) => {
     const isActive = type === "active";
     const isCancelled = type === "cancelled";
     const rowClass = isActive ? "live-queue-row-active"
@@ -471,6 +479,12 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
     const handleCompleteService = () => {
       if (onCompleteService) {
         onCompleteService(id, name, service);
+      }
+    };
+
+    const handleProceed = () => {
+      if (isProceedEnabled && onProceedClick) {
+        onProceedClick(id, name, service);
       }
     };
 
@@ -549,6 +563,44 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
                   Complete Service
                 </button>
               )}
+
+              {showProceedButton && !isActive && (
+                <button
+                  onClick={handleProceed}
+                  disabled={!isProceedEnabled}
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    background: isProceedEnabled ? "#dd901d" : "#ccc",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "0.9rem",
+                    fontWeight: "600",
+                    cursor: isProceedEnabled ? "pointer" : "not-allowed",
+                    fontFamily: "Inter, sans-serif",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    transition: "all 0.2s ease",
+                    opacity: isProceedEnabled ? 1 : 0.6,
+                  }}
+                  onMouseOver={(e) => {
+                    if (isProceedEnabled) {
+                      e.target.style.backgroundColor = "#c47a14";
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (isProceedEnabled) {
+                      e.target.style.backgroundColor = "#dd901d";
+                    }
+                  }}
+                >
+                  <ProceedIcon size={14} color="#fff" />
+                  Proceed
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -608,9 +660,19 @@ const LiveQueue = ({ onOpenWalkInModal }) => {
                 {section.items.length === 0 ? (
                   <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
                 ) : (
-                  section.items.map((item, ii) => (
-                    <QueueItem key={ii} {...item} onCompleteService={handleCompleteService} />
-                  ))
+                  section.items.map((item, ii) => {
+                    const isUpNext = section.label === "Up Next";
+                    return (
+                      <QueueItem 
+                        key={ii} 
+                        {...item} 
+                        onCompleteService={handleCompleteService}
+                        showProceedButton={isUpNext}
+                        isProceedEnabled={ii < 3}
+                        onProceedClick={onProceedClick}
+                      />
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -848,6 +910,8 @@ const AnalyticsPanel = () => (
 export const AdminDashboard = ({ date }) => {
   const navigate = useNavigate();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [proceedConfirmId, setProceedConfirmId] = useState(null);
+  const [proceedConfirmData, setProceedConfirmData] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
   const [doneAppointments, setDoneAppointments] = useState([]);
@@ -993,6 +1057,10 @@ export const AdminDashboard = ({ date }) => {
           <div className="dash-content-grid">
             <LiveQueue 
               onOpenWalkInModal={() => setShowWalkInModal(true)}
+              onProceedClick={(id, name, service) => {
+                setProceedConfirmId(id);
+                setProceedConfirmData({ name, service });
+              }}
             />
 
             <div className="dash-sidebar">
@@ -1009,6 +1077,18 @@ export const AdminDashboard = ({ date }) => {
         onClose={() => setShowWalkInModal(false)}
         onSubmit={handleAddWalkIn}
       />
+
+      {proceedConfirmId && (
+        <ConfirmationDialog
+          isOpen={true}
+          title="Move to Serving?"
+          message={`Confirm that a stylist is available and ready to serve ${proceedConfirmData?.name} for ${proceedConfirmData?.service}.`}
+          confirmText="Yes, Proceed"
+          cancelText="Cancel"
+          onConfirm={() => handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData.name, proceedConfirmData.service)}
+          onCancel={() => setProceedConfirmId(null)}
+        />
+      )}
     </div>
   );
 };
