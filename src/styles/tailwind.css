@@ -6383,6 +6383,8 @@
 
   .live-sched-dot-green  { background: #22c55e; }
   .live-sched-dot-amber  { background: var(--color-amber); }
+  .live-sched-dot-yellow { background: #eab308; }
+  .live-sched-dot-grey   { background: #9ca3af; }
 
   /* schedule footer */
   .live-schedule-footer {

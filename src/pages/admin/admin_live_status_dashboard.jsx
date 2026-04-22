@@ -355,7 +355,7 @@ const PageMetrics = () => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, onProceedClick, isProceedEnabled = true }) => {
+const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -368,7 +368,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
   const handleCompleteService = () => {
     if (onCompleteService) {
-      onCompleteService(id, name, service);
+      onCompleteService(id, name, service, staff);
     }
   };
 
@@ -501,7 +501,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
 
 /* ── Live Queue panel ── */
-const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
+const LiveQueuePanel = ({ onOpenWalkInModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
@@ -547,11 +547,39 @@ const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
     setExpandedItemId(expandedItemId === id ? null : id);
   };
 
-  const handleCompleteService = async (itemId, customerName, service) => {
-    console.log(`Service completed for ${customerName}: ${service}`);
-    // Here you can integrate with your API to mark the service as complete
-    // For now, just logging the data
-    // You could also remove the item from the queue or update its status
+  const handleCompleteService = async (itemId, customerName, service, staffName) => {
+    try {
+      console.log(`[LiveQueue] Completing service for ${customerName}: ${service}`);
+      
+      const response = await fetch('/api/appointments/update/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: itemId,
+          status: 'done',
+          staffName: staffName
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to mark service as complete: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`[LiveQueue] Service marked as complete:`, result);
+      
+      // Remove from current appointments locally without reloading
+      setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
+      setExpandedItemId(null);
+      
+      // Trigger schedule panel refresh
+      if (onServiceCompleted) {
+        onServiceCompleted();
+      }
+    } catch (error) {
+      console.error(`[LiveQueue] Error completing service:`, error);
+      alert('Failed to mark service as complete: ' + error.message);
+    }
   };
 
   // Transform appointments to queue item format
@@ -561,8 +589,9 @@ const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
       type: type,
       number: index + 1,
       name: apt.name,
+      staff: apt.staff,
       service: `${apt.service} • ${apt.staff}`,
-      statusTop: type === 'active' ? 'Now' : `${Math.random() * 40 | 0} mins`,
+      statusTop: type === 'active' ? 'Now' : convertTo12HourFormat(apt.time),
       statusSub: type === 'active' ? 'In Progress' : 'Waiting',
       details: {
         serviceSelected: apt.service,
@@ -667,17 +696,38 @@ const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
 };
 
 /* ── Single schedule row ── */
-const ScheduleRow = ({ stylist, time, client, service, status, dotClass }) => {
+const ScheduleRow = ({ stylist, time, client, service, status, dotClass, staffStatus }) => {
   const isActive = status === "active";
   const isDone   = status === "done";
   const isNext   = status === "next";
+  const isOff    = staffStatus === "off";
 
   const StatusIcon = isDone   ? () => <DoneIcon size={14} color="#22c55e" />
                    : isActive ? () => <PlayIcon size={14} color="#dd901d" />
                    :            () => <NextIcon size={14} color="#988f81" />;
 
   return (
-    <div className={`live-schedule-row ${isActive ? "live-schedule-row-active" : ""}`}>
+    <div 
+      className={`live-schedule-row ${isActive ? "live-schedule-row-active" : ""}`}
+      style={{
+        opacity: isOff ? 0.5 : 1,
+        position: 'relative'
+      }}
+    >
+      {isOff && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(128, 128, 128, 0.3)',
+          borderRadius: '8px',
+          zIndex: 1,
+          pointerEvents: 'none'
+        }} />
+      )}
+      
       <div className="live-schedule-left">
         <div className="live-schedule-stylist">
           <div className="live-sched-name-row">
@@ -700,8 +750,85 @@ const ScheduleRow = ({ stylist, time, client, service, status, dotClass }) => {
 };
 
 /* ── Today's Schedule panel ── */
-const SchedulePanel = ({ date = "Dec 7, 2024" }) => {
+const SchedulePanel = ({ date = "Dec 7, 2024", refreshTrigger = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [schedule, setSchedule] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchScheduleData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch staff data
+        const staffRes = await fetch('/api/staffs');
+        const staff = await staffRes.json();
+        console.log('[SchedulePanel] Fetched staff:', staff);
+
+        // Fetch current and pending appointments
+        const currentRes = await fetch('/api/appointments/read/by-status?status=current');
+        const currentData = await currentRes.json();
+        const currentAppointments = currentData.appointments || [];
+
+        const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
+        const pendingData = await pendingRes.json();
+        const pendingAppointments = pendingData.appointments || [];
+
+        // Combine and sort by time
+        const allAppointments = [...currentAppointments, ...pendingAppointments].sort((a, b) => {
+          if (!a.time) return 1;
+          if (!b.time) return -1;
+          return a.time.localeCompare(b.time);
+        });
+        console.log('[SchedulePanel] Fetched appointments:', allAppointments);
+
+        // Build schedule by matching staff with appointments
+        const scheduleData = staff.map((s, index) => {
+          // Find appointment for this staff member (prefer current over pending)
+          const appointment = currentAppointments.find(apt => 
+            apt.staff === s.names || apt.staff === s.id
+          ) || pendingAppointments.find(apt => 
+            apt.staff === s.names || apt.staff === s.id
+          );
+
+          const staffStatus = s.status; // 'off', 'avail', 'no slots'
+          const inService = (s.in_service || '').toLowerCase(); // 'avail', 'in-service', etc.
+
+          // Determine dot color based on in_service field
+          let dotColor = 'live-sched-dot-amber'; // default
+          if (staffStatus === 'off') {
+            dotColor = 'live-sched-dot-grey';
+          } else if (inService === 'avail') {
+            dotColor = 'live-sched-dot-green';
+          } else if (inService === 'in-service') {
+            dotColor = 'live-sched-dot-yellow';
+          }
+
+          return {
+            stylist: s.names || `Staff ${index + 1}`,
+            time: appointment?.time ? convertTo12HourFormat(appointment.time) : '—',
+            client: appointment?.name || 'No appointment',
+            service: appointment?.service || 'N/A',
+            status: appointment ? (currentAppointments.includes(appointment) ? 'active' : 'next') : 'next',
+            staffStatus: staffStatus,
+            dotClass: dotColor
+          };
+        });
+
+        setSchedule(scheduleData);
+      } catch (error) {
+        console.error('[SchedulePanel] Error fetching schedule:', error);
+        // Fall back to hardcoded data
+        setSchedule(SCHEDULE);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchScheduleData();
+  }, [refreshTrigger]);
+
+  const scheduleToDisplay = schedule.length > 0 ? schedule : SCHEDULE;
 
   return (
     <div className="live-schedule-panel">
@@ -719,13 +846,26 @@ const SchedulePanel = ({ date = "Dec 7, 2024" }) => {
       </div>
 
       <div className={isExpanded ? "live-schedule-scroll" : "live-schedule-scroll-limited"}>
-        {SCHEDULE.map((item, i) => (
-          <ScheduleRow key={i} {...item} />
-        ))}
+        {loading ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>Loading schedule...</div>
+        ) : (
+          scheduleToDisplay.map((item, i) => (
+            <ScheduleRow key={i} {...item} />
+          ))
+        )}
       </div>
     </div>
   );
 };
+
+// Helper function to convert 24-hour time to 12-hour format
+function convertTo12HourFormat(time24) {
+  if (!time24) return '—';
+  const [hours, minutes] = time24.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hours12 = hours % 12 || 12;
+  return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
 
 /* ── Analytics panel ── */
 const AnalyticsPanel = () => (
@@ -757,6 +897,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   const [proceedConfirmData, setProceedConfirmData] = useState(null);
   const [activeNav, setActiveNav] = useState("live-status");
   const [mounted, setMounted] = useState(false);
+  const [scheduleRefreshTrigger, setScheduleRefreshTrigger] = useState(0);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -828,17 +969,11 @@ export const AdminDashboardLiveStatus = ({ date }) => {
 
         <div className="live-page-grid">
           {/* Left — Live Queue */}
-          <LiveQueuePanel 
-            onOpenWalkInModal={() => setShowWalkInModal(true)}
-            onProceedClick={(id, name, service) => {
-              setProceedConfirmId(id);
-              setProceedConfirmData({ name, service });
-            }}
-          />
+          <LiveQueuePanel onOpenWalkInModal={() => setShowWalkInModal(true)} />
 
           {/* Right — Schedule + Analytics */}
           <div className="live-sidebar">
-            <SchedulePanel date="Dec 7, 2024" />
+            <SchedulePanel date={new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} refreshTrigger={scheduleRefreshTrigger} />
             <AnalyticsPanel />
           </div>
         </div>
