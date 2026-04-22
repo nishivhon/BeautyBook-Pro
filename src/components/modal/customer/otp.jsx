@@ -51,6 +51,19 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
     return () => clearInterval(id);
   }, [timeLeft]);
 
+  /* auto-verify when 6 digits are entered */
+  useEffect(() => {
+    const isComplete = otpValue.replace(/\s/g, "").length === 6;
+    const isExpired = timeLeft <= 0;
+    
+    if (isComplete && !isExpired) {
+      const timer = setTimeout(() => {
+        handleVerify();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [otpValue, timeLeft]);
+
   /* mm:ss formatter */
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
