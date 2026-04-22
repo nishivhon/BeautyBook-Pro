@@ -10,12 +10,16 @@ export const StatusUpdateModal = ({ isOpen, staff, onClose, onSave }) => {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
+  const [clockIn, setClockIn] = useState(staff?.clockIn || "");
+  const [clockOut, setClockOut] = useState(staff?.clockOut || "");
+  const [editingClockIn, setEditingClockIn] = useState(false);
+  const [editingClockOut, setEditingClockOut] = useState(false);
   
   if (!isOpen || !staff) return null;
 
   const statusOptions = [
-    { label: "Available", color: "#22c55e", class: "staff-status-green" },
-    { label: "In Service", color: "#4387ef", class: "staff-status-blue" },
+    { label: "Open Slots", color: "#22c55e", class: "staff-status-green" },
+    { label: "No Slots", color: "#4387ef", class: "staff-status-blue" },
     { label: "On Break", color: "#dd901d", class: "staff-status-amber" },
   ];
 
@@ -26,7 +30,7 @@ export const StatusUpdateModal = ({ isOpen, staff, onClose, onSave }) => {
       return;
     }
 
-    onSave(staff.name, selectedStatus);
+    onSave(staff.name, selectedStatus, { clockIn, clockOut });
     setSelectedStatus("");
     setValidationErrors([]);
   };
@@ -53,6 +57,10 @@ export const StatusUpdateModal = ({ isOpen, staff, onClose, onSave }) => {
     if (confirmed) {
       setValidationErrors([]);
       setSelectedStatus("");
+      setEditingClockIn(false);
+      setEditingClockOut(false);
+      setClockIn(staff?.clockIn || "");
+      setClockOut(staff?.clockOut || "");
       onClose();
     }
   };
@@ -127,6 +135,170 @@ export const StatusUpdateModal = ({ isOpen, staff, onClose, onSave }) => {
           </p>
         </div>
 
+        {/* Attendance Field */}
+        <p style={{ fontSize: "12px", color: "#988f81", margin: "0 0 8px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          Attendance
+        </p>
+        <div style={{
+          display: "flex",
+          gap: "12px",
+          marginBottom: "24px",
+        }}>
+          {/* Clock In */}
+          <div style={{
+            flex: 1,
+            padding: "12px 14px",
+            backgroundColor: "rgba(26, 15, 0, 0.5)",
+            border: editingClockIn ? "1px solid #dd901d" : "1px solid rgba(221, 144, 29, 0.2)",
+            borderRadius: "8px",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+          }}>
+            <p style={{ fontSize: "11px", color: "#988f81", margin: "0 0 4px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Clock In
+            </p>
+            {editingClockIn ? (
+              <div style={{ display: "flex", gap: "6px" }}>
+                <input
+                  type="time"
+                  value={clockIn}
+                  onChange={(e) => setClockIn(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: "6px 8px",
+                    backgroundColor: "rgba(26, 15, 0, 0.8)",
+                    border: "1px solid rgba(221, 144, 29, 0.3)",
+                    borderRadius: "4px",
+                    color: "#f5f5f5",
+                    fontSize: "13px",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                />
+                <button
+                  onClick={() => setEditingClockIn(false)}
+                  style={{
+                    padding: "6px 10px",
+                    backgroundColor: "#dd901d",
+                    border: "none",
+                    borderRadius: "4px",
+                    color: "#fff",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#c47a14";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#dd901d";
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <p 
+                style={{ 
+                  fontSize: "14px", 
+                  fontWeight: "500", 
+                  color: "#f5f5f5", 
+                  margin: 0,
+                  cursor: "pointer",
+                  padding: "4px 0",
+                }}
+                onClick={() => setEditingClockIn(true)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#dd901d";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#f5f5f5";
+                }}
+              >
+                {clockIn || "Not clocked in"}
+              </p>
+            )}
+          </div>
+
+          {/* Clock Out */}
+          <div style={{
+            flex: 1,
+            padding: "12px 14px",
+            backgroundColor: "rgba(26, 15, 0, 0.5)",
+            border: editingClockOut ? "1px solid #dd901d" : "1px solid rgba(221, 144, 29, 0.2)",
+            borderRadius: "8px",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+          }}>
+            <p style={{ fontSize: "11px", color: "#988f81", margin: "0 0 4px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Clock Out
+            </p>
+            {editingClockOut ? (
+              <div style={{ display: "flex", gap: "6px" }}>
+                <input
+                  type="time"
+                  value={clockOut}
+                  onChange={(e) => setClockOut(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: "6px 8px",
+                    backgroundColor: "rgba(26, 15, 0, 0.8)",
+                    border: "1px solid rgba(221, 144, 29, 0.3)",
+                    borderRadius: "4px",
+                    color: "#f5f5f5",
+                    fontSize: "13px",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                />
+                <button
+                  onClick={() => setEditingClockOut(false)}
+                  style={{
+                    padding: "6px 10px",
+                    backgroundColor: "#dd901d",
+                    border: "none",
+                    borderRadius: "4px",
+                    color: "#fff",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#c47a14";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#dd901d";
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <p 
+                style={{ 
+                  fontSize: "14px", 
+                  fontWeight: "500", 
+                  color: "#f5f5f5", 
+                  margin: 0,
+                  cursor: "pointer",
+                  padding: "4px 0",
+                }}
+                onClick={() => setEditingClockOut(true)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#dd901d";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#f5f5f5";
+                }}
+              >
+                {clockOut || "—"}
+              </p>
+            )}
+          </div>
+        </div>
+
         {/* Current Status Display */}
         <p style={{ fontSize: "12px", color: "#988f81", margin: "0 0 8px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
           Current Status
@@ -146,11 +318,18 @@ export const StatusUpdateModal = ({ isOpen, staff, onClose, onSave }) => {
               width: "10px",
               height: "10px",
               borderRadius: "50%",
-              backgroundColor: staff.status === "Available" ? "#22c55e" : staff.status === "In Service" ? "#4387ef" : "#dd901d",
+              backgroundColor: 
+                staff.status === "Available" ? "#22c55e" : 
+                staff.status === "Open Slots" ? "#22c55e" :
+                staff.status === "In Service" ? "#4387ef" : 
+                staff.status === "No Slots" ? "#4387ef" : 
+                staff.status === "On Break" ? "#dd901d" : "#666",
             }}
           />
           <span style={{ fontSize: "14px", fontWeight: "500", color: "#f5f5f5" }}>
-            {staff.status}
+            {staff.status === "Available" ? "Open Slots" : 
+             staff.status === "In Service" ? "No Slots" : 
+             staff.status}
           </span>
         </div>
 
