@@ -6717,6 +6717,30 @@
     background: rgb(221, 144, 29);
   }
 
+  /* ── Admin Dashboard Staff List Scrollbar ── */
+  .dash-staff-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dash-staff-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .dash-staff-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dash-staff-list::-webkit-scrollbar-thumb {
+    background: var(--color-amber);
+    border-radius: 3px;
+  }
+
+  .dash-staff-list::-webkit-scrollbar-thumb:hover {
+    background: rgb(221, 144, 29);
+  }
+
   /* ── Staff member row ── */
   .staff-member-list {
     display: flex;

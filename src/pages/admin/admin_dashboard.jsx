@@ -800,7 +800,7 @@ const StaffStatus = () => {
       )}
       
       {!loading && !error && (
-        <div className="dash-staff-list" style={{ maxHeight: isExpanded ? "none" : "200px", overflow: "hidden" }}>
+        <div className="dash-staff-list" style={{ maxHeight: isExpanded ? "none" : "200px", overflow: "auto", scrollbarWidth: "thin", scrollbarColor: "rgba(221, 144, 29, 0.2) transparent", padding: "12px 0" }}>
           {staff.map((s, i) => (
             <div key={i} className="dash-staff-row">
               <div className="dash-staff-left">
