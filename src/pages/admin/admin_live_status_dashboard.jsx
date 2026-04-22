@@ -355,7 +355,7 @@ const PageMetrics = () => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService }) => {
+const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -368,7 +368,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
   const handleCompleteService = () => {
     if (onCompleteService) {
-      onCompleteService(id, name, service, staff);
+      onCompleteService(id, name, service);
     }
   };
 
@@ -501,7 +501,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
 
 /* ── Live Queue panel ── */
-const LiveQueuePanel = ({ onOpenWalkInModal }) => {
+const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
@@ -547,7 +547,14 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
     setExpandedItemId(expandedItemId === id ? null : id);
   };
 
-  const handleCompleteService = async (itemId, customerName, service, staffName) => {
+  const handleProceedClick = (id, name, service) => {
+    // Call parent handler to show confirmation dialog
+    if (onProceedClick) {
+      onProceedClick(id, name, service);
+    }
+  };
+
+  const handleCompleteService = async (itemId, customerName, service, staffName = "") => {
     try {
       console.log(`[LiveQueue] Completing service for ${customerName}: ${service}`);
       
@@ -571,11 +578,6 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
       // Remove from current appointments locally without reloading
       setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
       setExpandedItemId(null);
-      
-      // Trigger schedule panel refresh
-      if (onServiceCompleted) {
-        onServiceCompleted();
-      }
     } catch (error) {
       console.error(`[LiveQueue] Error completing service:`, error);
       alert('Failed to mark service as complete: ' + error.message);
@@ -681,7 +683,7 @@ const LiveQueuePanel = ({ onOpenWalkInModal }) => {
                         onCompleteService={handleCompleteService}
                         showProceedButton={isUpNext}
                         isProceedEnabled={ii < 3}
-                        onProceedClick={onProceedClick}
+                        onProceedClick={handleProceedClick}
                       />
                     );
                   })
@@ -969,7 +971,13 @@ export const AdminDashboardLiveStatus = ({ date }) => {
 
         <div className="live-page-grid">
           {/* Left — Live Queue */}
-          <LiveQueuePanel onOpenWalkInModal={() => setShowWalkInModal(true)} />
+          <LiveQueuePanel 
+            onOpenWalkInModal={() => setShowWalkInModal(true)}
+            onProceedClick={(id, name, service) => {
+              setProceedConfirmId(id);
+              setProceedConfirmData({ name, service });
+            }}
+          />
 
           {/* Right — Schedule + Analytics */}
           <div className="live-sidebar">
