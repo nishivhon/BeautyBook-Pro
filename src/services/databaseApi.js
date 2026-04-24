@@ -31,13 +31,18 @@ export const databaseAPI = {
     return handleResponse(response);
   },
 
-  // Get table data with pagination
-  getTableData: async (tableName, limit = 50, offset = 0) => {
+  // Get table data with pagination and optional sorting
+  getTableData: async (tableName, limit = 50, offset = 0, orderBy = null, orderDir = 'asc') => {
     const params = new URLSearchParams({
       tableName,
       limit: limit.toString(),
       offset: offset.toString(),
     });
+
+    if (orderBy) {
+      params.append('orderBy', orderBy);
+      params.append('orderDir', orderDir);
+    }
     
     const response = await fetch(`${API_BASE_URL}/database/table-data?${params.toString()}`);
     return handleResponse(response);

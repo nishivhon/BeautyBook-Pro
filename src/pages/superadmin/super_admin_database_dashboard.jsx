@@ -175,7 +175,7 @@ export default function SuperAdminDatabaseDashboard() {
               // Fetch actual data for this table
               let rowData = [];
               try {
-                const dataResult = await databaseAPI.getTableData(tableInfo.name, 50, 0);
+                const dataResult = await databaseAPI.getTableData(tableInfo.name, 10000, 0);
                 rowData = dataResult.data || [];
                 
                 // Remove hidden columns from each row

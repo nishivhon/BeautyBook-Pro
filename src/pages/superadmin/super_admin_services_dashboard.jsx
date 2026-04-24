@@ -109,6 +109,7 @@ export default function SuperAdminServicesDashboard() {
   const [modalMode, setModalMode] = useState("view");
   const [servicesData, setServicesData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentServicePage, setCurrentServicePage] = useState(1);
 
   // Persist sidebar state
   useEffect(() => {
@@ -144,7 +145,7 @@ export default function SuperAdminServicesDashboard() {
           // Fetch actual data
           let rowData = [];
           try {
-            const dataResult = await databaseAPI.getTableData('services', 100, 0);
+            const dataResult = await databaseAPI.getTableData('services', 10000, 0);
             rowData = dataResult.data || [];
             console.log(`[Services] Fetched ${rowData.length} rows`);
           } catch (dataError) {
@@ -328,7 +329,11 @@ export default function SuperAdminServicesDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {servicesData.rows.slice(0, 20).map((service, idx) => (
+                    {(() => {
+                      const itemsPerPage = 10;
+                      const startIdx = (currentServicePage - 1) * itemsPerPage;
+                      const endIdx = startIdx + itemsPerPage;
+                      return servicesData.rows.slice(startIdx, endIdx).map((service, idx) => (
                       <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                         {servicesData.cols.map((col) => {
                           const cellValue = service[col];
@@ -338,14 +343,84 @@ export default function SuperAdminServicesDashboard() {
                           );
                         })}
                       </tr>
-                    ))}
+                    ));
+                    })()}
                   </tbody>
                 </table>
-                {servicesData.rows.length > 20 && (
-                  <div style={{ padding: '16px', textAlign: 'center', color: '#988f81', fontSize: '13px' }}>
-                    Showing 20 of {servicesData.rows.length} services — View all in table modal
-                  </div>
-                )}
+                {servicesData.rows.length > 0 && (() => {
+                  const itemsPerPage = 10;
+                  const totalPages = Math.ceil(servicesData.rows.length / itemsPerPage);
+                  const startIdx = (currentServicePage - 1) * itemsPerPage + 1;
+                  const endIdx = Math.min(currentServicePage * itemsPerPage, servicesData.rows.length);
+                  return (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
+                      <div style={{ color: '#988f81', fontSize: '13px' }}>
+                        Showing {startIdx}–{endIdx} of {servicesData.rows.length} services
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => setCurrentServicePage(p => Math.max(1, p - 1))}
+                          disabled={currentServicePage === 1}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(152, 143, 129, 0.3)',
+                            background: currentServicePage === 1 ? 'rgba(152, 143, 129, 0.05)' : 'transparent',
+                            color: currentServicePage === 1 ? '#6B6157' : '#988f81',
+                            fontSize: '13px',
+                            cursor: currentServicePage === 1 ? 'default' : 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentServicePage !== 1) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                              e.currentTarget.style.background = 'rgba(152, 143, 129, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentServicePage !== 1) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          ← Previous
+                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#988f81', fontSize: '13px' }}>
+                          Page {currentServicePage} of {totalPages}
+                        </div>
+                        <button
+                          onClick={() => setCurrentServicePage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentServicePage === totalPages}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(152, 143, 129, 0.3)',
+                            background: currentServicePage === totalPages ? 'rgba(152, 143, 129, 0.05)' : 'transparent',
+                            color: currentServicePage === totalPages ? '#6B6157' : '#988f81',
+                            fontSize: '13px',
+                            cursor: currentServicePage === totalPages ? 'default' : 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentServicePage !== totalPages) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                              e.currentTarget.style.background = 'rgba(152, 143, 129, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentServicePage !== totalPages) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No services found</div>

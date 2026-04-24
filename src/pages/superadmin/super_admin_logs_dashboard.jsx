@@ -109,6 +109,7 @@ export default function SuperAdminLogsDashboard() {
   const [modalMode, setModalMode] = useState("view");
   const [logsData, setLogsData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentLogsPage, setCurrentLogsPage] = useState(1);
 
   // Persist sidebar state
   useEffect(() => {
@@ -143,11 +144,26 @@ export default function SuperAdminLogsDashboard() {
           const hiddenColumns = ['availability', 'status', 'archived_at'];
           colNames = colNames.filter(col => !hiddenColumns.includes(col));
           
-          // Fetch actual data
+          // Fetch actual data sorted by date descending
           let rowData = [];
           try {
-            const dataResult = await databaseAPI.getTableData('appointment_logs', 100, 0);
+            const dataResult = await databaseAPI.getTableData('appointment_logs', 10000, 0, 'date', 'desc');
             rowData = dataResult.data || [];
+            
+            // Secondary sort: within each date, sort by time_slot ascending
+            rowData = rowData.sort((a, b) => {
+              // First sort by date descending
+              const dateA = new Date(a.date || 0);
+              const dateB = new Date(b.date || 0);
+              if (dateB.getTime() !== dateA.getTime()) {
+                return dateB.getTime() - dateA.getTime();
+              }
+              
+              // Within same date, sort by time_slot ascending
+              const timeA = a.time_slot || '';
+              const timeB = b.time_slot || '';
+              return timeA.localeCompare(timeB);
+            });
             
             // Remove hidden columns from each row
             rowData = rowData.map(row => {
@@ -354,7 +370,11 @@ export default function SuperAdminLogsDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {logsData.rows.slice(0, 20).map((log, idx) => (
+                    {(() => {
+                      const itemsPerPage = 12;
+                      const startIdx = (currentLogsPage - 1) * itemsPerPage;
+                      const endIdx = startIdx + itemsPerPage;
+                      return logsData.rows.slice(startIdx, endIdx).map((log, idx) => (
                       <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                         {logsData.cols.map((col) => {
                           const cellValue = log[col];
@@ -364,14 +384,84 @@ export default function SuperAdminLogsDashboard() {
                           );
                         })}
                       </tr>
-                    ))}
+                    ));
+                    })()}
                   </tbody>
                 </table>
-                {logsData.rows.length > 20 && (
-                  <div style={{ padding: '16px', textAlign: 'center', color: '#988f81', fontSize: '13px' }}>
-                    Showing 20 of {logsData.rows.length} logs — View all in table modal
-                  </div>
-                )}
+                {logsData.rows.length > 0 && (() => {
+                  const itemsPerPage = 12;
+                  const totalPages = Math.ceil(logsData.rows.length / itemsPerPage);
+                  const startIdx = (currentLogsPage - 1) * itemsPerPage + 1;
+                  const endIdx = Math.min(currentLogsPage * itemsPerPage, logsData.rows.length);
+                  return (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
+                      <div style={{ color: '#988f81', fontSize: '13px' }}>
+                        Showing {startIdx}–{endIdx} of {logsData.rows.length} logs
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => setCurrentLogsPage(p => Math.max(1, p - 1))}
+                          disabled={currentLogsPage === 1}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(152, 143, 129, 0.3)',
+                            background: currentLogsPage === 1 ? 'rgba(152, 143, 129, 0.05)' : 'transparent',
+                            color: currentLogsPage === 1 ? '#6B6157' : '#988f81',
+                            fontSize: '13px',
+                            cursor: currentLogsPage === 1 ? 'default' : 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentLogsPage !== 1) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                              e.currentTarget.style.background = 'rgba(152, 143, 129, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentLogsPage !== 1) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          ← Previous
+                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#988f81', fontSize: '13px' }}>
+                          Page {currentLogsPage} of {totalPages}
+                        </div>
+                        <button
+                          onClick={() => setCurrentLogsPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentLogsPage === totalPages}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(152, 143, 129, 0.3)',
+                            background: currentLogsPage === totalPages ? 'rgba(152, 143, 129, 0.05)' : 'transparent',
+                            color: currentLogsPage === totalPages ? '#6B6157' : '#988f81',
+                            fontSize: '13px',
+                            cursor: currentLogsPage === totalPages ? 'default' : 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentLogsPage !== totalPages) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                              e.currentTarget.style.background = 'rgba(152, 143, 129, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentLogsPage !== totalPages) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No appointment logs found</div>

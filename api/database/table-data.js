@@ -11,18 +11,26 @@ export default async (req, res) => {
       process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
     );
 
-    const { tableName, limit = 50, offset = 0 } = req.query;
+    const { tableName, limit = 50, offset = 0, orderBy = null, orderDir = 'asc' } = req.query;
 
     if (!tableName) {
       return res.status(400).json({ error: 'tableName query parameter is required' });
     }
 
-    console.log(`[Database] Fetching data from ${tableName} (limit: ${limit}, offset: ${offset})`);
+    console.log(`[Database] Fetching data from ${tableName} (limit: ${limit}, offset: ${offset}, orderBy: ${orderBy})`);
 
-    // Fetch data from the specified table
-    const { data, error, count } = await supabase
+    // Build query
+    let query = supabase
       .from(tableName)
-      .select('*', { count: 'exact' })
+      .select('*', { count: 'exact' });
+
+    // Add ordering if specified
+    if (orderBy) {
+      query = query.order(orderBy, { ascending: orderDir === 'asc' });
+    }
+
+    // Fetch data with pagination
+    const { data, error, count } = await query
       .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
     if (error) {
