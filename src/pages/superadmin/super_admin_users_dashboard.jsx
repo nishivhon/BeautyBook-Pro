@@ -116,7 +116,7 @@ const NAV_ITEMS = [
   { id: "staff-management", label: "Staff Management", icon: NavUserIcon },
   { id: "database", label: "Database", icon: DatabaseIcon },
   { id: "security", label: "Security", icon: ShieldIcon },
-  { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
+  // { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
 // ─── Main Component ───────────────────────────────────────────────────────────

@@ -977,7 +977,7 @@ const NAV_ITEMS = [
   { id: "staff-management", label: "Staff Management", icon: UserIcon },
   { id: "database", label: "Database", icon: DatabaseIcon },
   { id: "security", label: "Security", icon: ShieldIcon },
-  { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
+  // { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
 // ─── Metrics Carousel Data (9 cards, showing 4 at a time) ──────────────────
