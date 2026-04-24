@@ -391,6 +391,33 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    const scrollToSection = (id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.scrollY - 52;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
+    };
+
+    // Handle hash on initial load
+    if (window.location.hash) {
+      const sectionId = window.location.hash.substring(1);
+      setTimeout(() => scrollToSection(sectionId), 100);
+    }
+
+    // Handle hash changes
+    const handleHashChange = () => {
+      if (window.location.hash) {
+        const sectionId = window.location.hash.substring(1);
+        scrollToSection(sectionId);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   return (
     <div className="app-wrapper" style={{ zoom: isDesktop ? "150%" : "100%" }}>
       <NavBar onBookAppointment={handleBook}/>

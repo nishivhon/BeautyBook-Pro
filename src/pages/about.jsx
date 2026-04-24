@@ -98,9 +98,19 @@ const NavBar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  const handleNavClick = (path) => {
-    navigate(path);
+  const handleBooking = () => {
+    navigate("/register");
     setMenuOpen(false);
+  };
+
+  const handleNavClick = (item) => {
+    if (item.label === "Services" || item.label === "How It Works") {
+      // Navigate to home with hash to trigger scroll
+      window.location.href = item.path;
+    } else {
+      navigate(item.path);
+      setMenuOpen(false);
+    }
   };
 
   return (
@@ -128,12 +138,20 @@ const NavBar = () => {
 
       {/* Nav links - Desktop */}
       <div className="flex-center-gap-1 nav-links-desktop">
-        <button onClick={() => handleNavClick("/")} className="nav-link">Home</button>
-        <button onClick={() => handleNavClick("/about")} className="nav-link">About</button>
+        {[
+          {label:"Home",         path:"/"},
+          {label:"Services",     path:"/#services"},
+          {label:"How It Works",  path:"/#howitworks"},
+          {label:"About",         path:"/about"},
+        ].map(item => (
+          <button key={item.label} onClick={() => handleNavClick(item)} className="nav-link">
+            {item.label}
+          </button>
+        ))}
       </div>
 
       {/* CTA - Desktop */}
-      <button onClick={() => navigate("/register")} className="btn-primary btn-nav btn-nav-desktop">
+      <button onClick={handleBooking} className="btn-primary btn-nav btn-nav-desktop">
         Book Appointment
       </button>
 
@@ -141,10 +159,22 @@ const NavBar = () => {
       {menuOpen && (
         <div className="mobile-menu">
           <div className="mobile-menu-content">
-            <button onClick={() => handleNavClick("/")} className="mobile-menu-link">Home</button>
-            <button onClick={() => handleNavClick("/about")} className="mobile-menu-link">About</button>
+            {[
+              {label:"Home",         path:"/"},
+              {label:"Services",     path:"/#services"},
+              {label:"How It Works",  path:"/#howitworks"},
+              {label:"About",         path:"/about"},
+            ].map(item => (
+              <button 
+                key={item.label} 
+                onClick={() => { handleNavClick(item); setMenuOpen(false); }} 
+                className="mobile-menu-link"
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
-          <button onClick={() => navigate("/register")} className="btn-primary btn-nav btn-mobile-cta">
+          <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
             Book Appointment
           </button>
         </div>
