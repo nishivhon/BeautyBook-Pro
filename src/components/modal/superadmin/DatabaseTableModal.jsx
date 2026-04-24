@@ -1,5 +1,39 @@
 import React, { useState } from "react";
 
+// Format cell value for display
+const formatCellValue = (cellValue, colName) => {
+  if (typeof cellValue === 'boolean') {
+    return String(cellValue);
+  }
+  
+  // Parse JSON services if it's the services column
+  if (colName === 'services' && cellValue && typeof cellValue === 'string') {
+    try {
+      const services = JSON.parse(cellValue);
+      if (Array.isArray(services)) {
+        return services.map(s => s.name || s).join(', ');
+      }
+    } catch (e) {
+      // If not valid JSON, return as is
+    }
+  }
+  
+  return cellValue || '';
+};
+
+// Format column names for display
+const formatColumnName = (colName) => {
+  const columnMap = {
+    'service_name': 'service name',
+    'est_time': 'est. time',
+    'time_slot': 'time slot',
+    'customer_name': 'customer name',
+    'customer_contact': 'customer contact',
+    'assigned_staff': 'assigned staff'
+  };
+  return columnMap[colName] || colName;
+};
+
 export default function DatabaseTableModal({
   showModal,
   modalTable,
@@ -60,7 +94,7 @@ export default function DatabaseTableModal({
             <thead>
               <tr>
                 {modalTable.cols.map((col) => (
-                  <th key={col}>{col}</th>
+                  <th key={col}>{formatColumnName(col)}</th>
                 ))}
               </tr>
             </thead>
@@ -72,8 +106,8 @@ export default function DatabaseTableModal({
                       const cellId = `${idx}-${col}`;
                       const isEditing = editingCell === cellId;
                       const cellValue = row[col];
-                      // Convert boolean to string for display
-                      const displayValue = typeof cellValue === 'boolean' ? String(cellValue) : cellValue || '';
+                      // Convert boolean to string for display and format special columns
+                      const displayValue = formatCellValue(cellValue, col);
                       return (
                         <td key={col} style={{ padding: 0, position: 'relative' }}>
                           {modalMode === 'edit' && !col.startsWith('id') 

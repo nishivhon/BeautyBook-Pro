@@ -473,6 +473,8 @@ export default function SuperAdminLandingPageEditor() {
     { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
     { id: "staff-management", label: "Staff Management", icon: UserIcon },
     { id: "database", label: "Database", icon: DatabaseIcon },
+    { id: "services", label: "Services", icon: DatabaseIcon },
+    { id: "logs", label: "Logs", icon: DatabaseIcon },
     { id: "security", label: "Security", icon: ShieldIcon },
     { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
   ];
@@ -529,6 +531,10 @@ export default function SuperAdminLandingPageEditor() {
                     navigate("/superadmin/users");
                   } else if (item.id === "database") {
                     navigate("/superadmin/database");
+                  } else if (item.id === "services") {
+                    navigate("/superadmin/services");
+                  } else if (item.id === "logs") {
+                    navigate("/superadmin/logs");
                   } else if (item.id === "security") {
                     navigate("/superadmin/security");
                   } else if (item.id === "landing-page") {

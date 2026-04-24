@@ -73,31 +73,10 @@ const SettingsIcon = () => (
   </svg>
 );
 
-const ExportIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M2 10v1.5A1.5 1.5 0 003.5 13h7a1.5 1.5 0 001.5-1.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-  </svg>
-);
-
-const BackupIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M4 10a3 3 0 010-6 3.5 3.5 0 016.9 1A2.5 2.5 0 0110 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-    <path d="M7 8v4M5 10l2 2 2-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
 const ViewIcon = () => (
   <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="6.5" cy="6.5" rx="5.5" ry="3.5" stroke="currentColor" strokeWidth="1.2"/>
     <circle cx="6.5" cy="6.5" r="1.5" fill="currentColor"/>
-  </svg>
-);
-
-const EditIconSmall = () => (
-  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M2 9L8.5 2.5l2 2L4 11H2V9z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
-    <line x1="6.5" y1="4" x2="8.5" y2="6" stroke="currentColor" strokeWidth="1.2"/>
   </svg>
 );
 
@@ -106,19 +85,18 @@ const EditIconSmall = () => (
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
   { id: "staff-management", label: "Staff Management", icon: UserIcon },
-  { id: "database", label: "Database", icon: DatabaseIcon },  { id: "services", label: "Services", icon: DatabaseIcon },
-  { id: "logs", label: "Logs", icon: DatabaseIcon },  { id: "security", label: "Security", icon: ShieldIcon },
+  { id: "database", label: "Database", icon: DatabaseIcon },
+  { id: "services", label: "Services", icon: DatabaseIcon },
+  { id: "logs", label: "Logs", icon: DatabaseIcon },
+  { id: "security", label: "Security", icon: ShieldIcon },
   { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
-// ─── Database Tables Data ───────────────────────────────────────────────────
-// Tables are now fetched from the API at component mount
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function SuperAdminDatabaseDashboard() {
+export default function SuperAdminLogsDashboard() {
   const navigate = useNavigate();
-  const [activeNav, setActiveNav] = useState("database");
+  const [activeNav, setActiveNav] = useState("logs");
   const [mounted, setMounted] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('sidebarExpanded');
@@ -129,7 +107,7 @@ export default function SuperAdminDatabaseDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [modalTable, setModalTable] = useState(null);
   const [modalMode, setModalMode] = useState("view");
-  const [databaseTables, setDatabaseTables] = useState([]);
+  const [logsData, setLogsData] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Persist sidebar state
@@ -146,75 +124,62 @@ export default function SuperAdminDatabaseDashboard() {
     return () => clearTimeout(t);
   }, []);
 
-  // Fetch services and appointment_logs tables on mount
+  // Fetch appointment_logs table on mount
   useEffect(() => {
-    const fetchDatabaseTables = async () => {
+    const fetchLogs = async () => {
       setLoading(true);
       try {
-        console.log('[Dashboard] Fetching services and appointment_logs tables...');
-        const tablesInfo = await databaseAPI.getTablesInfo(['services', 'appointment_logs']);
+        console.log('[Logs] Fetching appointment_logs table...');
+        const tablesInfo = await databaseAPI.getTablesInfo(['appointment_logs']);
         
         if (tablesInfo && Array.isArray(tablesInfo)) {
-          console.log('[Dashboard] Fetched tables info:', tablesInfo);
+          console.log('[Logs] Fetched tables info:', tablesInfo);
           
-          // Define columns to hide for specific tables
-          const hiddenColumns = {
-            'appointment_logs': ['availability', 'status', 'archived_at']
-          };
+          const tableInfo = tablesInfo[0];
+          if (!tableInfo) return;
           
-          // Convert fetched data to display format
-          const fetchedTables = await Promise.all(
-            tablesInfo.map(async (tableInfo) => {
-              // Get column names from the columns data
-              let colNames = tableInfo.columns?.map(col => col.column_name) || [];
-              
-              // Filter out hidden columns for this table
-              const hidden = hiddenColumns[tableInfo.name] || [];
-              colNames = colNames.filter(col => !hidden.includes(col));
-              
-              // Fetch actual data for this table
-              let rowData = [];
-              try {
-                const dataResult = await databaseAPI.getTableData(tableInfo.name, 50, 0);
-                rowData = dataResult.data || [];
-                
-                // Remove hidden columns from each row
-                rowData = rowData.map(row => {
-                  const filteredRow = {};
-                  hidden.forEach(hiddenCol => {
-                    delete row[hiddenCol];
-                  });
-                  return row;
-                });
-                
-                console.log(`[Dashboard] Fetched ${rowData.length} rows from ${tableInfo.name}`);
-              } catch (dataError) {
-                console.warn(`[Dashboard] Error fetching data for ${tableInfo.name}:`, dataError);
-              }
-              
-              return {
-                id: tableInfo.name,
-                name: tableInfo.name.charAt(0).toUpperCase() + tableInfo.name.slice(1).replace(/_/g, ' '),
-                meta: `${tableInfo.rowCount} rows`,
-                lastUpdated: 'Today',
-                rows: rowData,
-                cols: colNames,
-              };
-            })
-          );
+          // Get column names and filter out hidden columns
+          let colNames = tableInfo.columns?.map(col => col.column_name) || [];
+          const hiddenColumns = ['availability', 'status', 'archived_at'];
+          colNames = colNames.filter(col => !hiddenColumns.includes(col));
           
-          // Set the fetched tables
-          setDatabaseTables(fetchedTables);
+          // Fetch actual data
+          let rowData = [];
+          try {
+            const dataResult = await databaseAPI.getTableData('appointment_logs', 100, 0);
+            rowData = dataResult.data || [];
+            
+            // Remove hidden columns from each row
+            rowData = rowData.map(row => {
+              hiddenColumns.forEach(hiddenCol => {
+                delete row[hiddenCol];
+              });
+              return row;
+            });
+            
+            console.log(`[Logs] Fetched ${rowData.length} rows`);
+          } catch (dataError) {
+            console.warn(`[Logs] Error fetching data:`, dataError);
+          }
+          
+          setLogsData({
+            id: 'appointment_logs',
+            name: 'Appointment Logs',
+            meta: `${tableInfo.rowCount} rows`,
+            lastUpdated: 'Today',
+            rows: rowData,
+            cols: colNames,
+          });
         }
       } catch (error) {
-        console.error('[Dashboard] Error fetching tables:', error);
-        displayToast('Failed to fetch database tables');
+        console.error('[Logs] Error fetching data:', error);
+        displayToast('Failed to fetch appointment logs');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDatabaseTables();
+    fetchLogs();
   }, []);
 
   const handleLogout = () => {
@@ -228,34 +193,47 @@ export default function SuperAdminDatabaseDashboard() {
     setTimeout(() => setShowToast(false), 2800);
   };
 
-  const openViewModal = (tableId) => {
-    const table = databaseTables.find(t => t.id === tableId);
-    setModalTable(table);
+  // Format cell display value, especially for JSON services
+  const formatCellValue = (cellValue, colName) => {
+    if (typeof cellValue === 'boolean') {
+      return String(cellValue);
+    }
+    
+    // Parse JSON services if it's the services column
+    if (colName === 'services' && cellValue && typeof cellValue === 'string') {
+      try {
+        const services = JSON.parse(cellValue);
+        if (Array.isArray(services)) {
+          return services.map(s => s.name || s).join(', ');
+        }
+      } catch (e) {
+        // If not valid JSON, return as is
+      }
+    }
+    
+    return cellValue || '';
+  };
+
+  // Format column names for display
+  const formatColumnName = (colName) => {
+    const columnMap = {
+      'time_slot': 'time slot',
+      'customer_name': 'customer name',
+      'customer_contact': 'customer contact',
+      'assigned_staff': 'assigned staff'
+    };
+    return columnMap[colName] || colName;
+  };
+
+  const openViewModal = () => {
+    setModalTable(logsData);
     setModalMode("view");
     setShowModal(true);
   };
 
-  const openEditModal = (tableId) => {
-    const table = databaseTables.find(t => t.id === tableId);
-    setModalTable(table);
-    setModalMode("edit");
-    setShowModal(true);
-  };
-
-  const handleExportAll = () => {
-    displayToast('Exporting all tables as CSV…');
-  };
-
-  const handleBackup = () => {
-    const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    displayToast(`Backup initiated — 03/30/26 · ${time}`);
-  };
-
   const handleSaveChanges = () => {
     setShowModal(false);
-    if (modalMode === 'edit') {
-      displayToast('Changes saved.');
-    }
+    displayToast('Changes saved.');
   };
 
   return (
@@ -293,12 +271,12 @@ export default function SuperAdminDatabaseDashboard() {
               <button
                 key={item.id}
                 onClick={() => {
-                  if (item.id === "database") {
-                    navigate("/superadmin/database");
-                  } else if (item.id === "services") {
+                  if (item.id === "services") {
                     navigate("/superadmin/services");
                   } else if (item.id === "logs") {
                     navigate("/superadmin/logs");
+                  } else if (item.id === "database") {
+                    navigate("/superadmin/database");
                   } else if (item.id === "dashboard") {
                     navigate("/superadmin/dashboard");
                   } else if (item.id === "staff-management") {
@@ -335,8 +313,8 @@ export default function SuperAdminDatabaseDashboard() {
         {/* Header */}
         <header className="dashboard-header">
           <div className="header-title-section">
-            <h1 className="header-main-title">System Database</h1>
-            <p className="header-subtitle">BeautyBook Pro • Saturday, Dec 7, 2024</p>
+            <h1 className="header-main-title">Appointment Logs</h1>
+            <p className="header-subtitle">BeautyBook Pro • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}</p>
           </div>
           <div className="header-actions">
             <button className="header-action-btn" onClick={() => displayToast('No new notifications')}>
@@ -355,52 +333,49 @@ export default function SuperAdminDatabaseDashboard() {
           <div className="dashboard-panel">
             {/* Panel header */}
             <div className="panel-header">
-              <div className="panel-title">Database Tables</div>
-              <div className="table-controls">
-                <button className="btn-ghost" onClick={handleExportAll}>
-                  <ExportIcon />
-                  Export All
-                </button>
-              </div>
+              <div className="panel-title">All Appointment Logs ({logsData.rows?.length || 0})</div>
+              <button className="btn-ghost" onClick={openViewModal}>
+                <ViewIcon />
+                View Table
+              </button>
             </div>
 
-            {/* Database rows */}
-            <div className="space-y-2 mt-2">
-              {databaseTables.map((table) => (
-                <div key={table.id} className="db-row">
-                  <div className="db-icon">
-                    <DatabaseIcon color="#4387ef" />
+            {/* Logs Table View */}
+            {loading ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading logs...</div>
+            ) : logsData.rows && logsData.rows.length > 0 ? (
+              <div style={{ marginTop: '0px', overflowX: 'auto' }}>
+                <table className="data-table" style={{ minWidth: '800px' }}>
+                  <thead>
+                    <tr>
+                      {logsData.cols.map((col) => (
+                        <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logsData.rows.slice(0, 20).map((log, idx) => (
+                      <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                        {logsData.cols.map((col) => {
+                          const cellValue = log[col];
+                          const displayValue = formatCellValue(cellValue, col);
+                          return (
+                            <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {logsData.rows.length > 20 && (
+                  <div style={{ padding: '16px', textAlign: 'center', color: '#988f81', fontSize: '13px' }}>
+                    Showing 20 of {logsData.rows.length} logs — View all in table modal
                   </div>
-                  <div className="db-name-wrap">
-                    <span className="db-name">{table.name}</span>
-                    <span className="db-meta">{table.meta}</span>
-                  </div>
-                  <div className="db-updated">{table.lastUpdated}</div>
-                  <div className="db-row-actions">
-                    <button className="row-btn" onClick={() => openViewModal(table.id)}>
-                      <ViewIcon />
-                      View
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Stats bar */}
-            <div className="stats-bar" style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', width: '100%', marginTop: '24px' }}>
-              <div className="stat-card" style={{ flex: 1 }}>
-                <span className="stat-value">28.3 MB</span>
-                <span className="stat-label">Total size</span>
+                )}
               </div>
-              <div className="stat-card" style={{ flex: 1 }}>
-                <span className="stat-value">7,236</span>
-                <span className="stat-label">Total records</span>
-              </div>
-              <div className="stat-card" style={{ flex: 1 }}>
-                <span className="stat-value">03/24/26 · 6:00 PM</span>
-                <span className="stat-label">Last backup</span>
-              </div>
-            </div>
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No appointment logs found</div>
+            )}
           </div>
         </main>
       </div>
