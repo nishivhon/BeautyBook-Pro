@@ -80,6 +80,13 @@ const ViewIcon = () => (
   </svg>
 );
 
+const SearchIcon = ({ color = "#988f81" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="7.5" cy="7.5" r="5.5" stroke={color} strokeWidth="1.3" opacity="0.6"/>
+    <line x1="11.5" y1="11.5" x2="16" y2="16" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+  </svg>
+);
+
 // ─── Navigation Items ─────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
@@ -347,13 +354,42 @@ export default function SuperAdminLogsDashboard() {
         {/* Content */}
         <main className="dashboard-main">
           <div className="dashboard-panel">
-            {/* Panel header */}
-            <div className="panel-header">
+            {/* Panel header with search and add button */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div className="panel-title">All Appointment Logs ({logsData.rows?.length || 0})</div>
-              <button className="btn-ghost" onClick={openViewModal}>
-                <ViewIcon />
-                View Table
-              </button>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {/* Search Input */}
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="Search logs..."
+                    onChange={(e) => {
+                      const value = e.target.value.toLowerCase();
+                      if (value) {
+                        console.log('[Logs] Searching for:', value);
+                      }
+                    }}
+                    style={{
+                      padding: '8px 12px 8px 32px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(152, 143, 129, 0.3)',
+                      backgroundColor: 'rgba(35, 29, 26, 0.8)',
+                      color: '#D4C5B9',
+                      fontSize: '13px',
+                      width: '200px',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(221, 144, 29, 0.5)';
+                      e.currentTarget.style.backgroundColor = 'rgba(35, 29, 26, 0.95)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                      e.currentTarget.style.backgroundColor = 'rgba(35, 29, 26, 0.8)';
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Logs Table View */}
