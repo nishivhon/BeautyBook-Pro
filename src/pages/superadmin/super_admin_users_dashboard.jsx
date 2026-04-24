@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
-import AddStaffModal from "../../components/modal/superadmin/add_staff";
+import { databaseAPI } from "../../services/databaseApi";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -129,65 +129,105 @@ export default function SuperAdminUsersDashboard() {
   });
   const [mounted, setMounted] = useState(false);
   const [activeNav, setActiveNav] = useState("staff-management");
+  const [staffsData, setStaffsData] = useState({
+    id: 'staffs',
+    name: 'Staff Members',
+    meta: '0 staff members',
+    rows: [],
+    cols: ['names', 'category_specialty', 'employment'],
+  });
+  const [loading, setLoading] = useState(false);
+  const [currentStaffPage, setCurrentStaffPage] = useState(1);
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
   }, [sidebarExpanded]);
-  
-  const [availableServices] = useState([
-    { id: 1, name: 'Hair Cut', category: 'Hair' },
-    { id: 2, name: 'Hair Coloring', category: 'Hair' },
-    { id: 3, name: 'Hair Treatment', category: 'Hair' },
-    { id: 4, name: 'Manicure', category: 'Nail' },
-    { id: 5, name: 'Pedicure', category: 'Nail' },
-    { id: 6, name: 'Facial', category: 'Skincare' },
-    { id: 7, name: 'Massage', category: 'Massage' },
-    { id: 8, name: 'Waxing', category: 'Skincare' },
-  ]);
 
-  const [staffData] = useState([
-    { id:1, initial:'A', name:'Anna Cruz',      specialty:'Hair',     services:[1,2,3],  status:'Active' },
-    { id:2, initial:'M', name:'Mike Santos',    specialty:'Nail',     services:[4,5],    status:'Active' },
-    { id:3, initial:'L', name:'Lea Mendoza',    specialty:'Skincare', services:[6,8],    status:'Active' },
-    { id:4, initial:'R', name:'Ramon Reyes',    specialty:'Massage',  services:[7],      status:'Active' },
-    { id:5, initial:'C', name:'Carla Bautista', specialty:'Hair',     services:[1,2],    status:'Inactive' },
-  ]);
-  
-  const [filteredStaff, setFilteredStaff] = useState(staffData);
-  const [searchValue, setSearchValue] = useState("");
-  const [toastMessage, setToastMessage] = useState("");
-  const [showToast, setShowToast] = useState(false);
-  const [formData, setFormData] = useState({ name: "", specialty: "", services: [], status: "" });
-  const [showModal, setShowModal] = useState(false);
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-  const [dropdownResults, setDropdownResults] = useState([]);
-  const [confirmExit, setConfirmExit] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingStaffId, setEditingStaffId] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [staffToDelete, setStaffToDelete] = useState(null);
+  // Fetch staffs table on mount
+  useEffect(() => {
+    const fetchStaffs = async () => {
+      setLoading(true);
+      try {
+        console.log('[Staffs] Starting fetch from staffs table...');
+        const tablesInfo = await databaseAPI.getTablesInfo(['staffs']);
+        
+        if (tablesInfo && Array.isArray(tablesInfo)) {
+          console.log('[Staffs] Fetched tables info:', tablesInfo);
+          
+          const tableInfo = tablesInfo[0];
+          if (!tableInfo) {
+            console.warn('[Staffs] No table info returned');
+            return;
+          }
+          
+          console.log('[Staffs] Table info for staffs:', tableInfo);
+          
+          // Get column names - display only names, category_specialty, employment
+          const displayColumns = ['names', 'category_specialty', 'employment'];
+          
+          // Fetch actual data
+          let rowData = [];
+          try {
+            const dataResult = await databaseAPI.getTableData('staffs', 10000, 0);
+            rowData = dataResult.data || [];
+            
+            console.log('[Staffs] Raw data from API:', rowData);
+            console.log('[Staffs] Total rows:', rowData.length);
+            if (rowData.length > 0) {
+              console.log('[Staffs] Available columns in first row:', Object.keys(rowData[0]));
+              console.log('[Staffs] First row full data:', rowData[0]);
+              console.log('[Staffs] names value:', rowData[0].names, 'category_specialty value:', rowData[0].category_specialty, 'employment value:', rowData[0].employment);
+            }
+            
+            // Filter to only display columns - keep all columns if display columns are missing
+            rowData = rowData.map(row => {
+              const filtered = {};
+              displayColumns.forEach(col => {
+                // Always include the column, even if empty
+                filtered[col] = row[col] !== undefined ? row[col] : null;
+              });
+              return filtered;
+            });
+            
+            console.log(`[Staffs] Fetched ${rowData.length} rows, filtered first row:`, rowData[0]);
+          } catch (dataError) {
+            console.warn(`[Staffs] Error fetching data:`, dataError);
+            rowData = [];
+          }
+          
+          console.log(`[Staffs] After processing: ${rowData.length} rows available`);
+          
+          setStaffsData({
+            id: 'staffs',
+            name: 'Staff Members',
+            meta: `${tableInfo.rowCount} staff members`,
+            lastUpdated: 'Today',
+            rows: rowData,
+            cols: displayColumns,
+          });
+          
+          console.log('[Staffs] State updated with', rowData.length, 'rows');
+        }
+      } catch (error) {
+        console.error('[Staffs] Error fetching data:', error);
+        setStaffsData({
+          id: 'staffs',
+          name: 'Staff Members',
+          meta: '0 staff members',
+          rows: [],
+          cols: ['names', 'category_specialty', 'employment'],
+        });
+        displayToast('Failed to fetch staff data');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Check if form has any data
-  const hasFormData = useCallback(() => {
-    return formData.name.trim() !== "" || 
-           formData.specialty.trim() !== "" || 
-           formData.services.length > 0 || 
-           formData.status.trim() !== "";
-  }, [formData]);
-
-  // Handle modal close with confirmation
-  const handleModalClose = useCallback(() => {
-    setConfirmExit(true);
+    fetchStaffs();
   }, []);
-
-  const handleConfirmExit = () => {
-    setFormData({ name: "", specialty: "", services: [], status: "" });
-    setConfirmExit(false);
-    setShowModal(false);
-    setIsEditing(false);
-    setEditingStaffId(null);
-  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -203,99 +243,31 @@ export default function SuperAdminUsersDashboard() {
     navigate("/operators/login");
   };
 
-  const getServiceNames = (serviceIds) => {
-    return availableServices
-      .filter(s => serviceIds.includes(s.id))
-      .map(s => s.name)
-      .join(", ");
-  };
-
-  const handleSearch = (value) => {
-    setSearchValue(value);
-    const lower = value.toLowerCase().trim();
-    if (!lower) {
-      setShowSearchDropdown(false);
-      setDropdownResults([]);
-      setFilteredStaff(staffData);
-    } else {
-      const results = staffData
-        .filter(s => 
-          s.name.toLowerCase().startsWith(lower) || s.specialty.toLowerCase().startsWith(lower)
-        )
-        .sort((a, b) => a.name.localeCompare(b.name));
-      setDropdownResults(results);
-      setShowSearchDropdown(results.length > 0);
-    }
-  };
-
-  const handleSelectFromDropdown = (staff) => {
-    setSearchValue(staff.name);
-    setShowSearchDropdown(false);
-    setFilteredStaff([staff]);
-  };
-
   const displayToast = (message) => {
     setToastMessage(message);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2800);
   };
 
-  const handleAddStaff = () => {
-    if (!formData.name || !formData.specialty || formData.services.length === 0 || !formData.status) {
-      displayToast("Please fill in all fields");
-      return;
-    }
-    // Add new staff to the list
-    const newStaff = {
-      id: staffData.length + 1,
-      initial: formData.name.charAt(0).toUpperCase(),
-      name: formData.name,
-      specialty: formData.specialty,
-      services: formData.services,
-      status: formData.status
+  // Format column names for display
+  const formatColumnName = (colName) => {
+    const columnMap = {
+      'names': 'name',
+      'category_specialty': 'specialty',
+      'employment': 'employment status'
     };
-    // Reset form and close modal
-    setFormData({ name: "", specialty: "", services: [], status: "" });
-    setShowModal(false);
-    displayToast(`Staff member ${formData.name} added successfully!`);
+    return columnMap[colName] || colName;
   };
 
-  const handleEditStaff = (staff) => {
-    setIsEditing(true);
-    setEditingStaffId(staff.id);
-    setFormData({
-      name: staff.name,
-      specialty: staff.specialty,
-      services: staff.services || [],
-      status: staff.status
-    });
-    setShowModal(true);
-  };
-
-  const handleUpdateStaff = () => {
-    if (!formData.name || !formData.specialty || formData.services.length === 0 || !formData.status) {
-      displayToast("Please fill in all fields");
-      return;
+  // Format cell display value
+  const formatCellValue = (cellValue, colName) => {
+    if (typeof cellValue === 'boolean') {
+      return cellValue ? 'Active' : 'Inactive';
     }
-    // Update logic would go here
-    setFormData({ name: "", specialty: "", services: [], status: "" });
-    setShowModal(false);
-    setIsEditing(false);
-    setEditingStaffId(null);
-    displayToast(`Staff member ${formData.name} updated successfully!`);
-  };
-
-  const handleDeleteStaff = (staff) => {
-    setStaffToDelete(staff);
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (staffToDelete) {
-      displayToast(`Account deleted for ${staffToDelete.name}!`);
-      setShowDeleteConfirm(false);
-      setStaffToDelete(null);
+    if (cellValue === null || cellValue === undefined) {
+      return '—';
     }
+    return cellValue || '';
   };
 
 
@@ -378,7 +350,7 @@ export default function SuperAdminUsersDashboard() {
         <header className="dashboard-header">
           <div className="header-title-section">
             <h1 className="header-main-title">Staff Management</h1>
-            <p className="header-subtitle">BeautyBook Pro • Saturday, Dec 7, 2024</p>
+            <p className="header-subtitle">BeautyBook Pro • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}</p>
           </div>
           <div className="header-actions">
             <button className="header-action-btn" onClick={() => displayToast('No new notifications')}>
@@ -394,365 +366,196 @@ export default function SuperAdminUsersDashboard() {
 
         {/* Content */}
         <main className="dashboard-main">
-          {/* User Management Panel */}
           <div className="dashboard-panel">
-            <div className="panel-header">
-              <div className="panel-title">
-                <UserIcon />
-                Staff Management
-              </div>
-              <div className="table-controls">
-                <div className="search-wrap" style={{ position: "relative" }}>
-                  <SearchIcon />
-                  <input 
-                    className="search-input" 
-                    type="text" 
-                    placeholder="Search"
-                    value={searchValue}
-                    onChange={(e) => handleSearch(e.target.value)}
+            {/* Panel header with search and add button */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div className="panel-title">All Staff Members ({staffsData.rows?.length || 0})</div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {/* Search Input */}
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="Search staff..."
+                    onChange={(e) => {
+                      const value = e.target.value.toLowerCase();
+                      if (value) {
+                        console.log('[Staffs] Searching for:', value);
+                      }
+                    }}
+                    style={{
+                      padding: '8px 12px 8px 32px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(152, 143, 129, 0.3)',
+                      backgroundColor: 'rgba(35, 29, 26, 0.8)',
+                      color: '#D4C5B9',
+                      fontSize: '13px',
+                      width: '200px',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(221, 144, 29, 0.5)';
+                      e.currentTarget.style.backgroundColor = 'rgba(35, 29, 26, 0.95)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                      e.currentTarget.style.backgroundColor = 'rgba(35, 29, 26, 0.8)';
+                    }}
                   />
-                  {/* Search Results Dropdown */}
-                  {showSearchDropdown && searchValue && (
-                    <div className="search-dropdown" style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: 0,
-                      right: 0,
-                      marginTop: "8px",
-                      backgroundColor: "#1a1a1a",
-                      border: "1px solid rgba(221, 144, 29, 0.3)",
-                      borderRadius: "8px",
-                      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
-                      zIndex: 100,
-                      maxHeight: "300px",
-                      overflowY: "auto",
-                      fontFamily: "Inter, sans-serif",
-                      scrollbarWidth: "thin",
-                      scrollbarColor: "rgba(221, 144, 29, 0.2) transparent"
-                    }}>
-                      {dropdownResults.map((staff, index) => (
-                        <div 
-                          key={staff.id} 
-                          onClick={() => handleSelectFromDropdown(staff)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            padding: "12px 16px",
-                            borderBottom: index !== dropdownResults.length - 1 ? "1px solid rgba(221, 144, 29, 0.1)" : "none",
-                            cursor: "pointer",
-                            transition: "background-color 0.2s ease"
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.08)"}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                        >
-                          <div style={{
-                            width: "36px",
-                            height: "36px",
-                            borderRadius: "6px",
-                            backgroundColor: "rgba(221, 144, 29, 0.15)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            color: "#dd901d",
-                            flexShrink: 0
-                          }}>
-                            {staff.initial}
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{
-                              fontSize: "13px",
-                              fontWeight: "600",
-                              color: "#f5f5f5"
-                            }}>
-                              {staff.name}
-                            </div>
-                            <div style={{
-                              fontSize: "11px",
-                              color: "#988f81"
-                            }}>
-                              {staff.email}
-                            </div>
-                          </div>
-                          <div style={{
-                            fontSize: "11px",
-                            fontWeight: "600",
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            backgroundColor: staff.status === 'Active' ? "rgba(76, 175, 80, 0.15)" : "rgba(244, 67, 54, 0.15)",
-                            color: staff.status === 'Active' ? "#4caf50" : "#f44336",
-                            flexShrink: 0
-                          }}>
-                            {staff.status}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
-                <button className="btn-gold" onClick={() => setShowModal(true)}>Add Staff</button>
+                
+                {/* Add Button */}
+                <button
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#dd901d',
+                    color: '#1a1a1a',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e6a326'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#dd901d'}
+                >
+                  Add Staff
+                </button>
               </div>
             </div>
 
-            {/* Table */}
-            <div className="table-wrapper">
-              <div className="table-head">
-                <div className="th-user">Staff Member</div>
-                <div className="th-role">Specialty</div>
-                <div className="th-status">Services</div>
-                <div className="th-login">Status</div>
-                <div className="th-actions">Actions</div>
-              </div>
-
-              <div className="table-body">
-                {filteredStaff.length > 0 ? (
-                  filteredStaff.map(staff => (
-                    <div key={staff.id} className="table-row">
-                      <div className="user-cell">
-                        <div className="avatar">
-                          <span className="avatar-initial">{staff.initial}</span>
-                          <span className={`avatar-dot ${staff.status === 'Active' ? 'active' : 'inactive'}`}></span>
-                        </div>
-                        <div className="user-info">
-                          <span className="user-name">{staff.name}</span>
-                        </div>
+            {/* Staff Table View */}
+            {loading ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading staff data...</div>
+            ) : staffsData.rows && staffsData.rows.length > 0 ? (
+              <div style={{ marginTop: '0px', overflowX: 'auto' }}>
+                <table className="data-table" style={{ minWidth: '800px' }}>
+                  <thead>
+                    <tr>
+                      {staffsData.cols.map((col) => (
+                        <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const itemsPerPage = 12;
+                      const startIdx = (currentStaffPage - 1) * itemsPerPage;
+                      const endIdx = startIdx + itemsPerPage;
+                      return staffsData.rows.slice(startIdx, endIdx).map((staff, idx) => (
+                        <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                          {staffsData.cols.map((col) => {
+                            const cellValue = staff[col];
+                            const displayValue = formatCellValue(cellValue, col);
+                            return (
+                              <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
+                            );
+                          })}
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+                {staffsData.rows.length > 0 && (() => {
+                  const itemsPerPage = 12;
+                  const totalPages = Math.ceil(staffsData.rows.length / itemsPerPage);
+                  const startIdx = (currentStaffPage - 1) * itemsPerPage + 1;
+                  const endIdx = Math.min(currentStaffPage * itemsPerPage, staffsData.rows.length);
+                  return (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
+                      <div style={{ color: '#988f81', fontSize: '13px' }}>
+                        Showing {startIdx}–{endIdx} of {staffsData.rows.length} staff
                       </div>
-
-                      <div className="badge">
-                        <span className="badge-inner badge-staff">
-                          {staff.specialty}
-                        </span>
-                      </div>
-
-                      <div className="last-login-cell">
-                        <span className="last-login-badge">{getServiceNames(staff.services)}</span>
-                      </div>
-
-                      <div className="badge">
-                        <span className={`badge-inner ${staff.status === 'Active' ? 'badge-active' : 'badge-inactive'}`}>
-                          {staff.status}
-                        </span>
-                      </div>
-
-                      <div className="actions-cell">
-                        <button className="action-btn" title="Edit" onClick={() => handleEditStaff(staff)}>
-                          <EditIcon />
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => setCurrentStaffPage(p => Math.max(1, p - 1))}
+                          disabled={currentStaffPage === 1}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(152, 143, 129, 0.3)',
+                            background: currentStaffPage === 1 ? 'rgba(152, 143, 129, 0.05)' : 'transparent',
+                            color: currentStaffPage === 1 ? '#6B6157' : '#988f81',
+                            fontSize: '13px',
+                            cursor: currentStaffPage === 1 ? 'default' : 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentStaffPage !== 1) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                              e.currentTarget.style.background = 'rgba(152, 143, 129, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentStaffPage !== 1) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          ← Previous
                         </button>
-                        <button className="action-btn danger" title="Remove" onClick={() => handleDeleteStaff(staff)}>
-                          <DeleteIcon />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#988f81', fontSize: '13px' }}>
+                          Page {currentStaffPage} of {totalPages}
+                        </div>
+                        <button
+                          onClick={() => setCurrentStaffPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentStaffPage === totalPages}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(152, 143, 129, 0.3)',
+                            background: currentStaffPage === totalPages ? 'rgba(152, 143, 129, 0.05)' : 'transparent',
+                            color: currentStaffPage === totalPages ? '#6B6157' : '#988f81',
+                            fontSize: '13px',
+                            cursor: currentStaffPage === totalPages ? 'default' : 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentStaffPage !== totalPages) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                              e.currentTarget.style.background = 'rgba(152, 143, 129, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentStaffPage !== totalPages) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          Next →
                         </button>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="table-empty">No staff members found.</div>
-                )}
+                  );
+                })()}
               </div>
-            </div>
+            ) : (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No staff members found</div>
+            )}
           </div>
         </main>
       </div>
 
-      {/* ─── MODAL ─── */}
-      <AddStaffModal 
-        showModal={showModal}
-        onClose={handleModalClose}
-        formData={formData}
-        setFormData={setFormData}
-        handleAddStaff={isEditing ? handleUpdateStaff : handleAddStaff}
-        isEditing={isEditing}
-        availableServices={availableServices}
-      />
-
-      {/* ─── DELETE CONFIRMATION DIALOG ─── */}
-      {showDeleteConfirm && staffToDelete && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.8)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1001,
-          fontFamily: "Inter, sans-serif"
-        }}>
-          <div style={{
-            backgroundColor: "#1a1a1a",
-            borderRadius: "12px",
-            padding: "32px",
-            width: "90%",
-            maxWidth: "400px",
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-            border: "1px solid rgba(221, 144, 29, 0.2)"
-          }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{
-              fontSize: "18px",
-              fontWeight: "700",
-              color: "#f5f5f5",
-              margin: "0 0 16px 0"
-            }}>Delete Staff Member?</h3>
-            <p style={{
-              fontSize: "14px",
-              color: "#988f81",
-              margin: "0 0 8px 0",
-              lineHeight: "1.5"
-            }}>Are you sure you want to delete <span style={{ color: "#dd901d", fontWeight: "600" }}>{staffToDelete.name}</span>? This action cannot be undone.</p>
-            <div style={{
-              display: "flex",
-              gap: "12px",
-              justifyContent: "flex-end",
-              marginTop: "24px"
-            }}>
-              <button
-                onClick={() => {
-                  setShowDeleteConfirm(false);
-                  setStaffToDelete(null);
-                }}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "transparent",
-                  border: "1px solid rgba(221, 144, 29, 0.4)",
-                  color: "#dd901d",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                  transition: "all 0.2s ease"
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
-                  e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.backgroundColor = "transparent";
-                  e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#e74c3c",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                  transition: "background-color 0.2s ease"
-                }}
-                onMouseOver={(e) => e.target.style.backgroundColor = "#c0392b"}
-                onMouseOut={(e) => e.target.style.backgroundColor = "#e74c3c"}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── MODAL EXIT CONFIRMATION DIALOG ─── */}
-      {confirmExit && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.8)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1001,
-          fontFamily: "Inter, sans-serif"
-        }}>
-          <div style={{
-            backgroundColor: "#1a1a1a",
-            borderRadius: "12px",
-            padding: "32px",
-            width: "90%",
-            maxWidth: "400px",
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-            border: "1px solid rgba(221, 144, 29, 0.2)"
-          }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{
-              fontSize: "18px",
-              fontWeight: "700",
-              color: "#f5f5f5",
-              margin: "0 0 16px 0"
-            }}>Discard Changes?</h3>
-            <p style={{
-              fontSize: "14px",
-              color: "#988f81",
-              margin: "0 0 24px 0",
-              lineHeight: "1.5"
-            }}>You have unsaved data. Are you sure you want to exit without adding the staff member?</p>
-            <div style={{
-              display: "flex",
-              gap: "12px",
-              justifyContent: "flex-end"
-            }}>
-              <button
-                onClick={() => setConfirmExit(false)}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "transparent",
-                  border: "1px solid rgba(221, 144, 29, 0.4)",
-                  color: "#dd901d",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                  transition: "all 0.2s ease"
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
-                  e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.backgroundColor = "transparent";
-                  e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
-                }}
-              >
-                Keep Editing
-              </button>
-              <button
-                onClick={handleConfirmExit}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#dd901d",
-                  color: "#1a1a1a",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                  transition: "background-color 0.2s ease"
-                }}
-                onMouseOver={(e) => e.target.style.backgroundColor = "#e6a326"}
-                onMouseOut={(e) => e.target.style.backgroundColor = "#dd901d"}
-              >
-                Discard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── TOAST NOTIFICATION ─── */}
+      {/* ─── TOAST ─── */}
       {showToast && (
-        <div className="toast show">
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          left: '24px',
+          background: 'rgba(35, 29, 26, 0.95)',
+          border: '1px solid rgba(221, 144, 29, 0.3)',
+          color: '#D4C5B9',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          fontSize: '13px',
+          zIndex: 1000,
+          backdropFilter: 'blur(10px)'
+        }}>
           {toastMessage}
         </div>
       )}
