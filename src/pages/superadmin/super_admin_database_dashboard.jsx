@@ -157,17 +157,36 @@ export default function SuperAdminDatabaseDashboard() {
         if (tablesInfo && Array.isArray(tablesInfo)) {
           console.log('[Dashboard] Fetched tables info:', tablesInfo);
           
+          // Define columns to hide for specific tables
+          const hiddenColumns = {
+            'appointment_logs': ['availability', 'status', 'archived_at']
+          };
+          
           // Convert fetched data to display format
           const fetchedTables = await Promise.all(
             tablesInfo.map(async (tableInfo) => {
               // Get column names from the columns data
-              const colNames = tableInfo.columns?.map(col => col.column_name) || [];
+              let colNames = tableInfo.columns?.map(col => col.column_name) || [];
+              
+              // Filter out hidden columns for this table
+              const hidden = hiddenColumns[tableInfo.name] || [];
+              colNames = colNames.filter(col => !hidden.includes(col));
               
               // Fetch actual data for this table
               let rowData = [];
               try {
                 const dataResult = await databaseAPI.getTableData(tableInfo.name, 50, 0);
                 rowData = dataResult.data || [];
+                
+                // Remove hidden columns from each row
+                rowData = rowData.map(row => {
+                  const filteredRow = {};
+                  hidden.forEach(hiddenCol => {
+                    delete row[hiddenCol];
+                  });
+                  return row;
+                });
+                
                 console.log(`[Dashboard] Fetched ${rowData.length} rows from ${tableInfo.name}`);
               } catch (dataError) {
                 console.warn(`[Dashboard] Error fetching data for ${tableInfo.name}:`, dataError);
