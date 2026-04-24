@@ -55,7 +55,7 @@ export default function DatabaseTableModal({
         </div>
 
         {/* Table */}
-        <div style={{flex: 1, marginTop:'16px', overflow: 'hidden'}}>
+        <div style={{flex: 1, marginTop:'16px', overflow: 'auto'}}>
           <table className="data-table">
             <thead>
               <tr>
@@ -66,17 +66,19 @@ export default function DatabaseTableModal({
             </thead>
             <tbody>
               {modalTable.rows.map((row, idx) => {
-                const rowKeys = Object.keys(row);
                 return (
                   <tr key={idx} style={{ cursor: 'pointer', transition: 'background-color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                    {rowKeys.map((key) => {
-                      const cellId = `${idx}-${key}`;
+                    {modalTable.cols.map((col) => {
+                      const cellId = `${idx}-${col}`;
                       const isEditing = editingCell === cellId;
+                      const cellValue = row[col];
+                      // Convert boolean to string for display
+                      const displayValue = typeof cellValue === 'boolean' ? String(cellValue) : cellValue || '';
                       return (
-                        <td key={key} style={{ padding: 0, position: 'relative' }}>
-                          {modalMode === 'edit' && !key.startsWith('id') 
+                        <td key={col} style={{ padding: 0, position: 'relative' }}>
+                          {modalMode === 'edit' && !col.startsWith('id') 
                             ? <input 
-                                defaultValue={row[key]} 
+                                defaultValue={displayValue} 
                                 onChange={() => setHasChanges(true)}
                                 style={{
                                   background: isEditing ? 'rgba(221, 144, 29, 0.2)' : 'transparent',
@@ -92,7 +94,7 @@ export default function DatabaseTableModal({
                                 onFocus={() => setEditingCell(cellId)}
                                 onBlur={() => setEditingCell(null)}
                               />
-                            : <span style={{ display: 'block', padding: '12px' }}>{row[key]}</span>
+                            : <span style={{ display: 'block', padding: '12px' }}>{displayValue}</span>
                           }
                         </td>
                       );

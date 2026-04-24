@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { databaseAPI } from "../../services/databaseApi";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
@@ -111,79 +112,7 @@ const NAV_ITEMS = [
 ];
 
 // ─── Database Tables Data ───────────────────────────────────────────────────
-
-const DATABASE_TABLES = [
-  {
-    id: 'users',
-    name: 'Users',
-    meta: '142 rows · 2.4 MB',
-    lastUpdated: 'Today',
-    rows: [
-      { id:'U001', name:'Anna Cruz',      email:'anna@beautybook.pro',    role:'Admin',  status:'Active' },
-      { id:'U002', name:'Mike Santos',    email:'mike@gmail.com',         role:'Staff',  status:'Active' },
-      { id:'U003', name:'Lea Mendoza',    email:'lea@gmail.com',          role:'Staff',  status:'Active' },
-      { id:'U004', name:'Ramon Reyes',    email:'ramon@gmail.com',        role:'Staff',  status:'Active' },
-      { id:'U005', name:'Carla Bautista', email:'carla@gmail.com',        role:'Staff',  status:'Inactive' },
-    ],
-    cols: ['ID','Name','Email','Role','Status'],
-  },
-  {
-    id: 'appointments',
-    name: 'Appointments',
-    meta: '3,847 rows · 12.1 MB',
-    lastUpdated: 'Today',
-    rows: [
-      { id:'A001', client:'Maria Santos',  service:'Hair Color',   staff:'Anna Cruz',   time:'10:00 AM', status:'Confirmed' },
-      { id:'A002', client:'Jose Reyes',    service:'Haircut',      staff:'Lea Mendoza', time:'11:30 AM', status:'Confirmed' },
-      { id:'A003', client:'Clara Lim',     service:'Nail Art',     staff:'Mike Santos', time:'1:00 PM',  status:'Pending' },
-      { id:'A004', client:'Ben Torres',    service:'Facial',       staff:'Carla B.',    time:'2:30 PM',  status:'Cancelled' },
-      { id:'A005', client:'Rosa Aquino',   service:'Manicure',     staff:'Anna Cruz',   time:'4:00 PM',  status:'Confirmed' },
-    ],
-    cols: ['ID','Client','Service','Staff','Time','Status'],
-  },
-  {
-    id: 'services',
-    name: 'Services',
-    meta: '18 rows · 0.1 MB',
-    lastUpdated: '3 days ago',
-    rows: [
-      { id:'S001', name:'Hair Color',  category:'Hair',   price:'₱800', duration:'90 min' },
-      { id:'S002', name:'Haircut',     category:'Hair',   price:'₱250', duration:'30 min' },
-      { id:'S003', name:'Nail Art',    category:'Nails',  price:'₱350', duration:'60 min' },
-      { id:'S004', name:'Facial',      category:'Skin',   price:'₱600', duration:'60 min' },
-      { id:'S005', name:'Manicure',    category:'Nails',  price:'₱200', duration:'45 min' },
-    ],
-    cols: ['ID','Name','Category','Price','Duration'],
-  },
-  {
-    id: 'staff',
-    name: 'Staff',
-    meta: '12 rows · 0.8 MB',
-    lastUpdated: 'Today',
-    rows: [
-      { id:'ST01', name:'Anna Cruz',      specialty:'Colorist',   schedule:'Mon-Fri', status:'Active',   rating:'4.9' },
-      { id:'ST02', name:'Mike Santos',    specialty:'Stylist',    schedule:'Tue-Sat', status:'Active',   rating:'4.7' },
-      { id:'ST03', name:'Lea Mendoza',    specialty:'Nail Tech',  schedule:'Mon-Fri', status:'Active',   rating:'4.8' },
-      { id:'ST04', name:'Ramon Reyes',    specialty:'Esthetician',schedule:'Wed-Sun', status:'Active',   rating:'4.6' },
-      { id:'ST05', name:'Carla Bautista', specialty:'Stylist',    schedule:'Mon-Thu', status:'On leave', rating:'4.5' },
-    ],
-    cols: ['ID','Name','Specialty','Schedule','Status','Rating'],
-  },
-  {
-    id: 'reports',
-    name: 'Reports',
-    meta: '142 rows · 2.4 MB',
-    lastUpdated: '16 hours ago',
-    rows: [
-      { id:'R001', title:'Monthly Revenue',   period:'Nov 2024',  total:'₱184,200', status:'Final' },
-      { id:'R002', title:'Staff Performance', period:'Nov 2024',  total:'—',        status:'Final' },
-      { id:'R003', title:'Monthly Revenue',   period:'Oct 2024',  total:'₱162,500', status:'Final' },
-      { id:'R004', title:'Client Retention',  period:'Q3 2024',   total:'—',        status:'Final' },
-      { id:'R005', title:'Monthly Revenue',   period:'Sep 2024',  total:'₱155,900', status:'Final' },
-    ],
-    cols: ['ID','Title','Period','Total','Status'],
-  },
-];
+// Tables are now fetched from the API at component mount
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -200,6 +129,8 @@ export default function SuperAdminDatabaseDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [modalTable, setModalTable] = useState(null);
   const [modalMode, setModalMode] = useState("view");
+  const [databaseTables, setDatabaseTables] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // Persist sidebar state
   useEffect(() => {
@@ -215,6 +146,58 @@ export default function SuperAdminDatabaseDashboard() {
     return () => clearTimeout(t);
   }, []);
 
+  // Fetch services and appointment_logs tables on mount
+  useEffect(() => {
+    const fetchDatabaseTables = async () => {
+      setLoading(true);
+      try {
+        console.log('[Dashboard] Fetching services and appointment_logs tables...');
+        const tablesInfo = await databaseAPI.getTablesInfo(['services', 'appointment_logs']);
+        
+        if (tablesInfo && Array.isArray(tablesInfo)) {
+          console.log('[Dashboard] Fetched tables info:', tablesInfo);
+          
+          // Convert fetched data to display format
+          const fetchedTables = await Promise.all(
+            tablesInfo.map(async (tableInfo) => {
+              // Get column names from the columns data
+              const colNames = tableInfo.columns?.map(col => col.column_name) || [];
+              
+              // Fetch actual data for this table
+              let rowData = [];
+              try {
+                const dataResult = await databaseAPI.getTableData(tableInfo.name, 50, 0);
+                rowData = dataResult.data || [];
+                console.log(`[Dashboard] Fetched ${rowData.length} rows from ${tableInfo.name}`);
+              } catch (dataError) {
+                console.warn(`[Dashboard] Error fetching data for ${tableInfo.name}:`, dataError);
+              }
+              
+              return {
+                id: tableInfo.name,
+                name: tableInfo.name.charAt(0).toUpperCase() + tableInfo.name.slice(1).replace(/_/g, ' '),
+                meta: `${tableInfo.rowCount} rows`,
+                lastUpdated: 'Today',
+                rows: rowData,
+                cols: colNames,
+              };
+            })
+          );
+          
+          // Set the fetched tables
+          setDatabaseTables(fetchedTables);
+        }
+      } catch (error) {
+        console.error('[Dashboard] Error fetching tables:', error);
+        displayToast('Failed to fetch database tables');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDatabaseTables();
+  }, []);
+
   const handleLogout = () => {
     logoutOperator();
     navigate("/operators/login");
@@ -227,14 +210,14 @@ export default function SuperAdminDatabaseDashboard() {
   };
 
   const openViewModal = (tableId) => {
-    const table = DATABASE_TABLES.find(t => t.id === tableId);
+    const table = databaseTables.find(t => t.id === tableId);
     setModalTable(table);
     setModalMode("view");
     setShowModal(true);
   };
 
   const openEditModal = (tableId) => {
-    const table = DATABASE_TABLES.find(t => t.id === tableId);
+    const table = databaseTables.find(t => t.id === tableId);
     setModalTable(table);
     setModalMode("edit");
     setShowModal(true);
@@ -360,7 +343,7 @@ export default function SuperAdminDatabaseDashboard() {
 
             {/* Database rows */}
             <div className="space-y-2 mt-2">
-              {DATABASE_TABLES.map((table) => (
+              {databaseTables.map((table) => (
                 <div key={table.id} className="db-row">
                   <div className="db-icon">
                     <DatabaseIcon color="#4387ef" />
