@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /* ── NAVBAR logo: scissors <> mark (white strokes on amber bg) ── */
 const LogoMark = () => (
@@ -374,9 +374,18 @@ const FooterSection = () => (
 export default function App() {
   const navigate = useNavigate();
   const handleBook = () => navigate("/register");
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
-    <div className="app-wrapper">
+    <div className="app-wrapper" style={{ zoom: isDesktop ? "150%" : "100%" }}>
       <NavBar onBookAppointment={handleBook}/>
       <HeroSection onBookAppointment={handleBook}/>
       <HowItWorksSection/>
