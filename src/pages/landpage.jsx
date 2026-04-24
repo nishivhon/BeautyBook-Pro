@@ -187,12 +187,14 @@ const NavBar = ({ onBookAppointment }) => {
           {label:"Home",       id:"home"},
           {label:"Services",   id:"services"},
           {label:"How It Works",id:"howitworks"},
-          {label:"About",      id:"about"},
         ].map(item => (
           <button key={item.id} onClick={() => scrollToSection(item.id)} className="nav-link">
             {item.label}
           </button>
         ))}
+        <button onClick={() => { navigate("/about"); setMenuOpen(false); }} className="nav-link">
+          About
+        </button>
       </div>
 
       {/* CTA - Desktop */}
@@ -208,7 +210,6 @@ const NavBar = ({ onBookAppointment }) => {
               {label:"Home",       id:"home"},
               {label:"Services",   id:"services"},
               {label:"How It Works",id:"howitworks"},
-              {label:"About",      id:"about"},
             ].map(item => (
               <button 
                 key={item.id} 
@@ -218,6 +219,12 @@ const NavBar = ({ onBookAppointment }) => {
                 {item.label}
               </button>
             ))}
+            <button 
+              onClick={() => { navigate("/about"); setMenuOpen(false); }} 
+              className="mobile-menu-link"
+            >
+              About
+            </button>
           </div>
           <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
             Book Appointment
@@ -325,7 +332,7 @@ const ServicesSection = () => {
 };
 
 const FooterSection = () => (
-  <footer id="about" className="footer">
+  <footer className="footer">
     <div className="section-container">
       {/* Contact row */}
       <div className="footer-row">
