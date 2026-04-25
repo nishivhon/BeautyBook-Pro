@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
+import { EditStaffModal } from "../../components/modal/superadmin/edit_staff";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -140,6 +141,8 @@ export default function SuperAdminUsersDashboard() {
   const [currentStaffPage, setCurrentStaffPage] = useState(1);
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [editingStaff, setEditingStaff] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -182,9 +185,9 @@ export default function SuperAdminUsersDashboard() {
               console.log('[Staffs] names value:', rowData[0].names, 'category_specialty value:', rowData[0].category_specialty, 'employment value:', rowData[0].employment);
             }
             
-            // Filter to only display columns - keep all columns if display columns are missing
+            // Filter to only display columns - but keep id for editing
             rowData = rowData.map(row => {
-              const filtered = {};
+              const filtered = { id: row.id };
               displayColumns.forEach(col => {
                 // Always include the column, even if empty
                 filtered[col] = row[col] !== undefined ? row[col] : null;
@@ -247,6 +250,29 @@ export default function SuperAdminUsersDashboard() {
     setToastMessage(message);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2800);
+  };
+
+  // Handle opening the edit modal
+  const handleEditStaff = (staff) => {
+    setEditingStaff(staff);
+    setIsEditModalOpen(true);
+  };
+
+  // Handle closing the edit modal
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingStaff(null);
+  };
+
+  // Handle saving the edited staff
+  const handleSaveStaff = (updatedStaff) => {
+    setStaffsData(prev => ({
+      ...prev,
+      rows: prev.rows.map(staff => 
+        staff.id === updatedStaff.id ? updatedStaff : staff
+      )
+    }));
+    displayToast('Staff member updated successfully');
   };
 
   // Format column names for display
@@ -438,6 +464,7 @@ export default function SuperAdminUsersDashboard() {
                       {staffsData.cols.map((col) => (
                         <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
                       ))}
+                      <th style={{ textAlign: 'left' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -454,6 +481,37 @@ export default function SuperAdminUsersDashboard() {
                               <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
                             );
                           })}
+                          <td style={{ fontSize: '13px' }}>
+                            <button
+                              onClick={() => handleEditStaff(staff)}
+                              title="Edit staff"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#988f81',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '12px',
+                                fontWeight: '500',
+                                transition: 'all 0.2s',
+                                borderRadius: '4px'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = '#dd901d';
+                                e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = '#988f81';
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <EditIcon color="currentColor" />
+                              Edit
+                            </button>
+                          </td>
                         </tr>
                       ));
                     })()}
@@ -559,6 +617,14 @@ export default function SuperAdminUsersDashboard() {
           {toastMessage}
         </div>
       )}
+
+      {/* ─── EDIT STAFF MODAL ─── */}
+      <EditStaffModal 
+        staff={editingStaff}
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        onSave={handleSaveStaff}
+      />
     </div>
   );
 }
