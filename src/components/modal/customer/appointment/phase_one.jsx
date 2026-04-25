@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../confirmation_dialog";
+import Toast from "../../../toast";
 
 const CalendarSmIcon = () => (
   <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" width={18} height={18}>
@@ -21,37 +23,6 @@ const ClockSmIcon = () => (
   </svg>
 );
 
-// Generate date options dynamically based on today's date
-const generateDateOptions = () => {
-  const today = new Date();
-  const dates = [];
-  const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
-  const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  
-  for (let i = 0; i < 5; i++) {
-    const currentDate = new Date(today);
-    currentDate.setDate(today.getDate() + i);
-    
-    const dayLabel = i === 0 ? "Today" : dayLabels[currentDate.getDay()];
-    const dateStr = `${monthLabels[currentDate.getMonth()]} ${currentDate.getDate()}`;
-    
-    dates.push({
-      day: dayLabel,
-      date: dateStr,
-      slots: Math.floor(Math.random() * 8) + 2, // Random slots between 2-9
-    });
-  }
-  
-  return dates;
-};
-
-const DATE_OPTIONS = generateDateOptions();
-
-const TIME_OPTIONS = [
-  "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM",
-  "2:00 PM", "2:30 PM", "3:00 PM",  "3:30 PM",  "4:00 PM", "5:00 PM",
-];
-
 const STEPS = [
   { number: 1, label: "Schedule" },
   { number: 2, label: "Service"  },
@@ -67,6 +38,23 @@ const convertTo12HourFormat = (time24) => {
   const hours12 = hours % 12 || 12;
   return `${hours12}:${minutes.toString().padStart(2, "0")} ${period}`;
 };
+
+/* Shake Animation Keyframes */
+const shakeKeyframes = `
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+  }
+`;
+
+/* Style injection for shake animation */
+if (typeof window !== 'undefined' && !document.getElementById('shake-animation')) {
+  const style = document.createElement('style');
+  style.id = 'shake-animation';
+  style.textContent = shakeKeyframes;
+  document.head.appendChild(style);
+}
 
 /* ── Header ── */
 const BookingHeader = ({ onBack, onBackClick }) => (
@@ -108,6 +96,12 @@ const ProgressIndicator = ({ currentStep = 1 }) => (
   </div>
 );
 
+// Hardcoded times for display
+const ALL_TIME_SLOTS = [
+  '09:00', '09:30', '10:00', '10:30', '11:00',
+  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'
+];
+
 export const AppointmentForm = ({ onBack, onContinue }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
@@ -117,15 +111,94 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
   const [manualTime, setManualTime] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
+  const [shakingTimeSlot, setShakingTimeSlot] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  
+  // State for dates and availability
+  const [dateOptions, setDateOptions] = useState([]);
+  const [unavailableTimes, setUnavailableTimes] = useState([]);
+  const [loadingTimes, setLoadingTimes] = useState(false);
+
+  // Auto-hide toast after it becomes visible
+  useEffect(() => {
+    if (toastVisible) {
+      const timer = setTimeout(() => setToastVisible(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastVisible]);
+
+  // Generate dates for next 5 days
+  useEffect(() => {
+    const today = new Date();
+    const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
+    const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const datesData = [];
+
+    for (let i = 0; i < 5; i++) {
+      const currentDate = new Date(today);
+      currentDate.setDate(today.getDate() + i);
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const dayLabel = i === 0 ? "Today" : dayLabels[currentDate.getDay()];
+      const dateLabel = `${monthLabels[currentDate.getMonth()]} ${currentDate.getDate()}`;
+
+      datesData.push({
+        date: dateStr,
+        day: dayLabel,
+        dateLabel: dateLabel,
+      });
+    }
+
+    setDateOptions(datesData);
+  }, []);
+
+  // Fetch time availability when a date is selected
+  useEffect(() => {
+    setSelectedTime(null); // Reset time selection when date changes
+    if (selectedDate !== null && selectedDate < dateOptions.length) {
+      setLoadingTimes(true);
+      const selectedDateObj = dateOptions[selectedDate];
+      
+      fetch(`/api/appointments/available-slots?date=${selectedDateObj.date}`)
+        .then(res => res.json())
+        .then(data => {
+          console.log(`[Phase1] Available slots for ${selectedDateObj.date}:`, data);
+          if (data.success && data.slots && data.slots.length > 0) {
+            // Get times that are available (availability = true)
+            // Strip seconds from time_24 (convert 10:30:00 to 10:30)
+            const availableTimes = data.slots.map(slot => slot.time_24.split(':').slice(0, 2).join(':'));
+            console.log(`[Phase1] Available times: ${availableTimes.join(', ')}`);
+            // Unavailable times are ones NOT in the available list
+            const unavailable = ALL_TIME_SLOTS.filter(time => !availableTimes.includes(time));
+            console.log(`[Phase1] Unavailable times: ${unavailable.join(', ')}`);
+            setUnavailableTimes(unavailable);
+          } else {
+            console.warn('[Phase1] No slots returned from API');
+            setUnavailableTimes(ALL_TIME_SLOTS); // All unavailable if no data
+          }
+          setLoadingTimes(false);
+        })
+        .catch(err => {
+          console.error('Error fetching time availability:', err);
+          setUnavailableTimes(ALL_TIME_SLOTS); // All unavailable on error
+          setLoadingTimes(false);
+        });
+    } else {
+      setUnavailableTimes([]);
+    }
+  }, [selectedDate, dateOptions]);
 
   const handleBackClick = () => {
     setShowBackdropConfirm(true);
   };
 
   const handleContinue = () => {
+    const dateObj = selectedDate !== null ? dateOptions[selectedDate] : null;
+    const time = selectedTime !== null ? ALL_TIME_SLOTS[selectedTime] : manualTime;
+
     onContinue?.({
-      date: selectedDate !== null ? DATE_OPTIONS[selectedDate] : { date: manualDate },
-      time: selectedTime !== null ? TIME_OPTIONS[selectedTime] : manualTime,
+      date: dateObj ? dateObj.dateLabel : manualDate,
+      dateISO: dateObj ? dateObj.date : manualDate,
+      time: time,
     });
   };
 
@@ -178,6 +251,19 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
 
   return (
     <>
+      {/* Toast Notification - Rendered outside modal using Portal */}
+      {createPortal(
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, pointerEvents: "none", zIndex: 9999 }}>
+          <Toast 
+            message="This time slot is not available" 
+            type="error" 
+            duration={3000}
+            isVisible={toastVisible}
+          />
+        </div>,
+        document.body
+      )}
+
       <div 
         className="appt-backdrop"
         onClick={(e) => {
@@ -266,18 +352,28 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
               </div>
             ) : (
               <div className="appt-date-row">
-                {DATE_OPTIONS.map((item, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedDate(selectedDate === i ? null : i)}
-                    className={`appt-date-card${selectedDate === i ? " selected" : ""}`}
-                    aria-pressed={selectedDate === i}
-                  >
-                    <span className="appt-date-day">{item.day}</span>
-                    <span className="appt-date-num">{item.date}</span>
-                    <span className="appt-date-slots">{item.slots} slots</span>
-                  </button>
-                ))}
+                {dateOptions.length === 0 ? (
+                  <p style={{ color: "#988f81", textAlign: "center", padding: "20px" }}>No available dates</p>
+                ) : (
+                  dateOptions.map((item, i) => {
+                    const handleDateSelect = () => setSelectedDate(selectedDate === i ? null : i);
+                    return (
+                      <button
+                        key={i}
+                        onClick={handleDateSelect}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          handleDateSelect();
+                        }}
+                        className={`appt-date-card${selectedDate === i ? " selected" : ""}`}
+                        aria-pressed={selectedDate === i}
+                      >
+                        <span className="appt-date-day">{item.day}</span>
+                        <span className="appt-date-num">{item.dateLabel}</span>
+                      </button>
+                    );
+                  })
+                )}
               </div>
             )
           ) : (
@@ -420,16 +516,47 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
               </div>
             ) : (
               <div className="appt-time-grid">
-                {TIME_OPTIONS.map((time, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedTime(selectedTime === i ? null : i)}
-                    className={`appt-time-chip${selectedTime === i ? " selected" : ""}`}
-                    aria-pressed={selectedTime === i}
-                  >
-                    {time}
-                  </button>
-                ))}
+                {selectedDate === null ? (
+                  <p style={{ color: "#988f81", textAlign: "center", padding: "20px", gridColumn: "1/-1" }}>
+                    Select a date first
+                  </p>
+                ) : loadingTimes ? (
+                  <p style={{ color: "#988f81", textAlign: "center", padding: "20px", gridColumn: "1/-1" }}>
+                    Loading availability...
+                  </p>
+                ) : (
+                  ALL_TIME_SLOTS.map((time, i) => {
+                    const isDisabled = unavailableTimes.includes(time);
+                    const handleTimeSelect = () => {
+                      if (isDisabled) {
+                        // Show shake animation and toast
+                        setShakingTimeSlot(i);
+                        setToastVisible(true);
+                        setTimeout(() => setShakingTimeSlot(null), 600);
+                      } else {
+                        setSelectedTime(selectedTime === i ? null : i);
+                      }
+                    };
+                    return (
+                      <button
+                        key={i}
+                        onClick={handleTimeSelect}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          handleTimeSelect();
+                        }}
+                        className={`appt-time-chip${selectedTime === i ? " selected" : ""}${isDisabled ? " disabled" : ""}`}
+                        aria-pressed={selectedTime === i}
+                        style={{
+                          ...(isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "auto" } : { pointerEvents: "auto" }),
+                          ...(shakingTimeSlot === i ? { animation: "shake 0.6s ease-in-out" } : {}),
+                        }}
+                      >
+                        {convertTo12HourFormat(time)}
+                      </button>
+                    );
+                  })
+                )}
               </div>
             )
           ) : (

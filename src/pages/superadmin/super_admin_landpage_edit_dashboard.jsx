@@ -471,10 +471,12 @@ export default function SuperAdminLandingPageEditor() {
 
   const NAV_ITEMS = [
     { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
-    { id: "user-accounts", label: "User Accounts", icon: UserIcon },
+    { id: "staff-management", label: "Staff Management", icon: UserIcon },
     { id: "database", label: "Database", icon: DatabaseIcon },
+    { id: "services", label: "Services", icon: DatabaseIcon },
+    { id: "logs", label: "Logs", icon: DatabaseIcon },
     { id: "security", label: "Security", icon: ShieldIcon },
-    { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
+    // { id: "landing-page", label: "Landing Page", icon: GlobeIcon, disabled: true },
   ];
 
   const today = new Date();
@@ -523,12 +525,17 @@ export default function SuperAdminLandingPageEditor() {
               <button
                 key={item.id}
                 onClick={() => {
+                  if (item.disabled) return;
                   if (item.id === "dashboard") {
                     navigate("/superadmin/dashboard");
-                  } else if (item.id === "user-accounts") {
+                  } else if (item.id === "staff-management") {
                     navigate("/superadmin/users");
                   } else if (item.id === "database") {
                     navigate("/superadmin/database");
+                  } else if (item.id === "services") {
+                    navigate("/superadmin/services");
+                  } else if (item.id === "logs") {
+                    navigate("/superadmin/logs");
                   } else if (item.id === "security") {
                     navigate("/superadmin/security");
                   } else if (item.id === "landing-page") {
@@ -537,8 +544,9 @@ export default function SuperAdminLandingPageEditor() {
                     setActiveNav(item.id);
                   }
                 }}
-                className={`nav-button ${isActive ? "active" : ""}`}
+                className={`nav-button ${isActive ? "active" : ""} ${item.disabled ? "disabled" : ""}`}
                 title={item.label}
+                disabled={item.disabled}
               >
                 <item.icon color={isActive ? "#000" : "currentColor"} />
                 {sidebarExpanded && <span>{item.label}</span>}

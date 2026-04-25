@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 /* ── NAVBAR logo: scissors <> mark (white strokes on amber bg) ── */
 const LogoMark = () => (
@@ -139,15 +140,23 @@ const CheckItem = () => (
 );
 
 const NavBar = ({ onBookAppointment }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
     if (el) {
       const top = el.getBoundingClientRect().top + window.scrollY - 52;
       window.scrollTo({ top, behavior: "smooth" });
     }
+    setMenuOpen(false);
   };
 
   const navigate = useNavigate();
+
+  const handleBooking = () => {
+    navigate("/register");
+    setMenuOpen(false);
+  };
 
   return (
     <nav className="navbar">
@@ -161,24 +170,67 @@ const NavBar = ({ onBookAppointment }) => {
         </span>
       </div>
 
-      {/* Nav links */}
-      <div className="flex-center-gap-1">
+      {/* Mobile menu button */}
+      <button 
+        onClick={() => setMenuOpen(!menuOpen)} 
+        className="mobile-menu-btn"
+        aria-label="Toggle menu"
+      >
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:20,height:20}}>
+          <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      </button>
+
+      {/* Nav links - Desktop */}
+      <div className="flex-center-gap-1 nav-links-desktop">
         {[
           {label:"Home",       id:"home"},
           {label:"Services",   id:"services"},
           {label:"How It Works",id:"howitworks"},
-          {label:"About",      id:"about"},
         ].map(item => (
           <button key={item.id} onClick={() => scrollToSection(item.id)} className="nav-link">
             {item.label}
           </button>
         ))}
+        <button onClick={() => { navigate("/about"); setMenuOpen(false); }} className="nav-link">
+          About
+        </button>
       </div>
 
-      {/* CTA */}
-      <button onClick={onBookAppointment} className="btn-primary btn-nav">
+      {/* CTA - Desktop */}
+      <button onClick={handleBooking} className="btn-primary btn-nav btn-nav-desktop">
         Book Appointment
       </button>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="mobile-menu">
+          <div className="mobile-menu-content">
+            {[
+              {label:"Home",       id:"home"},
+              {label:"Services",   id:"services"},
+              {label:"How It Works",id:"howitworks"},
+            ].map(item => (
+              <button 
+                key={item.id} 
+                onClick={() => scrollToSection(item.id)} 
+                className="mobile-menu-link"
+              >
+                {item.label}
+              </button>
+            ))}
+            <button 
+              onClick={() => { navigate("/about"); setMenuOpen(false); }} 
+              className="mobile-menu-link"
+            >
+              About
+            </button>
+          </div>
+          <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
+            Book Appointment
+          </button>
+        </div>
+      )}
     </nav>
   );
 };
@@ -280,7 +332,7 @@ const ServicesSection = () => {
 };
 
 const FooterSection = () => (
-  <footer id="about" className="footer">
+  <footer className="footer">
     <div className="section-container">
       {/* Contact row */}
       <div className="footer-row">
@@ -329,9 +381,45 @@ const FooterSection = () => (
 export default function App() {
   const navigate = useNavigate();
   const handleBook = () => navigate("/register");
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const scrollToSection = (id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.scrollY - 52;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
+    };
+
+    // Handle hash on initial load
+    if (window.location.hash) {
+      const sectionId = window.location.hash.substring(1);
+      setTimeout(() => scrollToSection(sectionId), 100);
+    }
+
+    // Handle hash changes
+    const handleHashChange = () => {
+      if (window.location.hash) {
+        const sectionId = window.location.hash.substring(1);
+        scrollToSection(sectionId);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   return (
-    <div className="app-wrapper">
+    <div className="app-wrapper" style={{ zoom: isDesktop ? "150%" : "100%" }}>
       <NavBar onBookAppointment={handleBook}/>
       <HeroSection onBookAppointment={handleBook}/>
       <HowItWorksSection/>

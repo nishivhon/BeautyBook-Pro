@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import CustomerHistoryModal from "../../components/modal/admin/customer_history";
+import CalendarAppointmentsModal from "../../components/modal/admin/calendar_appointments";
 import "../../styles/tailwind.css";
 
 // ── SVG Icons ──────────────────────────────────────────────────────────────────
@@ -24,15 +26,28 @@ const CheckCircleIcon = ({ color = "#22c55e" }) => (
     <path d="M5 8l2 2 4-4" stroke={color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
-const PlayIcon = ({ color = "#dd901d" }) => (
-  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-    <path d="M3.5 2.5l7 4-7 4V2.5z" fill={color}/>
+const PlayIcon = ({ size = 14, color = "#dd901d" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
+    <path d="M10 8l6 4-6 4V8z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
-const NextIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-    <path d="M3 2.5l5 4-5 4V2.5z" fill="rgba(152,143,129,0.6)"/>
-    <line x1="9" y1="2.5" x2="9" y2="10.5" stroke="rgba(152,143,129,0.6)" strokeWidth="1.4" strokeLinecap="round"/>
+const NextIcon = ({ size = 14, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
+    <path d="M10 8l4 4-4 4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <line x1="16" y1="8" x2="16" y2="16" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+const ChevronRightIcon = ({ size = 13, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M9 18l6-6-6-6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const DoneIcon = ({ size = 14, color = "#22c55e" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
+    <path d="M8 12l3 3 5-5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 const BreakIcon = () => (
@@ -78,6 +93,30 @@ const BellIcon = () => (
     <path d="M6 14.5a1.5 1.5 0 003 0" stroke="#988f81" strokeWidth="1.2" strokeLinecap="round"/>
   </svg>
 );
+const SkipForwardIcon = ({ size = 20, color = "#000" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M5 4v16" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M19 5l-8 6 8 6V5z" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const CustomerHistoryIcon = ({ size = 17, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <path d="M12 6v6l3 3" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M18 16l-2 2 2 2M22 16l-2 2 2 2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const QuickActionCalendarIcon = ({ size = 17, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect x="3" y="4" width="18" height="18" rx="3" stroke={color} strokeWidth="1.8" />
+    <path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="8" cy="15" r="1" fill={color} />
+    <circle cx="12" cy="15" r="1" fill={color} />
+    <circle cx="16" cy="15" r="1" fill={color} />
+  </svg>
+);
 
 function useElapsed(startMins = 22, startSecs = 39) {
   const [secs, setSecs] = useState(startMins * 60 + startSecs);
@@ -101,21 +140,42 @@ function useToast() {
   return { toast, show };
 }
 
+function useToday() {
+  const [date, setDate] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setDate(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+}
+
 const scheduleData = [
-  { time:"9:00 AM",  name:"Mark L.",  svc:"Haircut",      status:"done" },
-  { time:"9:30 AM",  name:"John D.",  svc:"Beard Trim",   status:"done" },
-  { time:"10:15 AM", name:"Juan D.",  svc:"Haircut",      status:"active" },
-  { time:"11:05 AM", name:"Anna R.",  svc:"Full Service", status:"next" },
-  { time:"11:45 AM", name:"Sofia R.", svc:"Full Service", status:"next" },
+  { time:"9:00 AM",  name:"Mark L.",  svc:"Haircut",      status:"done", details: { serviceSelected: "Hair cuts", currentService: "Hair cuts", startTime: "9:00 AM", estimatedTime: "30 mins" } },
+  { time:"9:30 AM",  name:"John D.",  svc:"Beard Trim",   status:"done", details: { serviceSelected: "Beard trimming", currentService: "Beard trimming", startTime: "9:30 AM", estimatedTime: "25 mins" } },
+  { time:"10:15 AM", name:"Juan D.",  svc:"Haircut",      status:"active", details: { serviceSelected: "Hair cuts", currentService: "Hair cuts", startTime: "10:15 AM", estimatedTime: "30 mins" } },
+  { time:"11:05 AM", name:"Anna R.",  svc:"Full Service", status:"next", details: { serviceSelected: "Hair cuts, Hair color", currentService: "Pending", startTime: "11:05 AM", estimatedTime: "90 mins" } },
+  { time:"11:45 AM", name:"Sofia R.", svc:"Full Service", status:"next", details: { serviceSelected: "Manicure, Pedicure", currentService: "Pending", startTime: "11:45 AM", estimatedTime: "120 mins" } },
 ];
 
 const queueData = [
-  { num:2, name:"Anna Reyes",   svc:"Full Service", time:"11:05 AM", dur:"45 mins" },
-  { num:3, name:"Sofia Rivera", svc:"Full Service", time:"11:45 AM", dur:"45 mins" },
+  { num:2, name:"Anna Reyes",   svc:"Full Service", time:"11:05 AM", dur:"45 mins", details: { serviceSelected: "Hair cuts, Hair color", currentService: "Pending", startTime: "11:05 AM", estimatedTime: "90 mins" } },
+  { num:3, name:"Sofia Rivera", svc:"Full Service", time:"11:45 AM", dur:"45 mins", details: { serviceSelected: "Manicure, Pedicure", currentService: "Pending", startTime: "11:45 AM", estimatedTime: "120 mins" } },
 ];
 
 function StaffNav({ onLogout }) {
   const navigate = useNavigate();
+  const [active, setActive] = useState("Home");
+
+  const handleNavigation = (link) => {
+    setActive(link);
+    if (link === "Services") {
+      navigate("/staff/services");
+    } else if (link === "Queue") {
+      navigate("/staff/queue");
+    } else {
+      navigate("/staff/dashboard");
+    }
+  };
   
   return (
     <header className="admin-navbar">
@@ -126,9 +186,24 @@ function StaffNav({ onLogout }) {
         <span className="admin-nav-brand">BeautyBook Pro</span>
       </div>
       <nav className="admin-nav-links">
-        <button className="admin-nav-link active">Home</button>
-        <button className="admin-nav-link">Services</button>
-        <button className="admin-nav-link">Queue</button>
+        <button 
+          className={`admin-nav-link ${active === "Home" ? "active" : ""}`}
+          onClick={() => handleNavigation("Home")}
+        >
+          Home
+        </button>
+        <button 
+          className={`admin-nav-link ${active === "Services" ? "active" : ""}`}
+          onClick={() => handleNavigation("Services")}
+        >
+          Services
+        </button>
+        <button 
+          className={`admin-nav-link ${active === "Queue" ? "active" : ""}`}
+          onClick={() => handleNavigation("Queue")}
+        >
+          Queue
+        </button>
       </nav>
       <div className="admin-nav-right">
         <div className="admin-nav-user">
@@ -152,6 +227,15 @@ function StatCard({ value, label, color }) {
 }
 
 function CurrentServiceCard({ elapsed, completed, setCompleted, showToast }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const currentServiceDetails = {
+    serviceSelected: "Hair cuts",
+    currentService: "Hair cuts",
+    startTime: "10:15 AM",
+    estimatedTime: "30 mins"
+  };
+
   return (
     <div style={{ 
       background: "rgba(221, 144, 29, 0.06)", 
@@ -166,11 +250,13 @@ function CurrentServiceCard({ elapsed, completed, setCompleted, showToast }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
         <div>
           <span style={{ display: "inline-block", background: "rgba(34, 197, 94, 0.15)", color: "#22c55e", border: "1px solid rgba(34, 197, 94, 0.3)", fontSize: "11px", fontWeight: "bold", padding: "6px 10px", borderRadius: "20px", textTransform: "uppercase", marginRight: "12px" }}>In Progress</span>
-          <span style={{ fontSize: "16px", color: "#fff", fontWeight: "500" }}>Current Service</span>
+          <span style={{ fontSize: "16px", color: "#fff", fontWeight: "500" }}>Current Client</span>
         </div>
         <div style={{ fontSize: "12px", color: "#988f81" }}>Started 10:15 AM</div>
       </div>
-      <div style={{ background: "#231d1a", borderRadius: "12px", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", border: "1px solid rgba(152, 143, 129, 0.2)" }}>
+      <div 
+        onClick={() => setIsExpanded(!isExpanded)}
+        style={{ background: "#231d1a", borderRadius: "12px", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", border: "1px solid rgba(152, 143, 129, 0.2)", cursor: "pointer" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           <div style={{ width: "36px", height: "36px", background: "#dd901d", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#000", fontWeight: "bold", fontSize: "14px" }}>1</div>
           <div>
@@ -178,11 +264,50 @@ function CurrentServiceCard({ elapsed, completed, setCompleted, showToast }) {
             <div style={{ fontSize: "12px", color: "#988f81", marginTop: "4px" }}>Haircut</div>
           </div>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "12px", color: "#988f81", marginBottom: "6px" }}>Elapsed Time</div>
-          <div style={{ color: "#dd901d", fontSize: "14px", fontWeight: "bold" }}>{elapsed}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "12px", color: "#988f81", marginBottom: "6px" }}>Elapsed Time</div>
+            <div style={{ color: "#dd901d", fontSize: "14px", fontWeight: "bold" }}>{elapsed}</div>
+          </div>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className="live-queue-chevron"
+            style={{
+              transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+              transition: "transform 0.3s ease"
+            }}
+          >
+            <ChevronRightIcon size={13} color="currentColor" />
+          </button>
         </div>
       </div>
+
+      {isExpanded && (
+        <div className="live-queue-detail-section">
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div>
+              <span className="dash-detail-label">Service Selected</span>
+              <span className="dash-detail-value">{currentServiceDetails.serviceSelected}</span>
+            </div>
+            <div>
+              <span className="dash-detail-label">Current Service</span>
+              <span className="dash-detail-value">{currentServiceDetails.currentService}</span>
+            </div>
+            <div>
+              <span className="dash-detail-label">Starting Time</span>
+              <span className="dash-detail-value">{currentServiceDetails.startTime}</span>
+            </div>
+            <div>
+              <span className="dash-detail-label">Estimated Time</span>
+              <span className="dash-detail-value">{currentServiceDetails.estimatedTime}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: "10px" }}>
         <button onClick={() => { setCompleted(true); showToast("Service marked as complete!"); }}
           style={{
@@ -206,8 +331,18 @@ function CurrentServiceCard({ elapsed, completed, setCompleted, showToast }) {
           {completed ? "✓ Service Completed" : "✓ Complete Service"}
         </button>
         <button onClick={()=>showToast("Moved to next client")} 
-          style={{ width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center", background: "#231d1a", border: "1px solid rgba(152, 143, 129, 0.2)", borderRadius: "12px", cursor: "pointer" }}>
-          →
+          style={{ width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center", background: "#dd901d", border: "2px solid #dd901d", borderRadius: "12px", cursor: "pointer", transition: "all 0.2s", boxShadow: "0 4px 12px rgba(221, 144, 29, 0.3)" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(221, 144, 29, 0.5)";
+            e.currentTarget.style.transform = "scale(1.05)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(221, 144, 29, 0.3)";
+            e.currentTarget.style.transform = "scale(1)";
+          }}>
+          <div style={{ transform: "rotate(180deg)", display: "flex", alignItems: "center", justifyContent: "center", transformOrigin: "center center" }}>
+            <SkipForwardIcon size={20} color="#000" />
+          </div>
         </button>
       </div>
     </div>
@@ -215,6 +350,15 @@ function CurrentServiceCard({ elapsed, completed, setCompleted, showToast }) {
 }
 
 function QueueCard({ showToast }) {
+  const [expandedQueues, setExpandedQueues] = useState({});
+
+  const toggleQueueExpanded = (num) => {
+    setExpandedQueues(prev => ({
+      ...prev,
+      [num]: !prev[num]
+    }));
+  };
+
   return (
     <div style={{ background: "rgba(221, 144, 29, 0.06)", border: "1px solid rgba(152, 143, 129, 0.3)", borderRadius: "16px", padding: "24px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
@@ -222,22 +366,61 @@ function QueueCard({ showToast }) {
         <span style={{ fontSize: "12px", color: "#988f81", background: "rgba(35, 29, 26, 0.6)", padding: "6px 10px", borderRadius: "12px", border: "1px solid rgba(152, 143, 129, 0.2)" }}>2 Waiting</span>
       </div>
       {queueData.map(q => (
-        <div key={q.num} onClick={()=>showToast(`Viewing ${q.name}'s appointment`)}
-          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px", borderRadius: "12px", background: "rgba(35, 29, 26, 0.6)", marginBottom: "8px", border: "1px solid rgba(152, 143, 129, 0.2)", cursor: "pointer" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#060605", border: "1px solid rgba(152, 143, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold", color: "#988f81" }}>{q.num}</div>
-            <div>
-              <div style={{ fontSize: "14px", fontWeight: "500", color: "#fff" }}>{q.name}</div>
-              <div style={{ fontSize: "12px", color: "#988f81", marginTop: "4px" }}>{q.svc}</div>
+        <div key={q.num}>
+          <div
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px", borderRadius: "12px", background: "rgba(35, 29, 26, 0.6)", marginBottom: "8px", border: "1px solid rgba(152, 143, 129, 0.2)", cursor: "pointer" }}
+            onClick={() => toggleQueueExpanded(q.num)}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#060605", border: "1px solid rgba(152, 143, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold", color: "#988f81" }}>{q.num}</div>
+              <div>
+                <div style={{ fontSize: "14px", fontWeight: "500", color: "#fff" }}>{q.name}</div>
+                <div style={{ fontSize: "12px", color: "#988f81", marginTop: "4px" }}>{q.svc}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "14px", fontWeight: "500", color: "#fff" }}>{q.time}</div>
+                <div style={{ fontSize: "12px", color: "#988f81", marginTop: "4px" }}>{q.dur}</div>
+              </div>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleQueueExpanded(q.num);
+                }}
+                className="live-queue-chevron"
+                style={{
+                  transform: expandedQueues[q.num] ? "rotate(90deg)" : "rotate(0deg)",
+                  transition: "transform 0.3s ease"
+                }}
+              >
+                <ChevronRightIcon size={13} color="currentColor" />
+              </button>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "14px", fontWeight: "500", color: "#fff" }}>{q.time}</div>
-              <div style={{ fontSize: "12px", color: "#988f81", marginTop: "4px" }}>{q.dur}</div>
+          
+          {expandedQueues[q.num] && q.details && (
+            <div className="live-queue-detail-section">
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div>
+                  <span className="dash-detail-label">Service Selected</span>
+                  <span className="dash-detail-value">{q.details.serviceSelected}</span>
+                </div>
+                <div>
+                  <span className="dash-detail-label">Current Service</span>
+                  <span className="dash-detail-value">{q.details.currentService}</span>
+                </div>
+                <div>
+                  <span className="dash-detail-label">Starting Time</span>
+                  <span className="dash-detail-value">{q.details.startTime}</span>
+                </div>
+                <div>
+                  <span className="dash-detail-label">Estimated Time</span>
+                  <span className="dash-detail-value">{q.details.estimatedTime}</span>
+                </div>
+              </div>
             </div>
-            <span style={{ fontSize: "12px", color: "rgba(152, 143, 129, 0.5)" }}>›</span>
-          </div>
+          )}
         </div>
       ))}
     </div>
@@ -258,63 +441,93 @@ function StatsCard() {
   );
 }
 
-function ScheduleCard({ showToast }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const visible = collapsed ? scheduleData.slice(0,3) : scheduleData;
+function ScheduleRow({ time, name, svc, status }) {
+  const isActive = status === "active";
+  const isDone = status === "done";
+
+  const StatusIcon = isDone ? () => <DoneIcon size={14} color="#22c55e" />
+                   : isActive ? () => <PlayIcon size={14} color="#dd901d" />
+                   : () => <NextIcon size={14} color="#988f81" />;
+
   return (
-    <div style={{ background: "rgba(221, 144, 29, 0.06)", border: "1px solid rgba(152, 143, 129, 0.3)", borderRadius: "16px", padding: "24px", marginBottom: "16px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-        <span style={{ fontSize: "16px", color: "#fff", fontWeight: "500" }}>Today's Schedule</span>
-        <span style={{ fontSize: "12px", color: "#988f81" }}>Dec 7, 2024</span>
-      </div>
-      {visible.map((item, i) => {
-        const isActive = item.status === "active";
-        const isDone = item.status === "done";
-        const dotColor = isDone ? "#22c55e" : isActive ? "#dd901d" : "#988f81";
-        return (
-          <div key={i} onClick={()=>showToast(`${item.name} — ${item.svc}`)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "12px",
-              borderRadius: "12px",
-              marginBottom: "6px",
-              cursor: "pointer",
-              background: isActive ? "rgba(221, 144, 29, 0.1)" : "transparent",
-              border: isActive ? "1px solid rgba(221, 144, 29, 0.25)" : "none"
-            }}>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: dotColor, flexShrink: 0, animation: isActive ? "pulse 2s ease-in-out infinite" : "none" }}/>
-            <span style={{ fontSize: "12px", color: "#988f81", minWidth: "60px" }}>{item.time}</span>
-            <div style={{ width: "2px", height: "28px", background: "rgba(152, 143, 129, 0.2)", flexShrink: 0 }}/>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "14px", fontWeight: "500", color: "#fff" }}>{item.name}</div>
-              <div style={{ fontSize: "12px", color: "#988f81", marginTop: "4px" }}>{item.svc}</div>
-            </div>
-            <span style={{ fontSize: "12px", color: isDone ? "#22c55e" : isActive ? "#dd901d" : "#988f81" }}>
-              {isDone ? "✓" : isActive ? "▶" : "⊳"}
-            </span>
+    <div className={`live-schedule-row ${isActive ? "live-schedule-row-active" : ""}`}>
+      <div className="live-schedule-left">
+        <div className="live-schedule-stylist">
+          <div className="live-sched-name-row">
+            <span className="live-sched-dot" />
+            <span className="live-schedule-stylist-name">{time}</span>
           </div>
-        );
-      })}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(152, 143, 129, 0.2)" }}>
-        <span style={{ fontSize: "12px", color: "#988f81" }}>{collapsed ? "Showing partial schedule" : "Showing full schedule"}</span>
-        <button onClick={()=>setCollapsed(c=>!c)} style={{ fontSize: "12px", fontWeight: "bold", color: "#fff", background: "none", border: "none", cursor: "pointer" }}>{collapsed ? "See more" : "See less"}</button>
+        </div>
+        <div className="live-schedule-divider-v" />
+        <div className="live-schedule-client">
+          <span className="live-schedule-client-name">{name}</span>
+          <span className="live-schedule-service">{svc}</span>
+        </div>
+      </div>
+      <button className="live-schedule-icon-btn" aria-label={status}>
+        <StatusIcon />
+      </button>
+    </div>
+  );
+}
+
+function ScheduleCard({ showToast }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const today = useToday();
+  const activeRowRef = useRef(null);
+
+  useEffect(() => {
+    if (!isExpanded && activeRowRef.current) {
+      setTimeout(() => {
+        const scrollContainer = activeRowRef.current?.closest(".live-schedule-scroll") 
+                             || activeRowRef.current?.closest(".live-schedule-scroll-limited");
+        if (scrollContainer && activeRowRef.current) {
+          const rowPosition = activeRowRef.current.offsetTop;
+          scrollContainer.scrollTop = Math.max(0, rowPosition - 70);
+        }
+      }, 50);
+    }
+  }, [isExpanded]);
+
+  return (
+    <div className="live-schedule-panel">
+      <div className="live-schedule-header">
+        <div className="live-schedule-header-title-row">
+          <h3 className="live-schedule-title">Today's Schedule</h3>
+          <span className="live-schedule-date">{today}</span>
+        </div>
+        <button 
+          className="live-schedule-toggle-btn"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? "See less" : "See more"}
+        </button>
+      </div>
+
+      <div className={isExpanded ? "live-schedule-scroll" : "live-schedule-scroll-limited"}>
+        {scheduleData.map((item, i) => {
+          const isFirstActive = scheduleData.slice(0, i).every(d => d.status !== "active") && item.status === "active";
+          return (
+            <div key={i} ref={isFirstActive ? activeRowRef : null}>
+              <ScheduleRow {...item} />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function QuickActionsCard({ showToast }) {
+function QuickActionsCard({ showToast, onOpenCustomerHistory, onOpenCalendar }) {
   return (
     <div style={{ background: "rgba(221, 144, 29, 0.06)", border: "1px solid rgba(152, 143, 129, 0.3)", borderRadius: "16px", padding: "24px" }}>
       <div style={{ fontSize: "16px", color: "#fff", fontWeight: "500", marginBottom: "16px" }}>Quick Actions</div>
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        <button onClick={()=>showToast("Opening customer history…")} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px", borderRadius: "12px", fontWeight: "bold", fontSize: "14px", background: "#dd901d", color: "#000", border: "none", cursor: "pointer" }}>
-          📋 My Customer History
+        <button onClick={onOpenCustomerHistory} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px", borderRadius: "12px", fontWeight: "bold", fontSize: "14px", background: "#dd901d", color: "#000", border: "none", cursor: "pointer" }}>
+          <CustomerHistoryIcon size={17} color="#000" /> My Customer History
         </button>
-        <button onClick={()=>showToast("Opening calendar…")} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px", borderRadius: "12px", fontWeight: "500", fontSize: "14px", background: "transparent", color: "#fff", border: "1px solid rgba(152, 143, 129, 0.3)", cursor: "pointer" }}>
-          📅 My Calendar
+        <button onClick={onOpenCalendar} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px", borderRadius: "12px", fontWeight: "500", fontSize: "14px", background: "transparent", color: "#fff", border: "1px solid rgba(152, 143, 129, 0.3)", cursor: "pointer" }}>
+          <QuickActionCalendarIcon size={17} color="#fff" /> My Calendar
         </button>
       </div>
     </div>
@@ -348,6 +561,8 @@ export default function StaffDashboard() {
   const elapsed = useElapsed(22, 39);
   const [completed, setCompleted] = useState(false);
   const { toast, show: showToast } = useToast();
+  const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -391,13 +606,23 @@ export default function StaffDashboard() {
             <QueueCard showToast={showToast}/>
           </div>
           <div className="dash-sidebar">
-            <StatsCard/>
+            <QuickActionsCard showToast={showToast} onOpenCustomerHistory={() => setIsCustomerHistoryOpen(true)} onOpenCalendar={() => setIsCalendarOpen(true)}/>
             <ScheduleCard showToast={showToast}/>
-            <QuickActionsCard showToast={showToast}/>
+            <StatsCard/>
           </div>
         </div>
       </main>
       <Toast toast={toast}/>
+      <CustomerHistoryModal 
+        isOpen={isCustomerHistoryOpen} 
+        onClose={() => setIsCustomerHistoryOpen(false)} 
+        staffName="Mike Santos"
+      />
+      <CalendarAppointmentsModal 
+        isOpen={isCalendarOpen} 
+        onClose={() => setIsCalendarOpen(false)} 
+        staffName="Mike Santos"
+      />
     </div>
   );
 }

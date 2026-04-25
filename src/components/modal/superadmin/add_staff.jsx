@@ -1,0 +1,294 @@
+import { useState } from "react";
+
+const CloseIcon = ({ color = "currentColor" }) => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5 5l10 10M15 5l-10 10" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    names: '',
+    category_specialty: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      if (!formData.names.trim()) {
+        setError('Staff name is required');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!formData.category_specialty.trim()) {
+        setError('Category/Specialty is required');
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/staffs/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          names: formData.names,
+          category_specialty: formData.category_specialty
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || errorData.error || 'Failed to create staff');
+      }
+
+      const result = await response.json();
+      console.log('[AddStaffModal] Staff created:', result);
+      
+      onSave(result.staff);
+      setFormData({ names: '', category_specialty: '' });
+      onClose();
+    } catch (err) {
+      console.error('[AddStaffModal] Error:', err);
+      setError(err.message || 'An error occurred while creating staff');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({ names: '', category_specialty: '' });
+    setError(null);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 2000,
+      backdropFilter: 'blur(4px)'
+    }}>
+      <div style={{
+        backgroundColor: '#231D1A',
+        border: '1px solid rgba(221, 144, 29, 0.2)',
+        borderRadius: '12px',
+        padding: '32px',
+        maxWidth: '450px',
+        width: '90%',
+        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+        animation: 'fadeInScale 0.3s ease-out'
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2 style={{ margin: 0, color: '#D4C5B9', fontSize: '18px', fontWeight: '600' }}>
+            Add New Staff Member
+          </h2>
+          <button
+            onClick={handleClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#988f81',
+              cursor: 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'color 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#D4C5B9'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#988f81'}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div style={{
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '6px',
+            padding: '12px',
+            marginBottom: '16px',
+            color: '#EF4444',
+            fontSize: '13px'
+          }}>
+            {error}
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Name Field */}
+          <div>
+            <label style={{ display: 'block', color: '#D4C5B9', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>
+              Staff Name
+            </label>
+            <input
+              type="text"
+              name="names"
+              value={formData.names}
+              onChange={handleChange}
+              placeholder="Enter staff name"
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                backgroundColor: 'rgba(35, 29, 26, 0.8)',
+                border: '1px solid rgba(152, 143, 129, 0.3)',
+                borderRadius: '6px',
+                color: '#D4C5B9',
+                fontSize: '13px',
+                boxSizing: 'border-box',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'rgba(221, 144, 29, 0.5)';
+                e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.95)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.8)';
+              }}
+            />
+          </div>
+
+          {/* Specialty Field */}
+          <div>
+            <label style={{ display: 'block', color: '#D4C5B9', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>
+              Specialty / Category
+            </label>
+            <input
+              type="text"
+              name="category_specialty"
+              value={formData.category_specialty}
+              onChange={handleChange}
+              placeholder="e.g., Hair Styling, Nail Art"
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                backgroundColor: 'rgba(35, 29, 26, 0.8)',
+                border: '1px solid rgba(152, 143, 129, 0.3)',
+                borderRadius: '6px',
+                color: '#D4C5B9',
+                fontSize: '13px',
+                boxSizing: 'border-box',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'rgba(221, 144, 29, 0.5)';
+                e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.95)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.8)';
+              }}
+            />
+          </div>
+
+          {/* Buttons */}
+          <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={isLoading}
+              style={{
+                flex: 1,
+                padding: '10px 16px',
+                backgroundColor: 'transparent',
+                border: '1px solid rgba(152, 143, 129, 0.3)',
+                borderRadius: '6px',
+                color: '#988f81',
+                fontSize: '13px',
+                fontWeight: '500',
+                cursor: isLoading ? 'default' : 'pointer',
+                transition: 'all 0.2s',
+                opacity: isLoading ? 0.5 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                  e.currentTarget.style.color = '#D4C5B9';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                  e.currentTarget.style.color = '#988f81';
+                }
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                flex: 1,
+                padding: '10px 16px',
+                backgroundColor: isLoading ? '#b8700a' : '#dd901d',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#1a1a1a',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: isLoading ? 'default' : 'pointer',
+                transition: 'all 0.2s',
+                opacity: isLoading ? 0.7 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.backgroundColor = '#e6a326';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.backgroundColor = '#dd901d';
+                }
+              }}
+            >
+              {isLoading ? 'Creating...' : 'Create Staff'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <style>{`
+        @keyframes fadeInScale {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
+    </div>
+  );
+};

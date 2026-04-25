@@ -1,0 +1,1291 @@
+/* ──────────────────────────────────────
+   MOBILE RESPONSIVE STYLES
+   Island mobile-first responsive design
+────────────────────────────────────── */
+
+/* Mobile Menu Styles */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-white);
+  padding: 8px;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.mobile-menu-btn:hover {
+  color: var(--color-amber);
+}
+
+.nav-links-desktop {
+  display: flex;
+}
+
+.btn-nav-desktop {
+  display: block;
+}
+
+.mobile-menu {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  right: 0;
+  background: var(--bg-dark);
+  border-bottom: 1px solid rgba(221, 144, 29, 0.1);
+  display: none;
+  flex-direction: column;
+  padding: 12px 0;
+  z-index: 49;
+  animation: slideDown 0.2s ease forwards;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-menu-link {
+  padding: 12px 20px;
+  color: var(--color-tan);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: color 0.2s, background-color 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.mobile-menu-link:hover {
+  color: var(--color-amber);
+  background-color: rgba(221, 144, 29, 0.05);
+  border-left-color: var(--color-amber);
+}
+
+.btn-mobile-cta {
+  margin: 12px 20px 0;
+  width: auto;
+  display: block;
+}
+
+/* Tablet and larger phones (768px and down) */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 20px;
+    height: 48px;
+  }
+
+  .nav-links-desktop {
+    display: none;
+  }
+
+  .btn-nav-desktop {
+    display: none;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .mobile-menu {
+    display: flex;
+    top: 48px;
+  }
+
+  .hero-section {
+    padding: 30px 16px 40px;
+    margin-top: 48px;
+  }
+
+  .hero-badge {
+    margin-bottom: 20px;
+    padding: 4px 18px;
+  }
+
+  .hero-badge span {
+    font-size: 0.65rem;
+  }
+
+  .hero-title {
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    margin-bottom: 16px;
+  }
+
+  .hero-text {
+    font-size: 0.83rem;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    max-width: 100%;
+  }
+
+  .btn-hero {
+    padding: 9px 24px;
+    font-size: 0.8rem;
+    height: 40px;
+  }
+
+  .howitworks-section {
+    padding: 25px 16px;
+  }
+
+  .services-section {
+    padding: 25px 16px;
+  }
+
+  .section-title {
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+  }
+
+  .section-subtitle {
+    font-size: 0.83rem;
+    margin-bottom: 20px;
+  }
+
+  .step-card {
+    padding: 13px;
+    border-radius: 8px;
+  }
+
+  .icon-box {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 10px;
+  }
+
+  .step-title {
+    font-size: 0.93rem;
+    margin-bottom: 5px;
+  }
+
+  .step-desc {
+    font-size: 0.74rem;
+    line-height: 1.4;
+  }
+
+  .service-card {
+    padding: 13px;
+  }
+
+  .service-title {
+    font-size: 0.88rem;
+    margin-bottom: 6px;
+  }
+
+  .service-item {
+    font-size: 0.7rem;
+    gap: 5px;
+  }
+
+  .footer {
+    padding: 14px 16px 10px;
+  }
+
+  .footer-row {
+    gap: 10px;
+    margin-bottom: 9px;
+  }
+
+  .footer-label {
+    font-size: 0.83rem;
+    min-width: auto;
+  }
+
+  .footer-text {
+    font-size: 0.68rem;
+  }
+
+  .copyright {
+    font-size: 0.63rem;
+    line-height: 1.3;
+  }
+
+  .section-flex-col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  /* Grid layout adjustments for mobile */
+  .grid-3col {
+    display: contents;
+  }
+
+  .grid-2col {
+    display: contents;
+  }
+
+  .grid-auto {
+    display: contents;
+  }
+}
+
+/* Phones (480px and down) */
+@media (max-width: 480px) {
+  .navbar {
+    height: 44px;
+    padding: 0 12px;
+  }
+
+  .mobile-menu {
+    top: 44px;
+  }
+
+  .mobile-menu-btn {
+    padding: 6px;
+  }
+
+  .flex-center-gap-2 {
+    gap: 5px;
+  }
+
+  .logo-badge {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+  }
+
+  .brand-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .btn-nav {
+    padding: 2px 8px;
+    height: 26px;
+    font-size: 0.6rem;
+  }
+
+  .hero-section {
+    padding: 18px 12px 28px;
+    margin-top: 44px;
+  }
+
+  .hero-badge {
+    padding: 3px 14px;
+    margin-bottom: 14px;
+  }
+
+  .hero-badge span {
+    font-size: 0.55rem;
+    letter-spacing: 0.05em;
+  }
+
+  .hero-title {
+    font-size: clamp(1.1rem, 5vw, 1.4rem);
+    line-height: 1.1;
+    margin-bottom: 11px;
+  }
+
+  .hero-text {
+    font-size: 0.72rem;
+    line-height: 1.45;
+    margin-bottom: 18px;
+    max-width: 100%;
+  }
+
+  .btn-hero {
+    padding: 8px 18px;
+    height: 34px;
+    font-size: 0.68rem;
+  }
+
+  .howitworks-section {
+    padding: 18px 10px;
+  }
+
+  .services-section {
+    padding: 18px 10px;
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+    margin-bottom: 5px;
+  }
+
+  .section-subtitle {
+    font-size: 0.7rem;
+    margin-bottom: 16px;
+  }
+
+  .step-card {
+    padding: 11px;
+  }
+
+  .icon-box {
+    width: 38px;
+    height: 38px;
+    padding: 7px;
+    margin-bottom: 8px;
+  }
+
+  .step-title {
+    font-size: 0.8rem;
+    margin-bottom: 3px;
+  }
+
+  .step-desc {
+    font-size: 0.65rem;
+    line-height: 1.35;
+  }
+
+  .service-card {
+    padding: 11px;
+  }
+
+  .service-title {
+    font-size: 0.75rem;
+    margin-bottom: 5px;
+  }
+
+  .service-items {
+    gap: 2px;
+  }
+
+  .service-item {
+    font-size: 0.6rem;
+    gap: 4px;
+  }
+
+  .svc-icon-box {
+    width: 38px;
+    height: 38px;
+    padding: 7px;
+    margin-bottom: 7px;
+    border-radius: 10px;
+  }
+
+  .footer {
+    padding: 10px 10px 8px;
+  }
+
+  .footer-row {
+    gap: 6px;
+    margin-bottom: 7px;
+    flex-wrap: wrap;
+  }
+
+  .footer-label {
+    font-size: 0.7rem;
+    min-width: auto;
+    flex-basis: 100%;
+    margin-bottom: 3px;
+  }
+
+  .footer-text {
+    font-size: 0.6rem;
+  }
+
+  .social-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .copyright {
+    font-size: 0.55rem;
+    line-height: 1.3;
+    padding-top: 8px;
+  }
+
+  .section-flex-col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .grid-3col {
+    display: contents;
+  }
+
+  .grid-2col {
+    display: contents;
+  }
+
+  .grid-auto {
+    display: contents;
+  }
+
+  .nav-link {
+    display: none;
+  }
+
+  /* Register Page Mobile Styles - Tablet (768px and down) */
+  .register-container {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .register-left {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 40px 0;
+    background: var(--bg-darker);
+  }
+
+  .form-wrapper {
+    padding: 0 20px;
+    gap: 16px;
+    max-width: 100%;
+  }
+
+  .btn-back {
+    margin-left: 20px;
+    margin-bottom: 12px;
+  }
+
+  .field-box {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+
+  .field-label {
+    font-size: 0.65rem;
+  }
+
+  .input-row {
+    height: 38px;
+  }
+
+  .input-wrapper {
+    padding-left: 12px;
+    gap: 8px;
+  }
+
+  .input-field {
+    font-size: 0.88rem;
+  }
+
+  .form-heading {
+    padding: 0 20px;
+  }
+
+  .form-title {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+  }
+
+  .form-subtitle {
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  .btn-large {
+    padding: 10px 20px;
+    height: 44px;
+    font-size: 0.9rem;
+  }
+
+  .error-text {
+    font-size: 0.7rem;
+  }
+
+  /* Hide right panel on tablet/mobile */
+  .login-right {
+    display: none;
+  }
+
+  .login-orb {
+    display: none;
+  }
+
+  .login-ring {
+    display: none;
+  }
+
+  .login-right-top-bar,
+  .login-right-bottom-bar {
+    display: none;
+  }
+}
+
+/* Register Page Mobile Styles - Phones (480px and down) */
+@media (max-width: 480px) {
+  .register-container {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .register-left {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 24px 0;
+    background: var(--bg-darker);
+  }
+
+  .form-wrapper {
+    padding: 0 14px;
+    gap: 14px;
+    max-width: 100%;
+  }
+
+  .btn-back {
+    margin-left: 14px;
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+  }
+
+  .logo-badge {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brand-name {
+    font-size: 0.9rem;
+  }
+
+  .form-heading {
+    padding: 0 14px;
+    gap: 6px;
+  }
+
+  .form-title {
+    font-size: 1.2rem;
+    margin-bottom: 6px;
+  }
+
+  .form-subtitle {
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+
+  .field-box {
+    padding: 9px 12px;
+    gap: 7px;
+  }
+
+  .field-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.05em;
+  }
+
+  .input-row {
+    height: 36px;
+  }
+
+  .input-wrapper {
+    padding-left: 10px;
+    gap: 6px;
+    border-radius: 8px;
+  }
+
+  .input-field {
+    font-size: 0.8rem;
+  }
+
+  .input-field::placeholder {
+    font-size: 0.8rem;
+  }
+
+  .btn-large {
+    padding: 9px 18px;
+    height: 40px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+  }
+
+  .checkbox-section {
+    gap: 8px;
+  }
+
+  .remember-text {
+    font-size: 0.72rem;
+  }
+
+  .error-text {
+    font-size: 0.65rem;
+  }
+
+  .checkbox-btn {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Toggle button link styling */
+  button[type="button"] {
+    font-size: 0.72rem;
+  }
+
+  /* ═══════════════════════════════════════════
+     MODAL RESPONSIVENESS - APPOINTMENT, OTP, DIALOGS
+     ═══════════════════════════════════════════ */
+
+  /* Appointment Modal - Tablet (768px and down) */
+  .appt-root {
+    min-width: auto;
+    width: calc(100vw - 32px);
+    max-width: 100%;
+    height: 520px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .appt-overlay {
+    padding: 16px;
+  }
+
+  .appt-header {
+    padding: 0 20px;
+    height: 52px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .appt-back-btn {
+    font-size: 0.95rem;
+    min-width: fit-content;
+  }
+
+  .appt-header-title {
+    font-size: 0.9rem;
+  }
+
+  .appt-progress {
+    padding: 10px 16px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .appt-progress-track {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .appt-step-circle {
+    width: 30px;
+    height: 30px;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .appt-step-line {
+    width: 35px;
+    flex-shrink: 0;
+  }
+
+  .appt-progress-labels {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 0;
+    overflow-x: auto;
+  }
+
+  .appt-step-label {
+    width: 65px;
+    padding: 0;
+    font-size: 0.6rem;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .appt-body {
+    padding: 16px 16px 12px;
+    gap: 14px;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .appt-section-title {
+    font-size: 1.1rem;
+  }
+
+  .appt-section-sub {
+    font-size: 0.72rem;
+  }
+
+  .appt-footer {
+    padding: 12px 16px 14px;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .appt-cancel-btn,
+  .appt-continue-btn,
+  .appt-download-receipt-btn {
+    height: 44px;
+    font-size: 0.95rem;
+  }
+
+  /* Time Grid & Date Row Mobile */
+  .appt-picker-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+
+  .appt-time-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 6px 0;
+    width: 100%;
+  }
+
+  .appt-time-chip {
+    padding: 8px 6px;
+    font-size: 0.75rem;
+    width: 100%;
+    pointer-events: auto;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .appt-time-chip:active {
+    transform: scale(0.95);
+  }
+
+  .appt-date-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 8px 0;
+    width: 100%;
+    pointer-events: auto;
+  }
+
+  .appt-date-card {
+    width: 100%;
+    padding: 16px 12px;
+    font-size: 0.85rem;
+  }
+
+  .appt-date-row::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .appt-date-row::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .appt-date-row::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.4);
+    border-radius: 3px;
+  }
+
+  .appt-date-row::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 0.6);
+  }
+
+  .appt-date-card {
+    width: 76px;
+    padding: 12px 8px;
+  }
+
+  /* Progress Indicator Centering */
+  .appt-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .appt-progress-track {
+    display: flex;
+    justify-content: center;
+  }
+
+  .appt-progress-labels {
+    justify-content: center;
+  }
+
+  /* Scrollbar Styling for Mobile */
+  .appt-body {
+    scrollbar-color: rgba(221, 144, 29, 0.4) transparent;
+  }
+
+  .appt-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .appt-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .appt-body::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.4);
+    border-radius: 3px;
+  }
+
+  .appt-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 0.6);
+  }
+
+  /* Service Grid - Tablet */
+  .appt-svc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .appt-svc-card {
+    padding: 14px 10px;
+    font-size: 0.85rem;
+  }
+
+  .appt-svc-icon-circle {
+    width: 48px;
+    height: 48px;
+  }
+
+  .appt-svc-title {
+    font-size: 0.85rem;
+  }
+
+  .appt-svc-desc {
+    font-size: 0.65rem;
+  }
+
+  /* OTP Modal - Tablet (768px and down) */
+  .otp-modal {
+    max-width: calc(100vw - 32px);
+    width: 100%;
+  }
+
+  .otp-overlay {
+    padding: 16px;
+  }
+
+  .otp-header {
+    padding: 0 16px;
+    height: 48px;
+  }
+
+  .otp-header-title {
+    font-size: 0.9rem;
+  }
+
+  .otp-close-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .otp-body {
+    padding: 20px 16px;
+    gap: 16px;
+  }
+
+  .otp-instruction {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .otp-field-box {
+    gap: 8px;
+  }
+
+  .otp-field-label {
+    font-size: 0.65rem;
+  }
+
+  .otp-input-wrap {
+    height: 48px;
+  }
+
+  .otp-input-inner {
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .otp-input {
+    font-size: 1rem;
+  }
+
+  .otp-meta-row {
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .otp-meta-label {
+    font-size: 0.75rem;
+  }
+
+  .otp-timer {
+    font-size: 0.8rem;
+  }
+
+  .otp-resend-btn {
+    font-size: 0.8rem;
+  }
+
+  .otp-actions {
+    gap: 8px;
+  }
+
+  .otp-btn-cancel,
+  .otp-btn-verify {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    border-radius: 10px;
+  }
+}
+
+/* Phones (480px and down) */
+@media (max-width: 480px) {
+
+  /* Appointment Modal - Phone */
+  .appt-root {
+    width: calc(100vw - 24px);
+    height: 480px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .appt-overlay {
+    padding: 12px;
+  }
+
+  .appt-header {
+    padding: 0 12px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+
+  .appt-back-btn {
+    font-size: 0.85rem;
+    min-width: auto;
+  }
+
+  .appt-header-title {
+    font-size: 0.8rem;
+  }
+
+  .appt-progress {
+    padding: 8px 12px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .appt-step-circle {
+    width: 26px;
+    height: 26px;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+  }
+
+  .appt-step-line {
+    width: 24px;
+    flex-shrink: 0;
+  }
+
+  .appt-progress-labels {
+    width: 100%;
+  }
+
+  .appt-step-label {
+    padding: 0;
+    font-size: 0.5rem;
+    width: 55px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .appt-body {
+    padding: 12px 12px 10px;
+    gap: 12px;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .appt-section-title {
+    font-size: 0.95rem;
+  }
+
+  .appt-section-sub {
+    font-size: 0.65rem;
+  }
+
+  .appt-footer {
+    padding: 10px 12px 12px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .appt-cancel-btn,
+  .appt-continue-btn,
+  .appt-download-receipt-btn {
+    height: 40px;
+    font-size: 0.85rem;
+  }
+
+  /* Time Grid & Date Row Phone */
+  .appt-picker-group {
+    width: 100%;
+  }
+
+  .appt-time-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    padding: 4px 0;
+    width: 100%;
+  }
+
+  .appt-time-chip {
+    padding: 6px 4px;
+    font-size: 0.7rem;
+    width: 100%;
+    pointer-events: auto;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .appt-time-chip:active {
+    transform: scale(0.95);
+  }
+
+  .appt-date-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 6px 0;
+    width: 100%;
+    pointer-events: auto;
+  }
+
+  .appt-date-card {
+    width: 100%;
+    padding: 14px 10px;
+    font-size: 0.8rem;
+  }
+
+  .appt-date-row::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .appt-date-row::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .appt-date-row::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.5);
+    border-radius: 2px;
+  }
+
+  .appt-date-row::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 0.7);
+  }
+
+  .appt-date-card {
+    width: 100%;
+    padding: 12px 8px;
+    font-size: 0.75rem;
+  }
+
+  .appt-date-day {
+    font-size: 0.6rem;
+  }
+
+  .appt-date-num {
+    font-size: 0.8rem;
+  }
+
+  /* Progress Indicator Centering - Phone */
+  .appt-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .appt-progress-track {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .appt-progress-labels {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .appt-step-label {
+    width: 55px;
+    padding: 0;
+    font-size: 0.5rem;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  /* Scrollbar Styling for Phone */
+  .appt-body {
+    scrollbar-color: rgba(221, 144, 29, 0.5) transparent;
+  }
+
+  .appt-body::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .appt-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .appt-body::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.5);
+    border-radius: 2px;
+  }
+
+  .appt-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 0.7);
+  }
+
+  /* Service Grid - Phone */
+  .appt-svc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .appt-svc-card {
+    padding: 12px 8px;
+    font-size: 0.75rem;
+  }
+
+  .appt-svc-icon-circle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .appt-svc-title {
+    font-size: 0.75rem;
+  }
+
+  .appt-svc-desc {
+    font-size: 0.6rem;
+  }
+
+  /* OTP Modal - Phone */
+  .otp-modal {
+    max-width: calc(100vw - 24px);
+  }
+
+  .otp-overlay {
+    padding: 12px;
+  }
+
+  .otp-header {
+    padding: 0 12px;
+    height: 44px;
+  }
+
+  .otp-header-title {
+    font-size: 0.8rem;
+  }
+
+  .otp-close-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .otp-body {
+    padding: 16px 12px;
+    gap: 14px;
+  }
+
+  .otp-instruction {
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+
+  .otp-field-box {
+    gap: 6px;
+  }
+
+  .otp-field-label {
+    font-size: 0.6rem;
+  }
+
+  .otp-input-wrap {
+    height: 44px;
+  }
+
+  .otp-input-inner {
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .otp-input {
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+  }
+
+  .otp-meta-row {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .otp-meta-label {
+    font-size: 0.7rem;
+  }
+
+  .otp-timer {
+    font-size: 0.75rem;
+  }
+
+  .otp-resend-btn {
+    font-size: 0.75rem;
+  }
+
+  .otp-actions {
+    gap: 6px;
+  }
+
+  .otp-btn-cancel,
+  .otp-btn-verify {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+
+  /* Confirmation Dialog & Session Expired Modal - Phone */
+  /* Targets inline styled modals with common patterns */
+  div[style*="position: fixed"][style*="inset: 0"] > div[style*="background: white"],
+  div[style*="position: fixed"][style*="top: 0"][style*="zIndex: 999"] > div {
+    width: calc(100vw - 28px) !important;
+    max-width: 100% !important;
+    padding: 24px 20px !important;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+
+  div[style*="position: fixed"][style*="inset: 0"] > div[style*="background: white"] h2,
+  div[style*="position: fixed"][style*="top: 0"][style*="zIndex: 999"] > div h2 {
+    font-size: 18px !important;
+  }
+
+  div[style*="position: fixed"][style*="inset: 0"] > div[style*="background: white"] p,
+  div[style*="position: fixed"][style*="top: 0"][style*="zIndex: 999"] > div p {
+    font-size: 13px !important;
+  }
+
+  div[style*="position: fixed"][style*="inset: 0"] > div[style*="background: white"] button,
+  div[style*="position: fixed"][style*="top: 0"][style*="zIndex: 999"] > div button {
+    padding: 10px 16px !important;
+    font-size: 13px !important;
+    width: 100%;
+  }
+}

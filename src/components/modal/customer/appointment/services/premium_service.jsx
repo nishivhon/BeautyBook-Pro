@@ -135,12 +135,17 @@ export const PremiumServicesModal = ({ onBack, onContinue, initialSelected = [],
     const fetchServices = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/services/Premium%20Services');
+        // Fetch all services and filter for "Premium Services" category
+        const response = await fetch('/api/services');
         if (!response.ok) {
           throw new Error('Failed to fetch services');
         }
-        const data = await response.json();
-        setServices(data.map(formatService));
+        const allServices = await response.json();
+        // Filter for Premium Services category
+        const premiumServices = allServices.filter(
+          (service) => service.category === 'Premium Services'
+        );
+        setServices(premiumServices.map(formatService));
         setError(null);
       } catch (err) {
         console.error('Error fetching premium services:', err);

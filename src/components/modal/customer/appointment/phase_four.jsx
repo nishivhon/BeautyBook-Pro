@@ -197,10 +197,69 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
   }, 0) : 0;
 
   /* Handle final confirmation */
-  const handleConfirmBooking = () => {
-    setIsConfirmed(true);
-    setShowConfirmationToast(true);
-    // Don't call onConfirm yet - wait until user downloads receipt
+  const handleConfirmBooking = async () => {
+    try {
+      console.log('[Phase4] Confirming booking...');
+      
+      // Extract service(s) - get first one or join all
+      const serviceList = Array.isArray(booking.services) && booking.services.length > 0
+        ? booking.services.map(s => s.title || s.name).join(', ')
+        : booking.service || 'General Service';
+      
+      // Determine contact (either email or phone, whichever is provided)
+      const email = booking.email?.trim();
+      const phone = booking.phone?.trim();
+      const contact = email || phone;
+      
+      // Extract booking data
+      const bookingData = {
+        name: booking.name?.trim(),
+        email: email,
+        phone: phone,
+        date: booking.date,
+        time: booking.time,
+        service: serviceList,
+        staff_assigned: booking.stylist
+      };
+      
+      console.log('[Phase4] Booking data:', bookingData);
+      
+      // Validate required fields (email OR phone, not both required)
+      if (!bookingData.name || !contact || !bookingData.date || !bookingData.time || !bookingData.service || !bookingData.staff_assigned) {
+        console.error('[Phase4] Missing fields:', {
+          name: !!bookingData.name,
+          contact: !!contact,
+          date: !!bookingData.date,
+          time: !!bookingData.time,
+          service: !!bookingData.service,
+          staff_assigned: !!bookingData.staff_assigned
+        });
+        setShowConfirmationToast(false);
+        setShowSuccessToast(false);
+        return;
+      }
+      
+      // Call the appointment creation API
+      const response = await fetch('/api/appointments/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingData)
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        console.error('[Phase4] API error:', result);
+        return;
+      }
+      
+      console.log('[Phase4] Booking confirmed:', result);
+      setIsConfirmed(true);
+      setShowConfirmationToast(true);
+      
+    } catch (error) {
+      console.error('[Phase4] Error confirming booking:', error);
+    }
   };
 
   /* Generate printable receipt */
@@ -628,6 +687,10 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
         onCancel={() => {
           setShowReceiptReminder(false);
           generateReceipt();
+          // Reopen the dialog after a brief delay so user can download again
+          setTimeout(() => {
+            setShowReceiptReminder(true);
+          }, 100);
         }}
       />
     </>

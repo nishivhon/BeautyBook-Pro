@@ -105,12 +105,28 @@ const DETAILED_APPOINTMENTS = {
   ]
 };
 
-export const CalendarAppointmentsModal = ({ isOpen, onClose }) => {
+export const CalendarAppointmentsModal = ({ isOpen, onClose, staffName = null }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
 
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  // Filter detailed appointments by staff if staffName is provided
+  const getFilteredAppointments = () => {
+    if (!staffName) return DETAILED_APPOINTMENTS;
+    
+    const filtered = {};
+    Object.entries(DETAILED_APPOINTMENTS).forEach(([date, appointments]) => {
+      const staffAppointments = appointments.filter(apt => apt.stylist === staffName);
+      if (staffAppointments.length > 0) {
+        filtered[date] = staffAppointments;
+      }
+    });
+    return filtered;
+  };
+
+  const filteredAppointments = getFilteredAppointments();
 
   const handlePrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -142,7 +158,7 @@ export const CalendarAppointmentsModal = ({ isOpen, onClose }) => {
   const getAppointmentCount = (day) => {
     if (!day) return 0;
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return APPOINTMENTS_DATA[dateStr] || 0;
+    return (filteredAppointments[dateStr] && filteredAppointments[dateStr].length) || 0;
   };
 
   // Check if it's today
@@ -457,13 +473,13 @@ export const CalendarAppointmentsModal = ({ isOpen, onClose }) => {
                 </button>
               </div>
               
-              {DETAILED_APPOINTMENTS[selectedDate] && DETAILED_APPOINTMENTS[selectedDate].length > 0 ? (
+              {filteredAppointments[selectedDate] && filteredAppointments[selectedDate].length > 0 ? (
                 <div>
-                  {DETAILED_APPOINTMENTS[selectedDate].map((apt, idx) => (
+                  {filteredAppointments[selectedDate].map((apt, idx) => (
                     <div key={idx} style={{
                       marginBottom: "12px",
                       paddingBottom: "12px",
-                      borderBottom: idx < DETAILED_APPOINTMENTS[selectedDate].length - 1 ? "1px solid rgba(221, 144, 29, 0.1)" : "none"
+                      borderBottom: idx < filteredAppointments[selectedDate].length - 1 ? "1px solid rgba(221, 144, 29, 0.1)" : "none"
                     }}>
                       <p style={{
                         fontSize: "12px",

@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
-import { generateMagicToken } from "../../services/magicLink";
-import CreateAccountModal from "../../components/modal/superadmin/create_account";
+import { databaseAPI } from "../../services/databaseApi";
+import { EditStaffModal } from "../../components/modal/superadmin/edit_staff";
+import { AddStaffModal } from "../../components/modal/superadmin/add_staff";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -114,9 +115,9 @@ const GlobeIcon = ({ color = "currentColor" }) => (
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
-  { id: "user-accounts", label: "User Accounts", icon: NavUserIcon },
-  { id: "database", label: "Database", icon: DatabaseIcon },
-  { id: "security", label: "Security", icon: ShieldIcon },
+  { id: "staff-management", label: "Staff Management", icon: NavUserIcon },
+  { id: "database", label: "Database", icon: DatabaseIcon },  { id: "services", label: "Services", icon: DatabaseIcon },
+  { id: "logs", label: "Logs", icon: DatabaseIcon },  { id: "security", label: "Security", icon: ShieldIcon },
   { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
@@ -129,64 +130,110 @@ export default function SuperAdminUsersDashboard() {
     return saved !== null ? JSON.parse(saved) : true;
   });
   const [mounted, setMounted] = useState(false);
-  const [activeNav, setActiveNav] = useState("user-accounts");
+  const [activeNav, setActiveNav] = useState("staff-management");
+  const [staffsData, setStaffsData] = useState({
+    id: 'staffs',
+    name: 'Staff Members',
+    meta: '0 staff members',
+    rows: [],
+    cols: ['names', 'category_specialty', 'employment'],
+  });
+  const [loading, setLoading] = useState(false);
+  const [currentStaffPage, setCurrentStaffPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
+  const [editingStaff, setEditingStaff] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
   }, [sidebarExpanded]);
-  
-  const [staffData] = useState([
-    { id:1, initial:'A', name:'Anna Cruz',      email:'annacruz@gmail.com',      role:'Admin',  status:'Active',   lastLogin:'Last Active 2 hrs ago' },
-    { id:2, initial:'M', name:'Mike Santos',    email:'mikesantos@gmail.com',     role:'Staff',  status:'Active',   lastLogin:'Last Active 2 hrs ago' },
-    { id:3, initial:'L', name:'Lea Mendoza',    email:'leamendoza@gmail.com',     role:'Staff',  status:'Active',   lastLogin:'Last Active 5 hrs ago' },
-    { id:4, initial:'R', name:'Ramon Reyes',    email:'ramonreyes@gmail.com',     role:'Staff',  status:'Active',   lastLogin:'Last Active 1 day ago'  },
-    { id:5, initial:'C', name:'Carla Bautista', email:'carlabautista@gmail.com',  role:'Staff',  status:'Inactive', lastLogin:'Last Active 3 days ago' },
-  ]);
-  
-  const [filteredStaff, setFilteredStaff] = useState(staffData);
-  const [searchValue, setSearchValue] = useState("");
-  const [toastMessage, setToastMessage] = useState("");
-  const [showToast, setShowToast] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [linkEmail, setLinkEmail] = useState("");
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-  const [dropdownResults, setDropdownResults] = useState([]);
-  const [confirmExit, setConfirmExit] = useState(false);
-  const [formData, setFormData] = useState({ name: "", email: "", role: "", password: "", confirmPassword: "" });
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingStaffId, setEditingStaffId] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [staffToDelete, setStaffToDelete] = useState(null);
-  const [linkSearchValue, setLinkSearchValue] = useState("");
-  const [linkSearchResults, setLinkSearchResults] = useState([]);
-  const [showLinkSearchDropdown, setShowLinkSearchDropdown] = useState(false);
 
-  // Check if form has any data
-  const hasFormData = useCallback(() => {
-    return formData.name.trim() !== "" || 
-           formData.email.trim() !== "" || 
-           formData.role.trim() !== "" || 
-           formData.password.trim() !== "" || 
-           formData.confirmPassword.trim() !== "";
-  }, [formData]);
+  // Fetch staffs table on mount
+  useEffect(() => {
+    const fetchStaffs = async () => {
+      setLoading(true);
+      try {
+        console.log('[Staffs] Starting fetch from staffs table...');
+        const tablesInfo = await databaseAPI.getTablesInfo(['staffs']);
+        
+        if (tablesInfo && Array.isArray(tablesInfo)) {
+          console.log('[Staffs] Fetched tables info:', tablesInfo);
+          
+          const tableInfo = tablesInfo[0];
+          if (!tableInfo) {
+            console.warn('[Staffs] No table info returned');
+            return;
+          }
+          
+          console.log('[Staffs] Table info for staffs:', tableInfo);
+          
+          // Get column names - display only names, category_specialty, employment
+          const displayColumns = ['names', 'category_specialty', 'employment'];
+          
+          // Fetch actual data
+          let rowData = [];
+          try {
+            const dataResult = await databaseAPI.getTableData('staffs', 10000, 0);
+            rowData = dataResult.data || [];
+            
+            console.log('[Staffs] Raw data from API:', rowData);
+            console.log('[Staffs] Total rows:', rowData.length);
+            if (rowData.length > 0) {
+              console.log('[Staffs] Available columns in first row:', Object.keys(rowData[0]));
+              console.log('[Staffs] First row full data:', rowData[0]);
+              console.log('[Staffs] names value:', rowData[0].names, 'category_specialty value:', rowData[0].category_specialty, 'employment value:', rowData[0].employment);
+            }
+            
+            // Filter to only display columns - but keep id for editing
+            rowData = rowData.map(row => {
+              const filtered = { id: row.id };
+              displayColumns.forEach(col => {
+                // Always include the column, even if empty
+                filtered[col] = row[col] !== undefined ? row[col] : null;
+              });
+              return filtered;
+            });
+            
+            console.log(`[Staffs] Fetched ${rowData.length} rows, filtered first row:`, rowData[0]);
+          } catch (dataError) {
+            console.warn(`[Staffs] Error fetching data:`, dataError);
+            rowData = [];
+          }
+          
+          console.log(`[Staffs] After processing: ${rowData.length} rows available`);
+          
+          setStaffsData({
+            id: 'staffs',
+            name: 'Staff Members',
+            meta: `${tableInfo.rowCount} staff members`,
+            lastUpdated: 'Today',
+            rows: rowData,
+            cols: displayColumns,
+          });
+          
+          console.log('[Staffs] State updated with', rowData.length, 'rows');
+        }
+      } catch (error) {
+        console.error('[Staffs] Error fetching data:', error);
+        setStaffsData({
+          id: 'staffs',
+          name: 'Staff Members',
+          meta: '0 staff members',
+          rows: [],
+          cols: ['names', 'category_specialty', 'employment'],
+        });
+        displayToast('Failed to fetch staff data');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Handle modal close with confirmation
-  const handleModalClose = useCallback(() => {
-    setConfirmExit(true);
+    fetchStaffs();
   }, []);
-
-  const handleConfirmExit = () => {
-    setFormData({ name: "", email: "", role: "", password: "", confirmPassword: "" });
-    setConfirmExit(false);
-    setShowModal(false);
-    setIsEditing(false);
-    setEditingStaffId(null);
-    setShowPassword(false);
-    setShowConfirmPassword(false);
-  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -197,39 +244,9 @@ export default function SuperAdminUsersDashboard() {
     return () => clearTimeout(t);
   }, []);
 
-  // Email validation helper
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const handleLogout = () => {
     logoutOperator();
     navigate("/operators/login");
-  };
-
-  const handleSearch = (value) => {
-    setSearchValue(value);
-    const lower = value.toLowerCase().trim();
-    if (!lower) {
-      setShowSearchDropdown(false);
-      setDropdownResults([]);
-      setFilteredStaff(staffData);
-    } else {
-      const results = staffData
-        .filter(s => 
-          s.name.toLowerCase().startsWith(lower) || s.email.toLowerCase().startsWith(lower)
-        )
-        .sort((a, b) => a.name.localeCompare(b.name));
-      setDropdownResults(results);
-      setShowSearchDropdown(results.length > 0);
-    }
-  };
-
-  const handleSelectFromDropdown = (staff) => {
-    setSearchValue(staff.name);
-    setShowSearchDropdown(false);
-    setFilteredStaff([staff]);
   };
 
   const displayToast = (message) => {
@@ -238,161 +255,71 @@ export default function SuperAdminUsersDashboard() {
     setTimeout(() => setShowToast(false), 2800);
   };
 
-  const handleGenerateLink = () => {
-    // Check if a staff member was selected from dropdown
-    const selectedStaff = staffData.find(s => s.name === linkSearchValue);
-    
-    if (selectedStaff) {
-      // Generate link using proper token from magicLink service
-      const token = generateMagicToken(selectedStaff.email);
-      const link = `http://localhost:5173/operators/login?token=${token}`;
-      navigator.clipboard?.writeText(link).catch(()=>{});
-      setLinkSearchValue(link);
-      displayToast(`Link copied for ${selectedStaff.name}!`);
-      return;
-    }
-    
-    // If no staff selected, treat as manual email entry
-    const val = linkSearchValue.trim();
-    if (!val) {
-      displayToast('Please enter an email or select a user.');
-      return;
-    }
-    if (!validateEmail(val)) {
-      displayToast('Please enter a valid email address.');
-      return;
-    }
-    const token = generateMagicToken(val);
-    const link = `http://localhost:5173/operators/login?token=${token}`;
-    navigator.clipboard?.writeText(link).catch(()=>{});
-    setLinkSearchValue(link);
-    displayToast('Link copied: ' + link.slice(0,40) + '…');
-  };
-
-  const handleCreateAccount = () => {
-    if (!formData.name || !formData.email || !formData.role || !formData.password || !formData.confirmPassword) {
-      displayToast("Please fill in all fields");
-      return;
-    }
-    if (!validateEmail(formData.email)) {
-      displayToast("Please enter a valid email address.");
-      return;
-    }
-    if (formData.password.length < 8) {
-      displayToast("Password must be at least 8 characters long.");
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      displayToast("Passwords do not match.");
-      return;
-    }
-    const emailExists = staffData.some(staff => staff.email.toLowerCase() === formData.email.toLowerCase());
-    if (emailExists) {
-      displayToast("This email is already registered.");
-      return;
-    }
-    // Add new staff to the list
-    const newStaff = {
-      id: staffData.length + 1,
-      initial: formData.name.charAt(0).toUpperCase(),
-      name: formData.name,
-      email: formData.email,
-      role: formData.role,
-      status: "Active",
-      lastLogin: "Last Active just now"
-    };
-    // Reset form and close modal
-    setFormData({ name: "", email: "", role: "", password: "", confirmPassword: "" });
-    setShowModal(false);
-    displayToast(`Account created for ${formData.name}!`);
-  };
-
+  // Handle opening the edit modal
   const handleEditStaff = (staff) => {
-    setIsEditing(true);
-    setEditingStaffId(staff.id);
-    setFormData({
-      name: staff.name,
-      email: staff.email,
-      role: staff.role,
-      password: "",
-      confirmPassword: ""
-    });
-    setShowModal(true);
+    setEditingStaff(staff);
+    setIsEditModalOpen(true);
   };
 
-  const handleUpdateAccount = () => {
-    if (!formData.name || !formData.email || !formData.role) {
-      displayToast("Please fill in name, email, and role");
-      return;
+  // Handle closing the edit modal
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingStaff(null);
+  };
+
+  // Handle saving the edited staff
+  const handleSaveStaff = (updatedStaff) => {
+    setStaffsData(prev => ({
+      ...prev,
+      rows: prev.rows.map(staff => 
+        staff.id === updatedStaff.id ? { ...staff, ...updatedStaff } : staff
+      )
+    }));
+    displayToast('Staff member updated successfully');
+  };
+
+  // Handle opening the add modal
+  const handleOpenAddModal = () => {
+    setIsAddModalOpen(true);
+  };
+
+  // Handle closing the add modal
+  const handleCloseAddModal = () => {
+    setIsAddModalOpen(false);
+  };
+
+  // Handle saving a new staff member
+  const handleAddNewStaff = (newStaff) => {
+    setStaffsData(prev => ({
+      ...prev,
+      rows: [newStaff, ...prev.rows],
+      meta: `${prev.rows.length + 1} staff members`
+    }));
+    displayToast('Staff member added successfully');
+  };
+
+  // Format column names for display
+  const formatColumnName = (colName) => {
+    const columnMap = {
+      'names': 'name',
+      'category_specialty': 'specialty',
+      'employment': 'employment status'
+    };
+    return columnMap[colName] || colName;
+  };
+
+  // Format cell display value
+  const formatCellValue = (cellValue, colName) => {
+    if (typeof cellValue === 'boolean') {
+      return cellValue ? 'Active' : 'Inactive';
     }
-    if (!validateEmail(formData.email)) {
-      displayToast("Please enter a valid email address.");
-      return;
+    if (cellValue === null || cellValue === undefined) {
+      return '—';
     }
-    // If password is being changed, validate it
-    if (formData.password || formData.confirmPassword) {
-      if (formData.password.length < 8) {
-        displayToast("Password must be at least 8 characters long.");
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        displayToast("Passwords do not match.");
-        return;
-      }
-    }
-    // Update logic would go here
-    setFormData({ name: "", email: "", role: "", password: "", confirmPassword: "" });
-    setShowModal(false);
-    setIsEditing(false);
-    setEditingStaffId(null);
-    displayToast(`Account updated for ${formData.name}!`);
+    return cellValue || '';
   };
 
-  const handleDeleteStaff = (staff) => {
-    setStaffToDelete(staff);
-    setShowDeleteConfirm(true);
-  };
 
-  const handleConfirmDelete = () => {
-    if (staffToDelete) {
-      displayToast(`Account deleted for ${staffToDelete.name}!`);
-      setShowDeleteConfirm(false);
-      setStaffToDelete(null);
-    }
-  };
-
-  const handleLinkSearch = (value) => {
-    setLinkSearchValue(value);
-    const lower = value.toLowerCase().trim();
-    if (!lower) {
-      setShowLinkSearchDropdown(false);
-      setLinkSearchResults([]);
-    } else {
-      const results = staffData
-        .filter(s => 
-          s.name.toLowerCase().startsWith(lower) || s.email.toLowerCase().startsWith(lower)
-        )
-        .sort((a, b) => a.name.localeCompare(b.name));
-      setLinkSearchResults(results);
-      setShowLinkSearchDropdown(results.length > 0);
-    }
-  };
-
-  const handleGenerateLinkFromSearch = (staff) => {
-    const roleNormalized = staff.role.toLowerCase().replace(/\s+/g, '_');
-    const link = `https://beautybook.pro/magic/${btoa(staff.email).slice(0,14)}?role=${roleNormalized}`;
-    navigator.clipboard?.writeText(link).catch(()=>{});
-    setLinkSearchValue(link);
-    setShowLinkSearchDropdown(false);
-    setLinkSearchResults([]);
-    displayToast(`Link copied for ${staff.name}!`);
-  };
-
-  const handleSelectFromLinkDropdown = (staff) => {
-    setLinkSearchValue(staff.name);
-    setShowLinkSearchDropdown(false);
-    setLinkSearchResults([]);
-  };
 
   return (
     <div className="super-admin-container">
@@ -429,12 +356,16 @@ export default function SuperAdminUsersDashboard() {
               <button
                 key={item.id}
                 onClick={() => {
-                  if (item.id === "user-accounts") {
+                  if (item.id === "staff-management") {
                     setActiveNav(item.id);
                   } else if (item.id === "dashboard") {
                     navigate("/superadmin/dashboard");
                   } else if (item.id === "database") {
                     navigate("/superadmin/database");
+                  } else if (item.id === "services") {
+                    navigate("/superadmin/services");
+                  } else if (item.id === "logs") {
+                    navigate("/superadmin/logs");
                   } else if (item.id === "security") {
                     navigate("/superadmin/security");
                   } else if (item.id === "landing-page") {
@@ -467,8 +398,8 @@ export default function SuperAdminUsersDashboard() {
         {/* Header */}
         <header className="dashboard-header">
           <div className="header-title-section">
-            <h1 className="header-main-title">User Accounts Management</h1>
-            <p className="header-subtitle">BeautyBook Pro • Saturday, Dec 7, 2024</p>
+            <h1 className="header-main-title">Staff Management</h1>
+            <p className="header-subtitle">BeautyBook Pro • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}</p>
           </div>
           <div className="header-actions">
             <button className="header-action-btn" onClick={() => displayToast('No new notifications')}>
@@ -484,489 +415,270 @@ export default function SuperAdminUsersDashboard() {
 
         {/* Content */}
         <main className="dashboard-main">
-          {/* User Management Panel */}
           <div className="dashboard-panel">
-            <div className="panel-header">
+            {/* Panel header with search and add button */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div className="panel-title">
-                <UserIcon />
-                User Management
+                {searchQuery 
+                  ? `Search Results (${(staffsData.rows || []).filter(staff => (staff.names || '').toLowerCase().includes(searchQuery.toLowerCase())).length})`
+                  : `All Staff Members (${staffsData.rows?.length || 0})`
+                }
               </div>
-              <div className="table-controls">
-                <div className="search-wrap" style={{ position: "relative" }}>
-                  <SearchIcon />
-                  <input 
-                    className="search-input" 
-                    type="text" 
-                    placeholder="Search"
-                    value={searchValue}
-                    onChange={(e) => handleSearch(e.target.value)}
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {/* Search Input */}
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="Search staff by name..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentStaffPage(1);
+                    }}
+                    style={{
+                      padding: '8px 12px 8px 32px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(152, 143, 129, 0.3)',
+                      backgroundColor: 'rgba(35, 29, 26, 0.8)',
+                      color: '#D4C5B9',
+                      fontSize: '13px',
+                      width: '200px',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(221, 144, 29, 0.5)';
+                      e.currentTarget.style.backgroundColor = 'rgba(35, 29, 26, 0.95)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                      e.currentTarget.style.backgroundColor = 'rgba(35, 29, 26, 0.8)';
+                    }}
                   />
-                  {/* Search Results Dropdown */}
-                  {showSearchDropdown && searchValue && (
-                    <div className="search-dropdown" style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: 0,
-                      right: 0,
-                      marginTop: "8px",
-                      backgroundColor: "#1a1a1a",
-                      border: "1px solid rgba(221, 144, 29, 0.3)",
-                      borderRadius: "8px",
-                      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
-                      zIndex: 100,
-                      maxHeight: "300px",
-                      overflowY: "auto",
-                      fontFamily: "Inter, sans-serif",
-                      scrollbarWidth: "thin",
-                      scrollbarColor: "rgba(221, 144, 29, 0.2) transparent"
-                    }}>
-                      {dropdownResults.map((staff, index) => (
-                        <div 
-                          key={staff.id} 
-                          onClick={() => handleSelectFromDropdown(staff)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            padding: "12px 16px",
-                            borderBottom: index !== dropdownResults.length - 1 ? "1px solid rgba(221, 144, 29, 0.1)" : "none",
-                            cursor: "pointer",
-                            transition: "background-color 0.2s ease"
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.08)"}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                        >
-                          <div style={{
-                            width: "36px",
-                            height: "36px",
-                            borderRadius: "6px",
-                            backgroundColor: "rgba(221, 144, 29, 0.15)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            color: "#dd901d",
-                            flexShrink: 0
-                          }}>
-                            {staff.initial}
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{
-                              fontSize: "13px",
-                              fontWeight: "600",
-                              color: "#f5f5f5"
-                            }}>
-                              {staff.name}
-                            </div>
-                            <div style={{
-                              fontSize: "11px",
-                              color: "#988f81"
-                            }}>
-                              {staff.email}
-                            </div>
-                          </div>
-                          <div style={{
-                            fontSize: "11px",
-                            fontWeight: "600",
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            backgroundColor: staff.status === 'Active' ? "rgba(76, 175, 80, 0.15)" : "rgba(244, 67, 54, 0.15)",
-                            color: staff.status === 'Active' ? "#4caf50" : "#f44336",
-                            flexShrink: 0
-                          }}>
-                            {staff.status}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
-                <button className="btn-gold" onClick={() => setShowModal(true)}>Create Account</button>
+                
+                {/* Add Button */}
+                <button
+                  onClick={handleOpenAddModal}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#dd901d',
+                    color: '#1a1a1a',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e6a326'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#dd901d'}
+                >
+                  Add Staff
+                </button>
               </div>
             </div>
 
-            {/* Table */}
-            <div className="table-wrapper">
-              <div className="table-head">
-                <div className="th-user">User</div>
-                <div className="th-role">Roles</div>
-                <div className="th-status">Status</div>
-                <div className="th-login">Last Log in</div>
-                <div className="th-actions">Actions</div>
-              </div>
-
-              <div className="table-body">
-                {filteredStaff.length > 0 ? (
-                  filteredStaff.map(staff => (
-                    <div key={staff.id} className="table-row">
-                      <div className="user-cell">
-                        <div className="avatar">
-                          <span className="avatar-initial">{staff.initial}</span>
-                          <span className={`avatar-dot ${staff.status === 'Active' ? 'active' : 'inactive'}`}></span>
-                        </div>
-                        <div className="user-info">
-                          <span className="user-name">{staff.name}</span>
-                          <span className="user-email">{staff.email}</span>
-                        </div>
+            {/* Staff Table View */}
+            {loading ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading staff data...</div>
+            ) : (() => {
+              // Filter staff by search query
+              const filteredStaff = staffsData.rows ? staffsData.rows.filter(staff =>
+                (staff.names || '').toLowerCase().includes(searchQuery.toLowerCase())
+              ) : [];
+              
+              return staffsData.rows && staffsData.rows.length > 0 ? (
+                filteredStaff.length > 0 ? (
+                  <div style={{ marginTop: '0px', overflowX: 'auto' }}>
+                    <table className="data-table" style={{ minWidth: '800px' }}>
+                      <thead>
+                        <tr>
+                          {staffsData.cols.map((col) => (
+                            <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
+                          ))}
+                          <th style={{ textAlign: 'left' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const itemsPerPage = 12;
+                          const startIdx = (currentStaffPage - 1) * itemsPerPage;
+                          const endIdx = startIdx + itemsPerPage;
+                          return filteredStaff.slice(startIdx, endIdx).map((staff, idx) => (
+                        <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                          {staffsData.cols.map((col) => {
+                            const cellValue = staff[col];
+                            const displayValue = formatCellValue(cellValue, col);
+                            return (
+                              <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
+                            );
+                          })}
+                          <td style={{ fontSize: '13px' }}>
+                            <button
+                              onClick={() => handleEditStaff(staff)}
+                              title="Edit staff"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#988f81',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '12px',
+                                fontWeight: '500',
+                                transition: 'all 0.2s',
+                                borderRadius: '4px'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = '#dd901d';
+                                e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = '#988f81';
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <EditIcon color="currentColor" />
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+                {(() => {
+                  const filteredStaff = staffsData.rows.filter(staff =>
+                    (staff.names || '').toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                  if (filteredStaff.length === 0) return null;
+                  
+                  const itemsPerPage = 12;
+                  const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
+                  const startIdx = (currentStaffPage - 1) * itemsPerPage + 1;
+                  const endIdx = Math.min(currentStaffPage * itemsPerPage, filteredStaff.length);
+                  
+                  return (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
+                      <div style={{ color: '#988f81', fontSize: '13px' }}>
+                        Showing {startIdx}–{endIdx} of {filteredStaff.length} staff
                       </div>
-
-                      <div className="badge">
-                        <span className={`badge-inner ${staff.role === 'Admin' ? 'badge-admin' : 'badge-staff'}`}>
-                          {staff.role}
-                        </span>
-                      </div>
-
-                      <div className="badge">
-                        <span className={`badge-inner ${staff.status === 'Active' ? 'badge-active' : 'badge-inactive'}`}>
-                          {staff.status}
-                        </span>
-                      </div>
-
-                      <div className="last-login-cell">
-                        <span className="last-login-badge">{staff.lastLogin}</span>
-                      </div>
-
-                      <div className="actions-cell">
-                        <button className="action-btn" title="Edit" onClick={() => handleEditStaff(staff)}>
-                          <EditIcon />
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => setCurrentStaffPage(p => Math.max(1, p - 1))}
+                          disabled={currentStaffPage === 1}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(152, 143, 129, 0.3)',
+                            background: currentStaffPage === 1 ? 'rgba(152, 143, 129, 0.05)' : 'transparent',
+                            color: currentStaffPage === 1 ? '#6B6157' : '#988f81',
+                            fontSize: '13px',
+                            cursor: currentStaffPage === 1 ? 'default' : 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentStaffPage !== 1) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                              e.currentTarget.style.background = 'rgba(152, 143, 129, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentStaffPage !== 1) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          ← Previous
                         </button>
-                        <button className="action-btn danger" title="Remove" onClick={() => handleDeleteStaff(staff)}>
-                          <DeleteIcon />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#988f81', fontSize: '13px' }}>
+                          Page {currentStaffPage} of {totalPages}
+                        </div>
+                        <button
+                          onClick={() => setCurrentStaffPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentStaffPage === totalPages}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(152, 143, 129, 0.3)',
+                            background: currentStaffPage === totalPages ? 'rgba(152, 143, 129, 0.05)' : 'transparent',
+                            color: currentStaffPage === totalPages ? '#6B6157' : '#988f81',
+                            fontSize: '13px',
+                            cursor: currentStaffPage === totalPages ? 'default' : 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentStaffPage !== totalPages) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                              e.currentTarget.style.background = 'rgba(152, 143, 129, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentStaffPage !== totalPages) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          Next →
                         </button>
                       </div>
                     </div>
-                  ))
+                  );
+                })()}
+              </div>
                 ) : (
-                  <div className="table-empty">No users found.</div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Login Link Generator Panel */}
-          <div className="dashboard-panel">
-            <div className="panel-header-simple">
-              <div className="panel-title">
-                <LinkIcon />
-                Log In Link Generator
-              </div>
-            </div>
-
-            <p className="panel-description">
-              Search for an account and generate a one-time login link.
-            </p>
-
-            <div className="link-gen-body">
-              <div style={{ position: "relative", flex: 1 }}>
-                <input 
-                  type="text"
-                  placeholder="Select user or enter email"
-                  value={linkSearchValue}
-                  onChange={(e) => handleLinkSearch(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    backgroundColor: "rgba(26, 15, 0, 0.5)",
-                    border: "1px solid rgba(221, 144, 29, 0.3)",
-                    borderRadius: "8px",
-                    color: "#f5f5f5",
-                    fontSize: "14px",
-                    fontFamily: "Inter, sans-serif",
-                    boxSizing: "border-box",
-                    transition: "border-color 0.2s ease"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
-                  onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
-                />
-                
-                {/* Search Results Dropdown - appears above input */}
-                {showLinkSearchDropdown && linkSearchValue && (
-                  <div className="link-dropdown-scroll" style={{
-                    position: "absolute",
-                    bottom: "100%",
-                    left: 0,
-                    right: 0,
-                    marginBottom: "8px",
-                    backgroundColor: "#1a1a1a",
-                    border: "1px solid rgba(221, 144, 29, 0.3)",
-                    borderRadius: "8px",
-                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
-                    zIndex: 100,
-                    maxHeight: "300px",
-                    overflowY: "auto",
-                    fontFamily: "Inter, sans-serif",
-                    scrollbarWidth: "thin",
-                    scrollbarColor: "rgba(221, 144, 29, 0.2) transparent"
-                  }}>
-                    {linkSearchResults.map((staff, index) => (
-                      <div 
-                        key={staff.id} 
-                        onClick={() => handleSelectFromLinkDropdown(staff)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "12px 16px",
-                          borderBottom: index !== linkSearchResults.length - 1 ? "1px solid rgba(221, 144, 29, 0.1)" : "none",
-                          gap: "12px",
-                          cursor: "pointer",
-                          transition: "background-color 0.2s ease"
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.08)"}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                      >
-                        <div style={{
-                          flex: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px"
-                        }}>
-                          <div style={{
-                            width: "36px",
-                            height: "36px",
-                            borderRadius: "6px",
-                            backgroundColor: "rgba(221, 144, 29, 0.15)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            color: "#dd901d"
-                          }}>
-                            {staff.initial}
-                          </div>
-                          <div>
-                            <div style={{
-                              fontSize: "13px",
-                              fontWeight: "600",
-                              color: "#f5f5f5"
-                            }}>
-                              {staff.name}
-                            </div>
-                            <div style={{
-                              fontSize: "11px",
-                              color: "#988f81"
-                            }}>
-                              {staff.email}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>
+                    No staff members match your search
                   </div>
-                )}
-              </div>
-              <button className="btn-gold" onClick={handleGenerateLink}>Generate Link</button>
-            </div>
+                )
+              ) : (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No staff members found</div>
+              );
+            })()}
           </div>
         </main>
       </div>
 
-      {/* ─── MODAL ─── */}
-      <CreateAccountModal 
-        showModal={showModal}
-        onClose={handleModalClose}
-        formData={formData}
-        setFormData={setFormData}
-        handleCreateAccount={isEditing ? handleUpdateAccount : handleCreateAccount}
-        isEditing={isEditing}
-        showPassword={showPassword}
-        togglePasswordVisibility={() => setShowPassword(!showPassword)}
-        showConfirmPassword={showConfirmPassword}
-        toggleConfirmPasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
-      />
-
-      {/* ─── DELETE CONFIRMATION DIALOG ─── */}
-      {showDeleteConfirm && staffToDelete && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.8)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1001,
-          fontFamily: "Inter, sans-serif"
-        }}>
-          <div style={{
-            backgroundColor: "#1a1a1a",
-            borderRadius: "12px",
-            padding: "32px",
-            width: "90%",
-            maxWidth: "400px",
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-            border: "1px solid rgba(221, 144, 29, 0.2)"
-          }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{
-              fontSize: "18px",
-              fontWeight: "700",
-              color: "#f5f5f5",
-              margin: "0 0 16px 0"
-            }}>Delete Account?</h3>
-            <p style={{
-              fontSize: "14px",
-              color: "#988f81",
-              margin: "0 0 8px 0",
-              lineHeight: "1.5"
-            }}>Are you sure you want to delete the account for <span style={{ color: "#dd901d", fontWeight: "600" }}>{staffToDelete.name}</span>? This action cannot be undone.</p>
-            <div style={{
-              display: "flex",
-              gap: "12px",
-              justifyContent: "flex-end",
-              marginTop: "24px"
-            }}>
-              <button
-                onClick={() => {
-                  setShowDeleteConfirm(false);
-                  setStaffToDelete(null);
-                }}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "transparent",
-                  border: "1px solid rgba(221, 144, 29, 0.4)",
-                  color: "#dd901d",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                  transition: "all 0.2s ease"
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
-                  e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.backgroundColor = "transparent";
-                  e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#e74c3c",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                  transition: "background-color 0.2s ease"
-                }}
-                onMouseOver={(e) => e.target.style.backgroundColor = "#c0392b"}
-                onMouseOut={(e) => e.target.style.backgroundColor = "#e74c3c"}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── MODAL EXIT CONFIRMATION DIALOG ─── */}
-      {confirmExit && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.8)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1001,
-          fontFamily: "Inter, sans-serif"
-        }}>
-          <div style={{
-            backgroundColor: "#1a1a1a",
-            borderRadius: "12px",
-            padding: "32px",
-            width: "90%",
-            maxWidth: "400px",
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-            border: "1px solid rgba(221, 144, 29, 0.2)"
-          }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{
-              fontSize: "18px",
-              fontWeight: "700",
-              color: "#f5f5f5",
-              margin: "0 0 16px 0"
-            }}>Discard Changes?</h3>
-            <p style={{
-              fontSize: "14px",
-              color: "#988f81",
-              margin: "0 0 24px 0",
-              lineHeight: "1.5"
-            }}>You have unsaved data. Are you sure you want to exit without creating the account?</p>
-            <div style={{
-              display: "flex",
-              gap: "12px",
-              justifyContent: "flex-end"
-            }}>
-              <button
-                onClick={() => setConfirmExit(false)}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "transparent",
-                  border: "1px solid rgba(221, 144, 29, 0.4)",
-                  color: "#dd901d",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                  transition: "all 0.2s ease"
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
-                  e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.backgroundColor = "transparent";
-                  e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
-                }}
-              >
-                Keep Editing
-              </button>
-              <button
-                onClick={handleConfirmExit}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#dd901d",
-                  color: "#1a1a1a",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                  transition: "background-color 0.2s ease"
-                }}
-                onMouseOver={(e) => e.target.style.backgroundColor = "#e6a326"}
-                onMouseOut={(e) => e.target.style.backgroundColor = "#dd901d"}
-              >
-                Discard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── TOAST NOTIFICATION ─── */}
+      {/* ─── TOAST ─── */}
       {showToast && (
-        <div className="toast show">
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          left: '24px',
+          background: 'rgba(35, 29, 26, 0.95)',
+          border: '1px solid rgba(221, 144, 29, 0.3)',
+          color: '#D4C5B9',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          fontSize: '13px',
+          zIndex: 1000,
+          backdropFilter: 'blur(10px)'
+        }}>
           {toastMessage}
         </div>
       )}
+
+      {/* ─── EDIT STAFF MODAL ─── */}
+      <EditStaffModal 
+        staff={editingStaff}
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        onSave={handleSaveStaff}
+      />
+
+      {/* ─── ADD STAFF MODAL ─── */}
+      <AddStaffModal 
+        isOpen={isAddModalOpen}
+        onClose={handleCloseAddModal}
+        onSave={handleAddNewStaff}
+      />
     </div>
   );
 }

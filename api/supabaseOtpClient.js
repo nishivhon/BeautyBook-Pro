@@ -12,21 +12,22 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 // Log to verify env vars are loaded
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error('[OTP] Missing Supabase config!');
   console.error(`  SUPABASE_URL: ${SUPABASE_URL ? 'loaded' : 'MISSING'}`);
   console.error(`  SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? 'loaded' : 'MISSING'}`);
+  console.error(`  Attempted env vars: SUPABASE_URL, VITE_SUPABASE_URL, SUPABASE_ANON_KEY, VITE_SUPABASE_ANON_KEY`);
 }
 
 /**
- * Save OTP to database
- * Deletes old OTP first, then inserts new one
+ * Save OTP to database with retry logic
+ * Retries up to 3 times with exponential backoff on network errors
  */
-export const saveOtp = async (data) => {
+export const saveOtp = async (data, retryCount = 0) => {
   try {
     const { email, phone, otp, name } = data;
 
@@ -51,25 +52,59 @@ export const saveOtp = async (data) => {
       expires_at: expiresAt
     };
     console.log(`[OTP] Saving OTP expiry: ${expiresAt}`);
+    console.log(`[OTP] Connecting to: ${url}`);
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+    // Create abort controller with 30 second timeout (was 10s default)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`HTTP ${response.status}: ${error}`);
+      }
+
+      return true;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  } catch (error) {
+    console.error(`[OTP] Error saving OTP (attempt ${retryCount + 1}/3): ${error.message}`);
+    console.error(`[OTP] Error details:`, {
+      message: error.message,
+      code: error.code,
+      name: error.name,
+      supabaseUrl: SUPABASE_URL,
+      keyIsSet: !!SUPABASE_ANON_KEY
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`HTTP ${response.status}: ${error}`);
+    // Retry on network errors (ECONNREFUSED, ETIMEDOUT, ConnectTimeoutError, etc.)
+    const isNetworkError = error.code === 'ECONNREFUSED' || 
+                          error.code === 'ETIMEDOUT' || 
+                          error.code === 'UND_ERR_CONNECT_TIMEOUT' ||
+                          error.message.includes('fetch failed') ||
+                          error.message.includes('Timeout');
+
+    if (isNetworkError && retryCount < 3) {
+      const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s exponential backoff
+      console.log(`[OTP] Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return saveOtp(data, retryCount + 1);
     }
 
-    return true;
-  } catch (error) {
-    console.error(`[OTP] Error saving OTP: ${error.message}`);
     throw error;
   }
 };

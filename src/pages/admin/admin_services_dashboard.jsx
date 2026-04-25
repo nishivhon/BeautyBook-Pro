@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { EditServiceModal } from "../../components/modal/admin/edit_service";
@@ -103,21 +103,64 @@ const DownloadIcon = ({ size = 14, color = "currentColor" }) => (
 );
 
 // ═══════════════════════════════════════════════════════════════════
+// ICON COMPONENTS FOR SIDEBAR
+// ═══════════════════════════════════════════════════════════════════
+
+const LogoIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="7" cy="7" r="3.5" stroke="#000" strokeWidth="2"/>
+    <circle cx="7" cy="15" r="3.5" stroke="#000" strokeWidth="2"/>
+    <path d="M9.8 8.8l7 7M9.8 13.2L17 6.2" stroke="#000" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+const DashboardIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+    <rect x="10" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+    <rect x="1" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+    <rect x="10" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+  </svg>
+);
+
+const GridIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 2h5v5H2zM11 2h5v5h-5zM2 11h5v5H2zM11 11h5v5h-5z" stroke={color} strokeWidth="1.6" strokeLinejoin="round"/>
+  </svg>
+);
+
+const ActivityIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M1 9h16M1 1h16v14H1z" stroke={color} strokeWidth="1.6"/>
+    <circle cx="9" cy="6" r="2" fill={color}/>
+  </svg>
+);
+
+const UserGroupIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="6" cy="5" r="3" stroke={color} strokeWidth="1.6"/>
+    <circle cx="12" cy="7" r="2.5" stroke={color} strokeWidth="1.5"/>
+    <path d="M1 16c0-2.5 1.8-4 5-4s5 1.5 5 4" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M10 14c0-1.5 1-2.5 3-2.5s3 1 3 2.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const LogOutIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M7 15H3.5A1.5 1.5 0 012 13.5v-9A1.5 1.5 0 013.5 3H7" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M12 12l4-3-4-3M16 9H7" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+// ═══════════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════════
 
 const NAV_ITEMS = [
-  { label: "Home",         active: false },
-  { label: "Services",     active: true  },
-  { label: "Live Status",  active: false },
-  { label: "Staff Status", active: false },
-];
-
-const STATS = [
-  { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: "24",       label: "Today's Appointments" },
-  { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱12,450",  label: "Revenue Today"        },
-  { Icon: ScissorsIcon, badge: null,    badgeType: null,    value: "14",        label: "Promo Bookings Today" },
-  { Icon: LoyaltyIcon,  badge: "+5",    badgeType: "green", value: "12",        label: "Loyalty Cards Activated" },
+  { id: "home", label: "Dashboard", icon: DashboardIcon },
+  { id: "services", label: "Services", icon: GridIcon },
+  { id: "live-status", label: "Live Status", icon: ActivityIcon },
+  { id: "staff-status", label: "Staff Status", icon: UserGroupIcon },
 ];
 
 const SERVICE_GROUPS = [
@@ -173,6 +216,92 @@ const SERVICE_GROUPS = [
 // ═══════════════════════════════════════════════════════════════════
 
 /* ── Navbar ── */
+/* ── Sidebar ── */
+const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpanded, onLogout }) => {
+  const navigate = useNavigate();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleNavClick = (itemId) => {
+    setActiveNav(itemId);
+    if (itemId === "home") {
+      navigate("/admin/dashboard");
+    } else if (itemId === "services") {
+      navigate("/admin/dashboard/services");
+    } else if (itemId === "live-status") {
+      navigate("/admin/dashboard/live-status");
+    } else if (itemId === "staff-status") {
+      navigate("/admin/dashboard/staff-status");
+    }
+  };
+
+  const handleLogout = () => {
+    logoutOperator();
+    navigate("/");
+  };
+
+  return (
+    <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
+      opacity: mounted ? 1 : 0,
+      transform: mounted ? "translateX(0)" : "translateX(-16px)",
+      transition: "all 0.5s ease"
+    }}>
+      {/* Logo + Toggle */}
+      <div className="sidebar-logo-section">
+        <button 
+          onClick={() => setSidebarExpanded(!sidebarExpanded)}
+          className="logo-toggle-btn"
+          title="Toggle sidebar"
+        >
+          <div className="logo-badge">
+            <LogoIcon />
+          </div>
+        </button>
+        {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
+      </div>
+
+      {/* Admin pill */}
+      {sidebarExpanded && (
+        <div className="admin-badge-pill">
+          <div className="admin-badge-circle">A</div>
+          <span className="admin-badge-text">Administrator</span>
+        </div>
+      )}
+
+      {/* Nav items */}
+      <nav className="sidebar-nav">
+        {NAV_ITEMS.map((item) => {
+          const isActive = activeNav === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleNavClick(item.id)}
+              className={`nav-button ${isActive ? "active" : ""}`}
+              title={item.label}
+            >
+              <item.icon color={isActive ? "#000" : "currentColor"} />
+              {sidebarExpanded && <span>{item.label}</span>}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Log Out */}
+      <div className="sidebar-logout-section">
+        <button onClick={handleLogout} className="logout-button" title="Log out">
+          <LogOutIcon />
+          {sidebarExpanded && <span>Log Out</span>}
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+/* ── Navbar ── */
 const AdminNavbar = ({ onLogout }) => {
   const navigate = useNavigate();
 
@@ -200,9 +329,9 @@ const AdminNavbar = ({ onLogout }) => {
       <nav className="admin-nav-links">
         {NAV_ITEMS.map((item) => (
           <button
-            key={item.label}
+            key={item.id}
             onClick={() => handleNavigation(item.label)}
-            className={`admin-nav-link ${item.active ? "active" : ""}`}
+            className={`admin-nav-link ${item.id === "services" ? "active" : ""}`}
           >
             {item.label}
           </button>
@@ -223,13 +352,20 @@ const AdminNavbar = ({ onLogout }) => {
   );
 };
 
-/* ── Page header + stat cards ── */
-const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
-  <>
+/* ── Page title + actions ── */
+const PageTitle = () => {
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
+  return (
     <div className="dash-page-header">
       <div className="dash-page-title-block">
         <h1 className="dash-page-title">Services Management</h1>
-        <p className="dash-page-subtitle">BeautyBook Pro · {date}</p>
+        <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
       </div>
       <div className="dash-page-actions">
         <button className="dash-action-btn">
@@ -242,32 +378,35 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
         </button>
       </div>
     </div>
+  );
+};
 
-    <div className="svc-stats-row">
-      {STATS.map(({ Icon, badge, badgeType, value, label }, i) => (
-        <div key={i} className="dash-stat-card">
-          <div className="dash-stat-top">
-            <div className="dash-stat-icon-box">
-              <Icon size={20} color="#dd901d" />
-            </div>
-            {badge && (
-              <span className={`dash-stat-badge ${badgeType === "green" ? "dash-stat-badge-green" : "dash-stat-badge-blue"}`}>
-                {badge}
-              </span>
-            )}
+/* ── Metric cards for hero section ── */
+const PageMetrics = ({ stats }) => (
+  <div className="svc-stats-row">
+    {stats.map(({ Icon, badge, badgeType, value, label }, i) => (
+      <div key={i} className="dash-stat-card">
+        <div className="dash-stat-top">
+          <div className="dash-stat-icon-box">
+            <Icon size={20} color="#dd901d" />
           </div>
-          <div className="dash-stat-bottom">
-            <p className="dash-stat-value">{value}</p>
-            <p className="dash-stat-label">{label}</p>
-          </div>
+          {badge && (
+            <span className={`dash-stat-badge ${badgeType === "green" ? "dash-stat-badge-green" : "dash-stat-badge-blue"}`}>
+              {badge}
+            </span>
+          )}
         </div>
-      ))}
-    </div>
-  </>
+        <div className="dash-stat-bottom">
+          <p className="dash-stat-value">{value}</p>
+          <p className="dash-stat-label">{label}</p>
+        </div>
+      </div>
+    ))}
+  </div>
 );
 
 /* ── Single service item row ── */
-const ServiceItem = ({ name, meta, available, price, onEdit }) => (
+const ServiceItem = ({ id, name, category, meta, available, price, onEdit }) => (
   <div className="svc-item-row">
     <div className="svc-item-left">
       <div className="svc-item-icon-box">
@@ -288,7 +427,7 @@ const ServiceItem = ({ name, meta, available, price, onEdit }) => (
       <button 
         className="svc-item-edit-btn" 
         aria-label="Edit service"
-        onClick={() => onEdit({ name, meta, available, price })}
+        onClick={() => onEdit({ id, name, category, meta, available, price })}
       >
         <EditIcon size={14} color="currentColor" />
       </button>
@@ -297,7 +436,7 @@ const ServiceItem = ({ name, meta, available, price, onEdit }) => (
 );
 
 /* ── Services list panel ── */
-const ServicesPanel = ({ onEditService }) => {
+const ServicesPanel = ({ serviceGroups, loading, error, onEditService }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
@@ -312,26 +451,43 @@ const ServicesPanel = ({ onEditService }) => {
         </button>
       </div>
 
-      <div className={isExpanded ? "svc-services-scroll" : "svc-services-scroll-limited"}>
-        {/* Show all services grouped by category (both expanded and collapsed) */}
-        {SERVICE_GROUPS.map((group, gi) => (
-          <div key={gi}>
-            <p className="svc-category-label">{group.category}</p>
-            <div className="svc-item-list">
-              {group.items.map((svc, i) => (
-                <ServiceItem 
-                  key={i} 
-                  {...svc} 
-                  onEdit={onEditService}
-                />
-              ))}
+      {/* Loading State */}
+      {loading && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+          Loading services...
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+          Error loading services: {error}
+        </div>
+      )}
+
+      {/* Services List */}
+      {!loading && !error && (
+        <div className={isExpanded ? "svc-services-scroll" : "svc-services-scroll-limited"}>
+          {/* Show all services grouped by category (both expanded and collapsed) */}
+          {serviceGroups.map((group, gi) => (
+            <div key={gi}>
+              <p className="svc-category-label">{group.category}</p>
+              <div className="svc-item-list">
+                {group.items.map((svc, i) => (
+                  <ServiceItem 
+                    key={i} 
+                    {...svc} 
+                    onEdit={onEditService}
+                  />
+                ))}
+              </div>
+              {gi < serviceGroups.length - 1 && (
+                <div className="svc-category-divider" />
+              )}
             </div>
-            {gi < SERVICE_GROUPS.length - 1 && (
-              <div className="svc-category-divider" />
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -392,12 +548,156 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardServices = ({ date }) => {
   const navigate = useNavigate();
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editingService, setEditingService] = useState(null);
   const [isCreatingPromo, setIsCreatingPromo] = useState(false);
   const [isCreatingDiscount, setIsCreatingDiscount] = useState(false);
+  const [stats, setStats] = useState([
+    { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: "0",       label: "Today's Appointments" },
+    { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱0.00",   label: "Revenue Today"        },
+    { Icon: ScissorsIcon, badge: null,    badgeType: null,    value: "0",       label: "Promo Bookings Today" },
+    { Icon: LoyaltyIcon,  badge: "+5",    badgeType: "green", value: "0",       label: "Loyalty Cards Activated" },
+  ]);
+  const [appointmentData, setAppointmentData] = useState({
+    current: [],
+    pending: [],
+    done: []
+  });
+  const [activeNav, setActiveNav] = useState("services");
+  const [mounted, setMounted] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    const saved = localStorage.getItem('adminSidebarExpanded');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
 
-  // Extract category names from SERVICE_GROUPS
-  const categories = SERVICE_GROUPS.map(group => group.category);
+  // Persist sidebar state to localStorage
+  useEffect(() => {
+    localStorage.setItem('adminSidebarExpanded', JSON.stringify(sidebarExpanded));
+  }, [sidebarExpanded]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Fetch appointments data
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const [currentRes, pendingRes, doneRes] = await Promise.all([
+          fetch('/api/appointments/read/by-status?status=current'),
+          fetch('/api/appointments/read/by-status?status=pending'),
+          fetch('/api/appointments/read/by-status?status=done')
+        ]);
+
+        const [currentData, pendingData, doneData] = await Promise.all([
+          currentRes.json(),
+          pendingRes.json(),
+          doneRes.json()
+        ]);
+
+        setAppointmentData({
+          current: currentData.appointments || [],
+          pending: pendingData.appointments || [],
+          done: doneData.appointments || []
+        });
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
+
+  // Calculate stats dynamically
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Total appointments for today
+    const todayAppointments = [
+      ...appointmentData.current.filter(apt => apt.date === today),
+      ...appointmentData.pending.filter(apt => apt.date === today),
+      ...appointmentData.done.filter(apt => apt.date === today)
+    ];
+    
+    const totalToday = todayAppointments.length;
+
+    setStats([
+      { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: totalToday.toString(), label: "Today's Appointments" },
+      { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱12,450",   label: "Revenue Today"        },
+      { Icon: ScissorsIcon, badge: null,    badgeType: null,    value: "0",       label: "Promo Bookings Today" },
+      { Icon: LoyaltyIcon,  badge: "+5",    badgeType: "green", value: "0",       label: "Loyalty Cards Activated" },
+    ]);
+  }, [appointmentData]);
+
+  // Fetch services from API on component mount
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await fetch('/api/services');
+        if (!res.ok) {
+          throw new Error(`Failed to fetch services: ${res.status}`);
+        }
+
+        const servicesData = await res.json();
+        
+        // Transform services data to include formatted price and availability
+        const transformedServices = servicesData.map(s => {
+          // Try both 'name' and 'service_name' columns (handle both DB schemas)
+          const serviceName = s.name || s.service_name || 'Unknown';
+          
+          console.log('Service data:', { id: s.id, name: s.name, service_name: s.service_name, serviceName });
+          
+          return {
+            id: s.id,
+            name: serviceName,
+            category: s.category || 'Other',
+            description: s.description || s.meta || '',
+            price: s.price ? `₱${parseFloat(s.price).toFixed(2)}` : '₱0.00',
+            estimatedTime: s.estimated_time || s.est_time || '30 mins',
+            available: s.availability !== false,
+            meta: s.description || s.meta || ''
+          };
+        });
+
+        setServices(transformedServices);
+      } catch (err) {
+        console.error('Error fetching services:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+    
+    return () => {};
+  }, []);
+
+  // Group services by category
+  const groupedServices = services.reduce((acc, service) => {
+    const existing = acc.find(group => group.category === service.category);
+    if (existing) {
+      existing.items.push(service);
+    } else {
+      acc.push({
+        category: service.category,
+        items: [service]
+      });
+    }
+    return acc;
+  }, []);
+
+  // Use grouped services if available, otherwise use SERVICE_GROUPS as fallback
+  const serviceGroups = services.length > 0 ? groupedServices : SERVICE_GROUPS;
+  
+  // Extract category names
+  const categories = serviceGroups.map(group => group.category);
 
   const handleLogout = () => {
     logoutOperator();
@@ -419,22 +719,136 @@ export const AdminDashboardServices = ({ date }) => {
     });
   };
 
-  const handleSaveService = (formData) => {
+  const handleSaveService = async (formData) => {
     const { _isNew, ...serviceData } = formData;
-    if (_isNew) {
-      console.log("New service created:", serviceData);
-      // Here you can integrate with your API to create the service
-    } else {
-      console.log("Service updated:", serviceData);
-      // Here you can integrate with your API to update the service
+    
+    try {
+      setError(null);
+
+      if (_isNew) {
+        // Create new service via POST to /api/services/create
+        console.log("Creating new service:", serviceData);
+        
+        // Strip currency symbol from price (e.g., "₱6767.67" -> 6767.67)
+        const priceValue = typeof serviceData.price === 'string'
+          ? parseFloat(serviceData.price.replace(/[₱\s]/g, ''))
+          : parseFloat(serviceData.price);
+
+        const res = await fetch('/api/services/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: serviceData.name,
+            service_name: serviceData.name,
+            category: serviceData.category,
+            description: serviceData.meta,
+            price: isNaN(priceValue) ? 0 : priceValue,
+            availability: serviceData.available
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to create service: ${res.status}`);
+        }
+
+        const newService = await res.json();
+        console.log("Service created successfully:", newService);
+        
+        // Add new service to list
+        setServices(prev => [...prev, {
+          id: newService.id,
+          name: newService.name,
+          category: newService.category,
+          description: newService.description,
+          price: `₱${parseFloat(newService.price).toFixed(2)}`,
+          available: newService.availability !== false,
+          meta: newService.description
+        }]);
+
+      } else {
+        // Update existing service via PUT to /api/services/update
+        console.log("Updating service:", serviceData);
+        
+        if (!serviceData.id) {
+          throw new Error("Service ID is required for update");
+        }
+
+        // Strip currency symbol from price (e.g., "₱6767.67" -> 6767.67)
+        const priceValue = typeof serviceData.price === 'string' 
+          ? parseFloat(serviceData.price.replace(/[₱\s]/g, '')) 
+          : parseFloat(serviceData.price);
+
+        const res = await fetch(`/api/services/update?id=${serviceData.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: serviceData.name,
+            category: serviceData.category,
+            description: serviceData.meta,
+            price: isNaN(priceValue) ? 0 : priceValue,
+            available: serviceData.available
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to update service: ${res.status}`);
+        }
+
+        const updatedService = await res.json();
+        console.log("Service updated successfully:", updatedService);
+        
+        // Update service in list
+        setServices(prev => prev.map(svc => 
+          svc.id === serviceData.id 
+            ? {
+                ...svc,
+                name: serviceData.name,
+                category: serviceData.category,
+                description: serviceData.meta,
+                price: `₱${parseFloat(serviceData.price).toFixed(2)}`,
+                available: serviceData.available,
+                meta: serviceData.meta
+              }
+            : svc
+        ));
+      }
+
+      setEditingService(null);
+    } catch (err) {
+      console.error('Error saving service:', err);
+      setError(err.message);
     }
-    setEditingService(null);
   };
 
-  const handleRemoveService = (service) => {
-    console.log("Service removed:", service);
-    // Here you can integrate with your API to delete the service
-    setEditingService(null);
+  const handleRemoveService = async (service) => {
+    if (!service.id) {
+      console.error("Cannot delete service: no ID");
+      setError("Service ID is required for deletion");
+      return;
+    }
+
+    try {
+      setError(null);
+      console.log("Deleting service:", service.id);
+
+      const res = await fetch(`/api/services/delete?id=${service.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to delete service: ${res.status}`);
+      }
+
+      console.log("Service deleted successfully");
+      
+      // Remove service from list
+      setServices(prev => prev.filter(svc => svc.id !== service.id));
+      setEditingService(null);
+    } catch (err) {
+      console.error('Error deleting service:', err);
+      setError(err.message);
+    }
   };
 
   const handleCloseModal = () => {
@@ -470,15 +884,50 @@ export const AdminDashboardServices = ({ date }) => {
   };
 
   return (
-    <div className="dash-root">
-      <AdminNavbar onLogout={handleLogout} />
+    <div className="super-admin-container">
+      {/* Sidebar */}
+      <AdminSidebar 
+        activeNav={activeNav}
+        setActiveNav={setActiveNav}
+        sidebarExpanded={sidebarExpanded}
+        setSidebarExpanded={setSidebarExpanded}
+        onLogout={handleLogout}
+      />
 
-      <main className="dash-main">
-        <PageHeader date={date} />
+      {/* Main Content */}
+      <div className="super-admin-main">
+        {/* Dashboard Header - Fixed Title and Actions */}
+        <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
+          <div>
+            <h1 className="dash-page-title">Services Management</h1>
+            <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+          </div>
+          <div className="dash-page-actions">
+            <button className="dash-action-btn">
+              <BellIcon size={14} color="#fff" />
+              Notifications
+            </button>
+            <button className="dash-action-btn">
+              <SettingsIcon size={14} color="#fff" />
+              Settings
+            </button>
+          </div>
+        </header>
 
-        <div className="svc-page-grid">
+        <main className="dashboard-main">
+          {/* Metrics Cards - Hero Section */}
+          <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+            <PageMetrics stats={stats} />
+          </div>
+
+          <div className="svc-page-grid">
           {/* Left — Services list */}
-          <ServicesPanel onEditService={handleEditService} />
+          <ServicesPanel 
+            serviceGroups={serviceGroups}
+            loading={loading}
+            error={error}
+            onEditService={handleEditService} 
+          />
 
           {/* Right — Quick actions + Analytics */}
           <div>
@@ -491,6 +940,7 @@ export const AdminDashboardServices = ({ date }) => {
           </div>
         </div>
       </main>
+        </div>
 
       {/* Edit Service Modal - Rendered at page level */}
       <EditServiceModal 

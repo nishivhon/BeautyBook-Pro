@@ -132,12 +132,17 @@ export const NailServicesModal = ({ onBack, onContinue, initialSelected = [], is
     const fetchServices = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/services/Nail%20Services');
+        // Fetch all services and filter for "Nail Services" category
+        const response = await fetch('/api/services');
         if (!response.ok) {
           throw new Error('Failed to fetch services');
         }
-        const data = await response.json();
-        setServices(data.map(formatService));
+        const allServices = await response.json();
+        // Filter for Nail Services category
+        const nailServices = allServices.filter(
+          (service) => service.category === 'Nail Services'
+        );
+        setServices(nailServices.map(formatService));
         setError(null);
       } catch (err) {
         console.error('Error fetching nail services:', err);

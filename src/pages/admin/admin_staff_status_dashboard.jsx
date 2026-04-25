@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import CustomerHistoryModal from "../../components/modal/admin/customer_history";
 import CalendarAppointmentsModal from "../../components/modal/admin/calendar_appointments";
+import { StatusUpdateModal } from "../../components/modal/admin/status_update";
+import { ManageServiceModal } from "../../components/modal/admin/manage_service";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -120,15 +122,90 @@ const CloseIcon = ({ size = 20, color = "currentColor" }) => (
   </svg>
 );
 
+const ServiceIcon = ({ size = 17, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect x="3" y="3" width="8" height="8" rx="1" stroke={color} strokeWidth="1.8" />
+    <rect x="13" y="3" width="8" height="8" rx="1" stroke={color} strokeWidth="1.8" />
+    <rect x="3" y="13" width="8" height="8" rx="1" stroke={color} strokeWidth="1.8" />
+    <rect x="13" y="13" width="8" height="8" rx="1" stroke={color} strokeWidth="1.8" />
+  </svg>
+);
+
+const TrashIcon = ({ size = 16, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <polyline points="3 6 5 6 21 6" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <line x1="10" y1="11" x2="10" y2="17" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <line x1="14" y1="11" x2="14" y2="17" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
+const PlusIcon = ({ size = 16, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <line x1="12" y1="5" x2="12" y2="19" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    <line x1="5" y1="12" x2="19" y2="12" stroke={color} strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+// ═══════════════════════════════════════════════════════════════════
+// ICON COMPONENTS FOR SIDEBAR
+// ═══════════════════════════════════════════════════════════════════
+
+const LogoIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="7" cy="7" r="3.5" stroke="#000" strokeWidth="2"/>
+    <circle cx="7" cy="15" r="3.5" stroke="#000" strokeWidth="2"/>
+    <path d="M9.8 8.8l7 7M9.8 13.2L17 6.2" stroke="#000" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+const DashboardIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+    <rect x="10" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+    <rect x="1" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+    <rect x="10" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
+  </svg>
+);
+
+const GridIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 2h5v5H2zM11 2h5v5h-5zM2 11h5v5H2zM11 11h5v5h-5z" stroke={color} strokeWidth="1.6" strokeLinejoin="round"/>
+  </svg>
+);
+
+const ActivityIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M1 9h16M1 1h16v14H1z" stroke={color} strokeWidth="1.6"/>
+    <circle cx="9" cy="6" r="2" fill={color}/>
+  </svg>
+);
+
+const UserGroupIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="6" cy="5" r="3" stroke={color} strokeWidth="1.6"/>
+    <circle cx="12" cy="7" r="2.5" stroke={color} strokeWidth="1.5"/>
+    <path d="M1 16c0-2.5 1.8-4 5-4s5 1.5 5 4" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M10 14c0-1.5 1-2.5 3-2.5s3 1 3 2.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const LogOutIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M7 15H3.5A1.5 1.5 0 012 13.5v-9A1.5 1.5 0 013.5 3H7" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M12 12l4-3-4-3M16 9H7" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 // ═══════════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════════
 
 const NAV_ITEMS = [
-  { label: "Home",         active: false },
-  { label: "Services",     active: false },
-  { label: "Live Status",  active: false },
-  { label: "Staff Status", active: true  },
+  { id: "home", label: "Dashboard", icon: DashboardIcon },
+  { id: "services", label: "Services", icon: GridIcon },
+  { id: "live-status", label: "Live Status", icon: ActivityIcon },
+  { id: "staff-status", label: "Staff Status", icon: UserGroupIcon },
 ];
 
 const STATS = [
@@ -207,6 +284,92 @@ const STAFF = [
 // ═══════════════════════════════════════════════════════════════════
 
 /* ── Navbar ── */
+/* ── Sidebar ── */
+const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpanded, onLogout }) => {
+  const navigate = useNavigate();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleNavClick = (itemId) => {
+    setActiveNav(itemId);
+    if (itemId === "home") {
+      navigate("/admin/dashboard");
+    } else if (itemId === "services") {
+      navigate("/admin/dashboard/services");
+    } else if (itemId === "live-status") {
+      navigate("/admin/dashboard/live-status");
+    } else if (itemId === "staff-status") {
+      navigate("/admin/dashboard/staff-status");
+    }
+  };
+
+  const handleLogout = () => {
+    logoutOperator();
+    navigate("/");
+  };
+
+  return (
+    <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
+      opacity: mounted ? 1 : 0,
+      transform: mounted ? "translateX(0)" : "translateX(-16px)",
+      transition: "all 0.5s ease"
+    }}>
+      {/* Logo + Toggle */}
+      <div className="sidebar-logo-section">
+        <button 
+          onClick={() => setSidebarExpanded(!sidebarExpanded)}
+          className="logo-toggle-btn"
+          title="Toggle sidebar"
+        >
+          <div className="logo-badge">
+            <LogoIcon />
+          </div>
+        </button>
+        {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
+      </div>
+
+      {/* Admin pill */}
+      {sidebarExpanded && (
+        <div className="admin-badge-pill">
+          <div className="admin-badge-circle">A</div>
+          <span className="admin-badge-text">Administrator</span>
+        </div>
+      )}
+
+      {/* Nav items */}
+      <nav className="sidebar-nav">
+        {NAV_ITEMS.map((item) => {
+          const isActive = activeNav === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleNavClick(item.id)}
+              className={`nav-button ${isActive ? "active" : ""}`}
+              title={item.label}
+            >
+              <item.icon color={isActive ? "#000" : "currentColor"} />
+              {sidebarExpanded && <span>{item.label}</span>}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Log Out */}
+      <div className="sidebar-logout-section">
+        <button onClick={handleLogout} className="logout-button" title="Log out">
+          <LogOutIcon />
+          {sidebarExpanded && <span>Log Out</span>}
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+/* ── Navbar ── */
 const AdminNavbar = ({ onLogout }) => {
   const navigate = useNavigate();
 
@@ -234,8 +397,8 @@ const AdminNavbar = ({ onLogout }) => {
       <nav className="admin-nav-links">
         {NAV_ITEMS.map((item) => (
           <button 
-            key={item.label} 
-            className={`admin-nav-link ${item.active ? "active" : ""}`}
+            key={item.id} 
+            className={`admin-nav-link ${item.id === "staff-status" ? "active" : ""}`}
             onClick={() => handleNavigation(item.label)}
           >
             {item.label}
@@ -256,12 +419,19 @@ const AdminNavbar = ({ onLogout }) => {
 };
 
 /* ── Page header + stat cards ── */
-const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
-  <>
+const PageTitle = () => {
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
+  return (
     <div className="dash-page-header">
       <div className="dash-page-title-block">
-        <h1 className="dash-page-title">Admin Dashboard</h1>
-        <p className="dash-page-subtitle">BeautyBook Pro · {date}</p>
+        <h1 className="dash-page-title">Staff Status</h1>
+        <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
       </div>
       <div className="dash-page-actions">
         <button className="dash-action-btn">
@@ -274,255 +444,57 @@ const PageHeader = ({ date = "Saturday, Dec 7, 2024" }) => (
         </button>
       </div>
     </div>
+  );
+};
 
-    <div className="staff-stats-row">
-      {STATS.map(({ Icon, iconColor, value, label, labelClass }, i) => (
-        <div key={i} className="dash-stat-card">
-          <div className="dash-stat-top">
-            <div className="dash-stat-icon-box">
-              <Icon size={20} color={iconColor} />
-            </div>
-          </div>
-          <div className="dash-stat-bottom">
-            <p className="dash-stat-value">{value}</p>
-            <p className={labelClass}>{label}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  </>
-);
-
-/* ── Status Update Modal ── */
-const StatusUpdateModal = ({ isOpen, staff, onClose, onSave }) => {
-  const [selectedStatus, setSelectedStatus] = useState(staff?.status || "Available");
-  
-  if (!isOpen || !staff) return null;
-
-  const statusOptions = [
-    { label: "Available", color: "#22c55e", class: "staff-status-green" },
-    { label: "In Service", color: "#4387ef", class: "staff-status-blue" },
-    { label: "On Break", color: "#dd901d", class: "staff-status-amber" },
+/* ── Metric cards for hero section ── */
+const PageMetrics = ({ stats = { available: 0, inService: 0, onBreak: 0, offToday: 0 }, loading = false, error = null }) => {
+  // Create dynamic stats array
+  const dynamicStats = [
+    { Icon: AvailableIcon,  iconColor: "#22c55e", value: `${stats.available}`, label: "Available Stylist", labelClass: "staff-stat-label-green" },
+    { Icon: InServiceIcon,  iconColor: "#4387ef", value: `${stats.inService}`, label: "In Service",         labelClass: "staff-stat-label-blue"  },
+    { Icon: OnBreakIcon,    iconColor: "#dd901d", value: `${stats.onBreak}`, label: "On Break",           labelClass: "staff-stat-label-amber" },
+    { Icon: OffTodayIcon,   iconColor: "#988f81", value: `${stats.offToday}`, label: "Off Today",          labelClass: "staff-stat-label-tan"   },
   ];
 
-  const handleSave = () => {
-    onSave(staff.name, selectedStatus);
-    setSelectedStatus("Available");
-  };
-
   return (
-    <div 
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        fontFamily: "Inter, sans-serif",
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          backgroundColor: "#1a1a1a",
-          borderRadius: "12px",
-          padding: "32px",
-          maxWidth: "450px",
-          width: "90%",
-          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-          border: "1px solid rgba(221, 144, 29, 0.2)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#f5f5f5", margin: 0 }}>
-            Update Status
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#988f81",
-              transition: "color 0.2s ease",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "#dd901d"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "#988f81"; }}
-          >
-            <CloseIcon size={20} color="currentColor" />
-          </button>
+    <>
+      {error && (
+        <div style={{ padding: '10px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '4px', marginBottom: '10px' }}>
+          Error loading staff: {error}
         </div>
-
-        {/* Staff Name Display */}
-        <div style={{
-          backgroundColor: "rgba(26, 15, 0, 0.5)",
-          borderLeft: "3px solid #dd901d",
-          padding: "12px 14px",
-          borderRadius: "8px",
-          marginBottom: "24px",
-        }}>
-          <p style={{ fontSize: "12px", color: "#988f81", margin: "0 0 4px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            Staff Member
-          </p>
-          <p style={{ fontSize: "16px", fontWeight: "600", color: "#f5f5f5", margin: 0 }}>
-            {staff.name}
-          </p>
-        </div>
-
-        {/* Current Status Display */}
-        <p style={{ fontSize: "12px", color: "#988f81", margin: "0 0 8px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-          Current Status
-        </p>
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          marginBottom: "24px",
-          padding: "10px 14px",
-          backgroundColor: "rgba(26, 15, 0, 0.5)",
-          border: "1px solid rgba(221, 144, 29, 0.2)",
-          borderRadius: "8px",
-        }}>
-          <div
-            style={{
-              width: "10px",
-              height: "10px",
-              borderRadius: "50%",
-              backgroundColor: staff.status === "Available" ? "#22c55e" : staff.status === "In Service" ? "#4387ef" : "#dd901d",
-            }}
-          />
-          <span style={{ fontSize: "14px", fontWeight: "500", color: "#f5f5f5" }}>
-            {staff.status}
-          </span>
-        </div>
-
-        {/* Status Options */}
-        <p style={{ fontSize: "12px", color: "#988f81", margin: "0 0 12px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-          Select New Status
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "28px" }}>
-          {statusOptions.map((option) => (
-            <button
-              key={option.label}
-              onClick={() => setSelectedStatus(option.label)}
-              style={{
-                padding: "12px 16px",
-                border: selectedStatus === option.label ? "2px solid #dd901d" : "1px solid rgba(221, 144, 29, 0.2)",
-                backgroundColor: selectedStatus === option.label ? "rgba(221, 144, 29, 0.15)" : "rgba(26, 15, 0, 0.5)",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: "500",
-                color: "#f5f5f5",
-                transition: "all 0.2s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                fontFamily: "Inter, sans-serif",
-              }}
-              onMouseEnter={(e) => {
-                if (selectedStatus !== option.label) {
-                  e.currentTarget.style.backgroundColor = "rgba(26, 15, 0, 0.7)";
-                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.4)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedStatus !== option.label) {
-                  e.currentTarget.style.backgroundColor = "rgba(26, 15, 0, 0.5)";
-                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.2)";
-                }
-              }}
-            >
-              <div
-                style={{
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "50%",
-                  backgroundColor: option.color,
-                  flexShrink: 0,
-                }}
-              />
-              {option.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ display: "flex", gap: "12px" }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1,
-              padding: "12px 16px",
-              backgroundColor: "transparent",
-              border: "1px solid rgba(221, 144, 29, 0.3)",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "#988f81",
-              transition: "all 0.2s ease",
-              fontFamily: "Inter, sans-serif",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.6)";
-              e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.3)";
-              e.currentTarget.style.backgroundColor = "transparent";
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            style={{
-              flex: 1,
-              padding: "12px 16px",
-              backgroundColor: "#dd901d",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "#fff",
-              transition: "all 0.2s ease",
-              fontFamily: "Inter, sans-serif",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#e89f2d";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#dd901d";
-            }}
-          >
-            Save
-          </button>
-        </div>
+      )}
+      <div className="staff-stats-row">
+        {dynamicStats.map(({ Icon, iconColor, value, label, labelClass }, i) => (
+          <div key={i} className="dash-stat-card">
+            <div className="dash-stat-top">
+              <div className="dash-stat-icon-box">
+                <Icon size={20} color={iconColor} />
+              </div>
+            </div>
+            <div className="dash-stat-bottom">
+              <p className="dash-stat-value">{loading ? '—' : value}</p>
+              <p className={labelClass}>{label}</p>
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
+    </>
   );
 };
 
 /* ── Staff List panel ── */
-const StaffListPanel = ({ staff: staffList, onStaffStatusUpdate, statusUpdateModal, onOpenStatusModal, onCloseStatusModal }) => {
+const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate, statusUpdateModal, onOpenStatusModal, onCloseStatusModal, onOpenManageServiceModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [expandedStaff, setExpandedStaff] = useState(null);
   const [staff, setStaff] = useState(staffList);
+
+  // Update staff when staffList changes
+  useEffect(() => {
+    setStaff(staffList);
+  }, [staffList]);
 
   const statuses = ["Available", "In Service", "On Break", "Off Today"];
 
@@ -601,9 +573,25 @@ const StaffListPanel = ({ staff: staffList, onStaffStatusUpdate, statusUpdateMod
         </div>
       </div>
 
-      <div className={isExpanded ? "staff-member-scroll" : "staff-member-scroll-limited"}>
-        {filteredStaff.length > 0 ? (
-          filteredStaff.map((s, i) => (
+      {/* Loading State */}
+      {loading && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+          Loading staff data...
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+          Error loading staff: {error}
+        </div>
+      )}
+
+      {/* Staff List */}
+      {!loading && !error && (
+        <div className={isExpanded ? "staff-member-scroll" : "staff-member-scroll-limited"}>
+          {filteredStaff.length > 0 ? (
+            filteredStaff.map((s, i) => (
             <div key={i}>
               <div className="staff-member-row">
                 <div className="staff-member-left">
@@ -683,41 +671,73 @@ const StaffListPanel = ({ staff: staffList, onStaffStatusUpdate, statusUpdateMod
                     </p>
                   </div>
 
-                  {/* Update Status Button */}
-                  <button
-                    onClick={() => onOpenStatusModal(s)}
-                    style={{
-                      gridColumn: "1 / -1",
-                      marginTop: "12px",
-                      padding: "10px 16px",
-                      backgroundColor: "#dd901d",
-                      border: "none",
-                      borderRadius: "8px",
-                      color: "#fff",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "#c97a15";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "#dd901d";
-                    }}
-                  >
-                    Update Status
-                  </button>
+                  {/* Update Status & Manage Service Buttons */}
+                  <div style={{ gridColumn: "1 / -1", marginTop: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <button
+                      onClick={() => onOpenStatusModal(s)}
+                      style={{
+                        padding: "10px 16px",
+                        backgroundColor: "#dd901d",
+                        border: "none",
+                        borderRadius: "8px",
+                        color: "#fff",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = "#c97a15";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = "#dd901d";
+                      }}
+                    >
+                      Update Status
+                    </button>
+                    <button
+                      onClick={() => onOpenManageServiceModal(s)}
+                      style={{
+                        padding: "10px 16px",
+                        backgroundColor: "#4387ef",
+                        border: "none",
+                        borderRadius: "8px",
+                        color: "#fff",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = "#3a72d6";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = "#4387ef";
+                      }}
+                    >
+                      <ServiceIcon size={13} color="currentColor" />
+                      Manage Service
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           ))
-        ) : (
-          <div className="staff-no-results">
-            <p>No staff found with this status</p>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="staff-no-results">
+              <p>No staff found with this status</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -768,9 +788,163 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardStaffStatus = ({ date }) => {
   const navigate = useNavigate();
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [statusUpdateModal, setStatusUpdateModal] = useState({ isOpen: false, staff: null });
+  const [manageServiceModal, setManageServiceModal] = useState({ isOpen: false, staff: null });
+  const [activeNav, setActiveNav] = useState("staff-status");
+  const [mounted, setMounted] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    const saved = localStorage.getItem('adminSidebarExpanded');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  // Persist sidebar state to localStorage
+  useEffect(() => {
+    localStorage.setItem('adminSidebarExpanded', JSON.stringify(sidebarExpanded));
+  }, [sidebarExpanded]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Sample service categories and services data
+  // TODO: Replace with actual API call to fetch categories and services
+  const serviceCategories = [
+    {
+      id: 'hair',
+      name: 'Hair Services',
+      services: [
+        { id: 'haircut', name: 'Haircut' },
+        { id: 'hair-color', name: 'Hair Color' },
+        { id: 'hair-treatment', name: 'Hair Treatment' },
+        { id: 'styling', name: 'Styling' }
+      ]
+    },
+    {
+      id: 'nails',
+      name: 'Nail Services',
+      services: [
+        { id: 'manicure', name: 'Manicure' },
+        { id: 'pedicure', name: 'Pedicure' },
+        { id: 'nail-art', name: 'Nail Art' }
+      ]
+    },
+    {
+      id: 'massage',
+      name: 'Massage Services',
+      services: [
+        { id: 'body-massage', name: 'Body Massage' },
+        { id: 'foot-massage', name: 'Foot Massage' },
+        { id: 'facial-massage', name: 'Facial Massage' }
+      ]
+    },
+    {
+      id: 'skincare',
+      name: 'Skincare',
+      services: [
+        { id: 'facial', name: 'Facial' },
+        { id: 'skin-treatment', name: 'Skin Treatment' },
+        { id: 'waxing', name: 'Waxing' }
+      ]
+    }
+  ];
+
+  // Fetch staff data on component mount
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const res = await fetch('/api/staffs');
+        if (!res.ok) {
+          throw new Error(`Failed to fetch staff: ${res.status}`);
+        }
+        
+        const staffData = await res.json();
+        
+        // Transform staff data to match the dashboard format
+        const transformedStaff = staffData.map((s, index) => {
+          // Determine status based on in_service column
+          // Priority: check in_service first, then fallback to status
+          let status = 'Available';
+          let statusClass = 'staff-status-green';
+          let subStatus = 'Available';
+
+          // Normalize the in_service value (trim whitespace)
+          const inServiceValue = (s.in_service || '').trim().toLowerCase();
+          const statusValue = (s.status || '').trim().toLowerCase();
+          
+          // Get the name - handle both 'name' and 'names' column variants
+          const staffName = s.names || s.name || 'Unknown';
+
+          console.log(`Processing staff: ${staffName} | status: ${statusValue} | in_service: ${inServiceValue}`);
+
+          // Check in_service column first for specific statuses
+          if (inServiceValue === 'in-service') {
+            status = 'In Service';
+            statusClass = 'staff-status-blue';
+            subStatus = 'Serving: ' + (s.current_client || 'Client');
+          } else if (inServiceValue === 'on-break') {
+            status = 'On Break';
+            statusClass = 'staff-status-amber';
+            subStatus = 'On Break';
+          } else if (inServiceValue === 'off') {
+            status = 'Off Today';
+            statusClass = 'staff-status-tan';
+            subStatus = 'Off Today';
+          } else if (statusValue === 'avail' || inServiceValue === 'avail') {
+            // If no specific in_service status, check status column for 'avail'
+            status = 'Available';
+            statusClass = 'staff-status-green';
+            subStatus = 'Available';
+          }
+
+          return {
+            initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
+            name: staffName,
+            status: status,
+            statusClass: statusClass,
+            subStatus: subStatus,
+            details: {
+              currentClient: s.current_client || 'None',
+              startOfService: s.start_time || '—',
+              serviceDone: s.current_service || '—',
+              timeOfBreak: s.break_time || '—',
+              timeOfClockIn: s.clock_in_time || '—',
+              upNextClient: s.next_client || 'None',
+              noOfClientToday: s.clients_today || 0,
+              availableForWalkIn: statusValue === 'avail' || inServiceValue === 'avail'
+            }
+          };
+        });
+
+        setStaff(transformedStaff);
+      } catch (err) {
+        console.error('Error fetching staff:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStaff();
+    
+    return () => {};
+  }, []);
+
+  // Calculate stats based on staff data
+  const stats = {
+    available: staff.filter(s => s.statusClass === 'staff-status-green').length,
+    inService: staff.filter(s => s.statusClass === 'staff-status-blue').length,
+    onBreak: staff.filter(s => s.statusClass === 'staff-status-amber').length,
+    offToday: staff.filter(s => s.statusClass === 'staff-status-tan').length
+  };
 
   const handleLogout = () => {
     logoutOperator();
@@ -791,21 +965,67 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     setStatusUpdateModal({ isOpen: false, staff: null });
   };
 
+  const openManageServiceModal = (staffMember) => {
+    setManageServiceModal({ isOpen: true, staff: staffMember });
+  };
+
+  const closeManageServiceModal = () => {
+    setManageServiceModal({ isOpen: false, staff: null });
+  };
+
+  const handleManageServiceSave = (staffName, categoryServicePairs) => {
+    console.log(`Updated ${staffName} services:`, categoryServicePairs);
+    // Here you would typically make an API call to update the staff services in your backend
+    // Example: await updateStaffServices(staffName, categoryServicePairs);
+  };
+
   return (
-    <div className="dash-root">
-      <AdminNavbar onLogout={handleLogout} />
+    <div className="super-admin-container">
+      {/* Sidebar */}
+      <AdminSidebar 
+        activeNav={activeNav}
+        setActiveNav={setActiveNav}
+        sidebarExpanded={sidebarExpanded}
+        setSidebarExpanded={setSidebarExpanded}
+        onLogout={handleLogout}
+      />
 
-      <main className="dash-main">
-        <PageHeader date={date} />
+      {/* Main Content */}
+      <div className="super-admin-main">
+        {/* Dashboard Header - Fixed Title and Actions */}
+        <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
+          <div>
+            <h1 className="dash-page-title">Staff Status</h1>
+            <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+          </div>
+          <div className="dash-page-actions">
+            <button className="dash-action-btn">
+              <BellIcon size={14} color="#fff" />
+              Notifications
+            </button>
+            <button className="dash-action-btn">
+              <SettingsIcon size={14} color="#fff" />
+              Settings
+            </button>
+          </div>
+        </header>
 
-        <div className="staff-page-grid">
+        <main className="dashboard-main">
+          {/* Metrics Cards - Hero Section */}
+          <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+            <PageMetrics stats={stats} loading={loading} error={error} />
+          </div>
+          <div className="staff-page-grid">
           {/* Left — Staff List */}
           <StaffListPanel 
-            staff={STAFF}
+            staff={staff}
+            loading={loading}
+            error={error}
             onStaffStatusUpdate={handleStaffStatusUpdate}
             statusUpdateModal={statusUpdateModal}
             onOpenStatusModal={openStatusModal}
             onCloseStatusModal={closeStatusModal}
+            onOpenManageServiceModal={openManageServiceModal}
           />
 
           {/* Right — Quick Actions + Analytics */}
@@ -817,7 +1037,8 @@ export const AdminDashboardStaffStatus = ({ date }) => {
             <AnalyticsPanel />
           </div>
         </div>
-      </main>
+        </main>
+      </div>
 
       {/* Customer History Modal */}
       <CustomerHistoryModal 
@@ -853,8 +1074,22 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           closeStatusModal();
         }}
       />
+
+      {/* Manage Service Modal */}
+      <ManageServiceModal
+        isOpen={manageServiceModal.isOpen}
+        staff={manageServiceModal.staff}
+        onClose={closeManageServiceModal}
+        onSave={handleManageServiceSave}
+        serviceCategories={serviceCategories}
+        services={serviceCategories.reduce((acc, cat) => {
+          acc[cat.id] = cat.services;
+          return acc;
+        }, {})}
+      />
     </div>
   );
 };
 
 export default AdminDashboardStaffStatus;
+

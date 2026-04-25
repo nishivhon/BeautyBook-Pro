@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Homepage from './pages/landpage'
+import About from './pages/about'
 import { Register } from './pages/register'
 import { LogIn } from './pages/login'
 import { logMagicLinksForTesting } from './services/magicLink'
@@ -11,9 +12,14 @@ import { AdminDashboardStaffStatus } from './pages/admin/admin_staff_status_dash
 import SuperAdminDashboard from './pages/superadmin/super_admin_dashboard'
 import SuperAdminUsersDashboard from './pages/superadmin/super_admin_users_dashboard'
 import SuperAdminDatabaseDashboard from './pages/superadmin/super_admin_database_dashboard'
+import SuperAdminServicesDashboard from './pages/superadmin/super_admin_services_dashboard'
+import SuperAdminLogsDashboard from './pages/superadmin/super_admin_logs_dashboard'
 import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security_dashboard'
 import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage_edit_dashboard'
-import StaffDashboard from './pages/staff/staff_dashboard'
+// Staff Dashboard routes hidden - all features moved to admin dashboard
+// import StaffDashboard from './pages/staff/staff_dashboard'
+// import StaffServices from './pages/staff/staff_service_dashboard'
+// import StaffQueueDashboard from './pages/staff/staff_queue_dashboard'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function App() {
@@ -27,6 +33,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path="/landpage" element={<Homepage />} />
+        <Route path="/about" element={<About />} />
         <Route path="/register" element={<Register />} />
         <Route path="/operators/login" element={<LogIn />} />
         <Route
@@ -86,6 +93,22 @@ function App() {
           }
         />
         <Route
+          path="/superadmin/services"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminServicesDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/logs"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminLogsDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/superadmin/security"
           element={
             <ProtectedRoute requiredRole="super admin">
@@ -101,6 +124,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* Staff Dashboard routes disabled - all features moved to admin dashboard */}
+        {/* 
         <Route
           path="/staff/dashboard"
           element={
@@ -109,6 +134,23 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/staff/services"
+          element={
+            <ProtectedRoute requiredRole="staff">
+              <StaffServices />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/queue"
+          element={
+            <ProtectedRoute requiredRole="staff">
+              <StaffQueueDashboard />
+            </ProtectedRoute>
+          }
+        />
+        */}
       </Routes>
     </Router>
   )
