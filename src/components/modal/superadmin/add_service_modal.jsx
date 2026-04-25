@@ -276,7 +276,8 @@ export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
                 fontSize: '13px',
                 boxSizing: 'border-box',
                 transition: 'all 0.2s',
-                outline: 'none'
+                outline: 'none',
+                MozAppearance: 'textfield'
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = 'rgba(221, 144, 29, 0.5)';
@@ -299,7 +300,6 @@ export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
               name="estimated_time"
               value={formData.estimated_time}
               onChange={handleChange}
-              placeholder="30"
               style={{
                 width: '100%',
                 padding: '10px 12px',
@@ -310,7 +310,8 @@ export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
                 fontSize: '13px',
                 boxSizing: 'border-box',
                 transition: 'all 0.2s',
-                outline: 'none'
+                outline: 'none',
+                MozAppearance: 'textfield'
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = 'rgba(221, 144, 29, 0.5)';
@@ -337,9 +338,6 @@ export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
                 height: '16px'
               }}
             />
-            <label htmlFor="availability-check" style={{ color: '#D4C5B9', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }}>
-              Available
-            </label>
           </div>
 
           {/* Buttons */}
@@ -410,6 +408,12 @@ export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
       </div>
 
       <style>{`
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
         @keyframes fadeInScale {
           from {
             opacity: 0;
