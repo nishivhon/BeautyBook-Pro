@@ -213,6 +213,21 @@ export default function SuperAdminServicesDashboard() {
     return columnMap[colName] || colName;
   };
 
+  const getServiceName = (service) =>
+    service?.name || service?.service_name || service?.serviceName || '';
+
+  const getServiceCategory = (service) =>
+    service?.category || service?.service_category || service?.serviceCategory || '';
+
+  const matchesServiceQuery = (service, query) => {
+    const q = (query || '').trim().toLowerCase();
+    if (!q) return true;
+
+    const name = getServiceName(service).toLowerCase();
+    const category = getServiceCategory(service).toLowerCase();
+    return name.includes(q) || category.includes(q);
+  };
+
   const openViewModal = () => {
     setModalTable(servicesData);
     setModalMode("view");
@@ -364,7 +379,7 @@ export default function SuperAdminServicesDashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div className="panel-title">
                 {searchQuery 
-                  ? `Search Results (${(servicesData.rows || []).filter(service => (service.name || '').toLowerCase().includes(searchQuery.toLowerCase())).length})`
+                  ? `Search Results (${(servicesData.rows || []).filter(service => matchesServiceQuery(service, searchQuery)).length})`
                   : `All Services (${servicesData.rows?.length || 0})`
                 }
               </div>
@@ -373,7 +388,7 @@ export default function SuperAdminServicesDashboard() {
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
-                    placeholder="Search services by name..."
+                    placeholder="Search by service name or category..."
                     value={searchQuery}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
@@ -430,7 +445,7 @@ export default function SuperAdminServicesDashboard() {
               <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading services...</div>
             ) : (() => {
               const filteredServices = servicesData.rows ? servicesData.rows.filter(service =>
-                (service.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+                matchesServiceQuery(service, searchQuery)
               ) : [];
               
               return servicesData.rows && servicesData.rows.length > 0 ? (
@@ -449,7 +464,7 @@ export default function SuperAdminServicesDashboard() {
                     {(() => {
                       // Filter services by search query
                       const filteredServices = servicesData.rows.filter(service =>
-                        (service.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+                        matchesServiceQuery(service, searchQuery)
                       );
                       const itemsPerPage = 10;
                       const startIdx = (currentServicePage - 1) * itemsPerPage;
@@ -500,7 +515,7 @@ export default function SuperAdminServicesDashboard() {
                 </table>
                 {(() => {
                   const filteredServices = servicesData.rows.filter(service =>
-                    (service.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+                    matchesServiceQuery(service, searchQuery)
                   );
                   if (filteredServices.length === 0) return null;
                   
