@@ -140,6 +140,7 @@ export default function SuperAdminUsersDashboard() {
   });
   const [loading, setLoading] = useState(false);
   const [currentStaffPage, setCurrentStaffPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
@@ -417,18 +418,22 @@ export default function SuperAdminUsersDashboard() {
           <div className="dashboard-panel">
             {/* Panel header with search and add button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div className="panel-title">All Staff Members ({staffsData.rows?.length || 0})</div>
+              <div className="panel-title">
+                {searchQuery 
+                  ? `Search Results (${(staffsData.rows || []).filter(staff => (staff.names || '').toLowerCase().includes(searchQuery.toLowerCase())).length})`
+                  : `All Staff Members (${staffsData.rows?.length || 0})`
+                }
+              </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 {/* Search Input */}
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
-                    placeholder="Search staff..."
+                    placeholder="Search staff by name..."
+                    value={searchQuery}
                     onChange={(e) => {
-                      const value = e.target.value.toLowerCase();
-                      if (value) {
-                        console.log('[Staffs] Searching for:', value);
-                      }
+                      setSearchQuery(e.target.value);
+                      setCurrentStaffPage(1);
                     }}
                     style={{
                       padding: '8px 12px 8px 32px',
@@ -479,23 +484,30 @@ export default function SuperAdminUsersDashboard() {
             {/* Staff Table View */}
             {loading ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading staff data...</div>
-            ) : staffsData.rows && staffsData.rows.length > 0 ? (
-              <div style={{ marginTop: '0px', overflowX: 'auto' }}>
-                <table className="data-table" style={{ minWidth: '800px' }}>
-                  <thead>
-                    <tr>
-                      {staffsData.cols.map((col) => (
-                        <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
-                      ))}
-                      <th style={{ textAlign: 'left' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      const itemsPerPage = 12;
-                      const startIdx = (currentStaffPage - 1) * itemsPerPage;
-                      const endIdx = startIdx + itemsPerPage;
-                      return staffsData.rows.slice(startIdx, endIdx).map((staff, idx) => (
+            ) : (() => {
+              // Filter staff by search query
+              const filteredStaff = staffsData.rows ? staffsData.rows.filter(staff =>
+                (staff.names || '').toLowerCase().includes(searchQuery.toLowerCase())
+              ) : [];
+              
+              return staffsData.rows && staffsData.rows.length > 0 ? (
+                filteredStaff.length > 0 ? (
+                  <div style={{ marginTop: '0px', overflowX: 'auto' }}>
+                    <table className="data-table" style={{ minWidth: '800px' }}>
+                      <thead>
+                        <tr>
+                          {staffsData.cols.map((col) => (
+                            <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
+                          ))}
+                          <th style={{ textAlign: 'left' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const itemsPerPage = 12;
+                          const startIdx = (currentStaffPage - 1) * itemsPerPage;
+                          const endIdx = startIdx + itemsPerPage;
+                          return filteredStaff.slice(startIdx, endIdx).map((staff, idx) => (
                         <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                           {staffsData.cols.map((col) => {
                             const cellValue = staff[col];
@@ -540,15 +552,21 @@ export default function SuperAdminUsersDashboard() {
                     })()}
                   </tbody>
                 </table>
-                {staffsData.rows.length > 0 && (() => {
+                {(() => {
+                  const filteredStaff = staffsData.rows.filter(staff =>
+                    (staff.names || '').toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                  if (filteredStaff.length === 0) return null;
+                  
                   const itemsPerPage = 12;
-                  const totalPages = Math.ceil(staffsData.rows.length / itemsPerPage);
+                  const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
                   const startIdx = (currentStaffPage - 1) * itemsPerPage + 1;
-                  const endIdx = Math.min(currentStaffPage * itemsPerPage, staffsData.rows.length);
+                  const endIdx = Math.min(currentStaffPage * itemsPerPage, filteredStaff.length);
+                  
                   return (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
-                        Showing {startIdx}–{endIdx} of {staffsData.rows.length} staff
+                        Showing {startIdx}–{endIdx} of {filteredStaff.length} staff
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button
@@ -615,9 +633,15 @@ export default function SuperAdminUsersDashboard() {
                   );
                 })()}
               </div>
-            ) : (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No staff members found</div>
-            )}
+                ) : (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>
+                    No staff members match your search
+                  </div>
+                )
+              ) : (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No staff members found</div>
+              );
+            })()}
           </div>
         </main>
       </div>
