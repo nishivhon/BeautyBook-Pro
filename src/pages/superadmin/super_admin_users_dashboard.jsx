@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
 import { EditStaffModal } from "../../components/modal/superadmin/edit_staff";
+import { AddStaffModal } from "../../components/modal/superadmin/add_staff";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -143,6 +144,7 @@ export default function SuperAdminUsersDashboard() {
   const [showToast, setShowToast] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -269,10 +271,30 @@ export default function SuperAdminUsersDashboard() {
     setStaffsData(prev => ({
       ...prev,
       rows: prev.rows.map(staff => 
-        staff.id === updatedStaff.id ? updatedStaff : staff
+        staff.id === updatedStaff.id ? { ...staff, ...updatedStaff } : staff
       )
     }));
     displayToast('Staff member updated successfully');
+  };
+
+  // Handle opening the add modal
+  const handleOpenAddModal = () => {
+    setIsAddModalOpen(true);
+  };
+
+  // Handle closing the add modal
+  const handleCloseAddModal = () => {
+    setIsAddModalOpen(false);
+  };
+
+  // Handle saving a new staff member
+  const handleAddNewStaff = (newStaff) => {
+    setStaffsData(prev => ({
+      ...prev,
+      rows: [newStaff, ...prev.rows],
+      meta: `${prev.rows.length + 1} staff members`
+    }));
+    displayToast('Staff member added successfully');
   };
 
   // Format column names for display
@@ -431,6 +453,7 @@ export default function SuperAdminUsersDashboard() {
                 
                 {/* Add Button */}
                 <button
+                  onClick={handleOpenAddModal}
                   style={{
                     padding: '8px 16px',
                     backgroundColor: '#dd901d',
@@ -624,6 +647,13 @@ export default function SuperAdminUsersDashboard() {
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
         onSave={handleSaveStaff}
+      />
+
+      {/* ─── ADD STAFF MODAL ─── */}
+      <AddStaffModal 
+        isOpen={isAddModalOpen}
+        onClose={handleCloseAddModal}
+        onSave={handleAddNewStaff}
       />
     </div>
   );
