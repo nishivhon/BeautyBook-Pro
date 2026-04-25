@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /* ── NAVBAR logo: scissors <> mark (white strokes on amber bg) ── */
 const LogoMark = () => (
@@ -187,12 +187,14 @@ const NavBar = ({ onBookAppointment }) => {
           {label:"Home",       id:"home"},
           {label:"Services",   id:"services"},
           {label:"How It Works",id:"howitworks"},
-          {label:"About",      id:"about"},
         ].map(item => (
           <button key={item.id} onClick={() => scrollToSection(item.id)} className="nav-link">
             {item.label}
           </button>
         ))}
+        <button onClick={() => { navigate("/about"); setMenuOpen(false); }} className="nav-link">
+          About
+        </button>
       </div>
 
       {/* CTA - Desktop */}
@@ -208,7 +210,6 @@ const NavBar = ({ onBookAppointment }) => {
               {label:"Home",       id:"home"},
               {label:"Services",   id:"services"},
               {label:"How It Works",id:"howitworks"},
-              {label:"About",      id:"about"},
             ].map(item => (
               <button 
                 key={item.id} 
@@ -218,6 +219,12 @@ const NavBar = ({ onBookAppointment }) => {
                 {item.label}
               </button>
             ))}
+            <button 
+              onClick={() => { navigate("/about"); setMenuOpen(false); }} 
+              className="mobile-menu-link"
+            >
+              About
+            </button>
           </div>
           <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
             Book Appointment
@@ -325,7 +332,7 @@ const ServicesSection = () => {
 };
 
 const FooterSection = () => (
-  <footer id="about" className="footer">
+  <footer className="footer">
     <div className="section-container">
       {/* Contact row */}
       <div className="footer-row">
@@ -374,9 +381,45 @@ const FooterSection = () => (
 export default function App() {
   const navigate = useNavigate();
   const handleBook = () => navigate("/register");
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const scrollToSection = (id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.scrollY - 52;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
+    };
+
+    // Handle hash on initial load
+    if (window.location.hash) {
+      const sectionId = window.location.hash.substring(1);
+      setTimeout(() => scrollToSection(sectionId), 100);
+    }
+
+    // Handle hash changes
+    const handleHashChange = () => {
+      if (window.location.hash) {
+        const sectionId = window.location.hash.substring(1);
+        scrollToSection(sectionId);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   return (
-    <div className="app-wrapper">
+    <div className="app-wrapper" style={{ zoom: isDesktop ? "150%" : "100%" }}>
       <NavBar onBookAppointment={handleBook}/>
       <HeroSection onBookAppointment={handleBook}/>
       <HowItWorksSection/>

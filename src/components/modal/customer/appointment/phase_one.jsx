@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../confirmation_dialog";
+import Toast from "../../../toast";
 
 const CalendarSmIcon = () => (
   <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" width={18} height={18}>
@@ -36,6 +38,23 @@ const convertTo12HourFormat = (time24) => {
   const hours12 = hours % 12 || 12;
   return `${hours12}:${minutes.toString().padStart(2, "0")} ${period}`;
 };
+
+/* Shake Animation Keyframes */
+const shakeKeyframes = `
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+  }
+`;
+
+/* Style injection for shake animation */
+if (typeof window !== 'undefined' && !document.getElementById('shake-animation')) {
+  const style = document.createElement('style');
+  style.id = 'shake-animation';
+  style.textContent = shakeKeyframes;
+  document.head.appendChild(style);
+}
 
 /* ── Header ── */
 const BookingHeader = ({ onBack, onBackClick }) => (
@@ -92,11 +111,21 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
   const [manualTime, setManualTime] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
+  const [shakingTimeSlot, setShakingTimeSlot] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
   
   // State for dates and availability
   const [dateOptions, setDateOptions] = useState([]);
   const [unavailableTimes, setUnavailableTimes] = useState([]);
   const [loadingTimes, setLoadingTimes] = useState(false);
+
+  // Auto-hide toast after it becomes visible
+  useEffect(() => {
+    if (toastVisible) {
+      const timer = setTimeout(() => setToastVisible(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastVisible]);
 
   // Generate dates for next 5 days
   useEffect(() => {
@@ -222,6 +251,19 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
 
   return (
     <>
+      {/* Toast Notification - Rendered outside modal using Portal */}
+      {createPortal(
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, pointerEvents: "none", zIndex: 9999 }}>
+          <Toast 
+            message="This time slot is not available" 
+            type="error" 
+            duration={3000}
+            isVisible={toastVisible}
+          />
+        </div>,
+        document.body
+      )}
+
       <div 
         className="appt-backdrop"
         onClick={(e) => {
@@ -485,7 +527,16 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                 ) : (
                   ALL_TIME_SLOTS.map((time, i) => {
                     const isDisabled = unavailableTimes.includes(time);
-                    const handleTimeSelect = () => !isDisabled && setSelectedTime(selectedTime === i ? null : i);
+                    const handleTimeSelect = () => {
+                      if (isDisabled) {
+                        // Show shake animation and toast
+                        setShakingTimeSlot(i);
+                        setToastVisible(true);
+                        setTimeout(() => setShakingTimeSlot(null), 600);
+                      } else {
+                        setSelectedTime(selectedTime === i ? null : i);
+                      }
+                    };
                     return (
                       <button
                         key={i}
@@ -496,7 +547,10 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                         }}
                         className={`appt-time-chip${selectedTime === i ? " selected" : ""}${isDisabled ? " disabled" : ""}`}
                         aria-pressed={selectedTime === i}
-                        style={isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "auto" } : { pointerEvents: "auto" }}
+                        style={{
+                          ...(isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "auto" } : { pointerEvents: "auto" }),
+                          ...(shakingTimeSlot === i ? { animation: "shake 0.6s ease-in-out" } : {}),
+                        }}
                       >
                         {convertTo12HourFormat(time)}
                       </button>

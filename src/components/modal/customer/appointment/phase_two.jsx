@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { HairServicesModal } from "./services/haircut_service";
 import { NailServicesModal } from "./services/nail_service";
 import { SkincareServicesModal } from "./services/skin_care_service";
@@ -315,6 +315,8 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   const [hasVisitedPremiumModal, setHasVisitedPremiumModal] = useState(false); // Track if premium modal has been visited
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const promoCodeRef = useRef(null);
 
   // Initialize state with previously selected services when component mounts or initialData changes
   useEffect(() => {
@@ -337,7 +339,19 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
     if (initialData?.selectedPremiumServices) {
       setSelectedPremiumServices(initialData.selectedPremiumServices);
     }
+    if (initialData?.promoCode) {
+      setPromoCode(initialData.promoCode);
+    }
   }, [initialData]);
+
+  // Scroll to promo code section when a service is selected
+  useEffect(() => {
+    if (selectedServices.length > 0 && promoCodeRef.current) {
+      setTimeout(() => {
+        promoCodeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
+    }
+  }, [selectedServices]);
 
 
   const handleSelectService = (serviceId) => {
@@ -357,7 +371,8 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
       selectedNailServices,
       selectedSkincareServices,
       selectedMassageServices,
-      selectedPremiumServices
+      selectedPremiumServices,
+      promoCode
     });
   };
 
@@ -518,6 +533,45 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
               selectedPremiumServicesCount={svc.id === 5 ? selectedPremiumServices.length : 0}
             />
           ))}
+        </div>
+
+        {/* Promo Code Section */}
+        <div ref={promoCodeRef} style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #e5e5e5" }}>
+          <label style={{
+            display: "block",
+            fontSize: "0.9rem",
+            fontWeight: "600",
+            color: "#1a1a1a",
+            marginBottom: "8px",
+            fontFamily: "Inter, sans-serif",
+          }}>
+            Promo/Discount Code <span style={{ color: "#999", fontWeight: "400" }}>(Optional)</span>
+          </label>
+          <input
+            type="text"
+            placeholder="Enter promo code"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              border: "1.5px solid #e5e5e5",
+              borderRadius: "8px",
+              fontSize: "0.95rem",
+              fontFamily: "Inter, sans-serif",
+              boxSizing: "border-box",
+              transition: "all 0.2s ease",
+              outline: "none",
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = "#dd901d";
+              e.target.style.boxShadow = "0 0 0 3px rgba(221, 144, 29, 0.1)";
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = "#e5e5e5";
+              e.target.style.boxShadow = "none";
+            }}
+          />
         </div>
       </div>
 

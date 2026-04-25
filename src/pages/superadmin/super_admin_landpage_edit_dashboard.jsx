@@ -476,7 +476,7 @@ export default function SuperAdminLandingPageEditor() {
     { id: "services", label: "Services", icon: DatabaseIcon },
     { id: "logs", label: "Logs", icon: DatabaseIcon },
     { id: "security", label: "Security", icon: ShieldIcon },
-    { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
+    // { id: "landing-page", label: "Landing Page", icon: GlobeIcon, disabled: true },
   ];
 
   const today = new Date();
@@ -525,6 +525,7 @@ export default function SuperAdminLandingPageEditor() {
               <button
                 key={item.id}
                 onClick={() => {
+                  if (item.disabled) return;
                   if (item.id === "dashboard") {
                     navigate("/superadmin/dashboard");
                   } else if (item.id === "staff-management") {
@@ -543,8 +544,9 @@ export default function SuperAdminLandingPageEditor() {
                     setActiveNav(item.id);
                   }
                 }}
-                className={`nav-button ${isActive ? "active" : ""}`}
+                className={`nav-button ${isActive ? "active" : ""} ${item.disabled ? "disabled" : ""}`}
                 title={item.label}
+                disabled={item.disabled}
               >
                 <item.icon color={isActive ? "#000" : "currentColor"} />
                 {sidebarExpanded && <span>{item.label}</span>}

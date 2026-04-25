@@ -157,7 +157,7 @@ const NAV_ITEMS = [
   { id: "services", label: "Services", icon: DatabaseIcon },
   { id: "logs", label: "Logs", icon: DatabaseIcon },
   { id: "security", label: "Security", icon: ShieldIcon },
-  { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
+  // { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
 // ─── Data ──────────────────────────────────────────────────────────────

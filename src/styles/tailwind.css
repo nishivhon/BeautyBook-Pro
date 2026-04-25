@@ -6383,6 +6383,8 @@
 
   .live-sched-dot-green  { background: #22c55e; }
   .live-sched-dot-amber  { background: var(--color-amber); }
+  .live-sched-dot-yellow { background: #eab308; }
+  .live-sched-dot-grey   { background: #9ca3af; }
 
   /* schedule footer */
   .live-schedule-footer {
@@ -6714,6 +6716,30 @@
   }
 
   .staff-member-scroll-limited::-webkit-scrollbar-thumb:hover {
+    background: rgb(221, 144, 29);
+  }
+
+  /* ── Admin Dashboard Staff List Scrollbar ── */
+  .dash-staff-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dash-staff-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .dash-staff-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dash-staff-list::-webkit-scrollbar-thumb {
+    background: var(--color-amber);
+    border-radius: 3px;
+  }
+
+  .dash-staff-list::-webkit-scrollbar-thumb:hover {
     background: rgb(221, 144, 29);
   }
 
