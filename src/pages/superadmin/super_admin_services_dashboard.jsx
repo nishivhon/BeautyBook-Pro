@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
+import { EditServiceModal } from "../../components/modal/superadmin/edit_service_modal";
+import { AddServiceModal } from "../../components/modal/superadmin/add_service_modal";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -117,6 +119,10 @@ export default function SuperAdminServicesDashboard() {
   const [servicesData, setServicesData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentServicePage, setCurrentServicePage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [editingService, setEditingService] = useState(null);
+  const [isEditServiceModalOpen, setIsEditServiceModalOpen] = useState(false);
+  const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
 
   // Persist sidebar state
   useEffect(() => {
@@ -218,6 +224,47 @@ export default function SuperAdminServicesDashboard() {
     displayToast('Changes saved.');
   };
 
+  // Handle editing a service
+  const handleEditService = (service) => {
+    setEditingService(service);
+    setIsEditServiceModalOpen(true);
+  };
+
+  const handleCloseEditServiceModal = () => {
+    setIsEditServiceModalOpen(false);
+    setEditingService(null);
+  };
+
+  // Handle saving edited service
+  const handleSaveService = (updatedService) => {
+    setServicesData(prev => ({
+      ...prev,
+      rows: prev.rows.map(service =>
+        service.id === updatedService.id ? { ...service, ...updatedService } : service
+      )
+    }));
+    displayToast('Service updated successfully');
+  };
+
+  // Handle opening add modal
+  const handleOpenAddServiceModal = () => {
+    setIsAddServiceModalOpen(true);
+  };
+
+  // Handle closing add modal
+  const handleCloseAddServiceModal = () => {
+    setIsAddServiceModalOpen(false);
+  };
+
+  // Handle saving new service
+  const handleAddNewService = (newService) => {
+    setServicesData(prev => ({
+      ...prev,
+      rows: [newService, ...prev.rows]
+    }));
+    displayToast('Service created successfully');
+  };
+
   return (
     <div className="super-admin-container">
       {/* ─── SIDEBAR ─── */}
@@ -315,18 +362,22 @@ export default function SuperAdminServicesDashboard() {
           <div className="dashboard-panel">
             {/* Panel header with search and add button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div className="panel-title">All Services ({servicesData.rows?.length || 0})</div>
+              <div className="panel-title">
+                {searchQuery 
+                  ? `Search Results (${(servicesData.rows || []).filter(service => (service.name || '').toLowerCase().includes(searchQuery.toLowerCase())).length})`
+                  : `All Services (${servicesData.rows?.length || 0})`
+                }
+              </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 {/* Search Input */}
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
-                    placeholder="Search services..."
+                    placeholder="Search services by name..."
+                    value={searchQuery}
                     onChange={(e) => {
-                      const value = e.target.value.toLowerCase();
-                      if (value) {
-                        console.log('[Services] Searching for:', value);
-                      }
+                      setSearchQuery(e.target.value);
+                      setCurrentServicePage(1);
                     }}
                     style={{
                       padding: '8px 12px 8px 32px',
@@ -351,6 +402,7 @@ export default function SuperAdminServicesDashboard() {
                 
                 {/* Add Button */}
                 <button
+                  onClick={handleOpenAddServiceModal}
                   style={{
                     padding: '8px 16px',
                     backgroundColor: '#dd901d',
@@ -376,22 +428,33 @@ export default function SuperAdminServicesDashboard() {
             {/* Services Table View */}
             {loading ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading services...</div>
-            ) : servicesData.rows && servicesData.rows.length > 0 ? (
-              <div style={{ marginTop: '0px', overflowX: 'auto' }}>
+            ) : (() => {
+              const filteredServices = servicesData.rows ? servicesData.rows.filter(service =>
+                (service.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+              ) : [];
+              
+              return servicesData.rows && servicesData.rows.length > 0 ? (
+                filteredServices.length > 0 ? (
+                  <div style={{ marginTop: '0px', overflowX: 'auto' }}>
                 <table className="data-table" style={{ minWidth: '800px' }}>
                   <thead>
                     <tr>
                       {servicesData.cols.map((col) => (
                         <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
                       ))}
+                      <th style={{ textAlign: 'left' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(() => {
+                      // Filter services by search query
+                      const filteredServices = servicesData.rows.filter(service =>
+                        (service.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+                      );
                       const itemsPerPage = 10;
                       const startIdx = (currentServicePage - 1) * itemsPerPage;
                       const endIdx = startIdx + itemsPerPage;
-                      return servicesData.rows.slice(startIdx, endIdx).map((service, idx) => (
+                      return filteredServices.slice(startIdx, endIdx).map((service, idx) => (
                       <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                         {servicesData.cols.map((col) => {
                           const cellValue = service[col];
@@ -400,20 +463,55 @@ export default function SuperAdminServicesDashboard() {
                             <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
                           );
                         })}
+                        <td style={{ fontSize: '13px' }}>
+                          <button
+                            onClick={() => handleEditService(service)}
+                            title="Edit service"
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#988f81',
+                              cursor: 'pointer',
+                              padding: '4px 8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '12px',
+                              fontWeight: '500',
+                              transition: 'all 0.2s',
+                              borderRadius: '4px'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = '#dd901d';
+                              e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = '#988f81';
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                          >
+                            Edit
+                          </button>
+                        </td>
                       </tr>
                     ));
                     })()}
                   </tbody>
                 </table>
-                {servicesData.rows.length > 0 && (() => {
+                {(() => {
+                  const filteredServices = servicesData.rows.filter(service =>
+                    (service.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                  if (filteredServices.length === 0) return null;
+                  
                   const itemsPerPage = 10;
-                  const totalPages = Math.ceil(servicesData.rows.length / itemsPerPage);
+                  const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
                   const startIdx = (currentServicePage - 1) * itemsPerPage + 1;
-                  const endIdx = Math.min(currentServicePage * itemsPerPage, servicesData.rows.length);
+                  const endIdx = Math.min(currentServicePage * itemsPerPage, filteredServices.length);
                   return (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
-                        Showing {startIdx}–{endIdx} of {servicesData.rows.length} services
+                        Showing {startIdx}–{endIdx} of {filteredServices.length} services
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button
@@ -480,9 +578,15 @@ export default function SuperAdminServicesDashboard() {
                   );
                 })()}
               </div>
-            ) : (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No services found</div>
-            )}
+                ) : (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>
+                    No services match your search
+                  </div>
+                )
+              ) : (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No services found</div>
+              );
+            })()}
           </div>
         </main>
       </div>
@@ -494,6 +598,21 @@ export default function SuperAdminServicesDashboard() {
         modalMode={modalMode}
         setShowModal={setShowModal}
         handleSaveChanges={handleSaveChanges}
+      />
+
+      {/* ─── EDIT SERVICE MODAL ─── */}
+      <EditServiceModal
+        service={editingService}
+        isOpen={isEditServiceModalOpen}
+        onClose={handleCloseEditServiceModal}
+        onSave={handleSaveService}
+      />
+
+      {/* ─── ADD SERVICE MODAL ─── */}
+      <AddServiceModal
+        isOpen={isAddServiceModalOpen}
+        onClose={handleCloseAddServiceModal}
+        onSave={handleAddNewService}
       />
 
       {/* ─── TOAST ─── */}
