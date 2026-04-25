@@ -16,6 +16,7 @@ import SuperAdminServicesDashboard from './pages/superadmin/super_admin_services
 import SuperAdminLogsDashboard from './pages/superadmin/super_admin_logs_dashboard'
 import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security_dashboard'
 import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage_edit_dashboard'
+import CustomerDashboard from './pages/customer/customer_dashboard'
 // Staff Dashboard routes hidden - all features moved to admin dashboard
 // import StaffDashboard from './pages/staff/staff_dashboard'
 // import StaffServices from './pages/staff/staff_service_dashboard'
@@ -37,7 +38,14 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/operators/login" element={<LogIn />} />
         <Route
-          path="/admin/dashboard"
+          path="/customer/dashboard"
+          element={
+            <ProtectedRoute requiredRole="customer">
+              <CustomerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminDashboard />

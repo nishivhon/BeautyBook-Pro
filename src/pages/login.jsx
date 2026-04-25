@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { validateOperatorCredentials, loginOperator } from "../services/operatorAuth";
 import { isMagicLinkValid, getMagicLinkInfo } from "../services/magicLink";
+import { CreateAccountModal } from "../components/modal/customer/create-account";
 
 // ── SVG Icons ─────────────────────────────────────────────────────
 const ScissorsIcon = ({ size = 28, color = "#000" }) => (
@@ -117,8 +118,8 @@ export const LogIn = () => {
   const [searchParams] = useSearchParams();
   const magicToken = searchParams.get('token');
 
-  const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
+  const [email,    setEmail]    = useState("");
   const [showPw,   setShowPw]   = useState(false);
   const [remember, setRemember] = useState(false);
   const [mounted,  setMounted]  = useState(false);
@@ -133,33 +134,40 @@ export const LogIn = () => {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
 
+  // Create account modal state
+  const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
+
   useEffect(() => {
-    // Check if magic link is valid
-    if (!magicToken || !isMagicLinkValid(magicToken)) {
-      setUnauthorized(true);
-      // Start countdown
-      const interval = setInterval(() => {
-        setRedirectCountdown(prev => Math.max(prev - 1, 0));
-      }, 1000);
-      // Redirect to home after 3 seconds
-      const timer = setTimeout(() => {
-        navigate("/");
-      }, 3000);
-      return () => {
-        clearTimeout(timer);
-        clearInterval(interval);
-      };
+    // Only check magic link if a token is provided
+    if (magicToken) {
+      // Validate the magic link if one is provided
+      if (!isMagicLinkValid(magicToken)) {
+        setUnauthorized(true);
+        // Start countdown
+        const interval = setInterval(() => {
+          setRedirectCountdown(prev => Math.max(prev - 1, 0));
+        }, 1000);
+        // Redirect to home after 3 seconds
+        const timer = setTimeout(() => {
+          navigate("/");
+        }, 3000);
+        return () => {
+          clearTimeout(timer);
+          clearInterval(interval);
+        };
+      }
+
+      // If magic link is valid, pre-fill email from token
+      const linkInfo = getMagicLinkInfo(magicToken);
+      if (linkInfo?.email) {
+        setEmail(linkInfo.email);
+      }
+      if (linkInfo?.role) {
+        setUserRole(linkInfo.role);
+      }
     }
 
-    // If magic link is valid, pre-fill email from token
-    const linkInfo = getMagicLinkInfo(magicToken);
-    if (linkInfo?.email) {
-      setEmail(linkInfo.email);
-    }
-    if (linkInfo?.role) {
-      setUserRole(linkInfo.role);
-    }
-
+    // Allow normal form-based login (no magic token required)
     setMounted(true);
   }, [magicToken, navigate]);
 
@@ -204,7 +212,8 @@ export const LogIn = () => {
           const roleBasedRoutes = {
             'admin': '/admin/dashboard',
             'super admin': '/superadmin/dashboard',
-            'staff': '/staff/dashboard'
+            'staff': '/staff/dashboard',
+            'customer': '/customer/dashboard'
           };
           
           const redirectPath = roleBasedRoutes[result.data.role?.toLowerCase()] || '/';
@@ -257,7 +266,18 @@ export const LogIn = () => {
     } finally {
       setForgotLoading(false);
     }
-  }
+  };
+
+  // Handle account creation from modal
+  const handleAccountCreated = (accountData) => {
+    // Log in the new customer account
+    loginOperator(accountData.email, accountData.password, 'customer');
+    
+    // Redirect to customer dashboard
+    setTimeout(() => {
+      navigate('/customer/dashboard');
+    }, 1500);
+  };
 
   // If magic link is invalid or missing, show unauthorized message
   if (unauthorized) {
@@ -303,13 +323,42 @@ export const LogIn = () => {
   }
 
   return (
-    <div className="login-root">
+    <div className="login-root" style={{ height: '100vh', overflow: 'hidden' }}>
 
       {/* ── LEFT PANEL ─────────────────────────────────────── */}
-      <div className="login-left">
+      <div className="login-left" style={{ overflow: 'hidden' }}>
         <GridTexture />
 
-        <div className={`login-form-inner ${mounted ? "mounted" : ""}`}>
+        <div className={`login-form-inner ${mounted ? "mounted" : ""}`} style={{ display: 'flex', flexDirection: 'column' }}>
+
+          {/* Back Button */}
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            style={{
+              alignSelf: 'flex-start',
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: '#dd901d',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              padding: '4px 8px',
+              marginBottom: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.color = '#e6a326';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.color = '#dd901d';
+            }}
+          >
+            ← Back
+          </button>
 
           {/* Logo */}
           <div className="login-logo-row">
@@ -321,15 +370,9 @@ export const LogIn = () => {
 
           {/* Heading */}
           <div className="login-heading-block">
-            <div className="login-portal-badge">
-              <span className="login-portal-badge-dot" />
-              <span className="login-portal-badge-text">
-                {userRole === 'super admin' ? 'SUPER ADMIN PORTAL' : userRole === 'admin' ? 'ADMIN PORTAL' : 'STAFF PORTAL'}
-              </span>
-            </div>
             <h1 className="login-title">Welcome Back</h1>
             <p className="login-subtitle">
-              Sign in to manage your salon operations.
+              Sign in to your account.
             </p>
           </div>
 
@@ -345,7 +388,7 @@ export const LogIn = () => {
 
             {/* Email */}
             <div className="field-box">
-              <span className="field-label">Email Address</span>
+              <span className="field-label">Email or Phone Number</span>
               <div className={`login-input-inner ${errors.email ? "has-error" : ""}`}>
                 <MailIcon />
                 <input
@@ -420,6 +463,36 @@ export const LogIn = () => {
           <p className="login-access-note">
             Access restricted to authorized salon operators only.
           </p>
+
+          {/* Sign up link */}
+          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(221, 144, 29, 0.1)', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 4px 0', fontSize: '0.9rem', color: '#b8a599' }}>
+              Don't have an account?
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowCreateAccountModal(true)}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: '#dd901d',
+                fontSize: '0.95rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                padding: '4px 8px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.color = '#e6a326';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.color = '#dd901d';
+              }}
+            >
+              Create Account
+            </button>
+          </div>
         </div>
       </div>
 
@@ -632,6 +705,13 @@ export const LogIn = () => {
           </div>
         </div>
       )}
+
+      {/* ── CREATE ACCOUNT MODAL ────────────────────────── */}
+      <CreateAccountModal 
+        isOpen={showCreateAccountModal}
+        onClose={() => setShowCreateAccountModal(false)}
+        onAccountCreated={handleAccountCreated}
+      />
     </div>
   );
 };

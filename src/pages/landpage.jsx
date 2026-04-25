@@ -198,8 +198,8 @@ const NavBar = ({ onBookAppointment }) => {
       </div>
 
       {/* CTA - Desktop */}
-      <button onClick={handleBooking} className="btn-primary btn-nav btn-nav-desktop">
-        Book Appointment
+      <button onClick={() => { navigate("/operators/login"); setMenuOpen(false); }} className="btn-primary btn-nav btn-nav-desktop">
+        Login
       </button>
 
       {/* Mobile menu */}
@@ -226,8 +226,8 @@ const NavBar = ({ onBookAppointment }) => {
               About
             </button>
           </div>
-          <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
-            Book Appointment
+          <button onClick={() => { navigate("/operators/login"); setMenuOpen(false); }} className="btn-primary btn-nav btn-mobile-cta">
+            Login
           </button>
         </div>
       )}
@@ -259,8 +259,8 @@ const HeroSection = ({ onBookAppointment }) => (
     </p>
 
     {/* CTA */}
-    <button onClick={onBookAppointment} className="btn-large btn-hero">
-      Book Appointment
+    <button onClick={() => navigate("/operators/login")} className="btn-large btn-hero">
+      Get Started - Login
     </button>
   </section>
 );
