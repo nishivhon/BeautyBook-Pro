@@ -128,6 +128,10 @@ export const LogIn = () => {
   const [userRole, setUserRole] = useState("admin");
   const [shakeError, setShakeError] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(3);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState("");
 
   useEffect(() => {
     // Check if magic link is valid
@@ -217,6 +221,43 @@ export const LogIn = () => {
       setLoading(false);
     }
   };
+
+  const handleForgotPassword = async (ev) => {
+    ev.preventDefault();
+    if (!forgotEmail) {
+      setForgotMessage("Please enter your email address");
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotMessage("");
+
+    try {
+      // Send password reset request to backend
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setForgotMessage("✓ Password reset link sent to your email. Check your inbox.");
+        setTimeout(() => {
+          setShowForgotModal(false);
+          setForgotEmail("");
+          setForgotMessage("");
+        }, 2000);
+      } else {
+        setForgotMessage(data.error || "Failed to send reset link. Please try again.");
+      }
+    } catch (error) {
+      setForgotMessage("An error occurred. Please try again.");
+    } finally {
+      setForgotLoading(false);
+    }
+  }
 
   // If magic link is invalid or missing, show unauthorized message
   if (unauthorized) {
@@ -355,7 +396,11 @@ export const LogIn = () => {
                 </div>
                 <span className="login-remember-text">Remember me</span>
               </label>
-              <button type="button" className="login-forgot-btn">
+              <button 
+                type="button" 
+                className="login-forgot-btn"
+                onClick={() => setShowForgotModal(true)}
+              >
                 Forgot Password?
               </button>
             </div>
@@ -433,6 +478,160 @@ export const LogIn = () => {
           </div>
         </div>
       </div>
+
+      {/* ── FORGOT PASSWORD MODAL ────────────────────────── */}
+      {showForgotModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          backdropFilter: 'blur(2px)',
+        }}>
+          <div style={{
+            backgroundColor: '#1a1714',
+            borderRadius: '16px',
+            border: '1px solid rgba(221, 144, 29, 0.2)',
+            padding: '40px 32px',
+            maxWidth: '420px',
+            width: '90%',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+          }}>
+            <h2 style={{ margin: '0 0 12px 0', color: 'white', fontSize: '24px', fontWeight: 'bold', fontFamily: 'Georgia, serif' }}>
+              Reset Password
+            </h2>
+            <p style={{ margin: '0 0 24px 0', color: '#b8a599', fontSize: '0.95rem', lineHeight: '1.5' }}>
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+
+            <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#e5d9d0', fontSize: '0.9rem', fontWeight: '600' }}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="admin@beautybook.pro"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    backgroundColor: '#231d1a',
+                    border: '1px solid rgba(152, 143, 129, 0.3)',
+                    borderRadius: '10px',
+                    color: 'white',
+                    fontSize: '0.95rem',
+                    fontFamily: 'Inter, sans-serif',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    transition: 'all 0.3s ease',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = 'rgba(221, 144, 29, 0.6)';
+                    e.target.style.backgroundColor = '#2a1f1a';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                    e.target.style.backgroundColor = '#231d1a';
+                  }}
+                />
+              </div>
+
+              {forgotMessage && (
+                <div style={{
+                  padding: '12px 16px',
+                  backgroundColor: forgotMessage.includes('✓') ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 67, 67, 0.12)',
+                  border: `1px solid ${forgotMessage.includes('✓') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 67, 67, 0.4)'}`,
+                  borderRadius: '10px',
+                  color: forgotMessage.includes('✓') ? '#10b981' : '#ef4343',
+                  fontSize: '0.9rem',
+                  lineHeight: '1.5',
+                }}>
+                  {forgotMessage}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    backgroundColor: 'transparent',
+                    color: '#dd901d',
+                    border: '1.5px solid #dd901d',
+                    borderRadius: '10px',
+                    fontSize: '0.95rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = 'rgba(221, 144, 29, 0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    backgroundColor: '#dd901d',
+                    color: '#000',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '0.95rem',
+                    fontWeight: '700',
+                    cursor: forgotLoading ? 'not-allowed' : 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    transition: 'all 0.2s ease',
+                    opacity: forgotLoading ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!forgotLoading) {
+                      e.target.style.backgroundColor = '#c47f18';
+                      e.target.style.transform = 'translateY(-1px)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!forgotLoading) {
+                      e.target.style.backgroundColor = '#dd901d';
+                      e.target.style.transform = 'translateY(0)';
+                    }
+                  }}
+                >
+                  {forgotLoading ? (
+                    <>
+                      <SpinnerIcon />
+                      Sending…
+                    </>
+                  ) : (
+                    'Send Reset Link'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

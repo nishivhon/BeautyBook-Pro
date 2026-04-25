@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Homepage from './pages/landpage'
+import About from './pages/about'
 import { Register } from './pages/register'
 import { LogIn } from './pages/login'
 import { logMagicLinksForTesting } from './services/magicLink'
@@ -11,6 +12,8 @@ import { AdminDashboardStaffStatus } from './pages/admin/admin_staff_status_dash
 import SuperAdminDashboard from './pages/superadmin/super_admin_dashboard'
 import SuperAdminUsersDashboard from './pages/superadmin/super_admin_users_dashboard'
 import SuperAdminDatabaseDashboard from './pages/superadmin/super_admin_database_dashboard'
+import SuperAdminServicesDashboard from './pages/superadmin/super_admin_services_dashboard'
+import SuperAdminLogsDashboard from './pages/superadmin/super_admin_logs_dashboard'
 import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security_dashboard'
 import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage_edit_dashboard'
 // Staff Dashboard routes hidden - all features moved to admin dashboard
@@ -30,6 +33,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path="/landpage" element={<Homepage />} />
+        <Route path="/about" element={<About />} />
         <Route path="/register" element={<Register />} />
         <Route path="/operators/login" element={<LogIn />} />
         <Route
@@ -85,6 +89,22 @@ function App() {
           element={
             <ProtectedRoute requiredRole="super admin">
               <SuperAdminDatabaseDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/services"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminServicesDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/logs"
+          element={
+            <ProtectedRoute requiredRole="super admin">
+              <SuperAdminLogsDashboard />
             </ProtectedRoute>
           }
         />

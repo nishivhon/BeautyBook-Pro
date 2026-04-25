@@ -234,7 +234,8 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           service: !!bookingData.service,
           staff_assigned: !!bookingData.staff_assigned
         });
-        alert('Error: Please provide your name, date, time, service, and either email or phone.');
+        setShowConfirmationToast(false);
+        setShowSuccessToast(false);
         return;
       }
       
@@ -249,18 +250,15 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
       
       if (!response.ok) {
         console.error('[Phase4] API error:', result);
-        alert('Booking failed: ' + (result.error || 'Unknown error'));
         return;
       }
       
       console.log('[Phase4] Booking confirmed:', result);
       setIsConfirmed(true);
       setShowConfirmationToast(true);
-      alert('✓ Booking confirmed successfully!');
       
     } catch (error) {
       console.error('[Phase4] Error confirming booking:', error);
-      alert('Error: ' + error.message);
     }
   };
 
