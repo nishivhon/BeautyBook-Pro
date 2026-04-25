@@ -1,6 +1,10 @@
 # BeautyBook Pro
 
-A comprehensive digital appointment and customer management system for barbershops, hair salons, and spas. Includes customer-facing booking, real-time queue management, and multi-level admin dashboards with analytics, services management, and staff coordination.
+A comprehensive digital appointment and customer management system for barbershops, hair salons, and spas. Includes customer-facing booking, real-time queue management, and multi-level admin dashboards.
+
+**Primary Deployment Context:** Sta. Mesa, Manila, Philippines
+
+> **Note:** This system is developed as an academic research project integrating Technology Acceptance Model (TAM), Customer Relationship Management (CRM), and SERVQUAL service quality frameworks. See [MANUSCRIPT_FRAMEWORK.md](docs/MANUSCRIPT_FRAMEWORK.md) for theoretical background and [SYSTEM_LIMITATIONS.md](docs/SYSTEM_LIMITATIONS.md) for important constraints.
 
 ## Tech Stack
 
@@ -60,6 +64,17 @@ A comprehensive digital appointment and customer management system for barbersho
 - Role-based access control (RBAC)
 - Secure session management with localStorage
 - Pre-filled login forms via magic tokens
+
+## Key Limitations & Scope
+
+⚠️ **Please note the following intentional limitations in v1.0:**
+
+- **Payment Processing:** The system does NOT support online payment processing. All payments must be completed in-person at the salon/barbershop.
+- **No-Show Policy:** Automatic fine systems for no-shows are NOT implemented. This feature is planned for future versions.
+- **Fixed Service Duration:** The system assigns fixed time slots and does NOT automatically adjust for service duration variations. Admins must manually configure service durations.
+- **Geographic Focus:** Current deployment context is Sta. Mesa, Manila, Philippines.
+
+See [SYSTEM_LIMITATIONS.md](docs/SYSTEM_LIMITATIONS.md) for detailed explanation of each limitation.
 
 ## Getting Started
 
@@ -228,9 +243,13 @@ The `vercel.json` file contains deployment configuration:
 - [ ] Magic link credentials updated with production URLs
 - [ ] CORS settings configured for production domain
 - [ ] Security headers configured in `vercel.json`
+- [ ] Sta. Mesa, Manila contact information updated
 
 ## Documentation
 
+- **[Manuscript Framework & Theory](docs/MANUSCRIPT_FRAMEWORK.md)** — TAM, CRM, and SERVQUAL theoretical mapping
+- **[System Limitations](docs/SYSTEM_LIMITATIONS.md)** — Detailed v1.0 constraints and future roadmap
+- **[Geographic Deployment](docs/GEOGRAPHIC_DEPLOYMENT.md)** — Sta. Mesa, Manila deployment context
 - **[Admin Dashboard Guide](docs/ADMIN_DASHBOARD_GUIDE.md)** — Admin features and workflow
 - **[Super Admin Setup](docs/SUPER_ADMIN_SETUP.md)** — Super admin account and magic link access
 - **[Magic Link Guide](docs/MAGIC_LINK_GUIDE.md)** — Magic link authentication system
@@ -276,7 +295,7 @@ The Super Admin dashboard includes a powerful landing page editor that allows yo
 
 ## Contact
 
-- **Address:** Canvas City, Abc St., 245 Lot B
+- **Address:** Canvas City, Abc St., 245 Lot B, Sta. Mesa, Manila, Philippines
 - **Phone:** (02) 123-4567
 - **Email:** beautybookpro@gmail.com
 - **Hours:** Mon–Fri, 8:00 AM – 5:00 PM
@@ -284,4 +303,3 @@ The Super Admin dashboard includes a powerful landing page editor that allows yo
 ---
 
 © 2026 BeautyBook Pro. All rights reserved. | Polytechnic University of the Philippines Institute of Technology
-
