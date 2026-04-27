@@ -153,7 +153,7 @@ const SystemMaintenanceIcon = () => (
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
   { id: "staff-management", label: "Staff Management", icon: UserIcon },
-  { id: "database", label: "Database", icon: DatabaseIcon },
+  { id: "clients", label: "Client Accounts", icon: DatabaseIcon },
   { id: "services", label: "Services", icon: DatabaseIcon },
   { id: "logs", label: "Logs", icon: DatabaseIcon },
   { id: "security", label: "Security", icon: ShieldIcon },
@@ -437,8 +437,8 @@ export default function SuperAdminSecurityDashboard() {
                     navigate("/superadmin/dashboard");
                   } else if (item.id === "staff-management") {
                     navigate("/superadmin/users");
-                  } else if (item.id === "database") {
-                    navigate("/superadmin/database");
+                  } else if (item.id === "clients") {
+                    navigate("/superadmin/clients");
                   } else if (item.id === "services") {
                     navigate("/superadmin/services");
                   } else if (item.id === "logs") {

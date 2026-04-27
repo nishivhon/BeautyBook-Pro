@@ -108,7 +108,6 @@ const NAV_ITEMS = [
   { id: "staff-management", label: "Staff Management", icon: UserIcon },
   { id: "database", label: "Database", icon: DatabaseIcon },  { id: "services", label: "Services", icon: DatabaseIcon },
   { id: "logs", label: "Logs", icon: DatabaseIcon },  { id: "security", label: "Security", icon: ShieldIcon },
-  { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
 // ─── Database Tables Data ───────────────────────────────────────────────────
@@ -305,8 +304,6 @@ export default function SuperAdminDatabaseDashboard() {
                     navigate("/superadmin/users");
                   } else if (item.id === "security") {
                     navigate("/superadmin/security");
-                  } else if (item.id === "landing-page") {
-                    navigate("/superadmin/landing-page");
                   } else {
                     setActiveNav(item.id);
                     displayToast(`${item.label} section coming soon`);
