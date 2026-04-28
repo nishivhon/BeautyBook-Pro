@@ -241,7 +241,54 @@
   }
 
   .cdb-grid-history {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    margin-top: 16px;
+    height: 530px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-amber) transparent;
+  }
+
+  .cdb-grid-history::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .cdb-grid-history::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .cdb-grid-history::-webkit-scrollbar-thumb {
+    background: var(--color-amber);
+    border-radius: 3px;
+  }
+
+  .cdb-grid-history::-webkit-scrollbar-thumb:hover {
+    background: rgb(221, 144, 29);
+  }
+
+  .cdb-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .cdb-history-left {
+    flex: 0 0 auto;
+  }
+
+  .cdb-history-right {
+    flex: 0 0 auto;
+  }
+
+  .cdb-item-card {
+    width: 100%;
   }
 
   .cdb-grid-coupons {
@@ -445,20 +492,30 @@
   }
 
   .cdb-item-card {
-    padding: 16px;
-  }
-
-  .cdb-item-head {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 12px;
-    gap: 12px;
+    gap: 20px;
+    padding: 16px;
+  }
+
+  .cdb-item-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cdb-item-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
   }
 
   .cdb-item-title {
     margin: 0 0 4px;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     color: var(--color-white);
   }
@@ -466,7 +523,7 @@
   .cdb-item-subtitle,
   .cdb-coupon-code {
     margin: 0;
-    font-size: 13px;
+    font-size: 15px;
     color: var(--color-tan);
   }
 
@@ -496,8 +553,8 @@
   }
 
   .cdb-date-text {
-    margin: 0 0 12px;
-    font-size: 12px;
+    margin: 0 0 0;
+    font-size: 14px;
     color: var(--color-tan);
   }
 
@@ -505,6 +562,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    color: var(--color-amber);
   }
 
   .cdb-rating-text {

@@ -88,38 +88,41 @@ export default function CustomerDashboard() {
 			<section className="cdb-section cdb-mounted">
 				<h2 className="cdb-section-title">Service History</h2>
 				<div className="cdb-card">
-					<div className="cdb-filter-row">
-						{[
-							{ id: "all", label: "All" },
-							{ id: "previous", label: "Previous" },
-							{ id: "current", label: "Current" },
-						].map((filter) => (
-							<button key={filter.id} className={`cdb-filter-btn ${historyFilter === filter.id ? "active" : ""}`} onClick={() => setHistoryFilter(filter.id)}>
-								{filter.label}
-							</button>
-						))}
-					</div>
-					<div className="cdb-spacing-bottom">
-						<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/history")}>View Full Transaction History</button>
+					<div className="cdb-history-header">
+						<div className="cdb-history-left">
+							<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/history")}>View Full Transaction History</button>
+						</div>
+						<div className="cdb-history-right">
+							<div className="cdb-filter-row">
+								{[
+									{ id: "current", label: "Current" },
+									{ id: "previous", label: "Previous" },
+									{ id: "all", label: "All" },
+								].map((filter) => (
+									<button key={filter.id} className={`cdb-filter-btn ${historyFilter === filter.id ? "active" : ""}`} onClick={() => setHistoryFilter(filter.id)}>
+										{filter.label}
+									</button>
+								))}
+							</div>
+						</div>
 					</div>
 					<div className="cdb-grid cdb-grid-history">
 						{filteredHistory.map((item) => (
 							<div key={item.id} className="cdb-item-card">
-								<div className="cdb-item-head">
-									<div>
-										<h3 className="cdb-item-title">{item.service}</h3>
-										<p className="cdb-item-subtitle">{item.stylist} · ${item.cost.toFixed(2)}</p>
-									</div>
-									<span className={`cdb-status-badge ${item.status === "completed" ? "completed" : "upcoming"}`}>{item.status}</span>
+								<div className="cdb-item-left">
+									<h3 className="cdb-item-title">{item.service}</h3>
+									<p className="cdb-item-subtitle">{item.stylist} · ${item.cost.toFixed(2)}</p>
+									<p className="cdb-date-text">{new Date(item.date).toLocaleDateString()}</p>
+									{item.status === "completed" && (
+										item.rated && <div className="cdb-rating-row">{[1, 2, 3, 4, 5].map((star) => <span key={star}>{star <= item.rating ? "★" : "☆"}</span>)}</div>
+									)}
 								</div>
-								<p className="cdb-date-text">{new Date(item.date).toLocaleDateString()}</p>
-								{item.status === "completed" && (
-									item.rated ? (
-										<div className="cdb-rating-row">{[1, 2, 3, 4, 5].map((star) => <span key={star}>{star <= item.rating ? "★" : "☆"}</span>)}</div>
-									) : (
-										<button className="cdb-btn cdb-btn-secondary cdb-btn-full" onClick={() => handleRateService(item.id)}>Rate Service</button>
-									)
-								)}
+								<div className="cdb-item-right">
+									<span className={`cdb-status-badge ${item.status === "completed" ? "completed" : "upcoming"}`}>{item.status}</span>
+									{item.status === "completed" && !item.rated && (
+										<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)}>Rate Service</button>
+									)}
+								</div>
 							</div>
 						))}
 					</div>
