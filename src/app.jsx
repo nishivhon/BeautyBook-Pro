@@ -17,6 +17,9 @@ import SuperAdminLogsDashboard from './pages/superadmin/super_admin_logs_dashboa
 import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security_dashboard'
 import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage_edit_dashboard'
 import CustomerDashboard from './pages/customer/customer_dashboard'
+import CustomerProfilePage from './pages/customer/customer_profile'
+import CustomerHistoryPage from './pages/customer/customer_history'
+import CustomerCouponsPage from './pages/customer/customer_coupons'
 // Staff Dashboard routes hidden - all features moved to admin dashboard
 // import StaffDashboard from './pages/staff/staff_dashboard'
 // import StaffServices from './pages/staff/staff_service_dashboard'
@@ -42,6 +45,30 @@ function App() {
           element={
             <ProtectedRoute requiredRole="customer">
               <CustomerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customer/profile"
+          element={
+            <ProtectedRoute requiredRole="customer">
+              <CustomerProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customer/history"
+          element={
+            <ProtectedRoute requiredRole="customer">
+              <CustomerHistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customer/coupons"
+          element={
+            <ProtectedRoute requiredRole="customer">
+              <CustomerCouponsPage />
             </ProtectedRoute>
           }
         />
