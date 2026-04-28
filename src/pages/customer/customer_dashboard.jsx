@@ -25,6 +25,8 @@ export default function CustomerDashboard() {
 		return coupon.category === couponFilter;
 	});
 
+	const profileImage = profile.profilePhoto || "/default-avatar.svg";
+
 
 
 	const handleRateService = (id) => {
@@ -53,29 +55,29 @@ export default function CustomerDashboard() {
 							<>
 								<div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
 									<div className="cdb-profile-avatar-col">
-										<div className="cdb-avatar">
-											{profile.avatar ? (
-												<img src={profile.avatar} alt={profile.name + " avatar"} />
-											) : (
-												<div className="cdb-avatar-placeholder">{profile.name ? profile.name.charAt(0) : "U"}</div>
-												)}
+										<div className="cdb-avatar cdb-avatar-dashboard">
+											<img src={profileImage} alt={profile.name + " avatar"} />
 										</div>
 										</div>
 										<div className="cdb-profile-info-col">
 											<div>
 												<label className="cdb-field-label">Name</label>
-												<p className="cdb-field-value">{profile.name}</p>
+												<p className="cdb-field-value cdb-field-value-lg">{profile.name}</p>
 											</div>
 											<div>
 												<label className="cdb-field-label">Email</label>
-												<p className="cdb-field-value">{profile.emails && profile.emails.length ? profile.emails[0] : ""}</p>
+												<p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : ""}</p>
 											</div>
 											<div>
 												<label className="cdb-field-label">Phone</label>
-												<p className="cdb-field-value">{profile.phones && profile.phones.length ? profile.phones[0] : ""}</p>
+												<p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : ""}</p>
+											</div>
+											<div>
+												<label className="cdb-field-label">Notification Preference</label>
+												<p className="cdb-field-value cdb-field-value-lg">{profile.notificationPreference ? profile.notificationPreference.toUpperCase() : ""}</p>
 											</div>
 											<div className="cdb-action-row">
-												<button className="cdb-btn cdb-btn-primary" onClick={() => navigate("/customer/profile")}>Edit Profile</button>
+												<button className="cdb-btn cdb-btn-edit" onClick={() => navigate("/customer/profile")}>Edit Profile</button>
 											</div>
 										</div>
 									</div>
