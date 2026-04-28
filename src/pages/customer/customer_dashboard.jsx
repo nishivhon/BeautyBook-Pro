@@ -132,35 +132,43 @@ export default function CustomerDashboard() {
 			<section className="cdb-section cdb-mounted">
 				<h2 className="cdb-section-title">Coupons</h2>
 				<div className="cdb-card">
-					<div className="cdb-filter-row cdb-filter-wrap">
-						{[
-							{ id: "all", label: "All" },
-							{ id: "limited", label: "Limited Time" },
-							{ id: "promo", label: "Promo" },
-							{ id: "discount", label: "Discount" },
-						].map((filter) => (
-							<button key={filter.id} className={`cdb-filter-btn ${couponFilter === filter.id ? "active" : ""}`} onClick={() => setCouponFilter(filter.id)}>
-								{filter.label}
-							</button>
-						))}
-					</div>
-					<div className="cdb-spacing-bottom">
-						<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
+					<div className="cdb-coupon-header">
+						<div className="cdb-coupon-left">
+							<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
+						</div>
+						<div className="cdb-coupon-right">
+							<div className="cdb-filter-row cdb-filter-wrap">
+								{[
+									{ id: "discount", label: "Discount" },
+									{ id: "promo", label: "Promo" },
+									{ id: "limited", label: "Limited Time" },
+									{ id: "all", label: "All" },
+								].map((filter) => (
+									<button key={filter.id} className={`cdb-filter-btn ${couponFilter === filter.id ? "active" : ""}`} onClick={() => setCouponFilter(filter.id)}>
+										{filter.label}
+									</button>
+								))}
+							</div>
+						</div>
 					</div>
 					<div className="cdb-grid cdb-grid-coupons">
 						{filteredCoupons.map((coupon) => (
 							<div key={coupon.id} className={`cdb-coupon-card ${coupon.status === "expired" ? "expired" : ""}`}>
-								<div className="cdb-item-head">
-									<div>
-										<h3 className={`cdb-coupon-title ${coupon.status === "expired" ? "expired" : ""}`}>{coupon.discount}</h3>
-										<p className="cdb-coupon-code">{coupon.code} · {coupon.category}</p>
-									</div>
+								<div className="cdb-coupon-left">
+									<h3 className={`cdb-coupon-title ${coupon.status === "expired" ? "expired" : ""}`}>{coupon.discount}</h3>
+									<p className="cdb-coupon-code">{coupon.code} · {coupon.category}</p>
+									<p className="cdb-coupon-description">{coupon.description}</p>
+									<p className="cdb-date-text">Expires: {new Date(coupon.expiration).toLocaleDateString()}</p>
 								</div>
-								<p className="cdb-coupon-description">{coupon.description}</p>
-								<p className="cdb-date-text">Expires: {new Date(coupon.expiration).toLocaleDateString()}</p>
-								{coupon.status !== "expired" && !coupon.claimed && (
-									<button className="cdb-btn cdb-btn-primary cdb-btn-full" onClick={() => handleClaimCoupon(coupon.id)}>Claim Coupon</button>
-								)}
+								<div className="cdb-coupon-right">
+									{coupon.status === "expired" ? (
+										<span className={`cdb-status-badge ${coupon.status}`}>{coupon.status}</span>
+									) : coupon.claimed ? (
+										<span className="cdb-status-badge claimed">claimed</span>
+									) : (
+										<button className="cdb-btn cdb-btn-primary" onClick={() => handleClaimCoupon(coupon.id)}>Claim Coupon</button>
+									)}
+								</div>
 							</div>
 						))}
 					</div>
