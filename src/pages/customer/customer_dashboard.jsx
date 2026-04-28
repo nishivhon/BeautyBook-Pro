@@ -50,10 +50,10 @@ export default function CustomerDashboard() {
 	return (
 		<CustomerShell activeNav="dashboard" profile={profile}>
 			<section className="cdb-section cdb-mounted">
+			<div className="cdb-card">
 				<h2 className="cdb-section-title">My Profile</h2>
-				<div className="cdb-card">
-							<>
-								<div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
+				<>
+					<div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
 									<div className="cdb-profile-avatar-col">
 										<div className="cdb-avatar cdb-avatar-dashboard">
 											<img src={profileImage} alt={profile.name + " avatar"} />
@@ -86,8 +86,8 @@ export default function CustomerDashboard() {
 			</section>
 
 			<section className="cdb-section cdb-mounted">
+			<div className="cdb-card">
 				<h2 className="cdb-section-title">Service History</h2>
-				<div className="cdb-card">
 					<div className="cdb-history-header">
 						<div className="cdb-history-left">
 							<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/history")}>View Full Transaction History</button>
@@ -130,8 +130,8 @@ export default function CustomerDashboard() {
 			</section>
 
 			<section className="cdb-section cdb-mounted">
+			<div className="cdb-card">
 				<h2 className="cdb-section-title">Coupons</h2>
-				<div className="cdb-card">
 					<div className="cdb-coupon-header">
 						<div className="cdb-coupon-left">
 							<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
