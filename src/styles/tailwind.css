@@ -220,6 +220,74 @@
     min-height: 230px;
   }
 
+  .cdb-profile-info-split {
+    display: flex;
+    flex-direction: row;
+    gap: 40px;
+    width: 100%;
+  }
+
+  .cdb-profile-info-left {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .cdb-profile-info-right {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .cdb-profile-edit-col {
+    display: flex;
+    flex-direction: row;
+    gap: 40px;
+    flex: 1 1 auto;
+  }
+
+  .cdb-profile-edit-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .cdb-profile-edit-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .cdb-profile-edit-right .cdb-action-row {
+    margin-top: auto;
+    justify-content: flex-end;
+  }
+
+  .cdb-form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+    width: 100%;
+  }
+
+  .cdb-form-section .cdb-input {
+    width: auto;
+    min-width: 300px;
+    max-width: 100%;
+  }
+
+  .cdb-form-section .cdb-btn-secondary {
+    width: auto;
+    align-self: flex-start;
+  }
+
   .cdb-avatar img,
   .cdb-avatar > img {
     width: 100%;
@@ -227,6 +295,41 @@
     object-fit: cover;
     display: block;
     border-radius: inherit;
+  }
+
+  .cdb-avatar-edit-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 230px;
+    height: 230px;
+  }
+
+  .cdb-avatar-edit-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color-amber);
+    color: #000;
+    border: 2px solid var(--bg-darker);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(221, 144, 29, 0.3);
+  }
+
+  .cdb-avatar-edit-btn:hover {
+    background: #e6a326;
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(221, 144, 29, 0.4);
+  }
+
+  .cdb-avatar-edit-btn:active {
+    transform: scale(0.95);
   }
 
   /* Edit-styled button used in profile header */
@@ -384,10 +487,15 @@
     align-items: center;
   }
 
+  .cdb-pref-edit-row {
+    width: 100%;
+  }
+
   .cdb-pref-pill,
   .cdb-pref-option {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 8px 12px;
     border-radius: 8px;
@@ -398,16 +506,19 @@
     transition: all 0.2s ease;
   }
 
+  .cdb-pref-option {
+    cursor: pointer;
+  }
+
+  .cdb-pref-edit-row .cdb-pref-option {
+    flex: 1;
+    padding: 12px 16px;
+  }
+
   .cdb-pref-pill.active,
   .cdb-pref-option.active {
     border-color: rgba(221, 144, 29, 0.4);
     background: rgba(221, 144, 29, 0.2);
-  }
-
-  .cdb-pref-option {
-    flex: 1;
-    justify-content: center;
-    cursor: pointer;
   }
 
   .cdb-input {
@@ -838,9 +949,6 @@
 /* ── Component Styles ── */
 @layer components {
 
-  /* ─────────────────────────────────────
-     Navigation
-  ───────────────────────────────────── */
   .navbar {
     position: fixed;
     top: 0;
