@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CustomerShell } from "./customer_shell";
 import { useCustomerProfileData } from "./customer_store";
+import { Toast } from "../../components/toast";
 
 const EditIcon = ({ color = "#dd901d" }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -38,8 +39,43 @@ export default function CustomerProfilePage() {
   const [profile, setProfile] = useCustomerProfileData();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [tempProfile, setTempProfile] = useState(profile);
+  
+  // Confirmation dialog state
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationAction, setConfirmationAction] = useState(null);
+  const [confirmationMessage, setConfirmationMessage] = useState("");
+  
+  // Toast state
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("info");
+  const [showToast, setShowToast] = useState(false);
+  
+  // Validation errors state
+  const [validationErrors, setValidationErrors] = useState({});
 
   const profileImage = profile.profilePhoto || "/default-avatar.svg";
+
+  // Check if profile has been modified
+  const hasChanges = JSON.stringify(tempProfile) !== JSON.stringify(profile);
+
+  // Validation function
+  const validateProfile = () => {
+    const errors = {};
+    
+    if (!tempProfile.name || tempProfile.name.trim() === "") {
+      errors.name = "Name is required";
+    }
+    
+    if (!tempProfile.emails || tempProfile.emails.length === 0 || tempProfile.emails.some(email => !email.trim())) {
+      errors.emails = "At least one valid email is required";
+    }
+    
+    if (!tempProfile.phones || tempProfile.phones.length === 0 || tempProfile.phones.some(phone => !phone.trim())) {
+      errors.phones = "At least one valid phone number is required";
+    }
+    
+    return errors;
+  };
 
   const handleEditProfile = () => {
     setTempProfile(profile);
@@ -47,8 +83,41 @@ export default function CustomerProfilePage() {
   };
 
   const handleSaveProfile = () => {
+    const errors = validateProfile();
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    
+    setValidationErrors({});
+    setConfirmationAction("save");
+    setConfirmationMessage("Are you sure you want to save these profile details?");
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmSave = () => {
+    const changesWereMade = hasChanges;
     setProfile(tempProfile);
     setIsEditingProfile(false);
+    setShowConfirmation(false);
+    
+    if (changesWereMade) {
+      setToastMessage("Profile details saved successfully!");
+      setToastType("success");
+      setShowToast(true);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setConfirmationAction("cancel");
+    setConfirmationMessage("Are you sure you want to cancel? Any unsaved changes will be lost.");
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmCancel = () => {
+    setIsEditingProfile(false);
+    setShowConfirmation(false);
   };
 
   const handleProfilePhotoUpload = (event) => {
@@ -157,6 +226,7 @@ export default function CustomerProfilePage() {
                     <div className="cdb-form-section">
                       <label className="cdb-field-label">Name</label>
                       <input className="cdb-input" value={tempProfile.name} onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })} />
+                      {validationErrors.name && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.name}</p>}
                     </div>
 
                     <div className="cdb-form-section">
@@ -164,6 +234,7 @@ export default function CustomerProfilePage() {
                       {tempProfile.emails.map((email, i) => (
                         <input key={i} className="cdb-input cdb-spacing-bottom" value={email} onChange={(e) => handleEditEmail(i, e.target.value)} />
                       ))}
+                      {validationErrors.emails && <p style={{ color: "#ef4444", fontSize: "12px", marginBottom: "8px" }}>{validationErrors.emails}</p>}
                       <button className="cdb-btn cdb-btn-secondary" onClick={handleAddEmail}>Add Email</button>
                     </div>
 
@@ -172,6 +243,7 @@ export default function CustomerProfilePage() {
                       {tempProfile.phones.map((phone, i) => (
                         <input key={i} className="cdb-input cdb-spacing-bottom" value={phone} onChange={(e) => handleEditPhone(i, e.target.value)} />
                       ))}
+                      {validationErrors.phones && <p style={{ color: "#ef4444", fontSize: "12px", marginBottom: "8px" }}>{validationErrors.phones}</p>}
                       <button className="cdb-btn cdb-btn-secondary" onClick={handleAddPhone}>Add Phone</button>
                     </div>
                   </div>
@@ -186,7 +258,7 @@ export default function CustomerProfilePage() {
                     </div>
 
                     <div className="cdb-action-row">
-                      <button className="cdb-btn cdb-btn-danger-outline" onClick={() => setIsEditingProfile(false)}>Cancel</button>
+                      <button className="cdb-btn cdb-btn-danger-outline" onClick={handleCancelEdit}>Cancel</button>
                       <button className="cdb-btn cdb-btn-success" onClick={handleSaveProfile}>Save</button>
                     </div>
                   </div>
@@ -196,6 +268,77 @@ export default function CustomerProfilePage() {
           )}
         </div>
       </section>
+
+      {/* Confirmation Dialog */}
+      {showConfirmation && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999
+        }}>
+          <div style={{
+            backgroundColor: "#0c0b09",
+            border: "1px solid rgba(221, 144, 29, 0.2)",
+            borderRadius: "12px",
+            padding: "24px",
+            maxWidth: "400px",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
+          }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: "18px", fontWeight: "600", color: "#dd901d" }}>
+              Confirm {confirmationAction === "save" ? "Save" : "Cancel"}
+            </h3>
+            <p style={{ margin: "0 0 24px", fontSize: "14px", color: "#f5f1eb" }}>
+              {confirmationMessage}
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowConfirmation(false)}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(221, 144, 29, 0.3)",
+                  background: "rgba(221, 144, 29, 0.15)",
+                  color: "#dd901d",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                No
+              </button>
+              <button
+                onClick={confirmationAction === "save" ? handleConfirmSave : handleConfirmCancel}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: confirmationAction === "save" ? "#22c55e" : "#ef4444",
+                  color: "#fff",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      <Toast
+        message={toastMessage}
+        type={toastType}
+        isVisible={showToast}
+        duration={4000}
+      />
     </CustomerShell>
   );
 }
