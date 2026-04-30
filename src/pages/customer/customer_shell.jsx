@@ -249,9 +249,10 @@ export function CustomerShell({ activeNav, profile, children }) {
       <aside
         className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`}
         style={{
-          opacity: mounted ? 1 : 0,
+          opacity: mounted ? (showAppointment ? 0.5 : 1) : 0,
           transform: mounted ? "translateX(0)" : "translateX(-16px)",
           transition: "all 0.5s ease",
+          pointerEvents: showAppointment ? "none" : "auto",
         }}
       >
         <div className="sidebar-logo-section">
@@ -308,10 +309,6 @@ export function CustomerShell({ activeNav, profile, children }) {
               <p className="dash-page-subtitle">BeautyBook Pro · {todayDate} · {PAGE_META[activeNav].subtitle}</p>
             </div>
             <div className="dash-page-actions">
-              <button className="dash-action-btn cdb-header-book-btn" onClick={() => setShowAppointment(true)}>
-                <BookingIcon color="#fff" />
-                Book Appointment
-              </button>
               <button className="dash-action-btn" onClick={() => displayToast("No new notifications") }>
                 <BellIcon />
                 Notifications
@@ -319,6 +316,9 @@ export function CustomerShell({ activeNav, profile, children }) {
               <button className="dash-action-btn" onClick={() => displayToast("Settings panel coming soon") }>
                 <SettingsIcon />
                 Settings
+              </button>
+              <button className="cdb-filter-btn active" onClick={() => setShowAppointment(true)}>
+                Book Appointment
               </button>
             </div>
           </div>

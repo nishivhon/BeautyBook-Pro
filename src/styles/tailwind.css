@@ -659,6 +659,18 @@
     background: #141b23;
   }
 
+  .cdb-header-book-btn-amber {
+    background: #dd901d;
+    border: 1px solid #dd901d;
+    color: #0c0b09;
+    font-weight: 600;
+  }
+
+  .cdb-header-book-btn-amber:hover {
+    background: #c47f18;
+    border-color: #c47f18;
+  }
+
   .cdb-item-card {
     display: flex;
     justify-content: space-between;
