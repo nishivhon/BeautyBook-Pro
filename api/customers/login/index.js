@@ -11,18 +11,23 @@ export default async (req, res) => {
   }
 
   try {
-    const { email, password } = req.body;
+    const { email, phone, password } = req.body;
+    const loginValue = email || phone;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password required' });
+    if (!loginValue || !password) {
+      return res.status(400).json({ error: 'Email or phone and password required' });
     }
 
-    // Query customers_accounts by email
-    const { data: customers, error } = await supabase
+    const isEmail = String(loginValue).includes('@');
+
+    // Query customers_accounts by email or phone
+    let query = supabase
       .from('customers_accounts')
-      .select('id, name, email, phone, password, histories, created_at')
-      .eq('email', email)
-      .limit(1);
+      .select('id, name, email, phone, password, histories, created_at');
+
+    query = isEmail ? query.eq('email', loginValue) : query.eq('phone', loginValue);
+
+    const { data: customers, error } = await query.limit(1);
 
     if (error) {
       console.error('[Customers:Login] Query error:', error);
@@ -30,7 +35,7 @@ export default async (req, res) => {
     }
 
     if (!customers || customers.length === 0) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid email/phone or password' });
     }
 
     const customer = customers[0];
@@ -38,7 +43,7 @@ export default async (req, res) => {
     // Compare passwords (simple comparison for now)
     // TODO: In production, use bcrypt to compare hashed passwords
     if (customer.password !== password) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid email/phone or password' });
     }
 
     // Login successful

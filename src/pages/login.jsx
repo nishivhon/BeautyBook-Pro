@@ -184,8 +184,14 @@ export const LogIn = () => {
 
   const validate = () => {
     const e = {};
-    if (!email)                            e.email    = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(email))  e.email    = "Enter a valid email";
+    if (!email) {
+      e.email = "Email or phone number is required";
+    } else if (email.includes("@")) {
+      if (!/\S+@\S+\.\S+/.test(email)) e.email = "Enter a valid email";
+    } else {
+      const digitsOnly = email.replace(/\D/g, "");
+      if (digitsOnly.length < 10) e.email = "Enter a valid phone number";
+    }
     if (!password)                         e.password = "Password is required";
     return e;
   };
@@ -205,7 +211,7 @@ export const LogIn = () => {
       const customerResponse = await fetch(`${apiUrl}/customers/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, phone: email, password }),
       });
 
       if (customerResponse.ok) {
@@ -221,7 +227,7 @@ export const LogIn = () => {
           id: customer.id,
         }));
 
-        loginOperator(customer.email, password, 'customer');
+        loginOperator(customer.email || customer.phone, password, 'customer');
 
         setTimeout(() => {
           navigate('/customer/dashboard');
@@ -310,7 +316,7 @@ export const LogIn = () => {
     localStorage.setItem('customerProfileData', JSON.stringify(customerProfile));
     
     // Log in the new customer account
-    loginOperator(accountData.email, accountData.password, 'customer');
+    loginOperator(accountData.email || accountData.phone, accountData.password, 'customer');
     
     // Redirect to customer dashboard
     setTimeout(() => {
@@ -431,11 +437,11 @@ export const LogIn = () => {
               <div className={`login-input-inner ${errors.email ? "has-error" : ""}`}>
                 <MailIcon />
                 <input
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: null })); }}
-                  placeholder="admin@beautybook.pro"
-                  aria-label="Email Address"
+                  placeholder="admin@beautybook.pro or +15551234567"
+                  aria-label="Email or phone number"
                 />
               </div>
               {errors.email && <span className="login-error-msg">{errors.email}</span>}
