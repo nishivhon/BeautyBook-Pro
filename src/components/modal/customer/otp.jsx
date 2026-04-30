@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { ConfirmationDialog } from "./confirmation_dialog";
 
 /* ── Lock icon for the OTP input field ── */
@@ -43,6 +43,7 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
   const [otpValue,   setOtpValue]   = useState("");
   const [isResending, setIsResending] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const verifiedRef = useRef(false); // Prevent multiple verifications
 
   /* countdown ticker */
   useEffect(() => {
@@ -110,11 +111,15 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
   const handleCancel = () => {
     setOtpValue("");
     setTimeLeft(INITIAL_TIME);
+    verifiedRef.current = false;
     onClose?.();
   };
 
   const handleVerify = () => {
+    if (verifiedRef.current) return; // Prevent duplicate calls
     if (otpValue.replace(/\s/g, "").length < 6) return;
+    
+    verifiedRef.current = true;
     onVerified?.(otpValue);
   };
 

@@ -111,29 +111,45 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
   };
 
   const handleVerified = async () => {
-    // After OTP is verified, create the account
+    // After OTP is verified, create the account by calling the server API
     try {
       setLoading(true);
-      
-      // Here you would call your account creation API
-      // For now, we'll just close and callback
-      setToastMessage("✓ Account created successfully!");
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const endpoint = `${apiUrl}/customers/create`;
+
+      const payload = {
+        name,
+        password,
+        // send email or phone based on verification mode
+        ...(verificationMode === 'email' ? { email } : {}),
+        ...(verificationMode === 'phone' ? { phone } : {}),
+      };
+
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!resp.ok) {
+        const errBody = await resp.json().catch(() => ({}));
+        console.error('[CreateAccount] API error', resp.status, errBody);
+        setErrors({ form: errBody.error || 'Failed to create account. Please try again.' });
+        return;
+      }
+
+      const created = await resp.json();
+
+      setToastMessage('✓ Account created successfully!');
       setShowToast(true);
-      
+
       setTimeout(() => {
-        // Call the callback with account details
-        if (onAccountCreated) {
-          onAccountCreated({
-            name,
-            email: verificationMode === 'email' ? email : `${phone}@beautybookpro.local`,
-            phone: verificationMode === 'phone' ? phone : '',
-            password
-          });
-        }
+        if (onAccountCreated) onAccountCreated(created);
         handleClose();
-      }, 1500);
+      }, 800);
     } catch (error) {
-      setErrors({ form: "Failed to create account. Please try again." });
+      console.error('[CreateAccount] Unexpected error', error);
+      setErrors({ form: 'Failed to create account. Please try again.' });
     } finally {
       setLoading(false);
     }
