@@ -547,10 +547,10 @@ const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
     setExpandedItemId(expandedItemId === id ? null : id);
   };
 
-  const handleProceedClick = (id, name, service) => {
+  const handleProceedClick = (id, name, service, staff) => {
     // Call parent handler to show confirmation dialog
     if (onProceedClick) {
-      onProceedClick(id, name, service);
+      onProceedClick(id, name, service, staff);
     }
   };
 
@@ -683,7 +683,7 @@ const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
                         onCompleteService={handleCompleteService}
                         showProceedButton={isUpNext}
                         isProceedEnabled={ii < 3}
-                        onProceedClick={handleProceedClick}
+                        onProceedClick={(id, name, service) => handleProceedClick(id, name, service, item.staff)}
                       />
                     );
                   })
@@ -921,10 +921,48 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     // For now, just logging the data
   };
 
-  const handleCompleteServiceFromDialog = (itemId, customerName, service) => {
-    // Call the completion logic here
-    console.log(`Service completed for ${customerName}: ${service}`);
-    setProceedConfirmId(null);
+  const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
+    try {
+      console.log(`[LiveQueue] Moving appointment ${itemId} to current for ${customerName}`);
+      console.log(`[LiveQueue] Staff data:`, proceedConfirmData?.staff);
+      console.log(`[LiveQueue] Appointment data:`, pendingAppointments.find(apt => apt.id === itemId));
+      
+      // Call API to update appointment status to 'current' and staff to 'in-service'
+      const response = await fetch('/api/appointments/update/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: itemId,
+          status: 'current',
+          staffName: proceedConfirmData?.staff
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to move appointment to current: ${response.status} - ${JSON.stringify(errorData)}`);
+      }
+
+      const result = await response.json();
+      console.log(`[LiveQueue] Appointment moved to current:`, result);
+      
+      // Update local state - move from pending to current with updated status
+      const appointmentToMove = pendingAppointments.find(apt => apt.id === itemId);
+      if (appointmentToMove) {
+        setPendingAppointments(prev => prev.filter(apt => apt.id !== itemId));
+        setCurrentAppointments(prev => [
+          ...prev,
+          { ...appointmentToMove, status: 'current' }
+        ]);
+      }
+      
+      // Close dialog
+      setProceedConfirmId(null);
+      setProceedConfirmData({});
+    } catch (error) {
+      console.error('[LiveQueue] Error moving appointment:', error);
+      alert('Failed to move appointment. Please try again.');
+    }
   };
 
   useEffect(() => {
@@ -973,9 +1011,9 @@ export const AdminDashboardLiveStatus = ({ date }) => {
           {/* Left — Live Queue */}
           <LiveQueuePanel 
             onOpenWalkInModal={() => setShowWalkInModal(true)}
-            onProceedClick={(id, name, service) => {
+            onProceedClick={(id, name, service, staff) => {
               setProceedConfirmId(id);
-              setProceedConfirmData({ name, service });
+              setProceedConfirmData({ name, service, staff });
             }}
           />
 

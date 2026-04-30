@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const CloseIcon = ({ color = "currentColor" }) => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -6,19 +6,31 @@ const CloseIcon = ({ color = "currentColor" }) => (
   </svg>
 );
 
-export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
+export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     names: '',
-    category_specialty: ''
+    category_specialty: '',
+    employment: true
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  useEffect(() => {
+    if (staff && isOpen) {
+      setFormData({
+        names: staff.names || '',
+        category_specialty: staff.category_specialty || '',
+        employment: staff.employment !== false
+      });
+      setError(null);
+    }
+  }, [staff, isOpen]);
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -28,50 +40,45 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
     setError(null);
 
     try {
+      if (!staff || !staff.id) {
+        setError('Staff ID is missing');
+        setIsLoading(false);
+        return;
+      }
+
       if (!formData.names.trim()) {
         setError('Staff name is required');
         setIsLoading(false);
         return;
       }
 
-      if (!formData.category_specialty.trim()) {
-        setError('Category/Specialty is required');
-        setIsLoading(false);
-        return;
-      }
-
-      const response = await fetch('/api/staffs/create', {
-        method: 'POST',
+      const response = await fetch('/api/staffs/update', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: staff.id,
           names: formData.names,
-          category_specialty: formData.category_specialty
+          category_specialty: formData.category_specialty,
+          employment: formData.employment
         })
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.details || errorData.error || 'Failed to create staff');
+        throw new Error(errorData.details || errorData.error || 'Failed to update staff');
       }
 
       const result = await response.json();
-      console.log('[AddStaffModal] Staff created:', result);
+      console.log('[EditStaffModal] Staff updated:', result);
       
       onSave(result.staff);
-      setFormData({ names: '', category_specialty: '' });
       onClose();
     } catch (err) {
-      console.error('[AddStaffModal] Error:', err);
-      setError(err.message || 'An error occurred while creating staff');
+      console.error('[EditStaffModal] Error:', err);
+      setError(err.message || 'An error occurred while updating staff');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleClose = () => {
-    setFormData({ names: '', category_specialty: '' });
-    setError(null);
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -103,10 +110,10 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h2 style={{ margin: 0, color: '#D4C5B9', fontSize: '18px', fontWeight: '600' }}>
-            Add New Staff Member
+            Edit Staff Member
           </h2>
           <button
-            onClick={handleClose}
+            onClick={onClose}
             style={{
               background: 'none',
               border: 'none',
@@ -210,11 +217,80 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
             />
           </div>
 
+          {/* Employment Status Field */}
+          <div>
+            <label style={{ display: 'block', color: '#D4C5B9', fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>
+              Employment Status
+            </label>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, employment: true }))}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  backgroundColor: formData.employment ? '#dd901d' : 'rgba(35, 29, 26, 0.8)',
+                  border: `1px solid ${formData.employment ? 'rgba(221, 144, 29, 0.5)' : 'rgba(152, 143, 129, 0.3)'}`,
+                  borderRadius: '6px',
+                  color: formData.employment ? '#1a1a1a' : '#D4C5B9',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (!formData.employment) {
+                    e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                    e.currentTarget.style.backgroundColor = 'rgba(35, 29, 26, 0.95)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!formData.employment) {
+                    e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                    e.currentTarget.style.backgroundColor = 'rgba(35, 29, 26, 0.8)';
+                  }
+                }}
+              >
+                True (Employed)
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, employment: false }))}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  backgroundColor: !formData.employment ? '#dd901d' : 'rgba(35, 29, 26, 0.8)',
+                  border: `1px solid ${!formData.employment ? 'rgba(221, 144, 29, 0.5)' : 'rgba(152, 143, 129, 0.3)'}`,
+                  borderRadius: '6px',
+                  color: !formData.employment ? '#1a1a1a' : '#D4C5B9',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (formData.employment) {
+                    e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                    e.currentTarget.style.backgroundColor = 'rgba(35, 29, 26, 0.95)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (formData.employment) {
+                    e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                    e.currentTarget.style.backgroundColor = 'rgba(35, 29, 26, 0.8)';
+                  }
+                }}
+              >
+                False (Not Employed)
+              </button>
+            </div>
+          </div>
+
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
             <button
               type="button"
-              onClick={handleClose}
+              onClick={onClose}
               disabled={isLoading}
               style={{
                 flex: 1,
@@ -271,7 +347,7 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
                 }
               }}
             >
-              {isLoading ? 'Creating...' : 'Create Staff'}
+              {isLoading ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>

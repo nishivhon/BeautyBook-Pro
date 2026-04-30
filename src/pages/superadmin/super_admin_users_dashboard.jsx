@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
+import { EditStaffModal } from "../../components/modal/superadmin/edit_staff";
+import { AddStaffModal } from "../../components/modal/superadmin/add_staff";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -138,8 +140,12 @@ export default function SuperAdminUsersDashboard() {
   });
   const [loading, setLoading] = useState(false);
   const [currentStaffPage, setCurrentStaffPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [editingStaff, setEditingStaff] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -182,9 +188,9 @@ export default function SuperAdminUsersDashboard() {
               console.log('[Staffs] names value:', rowData[0].names, 'category_specialty value:', rowData[0].category_specialty, 'employment value:', rowData[0].employment);
             }
             
-            // Filter to only display columns - keep all columns if display columns are missing
+            // Filter to only display columns - but keep id for editing
             rowData = rowData.map(row => {
-              const filtered = {};
+              const filtered = { id: row.id };
               displayColumns.forEach(col => {
                 // Always include the column, even if empty
                 filtered[col] = row[col] !== undefined ? row[col] : null;
@@ -247,6 +253,49 @@ export default function SuperAdminUsersDashboard() {
     setToastMessage(message);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2800);
+  };
+
+  // Handle opening the edit modal
+  const handleEditStaff = (staff) => {
+    setEditingStaff(staff);
+    setIsEditModalOpen(true);
+  };
+
+  // Handle closing the edit modal
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingStaff(null);
+  };
+
+  // Handle saving the edited staff
+  const handleSaveStaff = (updatedStaff) => {
+    setStaffsData(prev => ({
+      ...prev,
+      rows: prev.rows.map(staff => 
+        staff.id === updatedStaff.id ? { ...staff, ...updatedStaff } : staff
+      )
+    }));
+    displayToast('Staff member updated successfully');
+  };
+
+  // Handle opening the add modal
+  const handleOpenAddModal = () => {
+    setIsAddModalOpen(true);
+  };
+
+  // Handle closing the add modal
+  const handleCloseAddModal = () => {
+    setIsAddModalOpen(false);
+  };
+
+  // Handle saving a new staff member
+  const handleAddNewStaff = (newStaff) => {
+    setStaffsData(prev => ({
+      ...prev,
+      rows: [newStaff, ...prev.rows],
+      meta: `${prev.rows.length + 1} staff members`
+    }));
+    displayToast('Staff member added successfully');
   };
 
   // Format column names for display
@@ -369,18 +418,22 @@ export default function SuperAdminUsersDashboard() {
           <div className="dashboard-panel">
             {/* Panel header with search and add button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div className="panel-title">All Staff Members ({staffsData.rows?.length || 0})</div>
+              <div className="panel-title">
+                {searchQuery 
+                  ? `Search Results (${(staffsData.rows || []).filter(staff => (staff.names || '').toLowerCase().includes(searchQuery.toLowerCase())).length})`
+                  : `All Staff Members (${staffsData.rows?.length || 0})`
+                }
+              </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 {/* Search Input */}
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
-                    placeholder="Search staff..."
+                    placeholder="Search staff by name..."
+                    value={searchQuery}
                     onChange={(e) => {
-                      const value = e.target.value.toLowerCase();
-                      if (value) {
-                        console.log('[Staffs] Searching for:', value);
-                      }
+                      setSearchQuery(e.target.value);
+                      setCurrentStaffPage(1);
                     }}
                     style={{
                       padding: '8px 12px 8px 32px',
@@ -405,6 +458,7 @@ export default function SuperAdminUsersDashboard() {
                 
                 {/* Add Button */}
                 <button
+                  onClick={handleOpenAddModal}
                   style={{
                     padding: '8px 16px',
                     backgroundColor: '#dd901d',
@@ -430,22 +484,30 @@ export default function SuperAdminUsersDashboard() {
             {/* Staff Table View */}
             {loading ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading staff data...</div>
-            ) : staffsData.rows && staffsData.rows.length > 0 ? (
-              <div style={{ marginTop: '0px', overflowX: 'auto' }}>
-                <table className="data-table" style={{ minWidth: '800px' }}>
-                  <thead>
-                    <tr>
-                      {staffsData.cols.map((col) => (
-                        <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      const itemsPerPage = 12;
-                      const startIdx = (currentStaffPage - 1) * itemsPerPage;
-                      const endIdx = startIdx + itemsPerPage;
-                      return staffsData.rows.slice(startIdx, endIdx).map((staff, idx) => (
+            ) : (() => {
+              // Filter staff by search query
+              const filteredStaff = staffsData.rows ? staffsData.rows.filter(staff =>
+                (staff.names || '').toLowerCase().includes(searchQuery.toLowerCase())
+              ) : [];
+              
+              return staffsData.rows && staffsData.rows.length > 0 ? (
+                filteredStaff.length > 0 ? (
+                  <div style={{ marginTop: '0px', overflowX: 'auto' }}>
+                    <table className="data-table" style={{ minWidth: '800px' }}>
+                      <thead>
+                        <tr>
+                          {staffsData.cols.map((col) => (
+                            <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
+                          ))}
+                          <th style={{ textAlign: 'left' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const itemsPerPage = 12;
+                          const startIdx = (currentStaffPage - 1) * itemsPerPage;
+                          const endIdx = startIdx + itemsPerPage;
+                          return filteredStaff.slice(startIdx, endIdx).map((staff, idx) => (
                         <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                           {staffsData.cols.map((col) => {
                             const cellValue = staff[col];
@@ -454,20 +516,57 @@ export default function SuperAdminUsersDashboard() {
                               <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
                             );
                           })}
+                          <td style={{ fontSize: '13px' }}>
+                            <button
+                              onClick={() => handleEditStaff(staff)}
+                              title="Edit staff"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#988f81',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '12px',
+                                fontWeight: '500',
+                                transition: 'all 0.2s',
+                                borderRadius: '4px'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = '#dd901d';
+                                e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = '#988f81';
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <EditIcon color="currentColor" />
+                              Edit
+                            </button>
+                          </td>
                         </tr>
                       ));
                     })()}
                   </tbody>
                 </table>
-                {staffsData.rows.length > 0 && (() => {
+                {(() => {
+                  const filteredStaff = staffsData.rows.filter(staff =>
+                    (staff.names || '').toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                  if (filteredStaff.length === 0) return null;
+                  
                   const itemsPerPage = 12;
-                  const totalPages = Math.ceil(staffsData.rows.length / itemsPerPage);
+                  const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
                   const startIdx = (currentStaffPage - 1) * itemsPerPage + 1;
-                  const endIdx = Math.min(currentStaffPage * itemsPerPage, staffsData.rows.length);
+                  const endIdx = Math.min(currentStaffPage * itemsPerPage, filteredStaff.length);
+                  
                   return (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
-                        Showing {startIdx}–{endIdx} of {staffsData.rows.length} staff
+                        Showing {startIdx}–{endIdx} of {filteredStaff.length} staff
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button
@@ -534,9 +633,15 @@ export default function SuperAdminUsersDashboard() {
                   );
                 })()}
               </div>
-            ) : (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No staff members found</div>
-            )}
+                ) : (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>
+                    No staff members match your search
+                  </div>
+                )
+              ) : (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No staff members found</div>
+              );
+            })()}
           </div>
         </main>
       </div>
@@ -559,6 +664,21 @@ export default function SuperAdminUsersDashboard() {
           {toastMessage}
         </div>
       )}
+
+      {/* ─── EDIT STAFF MODAL ─── */}
+      <EditStaffModal 
+        staff={editingStaff}
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        onSave={handleSaveStaff}
+      />
+
+      {/* ─── ADD STAFF MODAL ─── */}
+      <AddStaffModal 
+        isOpen={isAddModalOpen}
+        onClose={handleCloseAddModal}
+        onSave={handleAddNewStaff}
+      />
     </div>
   );
 }

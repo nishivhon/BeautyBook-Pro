@@ -24,10 +24,10 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 /**
- * Save OTP to database
- * Deletes old OTP first, then inserts new one
+ * Save OTP to database with retry logic
+ * Retries up to 3 times with exponential backoff on network errors
  */
-export const saveOtp = async (data) => {
+export const saveOtp = async (data, retryCount = 0) => {
   try {
     const { email, phone, otp, name } = data;
 
@@ -82,7 +82,7 @@ export const saveOtp = async (data) => {
       clearTimeout(timeoutId);
     }
   } catch (error) {
-    console.error(`[OTP] Error saving OTP: ${error.message}`);
+    console.error(`[OTP] Error saving OTP (attempt ${retryCount + 1}/3): ${error.message}`);
     console.error(`[OTP] Error details:`, {
       message: error.message,
       code: error.code,
@@ -90,6 +90,21 @@ export const saveOtp = async (data) => {
       supabaseUrl: SUPABASE_URL,
       keyIsSet: !!SUPABASE_ANON_KEY
     });
+
+    // Retry on network errors (ECONNREFUSED, ETIMEDOUT, ConnectTimeoutError, etc.)
+    const isNetworkError = error.code === 'ECONNREFUSED' || 
+                          error.code === 'ETIMEDOUT' || 
+                          error.code === 'UND_ERR_CONNECT_TIMEOUT' ||
+                          error.message.includes('fetch failed') ||
+                          error.message.includes('Timeout');
+
+    if (isNetworkError && retryCount < 3) {
+      const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s exponential backoff
+      console.log(`[OTP] Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return saveOtp(data, retryCount + 1);
+    }
+
     throw error;
   }
 };

@@ -431,6 +431,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         type: type,
         number: index + 1,
         name: apt.name,
+        staff: apt.staff,
         service: `${serviceName} • ${apt.staff}`,
         statusTop: type === 'active' ? 'Now' : formatTimeToAmPm(apt.time),
         statusSub: type === 'active' ? 'In Progress' : 'Waiting',
@@ -465,7 +466,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     }
   ].filter(section => section.items.length > 0); // Only show sections with items
 
-  const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, onCompleteService, showProceedButton = false, onProceed, isProceedEnabled = true, onProceedClick }) => {
+  const QueueItem = ({ id, type, number, name, staff, service, statusTop, statusSub, details, onCompleteService, showProceedButton = false, onProceed, isProceedEnabled = true, onProceedClick }) => {
     const isActive = type === "active";
     const isCancelled = type === "cancelled";
     const rowClass = isActive ? "live-queue-row-active"
@@ -485,7 +486,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
     const handleProceed = () => {
       if (isProceedEnabled && onProceedClick) {
-        onProceedClick(id, name, service);
+        onProceedClick(id, name, service, staff);
       }
     };
 
@@ -1013,13 +1014,6 @@ export const AdminDashboard = ({ date }) => {
     // For now, just logging the data
   };
 
-  const handleCompleteServiceFromDialog = (itemId, customerName, service) => {
-    console.log(`Service confirmed for ${customerName}: ${service}`);
-    // Here you can integrate with your API to mark the service as complete
-    setProceedConfirmId(null);
-    setProceedConfirmData(null);
-  };
-
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
@@ -1068,9 +1062,9 @@ export const AdminDashboard = ({ date }) => {
           <div className="dash-content-grid">
             <LiveQueue 
               onOpenWalkInModal={() => setShowWalkInModal(true)}
-              onProceedClick={(id, name, service) => {
+              onProceedClick={(id, name, service, staff) => {
                 setProceedConfirmId(id);
-                setProceedConfirmData({ name, service });
+                setProceedConfirmData({ name, service, staff });
               }}
             />
 

@@ -24,6 +24,7 @@ export default async (req, res) => {
     }
 
     console.log(`[Services] Found ${services?.length || 0} services`);
+    console.log('[Services] Sample service:', services?.[0]);
 
     res.status(200).json(services || []);
   } catch (error) {

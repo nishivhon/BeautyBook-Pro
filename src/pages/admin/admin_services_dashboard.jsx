@@ -648,8 +648,10 @@ export const AdminDashboardServices = ({ date }) => {
         
         // Transform services data to include formatted price and availability
         const transformedServices = servicesData.map(s => {
-          // Database uses 'name' column
-          const serviceName = s.name || 'Unknown';
+          // Try both 'name' and 'service_name' columns (handle both DB schemas)
+          const serviceName = s.name || s.service_name || 'Unknown';
+          
+          console.log('Service data:', { id: s.id, name: s.name, service_name: s.service_name, serviceName });
           
           return {
             id: s.id,

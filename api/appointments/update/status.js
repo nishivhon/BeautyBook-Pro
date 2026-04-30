@@ -47,21 +47,41 @@ export default async (req, res) => {
 
     console.log(`[UpdateStatus] Successfully updated appointment ${id}`);
 
-    // If status is 'done' and staffName is provided, update staff in_service to 'avail'
-    if (status === 'done' && staffName) {
-      console.log(`[UpdateStatus] Updating staff ${staffName} in_service to avail`);
+    // Update staff in_service based on status
+    if (staffName) {
+      console.log(`[UpdateStatus] Processing staff update for: ${staffName}`);
+      let staffInServiceValue = 'avail'; // default for 'done'
       
-      const { error: staffError } = await supabase
-        .from('staffs')
-        .update({ in_service: 'avail' })
-        .eq('names', staffName);
-
-      if (staffError) {
-        console.error('[UpdateStatus] Staff update error:', staffError);
-        // Don't fail the request if staff update fails - appointment status was already updated
-      } else {
-        console.log(`[UpdateStatus] Successfully updated staff ${staffName} in_service`);
+      if (status === 'current') {
+        staffInServiceValue = 'in-service';
+        console.log(`[UpdateStatus] Setting staff ${staffName} in_service to 'in-service'`);
+      } else if (status === 'done') {
+        staffInServiceValue = 'avail';
+        console.log(`[UpdateStatus] Setting staff ${staffName} in_service to 'avail'`);
       }
+      
+      if (status === 'current' || status === 'done') {
+        console.log(`[UpdateStatus] Querying staff table for name = '${staffName}'`);
+        const { data: staffData, error: staffError } = await supabase
+          .from('staffs')
+          .update({ in_service: staffInServiceValue })
+          .eq('names', staffName)
+          .select();
+
+        if (staffError) {
+          console.error('[UpdateStatus] Staff update error:', staffError);
+          console.error('[UpdateStatus] Error details:', staffError.message, staffError.code);
+        } else {
+          console.log(`[UpdateStatus] Staff update response:`, staffData);
+          if (staffData && staffData.length > 0) {
+            console.log(`[UpdateStatus] Successfully updated staff ${staffName} in_service to ${staffInServiceValue}`);
+          } else {
+            console.warn(`[UpdateStatus] No staff found with name: ${staffName}`);
+          }
+        }
+      }
+    } else {
+      console.log(`[UpdateStatus] No staff name provided, skipping staff update`);
     }
 
     res.status(200).json({

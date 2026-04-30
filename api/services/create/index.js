@@ -11,8 +11,10 @@ export default async (req, res) => {
   }
 
   try {
-    const { service_name, name, category, description, price, availability } = req.body;
+    const { service_name, name, category, description, price, availability, available, est_time, estimated_time } = req.body;
     const serviceName = service_name || name; // Support both field names
+    const serviceAvailability = availability !== undefined ? availability : (available !== false);
+    const serviceEstimatedTime = estimated_time !== undefined ? estimated_time : est_time;
 
     console.log('[Services:Create] Creating new service:', { serviceName, category, price });
 
@@ -23,13 +25,44 @@ export default async (req, res) => {
       });
     }
 
-    const insertData = {
-      name: serviceName,
-      category,
-      description: description || '',
-      price: parseFloat(price) || 0,
-      availability: availability !== false // Default to true
-    };
+    // Try to fetch a service to see what columns exist in the schema
+    const { data: sampleService } = await supabase
+      .from('services')
+      .select('*')
+      .limit(1);
+
+    // Build insert data - only include fields that exist in the schema
+    let insertData = {};
+    
+    // Determine which name column to use
+    if (sampleService && sampleService.length > 0) {
+      if ('name' in sampleService[0]) {
+        insertData.name = serviceName;
+      } else if ('service_name' in sampleService[0]) {
+        insertData.service_name = serviceName;
+      }
+    } else {
+      // Default to 'name' if we can't determine schema
+      insertData.name = serviceName;
+    }
+
+    insertData.category = category;
+    if (description) insertData.description = description;
+    if (price !== undefined && price !== '') insertData.price = parseFloat(price) || 0;
+    if (serviceEstimatedTime !== undefined && serviceEstimatedTime !== '') insertData.est_time = parseInt(serviceEstimatedTime, 10);
+    
+    // Handle availability field
+    if (sampleService && sampleService.length > 0) {
+      if ('availability' in sampleService[0]) {
+        insertData.availability = serviceAvailability;
+      } else if ('available' in sampleService[0]) {
+        insertData.available = serviceAvailability;
+      }
+    } else {
+      insertData.availability = serviceAvailability;
+    }
+
+    console.log('[Services:Create] Insert data:', insertData);
 
     const { data, error } = await supabase
       .from('services')
