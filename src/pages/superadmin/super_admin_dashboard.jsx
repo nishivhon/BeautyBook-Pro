@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -1233,6 +1234,9 @@ export default function SuperAdminDashboard() {
 
         {/* Scrollable body */}
         <main className="dashboard-main">
+
+          {/* Password Reminder Banner */}
+          <PasswordReminderBanner />
 
           {/* ── Metrics Cards with Carousel ── */}
           <div className="dash-stats-carousel-container">

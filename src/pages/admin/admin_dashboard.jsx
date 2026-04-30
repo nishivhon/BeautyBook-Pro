@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 import { AddWalkInModal } from "../../components/modal/admin/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
@@ -1012,6 +1013,13 @@ export const AdminDashboard = ({ date }) => {
     // For now, just logging the data
   };
 
+  const handleCompleteServiceFromDialog = (itemId, customerName, service) => {
+    console.log(`Service confirmed for ${customerName}: ${service}`);
+    // Here you can integrate with your API to mark the service as complete
+    setProceedConfirmId(null);
+    setProceedConfirmData(null);
+  };
+
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
@@ -1050,6 +1058,9 @@ export const AdminDashboard = ({ date }) => {
 
         {/* Main Content Area */}
         <main className="dashboard-main">
+          {/* Password Reminder Banner */}
+          <PasswordReminderBanner />
+          
           {/* Metrics Cards - Hero Section */}
           <div style={{ marginTop: '20px', marginBottom: '20px' }}>
             <PageMetrics stats={stats} />
