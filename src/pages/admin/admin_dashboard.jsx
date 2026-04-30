@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 import { AddWalkInModal } from "../../components/modal/admin/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
@@ -1013,49 +1014,6 @@ export const AdminDashboard = ({ date }) => {
     // For now, just logging the data
   };
 
-  const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
-    try {
-      console.log(`[Dashboard] Moving appointment ${itemId} to current for ${customerName}`);
-      console.log(`[Dashboard] Proceed data:`, proceedConfirmData);
-      
-      // Call API to update appointment status to 'current' and staff to 'in-service'
-      const response = await fetch('/api/appointments/update/status', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: itemId,
-          status: 'current',
-          staffName: proceedConfirmData?.staff
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to move appointment to current: ${response.status} - ${JSON.stringify(errorData)}`);
-      }
-
-      const result = await response.json();
-      console.log(`[Dashboard] Appointment moved to current:`, result);
-      
-      // Update local state - move from pending to current with updated status
-      const appointmentToMove = pendingAppointments.find(apt => apt.id === itemId);
-      if (appointmentToMove) {
-        setPendingAppointments(prev => prev.filter(apt => apt.id !== itemId));
-        setCurrentAppointments(prev => [
-          ...prev,
-          { ...appointmentToMove, status: 'current' }
-        ]);
-      }
-      
-      // Close dialog
-      setProceedConfirmId(null);
-      setProceedConfirmData(null);
-    } catch (error) {
-      console.error('[Dashboard] Error moving appointment:', error);
-      alert('Failed to move appointment. Please try again.');
-    }
-  };
-
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
@@ -1094,6 +1052,9 @@ export const AdminDashboard = ({ date }) => {
 
         {/* Main Content Area */}
         <main className="dashboard-main">
+          {/* Password Reminder Banner */}
+          <PasswordReminderBanner />
+          
           {/* Metrics Cards - Hero Section */}
           <div style={{ marginTop: '20px', marginBottom: '20px' }}>
             <PageMetrics stats={stats} />

@@ -112,14 +112,6 @@ const RoleIcon = ({ color = "#dd901d" }) => (
   </svg>
 );
 
-// Login link generation icons
-const LinkGenerationIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#22c55e" strokeWidth="1.3" strokeLinecap="round"/>
-    <path d="M14 9a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#22c55e" strokeWidth="1.3" strokeLinecap="round"/>
-  </svg>
-);
-
 const QuickAccessIcon = () => (
   <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
     <rect x="2" y="4" width="16" height="12" rx="2" stroke="#22c55e" strokeWidth="1.3"/>
@@ -192,18 +184,6 @@ export default function SuperAdminSecurityDashboard() {
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [secItems, setSecItems] = useState(initialSecurityItems);
-
-  // Login link generation states
-  const [adminAccounts] = useState([
-    { id: 1, name: "Carlos Beauty", email: "carlosbeautybookpro@gmail.com", role: "Admin" },
-    { id: 2, name: "Ana Super Admin", email: "anabeautybookpro@gmail.com", role: "Super Admin" },
-    { id: 3, name: "John Admin", email: "john.admin@beautybookpro.com", role: "Admin" },
-  ]);
-  const [linkSearchInput, setLinkSearchInput] = useState("");
-  const [generatedLink, setGeneratedLink] = useState("");
-  const [selectedAccount, setSelectedAccount] = useState(null);
-  const [searchResults, setSearchResults] = useState([]);
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
   // Maintenance states
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
@@ -321,57 +301,6 @@ export default function SuperAdminSecurityDashboard() {
 
   const handleDownloadLog = () => {
     displayToast('Downloading security log…');
-  };
-
-  const handleSearchAccount = (value) => {
-    setLinkSearchInput(value);
-    
-    if (value.trim() === "") {
-      setSearchResults([]);
-      setShowSearchDropdown(false);
-      setGeneratedLink("");
-      setSelectedAccount(null);
-      return;
-    }
-
-    const results = adminAccounts.filter(account =>
-      account.name.toLowerCase().includes(value.toLowerCase()) ||
-      account.email.toLowerCase().includes(value.toLowerCase())
-    );
-
-    setSearchResults(results);
-    setShowSearchDropdown(results.length > 0);
-    setGeneratedLink("");
-  };
-
-  const handleSelectAccount = (account) => {
-    setSelectedAccount(account);
-    setLinkSearchInput(account.name);
-    setShowSearchDropdown(false);
-    setGeneratedLink("");
-  };
-
-  const generateLoginLink = () => {
-    if (!selectedAccount) {
-      displayToast("Please select a valid admin or super admin account");
-      return;
-    }
-
-    // Generate a mock magic link
-    const timestamp = Date.now();
-    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const link = `https://beautybookpro.com/auth/magic-link?token=${token}&id=${selectedAccount.id}&t=${timestamp}`;
-    
-    setGeneratedLink(link);
-    setLinkSearchInput(link);
-    displayToast(`Login link generated for ${selectedAccount.name}`);
-  };
-
-  const handleCopyLink = () => {
-    if (generatedLink) {
-      navigator.clipboard.writeText(generatedLink);
-      displayToast("Link copied to clipboard");
-    }
   };
 
   return (
@@ -572,149 +501,6 @@ export default function SuperAdminSecurityDashboard() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* Login Link Generation Panel */}
-          <div className="dashboard-panel">
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", color: "#fff", marginBottom: "16px" }}>
-              <LinkGenerationIcon />
-              Admin & Super Admin Login Links
-            </div>
-
-            <div style={{ marginBottom: "16px", position: "relative" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "#dd901d", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Search Admin Account
-              </label>
-              <div style={{ display: "flex", gap: "8px", position: "relative" }}>
-                <div style={{ position: "relative", flex: 1 }}>
-                  <input
-                    type="text"
-                    placeholder="Type name or email..."
-                    value={linkSearchInput}
-                    onChange={(e) => handleSearchAccount(e.target.value)}
-                    onFocus={() => {
-                      if (searchResults.length > 0) setShowSearchDropdown(true);
-                    }}
-                    readOnly={generatedLink !== ""}
-                    style={{
-                      width: "100%",
-                      padding: "12px 14px",
-                      backgroundColor: "rgba(26, 15, 0, 0.5)",
-                      border: "1px solid rgba(221, 144, 29, 0.2)",
-                      borderRadius: "8px",
-                      color: "#f5f5f5",
-                      fontSize: "14px",
-                      fontFamily: "Inter, sans-serif",
-                      boxSizing: "border-box",
-                      transition: "border-color 0.2s ease",
-                      cursor: generatedLink ? "default" : "text"
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
-                    onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.2)"}
-                  />
-                  
-                  {/* Search Dropdown */}
-                  {showSearchDropdown && searchResults.length > 0 && (
-                    <div style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: 0,
-                      right: 0,
-                      backgroundColor: "#1a1a1a",
-                      border: "1px solid rgba(221, 144, 29, 0.3)",
-                      borderRadius: "8px",
-                      marginTop: "4px",
-                      zIndex: 100,
-                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)"
-                    }}>
-                      {searchResults.map((account) => (
-                        <button
-                          key={account.id}
-                          onClick={() => handleSelectAccount(account)}
-                          style={{
-                            width: "100%",
-                            padding: "12px 14px",
-                            background: "none",
-                            border: "none",
-                            borderBottom: "1px solid rgba(221, 144, 29, 0.1)",
-                            textAlign: "left",
-                            cursor: "pointer",
-                            color: "#f5f5f5",
-                            fontSize: "13px",
-                            fontFamily: "Inter, sans-serif",
-                            transition: "background-color 0.2s ease"
-                          }}
-                          onMouseEnter={(e) => e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)"}
-                          onMouseLeave={(e) => e.target.style.backgroundColor = "transparent"}
-                        >
-                          <div style={{ fontWeight: 600, marginBottom: "2px" }}>{account.name}</div>
-                          <div style={{ fontSize: "12px", color: "#988f81" }}>{account.email} • {account.role}</div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                {!generatedLink ? (
-                  <button
-                    onClick={generateLoginLink}
-                    disabled={!selectedAccount}
-                    style={{
-                      padding: "12px 20px",
-                      backgroundColor: selectedAccount ? "#dd901d" : "#888",
-                      border: "none",
-                      borderRadius: "8px",
-                      color: "#fff",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      cursor: selectedAccount ? "pointer" : "not-allowed",
-                      transition: "all 0.2s ease",
-                      fontFamily: "Inter, sans-serif",
-                      whiteSpace: "nowrap"
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedAccount) {
-                        e.currentTarget.style.backgroundColor = "#e6a326";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedAccount) {
-                        e.currentTarget.style.backgroundColor = "#dd901d";
-                      }
-                    }}
-                  >
-                    Generate
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleCopyLink}
-                    style={{
-                      padding: "12px 20px",
-                      backgroundColor: "#22c55e",
-                      border: "none",
-                      borderRadius: "8px",
-                      color: "#fff",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                      fontFamily: "Inter, sans-serif",
-                      whiteSpace: "nowrap"
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#16a34a"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#22c55e"}
-                  >
-                    Copy Link
-                  </button>
-                )}
-              </div>
-
-              {selectedAccount && !generatedLink && (
-                <div style={{ marginTop: "8px", fontSize: "12px", color: "#988f81" }}>
-                  Selected: <span style={{ color: "#dd901d", fontWeight: 600 }}>{selectedAccount.name}</span> ({selectedAccount.role})
-                </div>
-              )}
             </div>
           </div>
 
