@@ -25,7 +25,7 @@ export default function CustomerDashboard() {
 		return coupon.category === couponFilter;
 	});
 
-	const profileImage = profile.profilePhoto || "/default-avatar.svg";
+	const profileInitial = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
 
 
 
@@ -55,8 +55,8 @@ export default function CustomerDashboard() {
 				<>
 					<div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
 									<div className="cdb-profile-avatar-col">
-										<div className="cdb-avatar cdb-avatar-dashboard">
-											<img src={profileImage} alt={profile.name + " avatar"} />
+										<div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${profile.name || "Customer"} avatar`}>
+											<span className="cdb-avatar-initial">{profileInitial}</span>
 										</div>
 										</div>
 										<div className="cdb-profile-info-col">

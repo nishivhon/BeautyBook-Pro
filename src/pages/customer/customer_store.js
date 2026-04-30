@@ -5,10 +5,10 @@ const HISTORY_KEY = "customerHistoryData";
 const COUPONS_KEY = "customerCouponsData";
 
 export const defaultProfile = {
-  name: "Sarah Johnson",
-  emails: ["sarah.johnson@email.com"],
-  phones: ["+1 (555) 123-4567"],
-  notificationPreference: "email",
+  name: "",
+  emails: [],
+  phones: [],
+  notificationPreference: "",
   profilePhoto: "",
 };
 

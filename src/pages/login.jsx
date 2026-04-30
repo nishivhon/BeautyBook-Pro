@@ -199,29 +199,56 @@ export const LogIn = () => {
     setLoading(true);
 
     try {
-      // Validate credentials against backend
-      const result = await validateOperatorCredentials(email, password);
-      
-      if (result.success) {
-        // Login successful - store user data
-        loginOperator(result.data.email, password, result.data.role);
-        
-        // Show success feedback
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+
+      // Try customer login first
+      const customerResponse = await fetch(`${apiUrl}/customers/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (customerResponse.ok) {
+        const customerResult = await customerResponse.json();
+        const customer = customerResult.data;
+
+        localStorage.setItem('customerProfileData', JSON.stringify({
+          name: customer.name,
+          emails: customer.email ? [customer.email] : [],
+          phones: customer.phone ? [customer.phone] : [],
+          notificationPreference: 'email',
+          profilePhoto: '',
+          id: customer.id,
+        }));
+
+        loginOperator(customer.email, password, 'customer');
+
         setTimeout(() => {
-          // Redirect based on role
+          navigate('/customer/dashboard');
+          setLoading(false);
+        }, 800);
+        return;
+      }
+
+      // Fallback to operator login
+      const result = await validateOperatorCredentials(email, password);
+
+      if (result.success) {
+        loginOperator(result.data.email, password, result.data.role);
+
+        setTimeout(() => {
           const roleBasedRoutes = {
             'admin': '/admin/dashboard',
             'super admin': '/superadmin/dashboard',
             'staff': '/staff/dashboard',
             'customer': '/customer/dashboard'
           };
-          
+
           const redirectPath = roleBasedRoutes[result.data.role?.toLowerCase()] || '/';
           navigate(redirectPath);
           setLoading(false);
         }, 800);
       } else {
-        // Login failed
         setErrors({ form: result.error || "Login failed. Please try again." });
         setLoading(false);
       }
@@ -270,6 +297,18 @@ export const LogIn = () => {
 
   // Handle account creation from modal
   const handleAccountCreated = (accountData) => {
+    // Store the new customer profile to localStorage
+    const customerProfile = {
+      name: accountData.name,
+      emails: accountData.email ? [accountData.email] : [],
+      phones: accountData.phone ? [accountData.phone] : [],
+      notificationPreference: "email",
+      profilePhoto: "",
+      id: accountData.id,
+    };
+    
+    localStorage.setItem('customerProfileData', JSON.stringify(customerProfile));
+    
     // Log in the new customer account
     loginOperator(accountData.email, accountData.password, 'customer');
     
