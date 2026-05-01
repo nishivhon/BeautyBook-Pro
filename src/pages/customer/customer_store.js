@@ -11,15 +11,10 @@ export const defaultProfile = {
   notificationPreference: "",
   profilePhoto: "",
   id: null,
+  histories: [],
 };
 
-export const defaultHistory = [
-  { id: 1, date: "2026-04-20", service: "Haircut & Styling", stylist: "Maria Rodriguez", cost: 45.0, status: "completed", rated: false },
-  { id: 2, date: "2026-04-10", service: "Hair Color", stylist: "Carlos Martinez", cost: 85.0, status: "completed", rated: true, rating: 5 },
-  { id: 3, date: "2026-03-28", service: "Facial Treatment", stylist: "Ana Santos", cost: 65.0, status: "completed", rated: true, rating: 4 },
-  { id: 4, date: "2026-03-15", service: "Manicure", stylist: "Maria Rodriguez", cost: 35.0, status: "completed", rated: false },
-  { id: 5, date: "2026-05-02", service: "Swedish Massage", stylist: "John Davis", cost: 75.0, status: "upcoming", rated: false },
-];
+export const defaultHistory = [];
 
 export const defaultCoupons = [
   { id: 1, code: "SAVE15", discount: "15% OFF", description: "All hair services", expiration: "2026-05-30", status: "available", claimed: false, category: "limited" },
@@ -51,5 +46,28 @@ const usePersistentState = (key, fallback) => {
 };
 
 export const useCustomerProfileData = () => usePersistentState(PROFILE_KEY, defaultProfile);
-export const useCustomerHistoryData = () => usePersistentState(HISTORY_KEY, defaultHistory);
+
+export const useCustomerHistoryData = () => {
+  const [profile] = useCustomerProfileData();
+  const [history, setHistory] = useState(() => {
+    // Transform profile histories into dashboard history format
+    if (!profile?.histories || !Array.isArray(profile.histories)) {
+      return [];
+    }
+
+    return profile.histories.map((item, idx) => ({
+      id: item.id || idx,
+      date: item.date || new Date().toISOString().split('T')[0],
+      service: item.service || 'Service',
+      stylist: item.staff || 'Unknown Stylist',
+      cost: parseFloat(item.price) || 0,
+      status: item.status === 'done' ? 'completed' : item.status === 'current' ? 'upcoming' : item.status || 'pending',
+      rated: false,
+      rating: 0,
+    }));
+  });
+
+  return [history, setHistory];
+};
+
 export const useCustomerCouponsData = () => usePersistentState(COUPONS_KEY, defaultCoupons);
