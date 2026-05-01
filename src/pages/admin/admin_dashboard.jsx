@@ -1014,6 +1014,43 @@ export const AdminDashboard = ({ date }) => {
     // For now, just logging the data
   };
 
+  const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
+    try {
+      console.log(`[AdminDashboard] Moving appointment ${itemId} to current for ${customerName}`);
+      console.log(`[AdminDashboard] Request payload:`, { id: itemId, status: 'current' });
+      
+      const response = await fetch('/api/appointments/update/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: itemId,
+          status: 'current'
+        })
+      });
+
+      console.log(`[AdminDashboard] Response status:`, response.status, response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[AdminDashboard] Error response:', errorData);
+        alert(`API Error: ${errorData.error || response.statusText}\n${errorData.details || ''}`);
+        throw new Error(`Failed to move appointment to current: ${response.status} - ${JSON.stringify(errorData)}`);
+      }
+
+      const result = await response.json();
+      console.log(`[AdminDashboard] Appointment moved to current:`, result);
+      console.log(`[AdminDashboard] History synced:`, result.historyUpdated, result.historyUpdateReason);
+      alert(`✓ Status updated! History sync: ${result.historyUpdated ? 'YES' : 'NO'}`);
+
+      // Refresh the page to see updates
+      window.location.reload();
+    } catch (error) {
+      console.error('[AdminDashboard] Error moving appointment:', error);
+      console.error('[AdminDashboard] Full error:', error.toString());
+      alert('Failed to move appointment. Please try again.');
+    }
+  };
+
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);

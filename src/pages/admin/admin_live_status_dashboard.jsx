@@ -501,7 +501,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
 
 /* ── Live Queue panel ── */
-const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
+const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick, refreshTrigger = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
@@ -541,7 +541,7 @@ const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
     fetchAppointments();
     
     return () => {};
-  }, []);
+  }, [refreshTrigger]);
 
   const handleExpandToggle = (id) => {
     setExpandedItemId(expandedItemId === id ? null : id);
@@ -900,6 +900,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   const [activeNav, setActiveNav] = useState("live-status");
   const [mounted, setMounted] = useState(false);
   const [scheduleRefreshTrigger, setScheduleRefreshTrigger] = useState(0);
+  const [queueRefreshTrigger, setQueueRefreshTrigger] = useState(0);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -925,7 +926,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     try {
       console.log(`[LiveQueue] Moving appointment ${itemId} to current for ${customerName}`);
       console.log(`[LiveQueue] Staff data:`, proceedConfirmData?.staff);
-      console.log(`[LiveQueue] Appointment data:`, pendingAppointments.find(apt => apt.id === itemId));
+      console.log(`[LiveQueue] Request payload:`, { id: itemId, status: 'current', staffName: proceedConfirmData?.staff });
       
       // Call API to update appointment status to 'current' and staff to 'in-service'
       const response = await fetch('/api/appointments/update/status', {
@@ -938,29 +939,29 @@ export const AdminDashboardLiveStatus = ({ date }) => {
         })
       });
 
+      console.log(`[LiveQueue] Response status:`, response.status, response.ok);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[LiveQueue] Error response:', errorData);
+        alert(`API Error: ${errorData.error || response.statusText}\n${errorData.details || ''}`);
         throw new Error(`Failed to move appointment to current: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
       const result = await response.json();
       console.log(`[LiveQueue] Appointment moved to current:`, result);
-      
-      // Update local state - move from pending to current with updated status
-      const appointmentToMove = pendingAppointments.find(apt => apt.id === itemId);
-      if (appointmentToMove) {
-        setPendingAppointments(prev => prev.filter(apt => apt.id !== itemId));
-        setCurrentAppointments(prev => [
-          ...prev,
-          { ...appointmentToMove, status: 'current' }
-        ]);
-      }
+      console.log(`[LiveQueue] History synced:`, result.historyUpdated, result.historyUpdateReason);
+      alert(`✓ Status updated! History sync: ${result.historyUpdated ? 'YES' : 'NO'}`);
+
+      // Refresh the queue panels so they reflect the updated database state
+      setQueueRefreshTrigger((prev) => prev + 1);
       
       // Close dialog
       setProceedConfirmId(null);
       setProceedConfirmData({});
     } catch (error) {
       console.error('[LiveQueue] Error moving appointment:', error);
+      console.error('[LiveQueue] Full error:', error.toString());
       alert('Failed to move appointment. Please try again.');
     }
   };
@@ -1011,6 +1012,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
           {/* Left — Live Queue */}
           <LiveQueuePanel 
             onOpenWalkInModal={() => setShowWalkInModal(true)}
+            refreshTrigger={queueRefreshTrigger}
             onProceedClick={(id, name, service, staff) => {
               setProceedConfirmId(id);
               setProceedConfirmData({ name, service, staff });

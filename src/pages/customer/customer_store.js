@@ -10,6 +10,7 @@ export const defaultProfile = {
   phones: [],
   notificationPreference: "",
   profilePhoto: "",
+  id: null,
 };
 
 export const defaultHistory = [

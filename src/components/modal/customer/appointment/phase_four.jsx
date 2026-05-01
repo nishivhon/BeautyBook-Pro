@@ -254,6 +254,57 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
       }
       
       console.log('[Phase4] Booking confirmed:', result);
+
+      const storedProfile = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('customerProfileData') || '{}');
+        } catch {
+          return {};
+        }
+      })();
+
+      const customerId = storedProfile?.id;
+      const serviceName = Array.isArray(booking.services) && booking.services.length > 0
+        ? booking.services.map((s) => s.title || s.name || 'Service').join(', ')
+        : booking.service || 'General Service';
+      const totalPrice = Array.isArray(booking.services) && booking.services.length > 0
+        ? booking.services.reduce((sum, svc) => {
+            const priceValue = parseFloat(String(svc?.price ?? '').replace(/[^0-9.]/g, '')) || 0;
+            return sum + priceValue;
+          }, 0)
+        : parseFloat(String(booking.price ?? '').replace(/[^0-9.]/g, '')) || 0;
+
+      if (customerId) {
+        const historyPayload = {
+          customerId,
+          service: serviceName,
+          staff: booking.stylist,
+          price: totalPrice,
+          date: booking.date,
+        };
+
+        console.log('[Phase4] Sending history update:', historyPayload);
+
+        try {
+          const historyResponse = await fetch('/api/customers/update-histories', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(historyPayload),
+          });
+
+          const historyResult = await historyResponse.json();
+          console.log('[Phase4] History update response:', historyResult);
+
+          if (!historyResponse.ok) {
+            console.error('[Phase4] History update failed:', historyResult);
+          }
+        } catch (historyError) {
+          console.error('[Phase4] History update exception:', historyError);
+        }
+      } else {
+        console.warn('[Phase4] No customerId found in localStorage customerProfileData');
+      }
+
       setIsConfirmed(true);
       setShowConfirmationToast(true);
       
