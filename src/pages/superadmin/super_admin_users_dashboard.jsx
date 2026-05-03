@@ -650,8 +650,9 @@ export default function SuperAdminUsersDashboard() {
       {showToast && (
         <div style={{
           position: 'fixed',
-          bottom: '24px',
-          left: '24px',
+          top: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
           background: 'rgba(35, 29, 26, 0.95)',
           border: '1px solid rgba(221, 144, 29, 0.3)',
           color: '#D4C5B9',
