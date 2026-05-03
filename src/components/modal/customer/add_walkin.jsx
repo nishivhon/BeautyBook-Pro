@@ -148,6 +148,18 @@ const STEPS = [
   { number: 4, label: "Receipt" },
 ];
 
+const DARK_MODAL_VARS = {
+  "--bg-card": "#070605",
+  "--bg-dark": "#070605",
+  "--color-white": "#f5f1eb",
+  "--color-light": "#f5f1eb",
+  "--color-tan": "#988f81",
+  "--color-amber": "#dd901d",
+  "--color-amber-dark": "#b97918",
+  "--color-black": "#1a0f00",
+  colorScheme: "dark",
+};
+
 /* ── Header ── */
 const ModalHeader = ({ onBack }) => (
   <header className="appt-header">
@@ -305,8 +317,8 @@ const ServiceSelectionModal = ({ isOpen, categoryId, categoryLabel, services, se
   return (
     <>
       <div 
-        className="appt-overlay" 
-        style={{ zIndex: 1100 }}
+        className="appt-overlay walkin-force-dark" 
+        style={{ zIndex: 1100, ...DARK_MODAL_VARS }}
         onClick={(e) => {
           // Only trigger if clicking directly on the overlay, not on child elements
           if (e.target === e.currentTarget) {
@@ -946,7 +958,8 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
   return (
     <>
       <div 
-        className="appt-overlay"
+        className="appt-overlay walkin-force-dark"
+        style={DARK_MODAL_VARS}
         onClick={(e) => {
           // Only trigger if clicking directly on the overlay, not on child elements
           if (e.target === e.currentTarget) {
