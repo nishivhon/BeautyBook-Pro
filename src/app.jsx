@@ -11,7 +11,7 @@ import { AdminDashboardLiveStatus } from './pages/admin/admin_live_status_dashbo
 import { AdminDashboardStaffStatus } from './pages/admin/admin_staff_status_dashboard'
 import SuperAdminDashboard from './pages/superadmin/super_admin_dashboard'
 import SuperAdminUsersDashboard from './pages/superadmin/super_admin_users_dashboard'
-import SuperAdminDatabaseDashboard from './pages/superadmin/super_admin_database_dashboard'
+import SuperAdminClientsDashboard from './pages/superadmin/super_admin_clients_dashboard'
 import SuperAdminServicesDashboard from './pages/superadmin/super_admin_services_dashboard'
 import SuperAdminLogsDashboard from './pages/superadmin/super_admin_logs_dashboard'
 import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security_dashboard'
@@ -121,10 +121,10 @@ function App() {
           }
         />
         <Route
-          path="/superadmin/database"
+          path="/superadmin/clients"
           element={
             <ProtectedRoute requiredRole="super admin">
-              <SuperAdminDatabaseDashboard />
+              <SuperAdminClientsDashboard />
             </ProtectedRoute>
           }
         />
