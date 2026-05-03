@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import CustomerHistoryModal from "../../components/modal/admin/customer_history";
 import CalendarAppointmentsModal from "../../components/modal/admin/calendar_appointments";
 import { StatusUpdateModal } from "../../components/modal/admin/status_update";
 import { ManageServiceModal } from "../../components/modal/admin/manage_service";
+import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -294,6 +295,33 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
     return () => clearTimeout(t);
   }, []);
 
+  const headerNotifications = useMemo(() => {
+    const statusFeed = STAFF.slice(0, 3).map((member, index) => ({
+      id: `staff-${member.name || index}`,
+      tone: member.statusClass === "staff-status-green" ? "green" : member.statusClass === "staff-status-blue" ? "blue" : member.statusClass === "staff-status-amber" ? "amber" : "tan",
+      category: "Staff status",
+      title: `${member.name || "Staff member"} is ${member.status || "Available"}`,
+      description: member.subStatus || "Status updated.",
+      time: member.details?.timeOfClockIn || "Today",
+      unread: index === 0,
+    }));
+
+    const serviceFeed = STAFF
+      .filter((member) => member.details?.availableForWalkIn)
+      .slice(0, 1)
+      .map((member, index) => ({
+        id: `staff-walkin-${member.name || index}`,
+        tone: "amber",
+        category: "Walk-in ready",
+        title: `${member.name || "Staff member"} can accept walk-ins`,
+        description: "This stylist is currently available for a walk-in customer.",
+        time: "Now",
+        unread: true,
+      }));
+
+    return [...statusFeed, ...serviceFeed].slice(0, 5);
+  }, []);
+
   const handleNavClick = (itemId) => {
     setActiveNav(itemId);
     if (itemId === "home") {
@@ -433,16 +461,7 @@ const PageTitle = () => {
         <h1 className="dash-page-title">Staff Status</h1>
         <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
       </div>
-      <div className="dash-page-actions">
-        <button className="dash-action-btn">
-          <BellIcon size={14} color="#fff" />
-          Notifications
-        </button>
-        <button className="dash-action-btn">
-          <SettingsIcon size={14} color="#fff" />
-          Settings
-        </button>
-      </div>
+      <AdminHeaderActions />
     </div>
   );
 };
@@ -979,6 +998,33 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     // Example: await updateStaffServices(staffName, categoryServicePairs);
   };
 
+  const headerNotifications = useMemo(() => {
+    const statusFeed = staff.slice(0, 3).map((member, index) => ({
+      id: `staff-${member.name || index}`,
+      tone: member.statusClass === "staff-status-green" ? "green" : member.statusClass === "staff-status-blue" ? "blue" : member.statusClass === "staff-status-amber" ? "amber" : "tan",
+      category: "Staff status",
+      title: `${member.name || "Staff member"} is ${member.status || "Available"}`,
+      description: member.subStatus || "Status updated.",
+      time: member.details?.timeOfClockIn || "Today",
+      unread: index === 0,
+    }));
+
+    const serviceFeed = staff
+      .filter((member) => member.details?.availableForWalkIn)
+      .slice(0, 1)
+      .map((member, index) => ({
+        id: `staff-walkin-${member.name || index}`,
+        tone: "amber",
+        category: "Walk-in ready",
+        title: `${member.name || "Staff member"} can accept walk-ins`,
+        description: "This stylist is currently available for a walk-in customer.",
+        time: "Now",
+        unread: true,
+      }));
+
+    return [...statusFeed, ...serviceFeed].slice(0, 5);
+  }, [staff]);
+
   return (
     <div className="super-admin-container">
       {/* Sidebar */}
@@ -998,16 +1044,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
             <h1 className="dash-page-title">Staff Status</h1>
             <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
           </div>
-          <div className="dash-page-actions">
-            <button className="dash-action-btn">
-              <BellIcon size={14} color="#fff" />
-              Notifications
-            </button>
-            <button className="dash-action-btn">
-              <SettingsIcon size={14} color="#fff" />
-              Settings
-            </button>
-          </div>
+          <AdminHeaderActions notifications={headerNotifications} />
         </header>
 
         <main className="dashboard-main">

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 import { AddWalkInModal } from "../../components/modal/admin/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -318,16 +319,7 @@ const PageTitle = () => {
         <h1 className="dash-page-title">Admin Dashboard</h1>
         <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
       </div>
-      <div className="dash-page-actions">
-        <button className="dash-action-btn">
-          <BellIcon size={14} color="#fff" />
-          Notifications
-        </button>
-        <button className="dash-action-btn">
-          <SettingsIcon size={14} color="#fff" />
-          Settings
-        </button>
-      </div>
+      <AdminHeaderActions />
     </div>
   );
 };
@@ -1001,6 +993,40 @@ export const AdminDashboard = ({ date }) => {
     ]);
   }, [currentAppointments, pendingAppointments, doneAppointments]);
 
+  const headerNotifications = useMemo(() => {
+    const recentPending = pendingAppointments.slice(0, 2).map((appointment, index) => ({
+      id: `pending-${appointment.id || index}`,
+      tone: "amber",
+      category: "New booking",
+      title: `${appointment.name || "Customer"} booked ${appointment.service || "a service"}`,
+      description: `${appointment.time || "TBA"} • ${appointment.staff || "Any available stylist"}`,
+      time: "Just now",
+      unread: true,
+    }));
+
+    const recentCurrent = currentAppointments.slice(0, 2).map((appointment, index) => ({
+      id: `current-${appointment.id || index}`,
+      tone: "blue",
+      category: "Live queue",
+      title: `${appointment.name || "Customer"} is now being served`,
+      description: `${appointment.service || "Service"} • ${appointment.staff || "Assigned staff"}`,
+      time: appointment.time || "Today",
+      unread: index === 0,
+    }));
+
+    const recentDone = doneAppointments.slice(0, 1).map((appointment, index) => ({
+      id: `done-${appointment.id || index}`,
+      tone: "green",
+      category: "Completed",
+      title: `${appointment.name || "Customer"} appointment completed`,
+      description: `${appointment.service || "Service"} finished successfully.`,
+      time: "Today",
+      unread: false,
+    }));
+
+    return [...recentPending, ...recentCurrent, ...recentDone].slice(0, 5);
+  }, [currentAppointments, pendingAppointments, doneAppointments]);
+
   const handleLogout = () => {
     // Clear operator session
     logoutOperator();
@@ -1038,16 +1064,7 @@ export const AdminDashboard = ({ date }) => {
             <h1 className="dash-page-title">Admin Dashboard</h1>
             <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
           </div>
-          <div className="dash-page-actions">
-            <button className="dash-action-btn">
-              <BellIcon size={14} color="#fff" />
-              Notifications
-            </button>
-            <button className="dash-action-btn">
-              <SettingsIcon size={14} color="#fff" />
-              Settings
-            </button>
-          </div>
+          <AdminHeaderActions notifications={headerNotifications} />
         </header>
 
         {/* Main Content Area */}

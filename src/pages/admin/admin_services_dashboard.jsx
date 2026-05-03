@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { EditServiceModal } from "../../components/modal/admin/edit_service";
 import { CreatePromoModal } from "../../components/modal/admin/create_promo";
 import { CreateDiscountModal } from "../../components/modal/admin/create_discount";
+import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -226,6 +227,9 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
     return () => clearTimeout(t);
   }, []);
 
+  
+
+  
   const handleNavClick = (itemId) => {
     setActiveNav(itemId);
     if (itemId === "home") {
@@ -367,16 +371,7 @@ const PageTitle = () => {
         <h1 className="dash-page-title">Services Management</h1>
         <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
       </div>
-      <div className="dash-page-actions">
-        <button className="dash-action-btn">
-          <BellIcon size={14} color="#fff" />
-          Notifications
-        </button>
-        <button className="dash-action-btn">
-          <SettingsIcon size={14} color="#fff" />
-          Settings
-        </button>
-      </div>
+      <AdminHeaderActions />
     </div>
   );
 };
@@ -883,6 +878,41 @@ export const AdminDashboardServices = ({ date }) => {
     setIsCreatingDiscount(false);
   };
 
+  // Generate header notifications from appointment and service data
+  const headerNotifications = useMemo(() => {
+    const pendingFeed = appointmentData.pending.slice(0, 2).map((appointment, index) => ({
+      id: `services-pending-${appointment.id || index}`,
+      tone: "amber",
+      category: "New booking",
+      title: `${appointment.name || "Customer"} booked ${appointment.service || "a service"}`,
+      description: `${appointment.time || "TBA"} • ${appointment.staff || "Any available stylist"}`,
+      time: "Today",
+      unread: index === 0,
+    }));
+
+    const completedFeed = appointmentData.done.slice(0, 1).map((appointment, index) => ({
+      id: `services-done-${appointment.id || index}`,
+      tone: "green",
+      category: "Completed",
+      title: `${appointment.name || "Customer"} appointment finished`,
+      description: `${appointment.service || "Service"} marked done successfully.`,
+      time: "Today",
+      unread: false,
+    }));
+
+    const serviceFeed = services.slice(0, 1).map((service, index) => ({
+      id: `services-item-${service.id || index}`,
+      tone: service.available ? "green" : "red",
+      category: "Service catalog",
+      title: `${service.name || "Service"} is ${service.available ? "available" : "hidden"}`,
+      description: service.meta || service.description || "Service record updated.",
+      time: "Now",
+      unread: false,
+    }));
+
+    return [...pendingFeed, ...completedFeed, ...serviceFeed].slice(0, 5);
+  }, [appointmentData, services]);
+
   return (
     <div className="super-admin-container">
       {/* Sidebar */}
@@ -902,16 +932,7 @@ export const AdminDashboardServices = ({ date }) => {
             <h1 className="dash-page-title">Services Management</h1>
             <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
           </div>
-          <div className="dash-page-actions">
-            <button className="dash-action-btn">
-              <BellIcon size={14} color="#fff" />
-              Notifications
-            </button>
-            <button className="dash-action-btn">
-              <SettingsIcon size={14} color="#fff" />
-              Settings
-            </button>
-          </div>
+          <AdminHeaderActions notifications={headerNotifications} />
         </header>
 
         <main className="dashboard-main">

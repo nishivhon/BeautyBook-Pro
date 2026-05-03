@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import { AddWalkInModal } from "../../components/modal/admin/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
@@ -231,6 +232,36 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
     return () => clearTimeout(t);
   }, []);
 
+  const headerNotifications = [
+    {
+      id: "live-1",
+      tone: "green",
+      category: "Queue update",
+      title: "A customer just moved into in-progress",
+      description: "The live queue refreshed after the latest status change.",
+      time: "Just now",
+      unread: true,
+    },
+    {
+      id: "live-2",
+      tone: "amber",
+      category: "Upcoming booking",
+      title: "New appointment ready for serving",
+      description: "A pending booking is available in the next queue slot.",
+      time: "Today",
+      unread: true,
+    },
+    {
+      id: "live-3",
+      tone: "blue",
+      category: "Staff status",
+      title: "Staff schedule is up to date",
+      description: "Current stylist progress and timing information are synced.",
+      time: "Today",
+      unread: false,
+    },
+  ];
+
   const handleNavClick = (itemId) => {
     setActiveNav(itemId);
     if (itemId === "home") {
@@ -321,16 +352,7 @@ const PageTitle = () => {
         <h1 className="dash-page-title">Live Status</h1>
         <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
       </div>
-      <div className="dash-page-actions">
-        <button className="dash-action-btn">
-          <BellIcon size={14} color="#fff" />
-          Notifications
-        </button>
-        <button className="dash-action-btn">
-          <SettingsIcon size={14} color="#fff" />
-          Settings
-        </button>
-      </div>
+      <AdminHeaderActions />
     </div>
   );
 };
@@ -501,11 +523,9 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
 
 /* ── Live Queue panel ── */
-const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
+const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAppointments, setPendingAppointments, onOpenWalkInModal, onProceedClick }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
-  const [currentAppointments, setCurrentAppointments] = useState([]);
-  const [pendingAppointments, setPendingAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -900,6 +920,8 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   const [activeNav, setActiveNav] = useState("live-status");
   const [mounted, setMounted] = useState(false);
   const [scheduleRefreshTrigger, setScheduleRefreshTrigger] = useState(0);
+  const [currentAppointments, setCurrentAppointments] = useState([]);
+  const [pendingAppointments, setPendingAppointments] = useState([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -970,6 +992,30 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     return () => clearTimeout(t);
   }, []);
 
+  const headerNotifications = useMemo(() => {
+    const currentFeed = currentAppointments.slice(0, 2).map((apt, index) => ({
+      id: `current-${apt.id || index}`,
+      tone: "blue",
+      category: "Current appointment",
+      title: `${apt.clientName || "Client"} - ${apt.serviceName || "Service"}`,
+      description: apt.staffName ? `With ${apt.staffName}` : "Appointment in progress",
+      time: apt.appointmentTime || "Now",
+      unread: index === 0,
+    }));
+
+    const pendingFeed = pendingAppointments.slice(0, 3).map((apt, index) => ({
+      id: `pending-${apt.id || index}`,
+      tone: "amber",
+      category: "Pending appointment",
+      title: `${apt.clientName || "Client"} - ${apt.serviceName || "Service"}`,
+      description: apt.appointmentTime ? `Scheduled for ${apt.appointmentTime}` : "Pending approval",
+      time: apt.createdAt || "Today",
+      unread: index === 0,
+    }));
+
+    return [...currentFeed, ...pendingFeed].slice(0, 5);
+  }, [currentAppointments, pendingAppointments]);
+
   return (
     <div className="super-admin-container">
       {/* Sidebar */}
@@ -989,16 +1035,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
             <h1 className="dash-page-title">Live Status</h1>
             <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
           </div>
-          <div className="dash-page-actions">
-            <button className="dash-action-btn">
-              <BellIcon size={14} color="#fff" />
-              Notifications
-            </button>
-            <button className="dash-action-btn">
-              <SettingsIcon size={14} color="#fff" />
-              Settings
-            </button>
-          </div>
+          <AdminHeaderActions notifications={headerNotifications} />
         </header>
 
         <main className="dashboard-main">
@@ -1010,6 +1047,10 @@ export const AdminDashboardLiveStatus = ({ date }) => {
         <div className="live-page-grid">
           {/* Left — Live Queue */}
           <LiveQueuePanel 
+            currentAppointments={currentAppointments}
+            setCurrentAppointments={setCurrentAppointments}
+            pendingAppointments={pendingAppointments}
+            setPendingAppointments={setPendingAppointments}
             onOpenWalkInModal={() => setShowWalkInModal(true)}
             onProceedClick={(id, name, service, staff) => {
               setProceedConfirmId(id);
