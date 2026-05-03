@@ -15,6 +15,12 @@ export const ConfirmationDialog = ({
     setIsVisible(isOpen);
   }, [isOpen]);
 
+  // Debug logging for visibility changes
+  // eslint-disable-next-line no-console
+  useEffect(() => {
+    console.log('[ConfirmationDialog] isOpen prop:', isOpen, 'internal isVisible:', isVisible, 'title:', title);
+  }, [isOpen, isVisible, title]);
+
   if (!isVisible) return null;
 
   const handleConfirm = () => {
@@ -28,16 +34,26 @@ export const ConfirmationDialog = ({
   };
 
   return (
-    <div style={{
-      position: "fixed",
-      inset: 0,
-      zIndex: 1200,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      backdropFilter: "blur(2px)",
-      backgroundColor: "rgba(0,0,0,0.5)",
-    }}>
+    <div
+      onClick={(e) => {
+        // clicking the overlay should behave like cancel (keep booking)
+        if (e.target === e.currentTarget) {
+          // eslint-disable-next-line no-console
+          console.log('[ConfirmationDialog] overlay clicked - invoking onCancel');
+          handleCancel();
+        }
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 10000001,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backdropFilter: "blur(2px)",
+        backgroundColor: "rgba(0,0,0,0.5)",
+        pointerEvents: 'auto'
+      }}>
       <div style={{
         background: "white",
         borderRadius: "16px",

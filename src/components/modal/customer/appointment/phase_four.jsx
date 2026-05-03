@@ -1,8 +1,7 @@
 /* ══════════════════════════════════════════
    IMPORTS
 ══════════════════════════════════════════ */
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { ConfirmationDialog } from "../confirmation_dialog";
 import { Toast } from "../../../toast";
 
@@ -166,12 +165,25 @@ const Divider = () => (
    MAIN COMPONENT — Phase 4
 ══════════════════════════════════════════ */
 export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = BOOKING }) => {
-  const navigate = useNavigate();
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showReceiptReminder, setShowReceiptReminder] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showConfirmationToast, setShowConfirmationToast] = useState(false);
+
+  // Auto-hide toast after 2 seconds
+  useEffect(() => {
+    if (showConfirmationToast) {
+      const timer = setTimeout(() => {
+        setShowConfirmationToast(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showConfirmationToast]);
+
+  // Debug render logging
+  // eslint-disable-next-line no-console
+  console.log('[Phase4] render - showConfirmationToast:', showConfirmationToast, 'showReceiptReminder:', showReceiptReminder, 'isConfirmed:', isConfirmed);
   // Safety check: if booking is missing, return null
   if (!booking) {
     return <div style={{ padding: "20px", textAlign: "center", color: "#988f81" }}>Loading booking details...</div>;
@@ -199,7 +211,19 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
   /* Handle final confirmation */
   const handleConfirmBooking = async () => {
     try {
-      console.log('[Phase4] Confirming booking...');
+      console.log('[Phase4] Confirm button clicked!');
+      console.log('[Phase4] Current state - isConfirmed:', isConfirmed, 'showConfirmationToast:', showConfirmationToast);
+      
+      // Show confirmation toast immediately
+      console.log('[Phase4] Setting toast visible...');
+      setShowConfirmationToast(true);
+      setIsConfirmed(true);
+      console.log('[Phase4] Toast and confirmed state set - about to log states');
+      
+      // Log state updates
+      setTimeout(() => {
+        console.log('[Phase4] After state update - isConfirmed:', isConfirmed, 'showConfirmationToast:', showConfirmationToast);
+      }, 0);
       
       // Extract service(s) - get first one or join all
       const serviceList = Array.isArray(booking.services) && booking.services.length > 0
@@ -234,8 +258,6 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           service: !!bookingData.service,
           staff_assigned: !!bookingData.staff_assigned
         });
-        setShowConfirmationToast(false);
-        setShowSuccessToast(false);
         return;
       }
       
@@ -254,8 +276,6 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
       }
       
       console.log('[Phase4] Booking confirmed:', result);
-      setIsConfirmed(true);
-      setShowConfirmationToast(true);
       
     } catch (error) {
       console.error('[Phase4] Error confirming booking:', error);
@@ -264,8 +284,11 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
   /* Generate printable receipt */
   const handleDownloadReceipt = () => {
+    console.log('[Phase4] Download Receipt clicked');
     // Show receipt generated - now remind user to save it
+    console.log('[Phase4] Setting showReceiptReminder to true');
     setShowReceiptReminder(true);
+    console.log('[Phase4] Generating receipt...');
     generateReceipt();
   };
 
@@ -487,26 +510,32 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
   return (
     <>
       {/* ── Toast Notifications (Top Fixed Position) ── */}
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 99999, pointerEvents: "none" }}>
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 999999, pointerEvents: "auto", display: "flex", justifyContent: "center", padding: "20px" }}>
         <Toast 
           message="Booking Confirmed!" 
           type="success" 
           duration={2000} 
           isVisible={showConfirmationToast} 
         />
-        <Toast 
-          message="Booking Successful!" 
-          type="success" 
-          duration={2000} 
-          isVisible={showSuccessToast} 
-        />
       </div>
 
       <div 
         className="appt-backdrop"
         onClick={(e) => {
+          console.log('[Phase4] Backdrop click detected', { 
+            target: e.target.className, 
+            currentTarget: e.currentTarget.className,
+            isConfirmed 
+          });
+          // Only trigger if clicking directly on backdrop, not on children
           if (e.target === e.currentTarget) {
-            setShowBackdropConfirm(true);
+            if (!isConfirmed) {
+              console.log('[Phase4] Conditions met - showing cancel dialog');
+              setShowBackdropConfirm(true);
+            } else if (isConfirmed && !showReceiptReminder) {
+              console.log('[Phase4] Booking is confirmed and user clicked outside - showing receipt reminder');
+              setShowReceiptReminder(true);
+            }
           }
         }}
         style={{
@@ -518,14 +547,17 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          zIndex: 1000,
+          cursor: !isConfirmed ? "pointer" : "default",
+          backgroundColor: "rgba(0, 0, 0, 0.7)"
         }}
       >
-        <div className="appt-root">
+        <div className="appt-root" onClick={(e) => e.stopPropagation()}>
           <BookingHeader onBack={onBack} isConfirmed={isConfirmed} />
           <ProgressIndicator currentStep={4} />
 
           {/* ── Scrollable body ── */}
-          <div className="appt-body">
+          <div className="appt-body" style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 40px" }}>
             <div className="appt-section-heading">
               <p className="appt-section-title">Confirm Booking</p>
               <p className="appt-section-sub">Review your appointment details</p>
@@ -533,166 +565,191 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
             {/* ── Confirmation summary card ── */}
             <div className="confirm-card">
-
-          {/* Service Summary Section - matches wireframe */}
-          {services.length > 0 && (
-            <>
-              <div className="confirm-service-row">
-                <div className="confirm-service-left">
-                  <div className="confirm-svc-icon">
-                    <ScissorsIcon />
-                  </div>
-                  <div className="confirm-svc-text">
-                    <span className="confirm-svc-name">{mainService.title || mainService.name || "Service"}</span>
-                    <span className="confirm-svc-duration">{totalDuration} mins</span>
-                  </div>
-                </div>
-                <div className="confirm-svc-meta">
-                  <span className="confirm-svc-datetime">{bookingData?.dateTime || "Not Selected"}</span>
-                  <span className="confirm-svc-price">₱{totalPrice.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <Divider />
-            </>
-          )}
-
-          {/* Services List Section */}
-          {services.length > 0 && (
-            <>
-              <div style={{ marginBottom: "16px", marginTop: "12px" }}>
-                <div style={{ fontSize: "0.72rem", fontWeight: "600", color: "var(--color-tan)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: "12px" }}>
-                  Services Selected
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {services.map((service, idx) => (
-                    <div key={idx} style={{ fontSize: "0.85rem", color: "var(--color-white)", paddingLeft: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span>• {service.title || service.name || "Service"}</span>
-                      <span style={{ color: "var(--color-tan)" }}>{service.price || "N/A"}</span>
+              {/* Service Summary Section - matches wireframe */}
+              {services.length > 0 && (
+                <>
+                  <div className="confirm-service-row">
+                    <div className="confirm-service-left">
+                      <div className="confirm-svc-icon">
+                        <ScissorsIcon />
+                      </div>
+                      <div className="confirm-svc-text">
+                        <span className="confirm-svc-name">{mainService.title || mainService.name || "Service"}</span>
+                        <span className="confirm-svc-duration">{totalDuration} mins</span>
+                      </div>
                     </div>
-                  ))}
+                    <div className="confirm-svc-meta">
+                      <span className="confirm-svc-datetime">{bookingData?.dateTime || "Not Selected"}</span>
+                      <span className="confirm-svc-price">₱{totalPrice.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <Divider />
+                </>
+              )}
+
+              {/* Services List Section */}
+              {services.length > 0 && (
+                <>
+                  <div style={{ marginBottom: "16px", marginTop: "12px" }}>
+                    <div style={{ fontSize: "0.72rem", fontWeight: "600", color: "var(--color-tan)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: "12px" }}>
+                      Services Selected
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {services.map((service, idx) => (
+                        <div key={idx} style={{ fontSize: "0.85rem", color: "var(--color-white)", paddingLeft: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span>• {service.title || service.name || "Service"}</span>
+                          <span style={{ color: "var(--color-tan)" }}>{service.price || "N/A"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <Divider />
+                </>
+              )}
+
+              {/* Contact details */}
+              <div className="confirm-details">
+                <div className="confirm-detail-row">
+                  <PersonIcon />
+                  <div className="confirm-detail-text">
+                    <span className="confirm-detail-label">Name</span>
+                    <span className="confirm-detail-value">{bookingData?.name || "N/A"}</span>
+                  </div>
+                </div>
+                {bookingData?.verificationMethod === 'email' && (
+                  <div className="confirm-detail-row">
+                    <EnvelopeIcon />
+                    <div className="confirm-detail-text">
+                      <span className="confirm-detail-label">Email</span>
+                      <span className="confirm-detail-value">{bookingData?.email || "N/A"}</span>
+                    </div>
+                  </div>
+                )}
+                {bookingData?.verificationMethod === 'phone' && (
+                  <div className="confirm-detail-row">
+                    <PhoneIcon />
+                    <div className="confirm-detail-text">
+                      <span className="confirm-detail-label">Phone No.</span>
+                      <span className="confirm-detail-value">{bookingData?.phone || "N/A"}</span>
+                    </div>
+                  </div>
+                )}
+                <div className="confirm-detail-row">
+                  <StylistIcon />
+                  <div className="confirm-detail-text">
+                    <span className="confirm-detail-label">Stylist</span>
+                    <span className="confirm-detail-value">{bookingData?.stylist || "N/A"}</span>
+                  </div>
                 </div>
               </div>
+
               <Divider />
-            </>
-          )}
 
-          {/* Contact details */}
-          <div className="confirm-details">
-            <div className="confirm-detail-row">
-              <PersonIcon />
-              <div className="confirm-detail-text">
-                <span className="confirm-detail-label">Name</span>
-                <span className="confirm-detail-value">{bookingData?.name || "N/A"}</span>
-              </div>
-            </div>
-            {bookingData?.verificationMethod === 'email' && (
-              <div className="confirm-detail-row">
-                <EnvelopeIcon />
-                <div className="confirm-detail-text">
-                  <span className="confirm-detail-label">Email</span>
-                  <span className="confirm-detail-value">{bookingData?.email || "N/A"}</span>
+              {/* Bottom: ref no. + reminder */}
+              <div className="confirm-bottom-row">
+                {/* reference number pill */}
+                <div className="confirm-ref-pill">
+                  Ref. No.: {bookingData?.refNo || "N/A"}
                 </div>
-              </div>
-            )}
-            {bookingData?.verificationMethod === 'phone' && (
-              <div className="confirm-detail-row">
-                <PhoneIcon />
-                <div className="confirm-detail-text">
-                  <span className="confirm-detail-label">Phone No.</span>
-                  <span className="confirm-detail-value">{bookingData?.phone || "N/A"}</span>
+                {/* reminder box */}
+                <div className="confirm-reminder-box">
+                  <p className="confirm-reminder-text">
+                    Reminder: You'll receive notifications<br/>
+                    15 minutes before your turn
+                  </p>
                 </div>
-              </div>
-            )}
-            <div className="confirm-detail-row">
-              <StylistIcon />
-              <div className="confirm-detail-text">
-                <span className="confirm-detail-label">Stylist</span>
-                <span className="confirm-detail-value">{bookingData?.stylist || "N/A"}</span>
               </div>
             </div>
           </div>
 
-          <Divider />
-
-          {/* Bottom: ref no. + reminder */}
-          <div className="confirm-bottom-row">
-            {/* reference number pill */}
-            <div className="confirm-ref-pill">
-              Ref. No.: {bookingData?.refNo || "N/A"}
-            </div>
-            {/* reminder box */}
-            <div className="confirm-reminder-box">
-              <p className="confirm-reminder-text">
-                Reminder: You'll receive notifications<br/>
-                15 minutes before your turn
-              </p>
-            </div>
+          {/* ── Footer CTA (Inside Modal) ── */}
+          <div 
+            className="appt-footer" 
+            style={{ 
+              display: "flex", 
+              flexDirection: "row", 
+              gap: "12px",
+              padding: "16px 20px",
+              background: "rgba(0,0,0,0.5)",
+              borderTop: "1px solid rgba(152,143,129,0.2)",
+              flexShrink: 0
+            }}
+          >
+            {!isConfirmed && (
+              <button 
+                className="appt-continue-btn" 
+                onClick={handleConfirmBooking} 
+                style={{flex: 1, cursor: "pointer"}}
+              >
+                Confirm
+              </button>
+            )}
+            {isConfirmed && (
+              <button 
+                className="appt-download-receipt-btn"
+                onClick={(e) => {
+                  console.log('[Phase4] Download Receipt button clicked', e);
+                  handleDownloadReceipt();
+                }}
+                style={{flex: 1, cursor: "pointer", padding: "12px", fontSize: "16px", fontWeight: "600"}}
+              >
+                <DownloadIcon />
+                Download Receipt
+              </button>
+            )}
           </div>
-
         </div>
       </div>
 
-      {/* ── Footer CTA ── */}
-      <div className="appt-footer" style={{ display: "flex", flexDirection: "row", gap: "12px" }}>
-        {!isConfirmed && (
-          <button className="appt-continue-btn" onClick={handleConfirmBooking} style={{flex: 1}}>
-            Confirm
-          </button>
-        )}
-        {isConfirmed && (
-          <button 
-            className="appt-download-receipt-btn"
-            onClick={handleDownloadReceipt}
-            style={{flex: 1}}
-          >
-            <DownloadIcon />
-            Download Receipt
-          </button>
-        )}
-      </div>
-    </div>
-    </div>
-
-      {/* Backdrop Click Confirmation Dialog */}
-      <ConfirmationDialog
-        isOpen={showBackdropConfirm}
-        title="Cancel Booking?"
-        message="Are you sure you want to cancel? Your booking progress will be lost."
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
-        onConfirm={() => {
-          setShowBackdropConfirm(false);
-          onCancel?.();
-        }}
-        onCancel={() => setShowBackdropConfirm(false)}
-      />
-
-      {/* Receipt Reminder Confirmation Dialog */}
-      <ConfirmationDialog
-        isOpen={showReceiptReminder}
-        title="Save Your Booking Info"
-        message={`Have you saved your receipt and reference number?\n\nReference No.: ${bookingData?.refNo || "N/A"}\n\nYou'll need this for check-in.`}
-        confirmText="Yes, Saved"
-        cancelText="Download Again"
-        onConfirm={() => {
-          setShowReceiptReminder(false);
-          setShowSuccessToast(true);
-          // Close modal and redirect to landpage after a short delay
-          setTimeout(() => {
+      {/* Backdrop Click Confirmation Dialog - Only show if booking not confirmed */}
+      {!isConfirmed && (
+        <ConfirmationDialog
+          isOpen={showBackdropConfirm}
+          title="Cancel Booking?"
+          message="Are you sure you want to cancel? Your booking progress will be lost."
+          confirmText="Yes, Cancel Booking"
+          cancelText="Keep Booking"
+          onConfirm={() => {
+            console.log('[Phase4] Booking cancelled confirmed');
+            setShowBackdropConfirm(false);
             onCancel?.();
-            navigate("/");
-          }, 2000);
-        }}
-        onCancel={() => {
-          setShowReceiptReminder(false);
-          generateReceipt();
-          // Reopen the dialog after a brief delay so user can download again
-          setTimeout(() => {
-            setShowReceiptReminder(true);
-          }, 100);
-        }}
-      />
+          }}
+          onCancel={() => {
+            console.log('[Phase4] Keep booking clicked');
+            setShowBackdropConfirm(false);
+          }}
+        />
+      )}
+
+      {/* Receipt Reminder Confirmation Dialog - Only show if booking was confirmed */}
+      {isConfirmed && (
+        <ConfirmationDialog
+          isOpen={showReceiptReminder}
+          title="Save Your Booking Info"
+          message={`Have you saved your receipt and reference number?\n\nReference No.: ${bookingData?.refNo || "N/A"}\n\nYou'll need this for check-in.`}
+          confirmText="Yes, Saved"
+          cancelText="Download Again"
+          onConfirm={() => {
+            console.log('[Phase4] Receipt saved confirmed');
+            setShowReceiptReminder(false);
+            setShowSuccessToast(true);
+            // Close the modal after a short delay and stay on the current dashboard page
+            setTimeout(() => {
+              onCancel?.();
+            }, 2000);
+          }}
+          onCancel={() => {
+            console.log('[Phase4] Download again clicked');
+            setShowReceiptReminder(false);
+            generateReceipt();
+            // Reopen the dialog after a brief delay so user can download again
+            setTimeout(() => {
+              setShowReceiptReminder(true);
+            }, 100);
+          }}
+        />
+      )}
     </>
   );
 };

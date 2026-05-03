@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Otp } from "./otp";
+import { Toast } from "../../toast";
 
 const EyeOpenIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -563,22 +564,12 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
       </div>
 
       {/* Toast notification */}
-      {showToast && (
-        <div style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          backgroundColor: '#10b981',
-          color: 'white',
-          padding: '14px 20px',
-          borderRadius: '8px',
-          fontSize: '0.9rem',
-          zIndex: 2000,
-          animation: 'slideInUp 0.3s ease-out',
-        }}>
-          {toastMessage}
-        </div>
-      )}
+      <Toast 
+        message={toastMessage} 
+        type="success" 
+        duration={2800} 
+        isVisible={showToast} 
+      />
     </>
   );
 };

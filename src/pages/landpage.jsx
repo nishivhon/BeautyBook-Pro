@@ -235,35 +235,39 @@ const NavBar = ({ onBookAppointment }) => {
   );
 };
 
-const HeroSection = ({ onBookAppointment }) => (
-  <section id="home" className="hero-section">
-    {/* Badge */}
-    <div className="hero-badge">
-      <span>
-        DIGITAL APPOINTMENT SYSTEM
-      </span>
-    </div>
+const HeroSection = ({ onBookAppointment }) => {
+  const navigate = useNavigate();
+  
+  return (
+    <section id="home" className="hero-section">
+      {/* Badge */}
+      <div className="hero-badge">
+        <span>
+          DIGITAL APPOINTMENT SYSTEM
+        </span>
+      </div>
 
-    {/* Headline */}
-    <h1 className="hero-title">
-      Skip The&nbsp;&nbsp;Wait,{" "}
-      <span className="accent">Book Your Style</span>
-    </h1>
+      {/* Headline */}
+      <h1 className="hero-title">
+        Skip The&nbsp;&nbsp;Wait,{" "}
+        <span className="accent">Book Your Style</span>
+      </h1>
 
-    {/* Sub-copy */}
-    <p className="hero-text">
-      A digital appointment and customer management system for barbershops,
-      hair salons, and spas.<br/>
-      Book appointments online, reduce wait times, and experience seamless,
-      personalized service—instantly.
-    </p>
+      {/* Sub-copy */}
+      <p className="hero-text">
+        A digital appointment and customer management system for barbershops,
+        hair salons, and spas.<br/>
+        Book appointments online, reduce wait times, and experience seamless,
+        personalized service—instantly.
+      </p>
 
-    {/* CTA */}
-    <button onClick={() => navigate("/operators/login")} className="btn-large btn-hero">
-      Get Started - Login
-    </button>
-  </section>
-);
+      {/* CTA */}
+      <button onClick={() => navigate("/operators/login")} className="btn-large btn-hero">
+        Get Started - Login
+      </button>
+    </section>
+  );
+};
 
 const HowItWorksSection = () => {
   const steps = [

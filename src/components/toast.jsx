@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export const Toast = ({ message = "", type = "info", duration = 5000, isVisible = false }) => {
   const [show, setShow] = useState(isVisible);
@@ -10,6 +11,10 @@ export const Toast = ({ message = "", type = "info", duration = 5000, isVisible 
       return () => clearTimeout(timer);
     }
   }, [isVisible, duration]);
+
+  // Debug log to ensure toast mounting/visibility
+  // eslint-disable-next-line no-console
+  console.log('[Toast] render - isVisible:', isVisible, 'internal show:', show, 'message:', message);
 
   if (!show) return null;
 
@@ -34,24 +39,34 @@ export const Toast = ({ message = "", type = "info", duration = 5000, isVisible 
 
   const scheme = colorSchemes[type] || colorSchemes.info;
 
-  return (
+  const toastEl = (
     <div
-      className="fixed top-20 left-1/2 z-9999 max-w-lg"
+      aria-live="polite"
+      role="status"
       style={{
-        transform: "translateX(-50%)",
-        animation: "slideDownFade 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)"
+        position: 'fixed',
+        top: 20,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 10000000,
+        pointerEvents: 'auto',
+        boxSizing: 'border-box',
+        animation: 'slideDownFade 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
       }}
     >
       <div
-        className="flex items-center gap-4 px-7 py-5 rounded-2xl shadow-2xl backdrop-blur-md"
+        className="inline-flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-md"
         style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '12px',
           background: scheme.bg,
           border: `2px solid ${scheme.border}`,
           boxShadow: "0 12px 40px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
-          borderRadius: "20px"
+          borderRadius: "20px",
+          maxWidth: 'min(90vw, 720px)'
         }}
       >
-        {/* Icon */}
         <div
           className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full font-bold text-white text-xl"
           style={{
@@ -63,16 +78,15 @@ export const Toast = ({ message = "", type = "info", duration = 5000, isVisible 
           {scheme.icon}
         </div>
 
-        {/* Message */}
-        <span className="text-white font-semibold text-base leading-6 font-inter">
+        <div style={{ display: 'inline-block', whiteSpace: 'pre-wrap', color: 'white', fontWeight: 600 }}>
           {message}
-        </span>
+        </div>
 
-        {/* Close button (optional) */}
         <button
-          onClick={() => {}}
+          onClick={() => setShow(false)}
           className="flex-shrink-0 ml-2 text-white hover:text-white/70 transition-colors text-lg"
-          style={{ opacity: 0.75 }}
+          style={{ opacity: 0.75, cursor: 'pointer' }}
+          aria-label="Close toast"
         >
           ✕
         </button>
@@ -80,29 +94,22 @@ export const Toast = ({ message = "", type = "info", duration = 5000, isVisible 
 
       <style>{`
         @keyframes slideDownFade {
-          from {
-            opacity: 0;
-            transform: translateX(-50%) translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-          }
-        }
-
-        @keyframes slideUpFade {
-          from {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-          }
-          to {
-            opacity: 0;
-            transform: translateX(-50%) translateY(-20px);
-          }
+          from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
       `}</style>
     </div>
   );
+
+  // Render into document.body to avoid stacking context issues
+  try {
+    return createPortal(toastEl, document.body);
+  } catch (err) {
+    // Fallback to regular render if portal fails (SSR safety)
+    // eslint-disable-next-line no-console
+    console.warn('[Toast] Portal mount failed, falling back to inline render', err);
+    return toastEl;
+  }
 };
 
 export default Toast;
