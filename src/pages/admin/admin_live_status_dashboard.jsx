@@ -523,7 +523,8 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
 
 /* ── Live Queue panel ── */
-const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAppointments, setPendingAppointments, onOpenWalkInModal, onProceedClick }) => {
+const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -560,7 +561,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
     fetchAppointments();
     
     return () => {};
-  }, []);
+  }, [refreshTrigger]);
 
   const handleExpandToggle = (id) => {
     setExpandedItemId(expandedItemId === id ? null : id);
@@ -576,6 +577,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   const handleCompleteService = async (itemId, customerName, service, staffName = "") => {
     try {
       console.log(`[LiveQueue] Completing service for ${customerName}: ${service}`);
+      console.log(`[LiveQueue] Sending status='done' for appointment ${itemId}`);
       
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
@@ -587,16 +589,22 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
         })
       });
 
+      console.log(`[LiveQueue] Response status:`, response.status);
+
       if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[LiveQueue] Error response:', errorData);
         throw new Error(`Failed to mark service as complete: ${response.status}`);
       }
 
       const result = await response.json();
       console.log(`[LiveQueue] Service marked as complete:`, result);
+      console.log(`[LiveQueue] History synced:`, result.historyUpdated, result.historyUpdateReason);
       
-      // Remove from current appointments locally without reloading
+      // Remove from current appointments locally and trigger refresh
       setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
       setExpandedItemId(null);
+      alert(`✓ Service completed! Status updated to done.`);
     } catch (error) {
       console.error(`[LiveQueue] Error completing service:`, error);
       alert('Failed to mark service as complete: ' + error.message);
@@ -906,8 +914,6 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   const [activeNav, setActiveNav] = useState("live-status");
   const [mounted, setMounted] = useState(false);
   const [scheduleRefreshTrigger, setScheduleRefreshTrigger] = useState(0);
-  const [currentAppointments, setCurrentAppointments] = useState([]);
-  const [pendingAppointments, setPendingAppointments] = useState([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -933,7 +939,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     try {
       console.log(`[LiveQueue] Moving appointment ${itemId} to current for ${customerName}`);
       console.log(`[LiveQueue] Staff data:`, proceedConfirmData?.staff);
-      console.log(`[LiveQueue] Appointment data:`, pendingAppointments.find(apt => apt.id === itemId));
+      console.log(`[LiveQueue] Request payload:`, { id: itemId, status: 'current', staffName: proceedConfirmData?.staff });
       
       // Call API to update appointment status to 'current' and staff to 'in-service'
       const response = await fetch('/api/appointments/update/status', {
@@ -946,29 +952,29 @@ export const AdminDashboardLiveStatus = ({ date }) => {
         })
       });
 
+      console.log(`[LiveQueue] Response status:`, response.status, response.ok);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[LiveQueue] Error response:', errorData);
+        alert(`API Error: ${errorData.error || response.statusText}\n${errorData.details || ''}`);
         throw new Error(`Failed to move appointment to current: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
       const result = await response.json();
       console.log(`[LiveQueue] Appointment moved to current:`, result);
-      
-      // Update local state - move from pending to current with updated status
-      const appointmentToMove = pendingAppointments.find(apt => apt.id === itemId);
-      if (appointmentToMove) {
-        setPendingAppointments(prev => prev.filter(apt => apt.id !== itemId));
-        setCurrentAppointments(prev => [
-          ...prev,
-          { ...appointmentToMove, status: 'current' }
-        ]);
-      }
+      console.log(`[LiveQueue] History synced:`, result.historyUpdated, result.historyUpdateReason);
+      alert(`✓ Status updated! History sync: ${result.historyUpdated ? 'YES' : 'NO'}`);
+
+      // Refresh the queue panels so they reflect the updated database state
+      setQueueRefreshTrigger((prev) => prev + 1);
       
       // Close dialog
       setProceedConfirmId(null);
       setProceedConfirmData({});
     } catch (error) {
       console.error('[LiveQueue] Error moving appointment:', error);
+      console.error('[LiveQueue] Full error:', error.toString());
       alert('Failed to move appointment. Please try again.');
     }
   };
@@ -1038,6 +1044,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
             pendingAppointments={pendingAppointments}
             setPendingAppointments={setPendingAppointments}
             onOpenWalkInModal={() => setShowWalkInModal(true)}
+            refreshTrigger={queueRefreshTrigger}
             onProceedClick={(id, name, service, staff) => {
               setProceedConfirmId(id);
               setProceedConfirmData({ name, service, staff });

@@ -209,6 +209,10 @@ export function CustomerShell({ activeNav, profile, children }) {
   const handlePhase4Confirm = async () => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
+      console.log("[Phase4] Profile object:", profile);
+      console.log("[Phase4] Profile ID:", profile?.id);
+      console.log("[Phase4] API URL:", apiUrl);
+      
       const booking = formatBooking();
       const payload = {
         name: booking.name,
@@ -228,8 +232,54 @@ export function CustomerShell({ activeNav, profile, children }) {
 
       const data = await response.json();
       if (response.ok || data.success) {
+          console.log("[Phase4] Appointment creation successful, response:", data);
+        // Calculate total price from all services
+        const totalPrice = booking.services.reduce((sum, service) => {
+          const price = parseFloat(service.price) || 0;
+          return sum + price;
+        }, 0);
+        
+  console.log("[Phase4] Services:", booking.services);
+  console.log("[Phase4] Total price calculated:", totalPrice);
+
+        // Add booking to customer histories
+        if (profile?.id) {
+          const historyPayload = {
+            customerId: profile.id,
+            service: payload.service,
+            staff: booking.stylist,
+            price: totalPrice,
+            date: booking.date,
+          };
+
+          try {
+            console.log("[Booking] Sending history update:", historyPayload);
+            const historyResponse = await fetch(`${apiUrl}/customers/update-histories`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(historyPayload),
+            });
+            const historyData = await historyResponse.json();
+            console.log("[Booking] History update response:", historyData);
+            
+            if (!historyResponse.ok) {
+              console.error("[Booking] History update failed:", historyData);
+            }
+          } catch (historyError) {
+            console.error("[Booking] Exception while updating history:", historyError);
+            console.error("[Booking] Error details:", {
+              message: historyError.message,
+              stack: historyError.stack
+            });
+            // Don't fail the booking if history save fails
+          }
+        } else {
+          console.warn("[Booking] No profile.id available for history update");
+        }
+
         handleCancelBooking();
         displayToast("Appointment booked successfully");
+        console.error("[Phase4] Appointment creation failed:", data);
       } else {
         displayToast(data.error || "Failed to book appointment. Please try again.");
       }

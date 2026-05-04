@@ -53,7 +53,7 @@ export default function CustomerProfilePage() {
   // Validation errors state
   const [validationErrors, setValidationErrors] = useState({});
 
-  const profileImage = profile.profilePhoto || "/default-avatar.svg";
+  const profileInitial = (profile.name || tempProfile.name || "?").trim().charAt(0).toUpperCase() || "?";
 
   // Check if profile has been modified
   const hasChanges = JSON.stringify(tempProfile) !== JSON.stringify(profile);
@@ -120,13 +120,6 @@ export default function CustomerProfilePage() {
     setShowConfirmation(false);
   };
 
-  const handleProfilePhotoUpload = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setTempProfile((prev) => ({ ...prev, profilePhoto: url }));
-  };
-
   const handleAddEmail = () => setTempProfile((prev) => ({ ...prev, emails: [...prev.emails, ""] }));
   const handleAddPhone = () => setTempProfile((prev) => ({ ...prev, phones: [...prev.phones, ""] }));
 
@@ -153,8 +146,8 @@ export default function CustomerProfilePage() {
             <>
               <div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
                 <div className="cdb-profile-avatar-col">
-                  <div className="cdb-avatar cdb-avatar-dashboard">
-                    <img src={profileImage} alt={profile.name + " avatar"} />
+                  <div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${profile.name || "Customer"} avatar`}>
+                    <span className="cdb-avatar-initial">{profileInitial}</span>
                   </div>
                 </div>
                 <div className="cdb-profile-info-split">
@@ -201,24 +194,9 @@ export default function CustomerProfilePage() {
               <div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
                 <div className="cdb-profile-avatar-col">
                   <div className="cdb-avatar-edit-wrapper">
-                    <div className="cdb-avatar cdb-avatar-dashboard">
-                      <img src={tempProfile.profilePhoto || "/default-avatar.svg"} alt={tempProfile.name + " avatar"} />
+                    <div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${tempProfile.name || "Customer"} avatar`}>
+                      <span className="cdb-avatar-initial">{(tempProfile.name || "?").trim().charAt(0).toUpperCase() || "?"}</span>
                     </div>
-                    <button 
-                      type="button"
-                      className="cdb-avatar-edit-btn"
-                      onClick={() => document.getElementById("profilePhotoInput").click()}
-                      title="Edit profile picture"
-                    >
-                      <EditIcon color="#fff" />
-                    </button>
-                    <input 
-                      id="profilePhotoInput"
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleProfilePhotoUpload} 
-                      style={{ display: "none" }}
-                    />
                   </div>
                 </div>
                 <div className="cdb-profile-edit-col">

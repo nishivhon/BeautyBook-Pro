@@ -276,6 +276,8 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
       }
       
       console.log('[Phase4] Booking confirmed:', result);
+      setIsConfirmed(true);
+      setShowConfirmationToast(true);
       
     } catch (error) {
       console.error('[Phase4] Error confirming booking:', error);

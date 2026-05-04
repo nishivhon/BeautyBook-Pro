@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomerShell } from "./customer_shell";
 import { useCustomerCouponsData, useCustomerHistoryData, useCustomerProfileData } from "./customer_store";
 
 export default function CustomerDashboard() {
 	const navigate = useNavigate();
-	const [profile] = useCustomerProfileData();
+	const [profile, setProfile] = useCustomerProfileData();
 	const [history, setHistory] = useCustomerHistoryData();
 	const [coupons, setCoupons] = useCustomerCouponsData();
 
@@ -14,18 +14,93 @@ export default function CustomerDashboard() {
 	const [ratingValue, setRatingValue] = useState(0);
 	const [couponFilter, setCouponFilter] = useState("all");
 
+	// Fetch full customer data from database (including histories)
+	useEffect(() => {
+		const fetchFullCustomerData = async () => {
+			try {
+				if (!profile?.id) {
+					console.log('[CustomerDashboard] No customer ID in profile, skipping fetch');
+					return;
+				}
+
+				console.log('[CustomerDashboard] Fetching full customer data for ID:', profile.id);
+				
+				// Fetch customer from database
+				const response = await fetch(`/api/customers/get?id=${profile.id}`);
+				if (!response.ok) {
+					console.error('[CustomerDashboard] Failed to fetch customer data:', response.status);
+					return;
+				}
+
+				const data = await response.json();
+				const customer = data.customer;
+				
+				console.log('[CustomerDashboard] Fetched customer from DB:', customer);
+				console.log('[CustomerDashboard] Histories from DB:', customer?.histories);
+
+				// Update profile with full data including histories
+				if (customer) {
+					const updatedProfile = {
+						...profile,
+						name: customer.name || profile.name,
+						emails: customer.email ? [customer.email] : profile.emails,
+						phones: customer.phone ? [customer.phone] : profile.phones,
+						histories: customer.histories || [],
+					};
+					
+					console.log('[CustomerDashboard] Updated profile:', updatedProfile);
+					setProfile(updatedProfile);
+				}
+			} catch (error) {
+				console.error('[CustomerDashboard] Error fetching customer data:', error);
+			}
+		};
+
+		fetchFullCustomerData();
+	}, [profile?.id]);
+
+	// Refetch history data when profile changes (to pick up new bookings from histories)
+	useEffect(() => {
+		console.log('[CustomerDashboard] Profile updated:', profile);
+		console.log('[CustomerDashboard] Histories array:', profile?.histories);
+		
+		// Re-render history by calling the hook logic again
+		if (profile?.histories && Array.isArray(profile.histories) && profile.histories.length > 0) {
+			const transformedHistory = profile.histories.map((item, idx) => ({
+				id: item.id || idx,
+				date: item.date || new Date().toISOString().split('T')[0],
+				service: item.service || 'Service',
+				stylist: item.staff || 'Unknown Stylist',
+				cost: parseFloat(item.price) || 0,
+				status: item.status || 'pending',
+				rated: false,
+				rating: 0,
+			}));
+			console.log('[CustomerDashboard] Transformed history:', transformedHistory);
+			setHistory(transformedHistory);
+		} else {
+			console.log('[CustomerDashboard] No histories found or empty array');
+		}
+	}, [profile, setHistory]);
+
+	console.log('[CustomerDashboard] Final history to display:', history);
+
 	const filteredHistory = history.filter((item) => {
-		if (historyFilter === "previous") return item.status === "completed";
-		if (historyFilter === "current") return item.status === "upcoming";
-		return true;
+		const passes = historyFilter === "all" || 
+			(historyFilter === "previous" && item.status === "completed") || 
+			(historyFilter === "current" && item.status === "upcoming");
+		console.log(`[CustomerDashboard] Filter check - item: ${item.service}, status: ${item.status}, filter: ${historyFilter}, passes: ${passes}`);
+		return passes;
 	});
+
+	console.log('[CustomerDashboard] After filter - historyFilter:', historyFilter, 'filteredHistory.length:', filteredHistory.length);
 
 	const filteredCoupons = coupons.filter((coupon) => {
 		if (couponFilter === "all") return true;
 		return coupon.category === couponFilter;
 	});
 
-	const profileImage = profile.profilePhoto || "/default-avatar.svg";
+	const profileInitial = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
 
 
 
@@ -55,8 +130,8 @@ export default function CustomerDashboard() {
 				<>
 					<div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
 									<div className="cdb-profile-avatar-col">
-										<div className="cdb-avatar cdb-avatar-dashboard">
-											<img src={profileImage} alt={profile.name + " avatar"} />
+										<div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${profile.name || "Customer"} avatar`}>
+											<span className="cdb-avatar-initial">{profileInitial}</span>
 										</div>
 										</div>
 										<div className="cdb-profile-info-col">
@@ -107,24 +182,31 @@ export default function CustomerDashboard() {
 						</div>
 					</div>
 					<div className="cdb-grid cdb-grid-history">
-						{filteredHistory.map((item) => (
-							<div key={item.id} className="cdb-item-card">
-								<div className="cdb-item-left">
-									<h3 className="cdb-item-title">{item.service}</h3>
-									<p className="cdb-item-subtitle">{item.stylist} · ${item.cost.toFixed(2)}</p>
-									<p className="cdb-date-text">{new Date(item.date).toLocaleDateString()}</p>
-									{item.status === "completed" && (
-										item.rated && <div className="cdb-rating-row">{[1, 2, 3, 4, 5].map((star) => <span key={star}>{star <= item.rating ? "★" : "☆"}</span>)}</div>
-									)}
+						{filteredHistory && filteredHistory.length > 0 ? (
+							filteredHistory.map((item) => (
+								<div key={item.id} className="cdb-item-card">
+									<div className="cdb-item-left">
+										<h3 className="cdb-item-title">{item.service}</h3>
+										<p className="cdb-item-subtitle">{item.stylist} · ${item.cost.toFixed(2)}</p>
+										<p className="cdb-date-text">{new Date(item.date).toLocaleDateString()}</p>
+										{item.status === "completed" && (
+											item.rated && <div className="cdb-rating-row">{[1, 2, 3, 4, 5].map((star) => <span key={star}>{star <= item.rating ? "★" : "☆"}</span>)}</div>
+										)}
+									</div>
+									<div className="cdb-item-right">
+										<span className={`cdb-status-badge ${item.status === "completed" ? "completed" : "upcoming"}`}>{item.status}</span>
+										{item.status === "completed" && !item.rated && (
+											<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)}>Rate Service</button>
+										)}
+									</div>
 								</div>
-								<div className="cdb-item-right">
-									<span className={`cdb-status-badge ${item.status === "completed" ? "completed" : "upcoming"}`}>{item.status}</span>
-									{item.status === "completed" && !item.rated && (
-										<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)}>Rate Service</button>
-									)}
-								</div>
+							))
+						) : (
+							<div style={{ padding: '20px', gridColumn: '1 / -1', textAlign: 'center', color: '#999' }}>
+								<p>No service history found. Your bookings will appear here.</p>
+								{history.length > 0 && <p style={{ fontSize: '12px' }}>Total history items: {history.length} (filtered: {historyFilter})</p>}
 							</div>
-						))}
+						)}
 					</div>
 				</div>
 			</section>
