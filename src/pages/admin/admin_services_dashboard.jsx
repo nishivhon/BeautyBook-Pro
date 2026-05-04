@@ -432,18 +432,10 @@ const ServiceItem = ({ id, name, category, meta, available, price, onEdit }) => 
 
 /* ── Services list panel ── */
 const ServicesPanel = ({ serviceGroups, loading, error, onEditService }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-
   return (
     <div className="svc-group-panel">
       <div className="svc-group-header">
         <h2 className="svc-group-title">All Services</h2>
-        <button 
-          className="svc-see-less-btn"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {isExpanded ? "See less" : "See more"}
-        </button>
       </div>
 
       {/* Loading State */}
@@ -462,7 +454,7 @@ const ServicesPanel = ({ serviceGroups, loading, error, onEditService }) => {
 
       {/* Services List */}
       {!loading && !error && (
-        <div className={isExpanded ? "svc-services-scroll" : "svc-services-scroll-limited"}>
+        <div className="svc-services-scroll-limited">
           {/* Show all services grouped by category (both expanded and collapsed) */}
           {serviceGroups.map((group, gi) => (
             <div key={gi}>

@@ -349,7 +349,6 @@ const PageMetrics = ({ stats }) => (
 );
 
 const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
@@ -621,12 +620,6 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
             <PlusIcon size={10} color="#000" />
             Add Walk-in
           </button>
-          <button 
-            className="dash-panel-manage-btn"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? "See less" : "See more"}
-          </button>
         </div>
       </div>
 
@@ -646,7 +639,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
       {/* Sections */}
       {!loading && !error && (
-        <div className={isExpanded ? "live-queue-scroll" : "live-queue-scroll-limited"}>
+        <div className="live-queue-scroll-limited">
           {queueSections.map((section, si) => (
             <div key={si}>
               <p className="live-section-label">{section.label}</p>
@@ -682,7 +675,6 @@ const StaffStatus = () => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -773,12 +765,7 @@ const StaffStatus = () => {
     <div className="dash-sidebar-panel">
       <div className="dash-sidebar-header">
         <h3 className="dash-sidebar-title">Staff Status</h3>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button className="dash-panel-manage-btn" onClick={handleManageClick} style={{ color: "#fff" }}>Manage</button>
-          <button className="dash-panel-manage-btn" onClick={() => setIsExpanded(!isExpanded)}>
-            {isExpanded ? "See less" : "See more"}
-          </button>
-        </div>
+        <button className="dash-panel-manage-btn" onClick={handleManageClick} style={{ color: "#fff" }}>Manage</button>
       </div>
       
       {loading && (
@@ -794,7 +781,7 @@ const StaffStatus = () => {
       )}
       
       {!loading && !error && (
-        <div className="dash-staff-list" style={{ maxHeight: isExpanded ? "none" : "200px", overflow: "auto", scrollbarWidth: "thin", scrollbarColor: "rgba(221, 144, 29, 0.2) transparent", padding: "12px 0" }}>
+        <div className="dash-staff-list" style={{ maxHeight: "200px", overflow: "auto", scrollbarWidth: "thin", scrollbarColor: "rgba(221, 144, 29, 0.2) transparent", padding: "12px 0" }}>
           {staff.map((s, i) => (
             <div key={i} className="dash-staff-row">
               <div className="dash-staff-left">

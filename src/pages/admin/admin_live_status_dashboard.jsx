@@ -524,7 +524,6 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
 /* ── Live Queue panel ── */
 const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAppointments, setPendingAppointments, onOpenWalkInModal, onProceedClick }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -659,12 +658,6 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
             <PlusIcon size={10} color="#000" />
             Add Walk-in
           </button>
-          <button 
-            className="dash-panel-manage-btn"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? "See less" : "See more"}
-          </button>
         </div>
       </div>
 
@@ -684,7 +677,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
 
       {/* Sections */}
       {!loading && !error && (
-        <div className={isExpanded ? "live-queue-scroll" : "live-queue-scroll-limited"}>
+        <div className="live-queue-scroll-limited">
           {queueSections.map((section, si) => (
             <div key={si}>
               <p className="live-section-label">{section.label}</p>
@@ -773,7 +766,6 @@ const ScheduleRow = ({ stylist, time, client, service, status, dotClass, staffSt
 
 /* ── Today's Schedule panel ── */
 const SchedulePanel = ({ date = "Dec 7, 2024", refreshTrigger = 0 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -859,15 +851,9 @@ const SchedulePanel = ({ date = "Dec 7, 2024", refreshTrigger = 0 }) => {
           <h3 className="live-schedule-title">Today's Schedule</h3>
           <span className="live-schedule-date">{date}</span>
         </div>
-        <button 
-          className="live-schedule-toggle-btn"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {isExpanded ? "See less" : "See more"}
-        </button>
       </div>
 
-      <div className={isExpanded ? "live-schedule-scroll" : "live-schedule-scroll-limited"}>
+      <div className="live-schedule-scroll-limited">
         {loading ? (
           <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>Loading schedule...</div>
         ) : (

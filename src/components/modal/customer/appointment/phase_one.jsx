@@ -106,9 +106,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
   const [showDateInput, setShowDateInput] = useState(false);
-  const [showTimeInput, setShowTimeInput] = useState(false);
   const [manualDate, setManualDate] = useState("");
-  const [manualTime, setManualTime] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [shakingTimeSlot, setShakingTimeSlot] = useState(null);
@@ -193,7 +191,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
 
   const handleContinue = () => {
     const dateObj = selectedDate !== null ? dateOptions[selectedDate] : null;
-    const time = selectedTime !== null ? ALL_TIME_SLOTS[selectedTime] : manualTime;
+    const time = selectedTime !== null ? ALL_TIME_SLOTS[selectedTime] : null;
 
     onContinue?.({
       date: dateObj ? dateObj.dateLabel : manualDate,
@@ -209,12 +207,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
     }
   };
 
-  const handleTimeInputConfirm = () => {
-    if (manualTime) {
-      setSelectedTime(null);
-      setShowTimeInput(false);
-    }
-  };
+
 
   // Validation helper functions
   const isDateInPast = (dateStr) => {
@@ -224,18 +217,11 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
     return selectedDate < today;
   };
 
-  const isTimeWithinHours = (timeStr) => {
-    // timeStr format: "HH:MM" (24-hour format from input)
-    const [hours] = timeStr.split(':').map(Number);
-    return hours >= 8 && hours < 20; // 8am to before 8pm
-  };
-
   // Validation checks
   const isDateSelected = selectedDate !== null || manualDate;
-  const isTimeSelected = selectedTime !== null || manualTime;
+  const isTimeSelected = selectedTime !== null;
   const isDateValid = !manualDate || !isDateInPast(manualDate);
-  const isTimeValid = !manualTime || isTimeWithinHours(manualTime);
-  const isFormValid = isDateSelected && isTimeSelected && isDateValid && isTimeValid;
+  const isFormValid = isDateSelected && isTimeSelected && isDateValid;
 
   // Generate validation message
   const getValidationMessage = () => {
@@ -245,7 +231,6 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
       return "Please select a time";
     }
     if (!isDateValid) return "Selected date has already passed";
-    if (!isTimeValid) return "Operating hours are 8:00 AM to 8:00 PM";
     return "";
   };
 
@@ -461,185 +446,53 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
 
         {/* ── Time picker ── */}
         <div className="appt-picker-group">
-          <div 
-            className="appt-picker-label" 
-            style={{cursor: "pointer"}}
-            onClick={() => setShowTimeInput(!showTimeInput)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#dd901d";
-              const svgs = e.currentTarget.querySelectorAll('svg');
-              svgs.forEach(svg => svg.style.stroke = "#dd901d");
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "white";
-              const svgs = e.currentTarget.querySelectorAll('svg');
-              svgs.forEach(svg => svg.style.stroke = "white");
-            }}
-          >
+          <div className="appt-picker-label">
             <ClockSmIcon />
             <span>Select Time</span>
           </div>
-          {!showTimeInput ? (
-            manualTime ? (
-              <div style={{display: "flex", alignItems: "center", gap: 10}}>
-                <div style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  background: "rgba(221,144,29,0.15)",
-                  border: "1px solid rgba(221,144,29,0.4)",
-                  borderRadius: "10px",
-                  color: "white",
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: "0.95rem",
-                  fontWeight: "600",
-                  animation: "fade-up 0.3s ease forwards",
-                }}>
-                  {convertTo12HourFormat(manualTime)}
-                </div>
-                <button
-                  onClick={() => {
-                    setShowTimeInput(true);
-                  }}
-                  style={{
-                    padding: "10px 18px",
-                    background: "transparent",
-                    color: "#dd901d",
-                    border: "1px solid #dd901d",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontWeight: "600",
-                    fontSize: "0.85rem",
-                  }}
-                >
-                  Change
-                </button>
-              </div>
+          <div className="appt-time-grid">
+            {selectedDate === null ? (
+              <p style={{ color: "#988f81", textAlign: "center", padding: "20px", gridColumn: "1/-1" }}>
+                Select a date first
+              </p>
+            ) : loadingTimes ? (
+              <p style={{ color: "#988f81", textAlign: "center", padding: "20px", gridColumn: "1/-1" }}>
+                Loading availability...
+              </p>
             ) : (
-              <div className="appt-time-grid">
-                {selectedDate === null ? (
-                  <p style={{ color: "#988f81", textAlign: "center", padding: "20px", gridColumn: "1/-1" }}>
-                    Select a date first
-                  </p>
-                ) : loadingTimes ? (
-                  <p style={{ color: "#988f81", textAlign: "center", padding: "20px", gridColumn: "1/-1" }}>
-                    Loading availability...
-                  </p>
-                ) : (
-                  ALL_TIME_SLOTS.map((time, i) => {
-                    const isDisabled = unavailableTimes.includes(time);
-                    const handleTimeSelect = () => {
-                      if (isDisabled) {
-                        // Show shake animation and toast
-                        setShakingTimeSlot(i);
-                        setToastVisible(true);
-                        setTimeout(() => setShakingTimeSlot(null), 600);
-                      } else {
-                        setSelectedTime(selectedTime === i ? null : i);
-                      }
-                    };
-                    return (
-                      <button
-                        key={i}
-                        onClick={handleTimeSelect}
-                        onTouchEnd={(e) => {
-                          e.preventDefault();
-                          handleTimeSelect();
-                        }}
-                        className={`appt-time-chip${selectedTime === i ? " selected" : ""}${isDisabled ? " disabled" : ""}`}
-                        aria-pressed={selectedTime === i}
-                        style={{
-                          ...(isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "auto" } : { pointerEvents: "auto" }),
-                          ...(shakingTimeSlot === i ? { animation: "shake 0.6s ease-in-out" } : {}),
-                        }}
-                      >
-                        {convertTo12HourFormat(time)}
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            )
-          ) : (
-            <div style={{display: "flex", alignItems: "center", gap: 10}}>
-              <input
-                type="time"
-                value={manualTime}
-                onChange={(e) => setManualTime(e.target.value)}
-                style={{
-                  width: "180px",
-                  padding: "10px 14px",
-                  background: "#231d1a",
-                  border: "1px dashed rgba(152,143,129,0.5)",
-                  borderRadius: "10px",
-                  color: "white",
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: "0.95rem",
-                  boxSizing: "border-box",
-                }}
-              />
-              <button
-                onClick={handleTimeInputConfirm}
-                style={{
-                  padding: "10px 18px",
-                  background: "#dd901d",
-                  color: "black",
-                  border: "none",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  fontWeight: "700",
-                  fontSize: "0.85rem",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = "#c47f18";
-                  e.target.style.transform = "translateY(-1px)";
-                  e.target.style.boxShadow = "0 6px 20px rgba(221,144,29,0.35)";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = "#dd901d";
-                  e.target.style.transform = "translateY(0)";
-                  e.target.style.boxShadow = "none";
-                }}
-                onMouseDown={(e) => {
-                  e.target.style.transform = "scale(0.99)";
-                }}
-                onMouseUp={(e) => {
-                  e.target.style.transform = "translateY(-1px)";
-                }}
-              >
-                Set
-              </button>
-              <button
-                onClick={() => {
-                  setShowTimeInput(false);
-                  setManualTime("");
-                }}
-                style={{
-                  padding: "10px 18px",
-                  background: "transparent",
-                  color: "#988f81",
-                  border: "1px solid #988f81",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  fontWeight: "600",
-                  fontSize: "0.85rem",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = "rgba(152,143,129,0.1)";
-                  e.target.style.borderColor = "#b8aaa0";
-                  e.target.style.color = "#d4c7bb";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = "transparent";
-                  e.target.style.borderColor = "#988f81";
-                  e.target.style.color = "#988f81";
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
+              ALL_TIME_SLOTS.map((time, i) => {
+                const isDisabled = unavailableTimes.includes(time);
+                const handleTimeSelect = () => {
+                  if (isDisabled) {
+                    // Show shake animation and toast
+                    setShakingTimeSlot(i);
+                    setToastVisible(true);
+                    setTimeout(() => setShakingTimeSlot(null), 600);
+                  } else {
+                    setSelectedTime(selectedTime === i ? null : i);
+                  }
+                };
+                return (
+                  <button
+                    key={i}
+                    onClick={handleTimeSelect}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      handleTimeSelect();
+                    }}
+                    className={`appt-time-chip${selectedTime === i ? " selected" : ""}${isDisabled ? " disabled" : ""}`}
+                    aria-pressed={selectedTime === i}
+                    style={{
+                      ...(isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "auto" } : { pointerEvents: "auto" }),
+                      ...(shakingTimeSlot === i ? { animation: "shake 0.6s ease-in-out" } : {}),
+                    }}
+                  >
+                    {convertTo12HourFormat(time)}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
 
       </div>

@@ -504,7 +504,6 @@ const PageMetrics = ({ stats = { available: 0, inService: 0, onBreak: 0, offToda
 
 /* ── Staff List panel ── */
 const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate, statusUpdateModal, onOpenStatusModal, onCloseStatusModal, onOpenManageServiceModal }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [expandedStaff, setExpandedStaff] = useState(null);
@@ -583,12 +582,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
               </div>
             )}
           </div>
-          <button 
-            className="staff-see-less-btn"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? "See less" : "See more"}
-          </button>
+          {/* removed See more/See less toggle - fixed height handled by CSS */}
         </div>
       </div>
 
@@ -608,7 +602,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
 
       {/* Staff List */}
       {!loading && !error && (
-        <div className={isExpanded ? "staff-member-scroll" : "staff-member-scroll-limited"}>
+        <div className="staff-member-scroll-limited">
           {filteredStaff.length > 0 ? (
             filteredStaff.map((s, i) => (
             <div key={i}>
