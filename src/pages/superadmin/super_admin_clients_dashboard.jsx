@@ -115,62 +115,37 @@ export default function SuperAdminClientsDashboard() {
     const fetchClients = async () => {
       setLoading(true);
       try {
-        console.log('[Clients] Starting fetch from users table...');
-        const tablesInfo = await databaseAPI.getTablesInfo(['users']);
+        console.log('[Clients] Fetching customer accounts...');
         
-        if (tablesInfo && Array.isArray(tablesInfo)) {
-          console.log('[Clients] Fetched tables info:', tablesInfo);
-          
-          const tableInfo = tablesInfo[0];
-          if (!tableInfo) {
-            console.warn('[Clients] No table info returned');
-            return;
-          }
-          
-          console.log('[Clients] Table info for users:', tableInfo);
-          
-          // Fetch actual data
-          let rowData = [];
-          try {
-            const dataResult = await databaseAPI.getTableData('users', 10000, 0);
-            rowData = dataResult.data || [];
-            
-            console.log('[Clients] Raw data from API:', rowData);
-            console.log('[Clients] Total rows:', rowData.length);
-            if (rowData.length > 0) {
-              console.log('[Clients] Available columns in first row:', Object.keys(rowData[0]));
-              console.log('[Clients] First row full data:', rowData[0]);
-            }
-            
-            console.log(`[Clients] Fetched ${rowData.length} rows`);
-          } catch (dataError) {
-            console.warn(`[Clients] Error fetching data:`, dataError);
-            rowData = [];
-          }
-          
-          console.log(`[Clients] After processing: ${rowData.length} rows available`);
-          
-          const cols = rowData.length > 0 ? Object.keys(rowData[0]) : [];
-          
-          setClientsData({
-            id: 'users',
-            name: 'Client Accounts',
-            meta: `${tableInfo.rowCount} clients`,
-            lastUpdated: 'Today',
-            rows: rowData,
-            cols: cols,
-          });
-          
-          console.log('[Clients] State updated with', rowData.length, 'rows');
+        const response = await fetch('/api/customers/accounts');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.status}`);
         }
+        
+        const data = await response.json();
+        console.log('[Clients] Fetched accounts:', data);
+        
+        const accounts = data.accounts || [];
+        const cols = ['id', 'name', 'email', 'phone'];
+        
+        setClientsData({
+          id: 'customers',
+          name: 'Client Accounts',
+          meta: `${data.count || accounts.length} clients`,
+          lastUpdated: 'Today',
+          rows: accounts,
+          cols: cols,
+        });
+        
+        console.log('[Clients] State updated with', accounts.length, 'rows');
       } catch (error) {
         console.error('[Clients] Error fetching data:', error);
         setClientsData({
-          id: 'users',
+          id: 'customers',
           name: 'Client Accounts',
           meta: '0 clients',
           rows: [],
-          cols: [],
+          cols: ['id', 'name', 'email', 'phone'],
         });
         displayToast('Failed to fetch client data');
       } finally {
