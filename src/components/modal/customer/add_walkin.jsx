@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConfirmationDialog } from "../customer/confirmation_dialog";
+import { Toast } from "../../toast";
 
 const BackArrowIcon = () => (
   <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width={16} height={16}>
@@ -552,6 +553,19 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
   const [activeCategory, setActiveCategory] = useState(null);
   const [visitedCategories, setVisitedCategories] = useState(new Set());
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [showReceiptReminder, setShowReceiptReminder] = useState(false);
+  const [showConfirmationToast, setShowConfirmationToast] = useState(false);
+
+  // Auto-hide toast after 2 seconds
+  useEffect(() => {
+    if (showConfirmationToast) {
+      const timer = setTimeout(() => {
+        setShowConfirmationToast(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showConfirmationToast]);
 
   // Validation for customer name
   const validateName = (value) => {
@@ -645,6 +659,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
     setActiveCategory(null);
     setVisitedCategories(new Set());
     setShowConfirmCancel(false);
+    setIsConfirmed(false);
+    setShowReceiptReminder(false);
+    setShowConfirmationToast(false);
     onClose();
   };
 
@@ -712,7 +729,22 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
     setStep(4);
   };
 
+  /* Handle final confirmation */
+  const handleConfirmWalkin = () => {
+    // Show confirmation toast immediately
+    setShowConfirmationToast(true);
+    setIsConfirmed(true);
+  };
+
+  /* Generate printable receipt */
   const handleDownloadReceipt = () => {
+    // Show receipt reminder dialog
+    setShowReceiptReminder(true);
+    generateReceiptHTML();
+  };
+
+  /* Generate the receipt HTML and open print dialog */
+  const generateReceiptHTML = () => {
     if (!receiptData) return;
     
     const receiptHTML = `
@@ -947,8 +979,8 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
   };
 
   const handleConfirm = () => {
-    onSubmit({ ...receiptData, selectedServices });
-    handleClose();
+    handleConfirmWalkin();
+    // After confirmation, the modal stays open for download
   };
 
   if (!isOpen) return null;
@@ -957,13 +989,26 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
 
   return (
     <>
+      {/* ── Toast Notifications (Top Fixed Position) ── */}
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 999999, pointerEvents: "auto", display: "flex", justifyContent: "center", padding: "20px" }}>
+        <Toast 
+          message="Walk-in Confirmed!" 
+          type="success" 
+          duration={2000} 
+          isVisible={showConfirmationToast} 
+        />
+      </div>
       <div 
         className="appt-overlay walkin-force-dark"
         style={DARK_MODAL_VARS}
         onClick={(e) => {
           // Only trigger if clicking directly on the overlay, not on child elements
           if (e.target === e.currentTarget) {
-            setShowConfirmCancel(true);
+            if (!isConfirmed) {
+              setShowConfirmCancel(true);
+            } else if (isConfirmed && !showReceiptReminder) {
+              setShowReceiptReminder(true);
+            }
           }
         }}
       >
@@ -1121,40 +1166,58 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
             )}
           </div>
 
-          <div className="appt-footer" style={{ display: "flex", flexDirection: "column", gap: step === 2 && selectedServices.length === 0 ? "6px" : "12px" }}>
-            {step === 2 && selectedServices.length === 0 && (
-              <p className="service-error"> Please select one service</p>
-            )}
-            <div style={{ display: "flex", flexDirection: "row", gap: "12px" }}>
-              {step === 4 && (
-                <button 
-                  className="appt-download-receipt-btn"
-                  onClick={handleDownloadReceipt}
-                  title="Download receipt as PDF"
-                >
-                  <DownloadIcon />
-                  Download Receipt
-                </button>
-              )}
-              {step !== 4 && (
+          <div 
+            className="appt-footer" 
+            style={{ 
+              display: "flex", 
+              flexDirection: "row", 
+              gap: "12px",
+              padding: "16px 20px",
+              background: "rgba(0,0,0,0.5)",
+              borderTop: "1px solid rgba(152,143,129,0.2)",
+              flexShrink: 0
+            }}
+          >
+            {step !== 4 && (
+              <>
                 <button 
                   className="appt-cancel-btn"
                   onClick={handleCancelClick}
                   title="Cancel and close"
+                  style={{flex: 1}}
                 >
                   Cancel
                 </button>
-              )}
+                <button 
+                  className="appt-continue-btn" 
+                  onClick={handleContinue}
+                  disabled={(step === 1 && (!!nameError || !walkInName.trim())) || (step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)}
+                  style={((step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)) ? { opacity: 0.5, cursor: "not-allowed", flex: 1 } : { opacity: 1, flex: 1 }}
+                  title={step === 1 && !!nameError ? nameError : step === 2 && selectedServices.length === 0 ? "Please select at least one service" : step === 3 && !selectedStylist ? "Please select a stylist" : "Continue to next step"}
+                >
+                  Continue
+                </button>
+              </>
+            )}
+            {step === 4 && !isConfirmed && (
               <button 
                 className="appt-continue-btn" 
-                onClick={step === 4 ? handleConfirm : handleContinue}
-                disabled={(step === 1 && (!!nameError || !walkInName.trim())) || (step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)}
-                style={((step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)) ? { opacity: 0.5, cursor: "not-allowed" } : { opacity: 1 }}
-                title={step === 4 ? "Confirm walk-in appointment" : step === 1 && !!nameError ? nameError : step === 2 && selectedServices.length === 0 ? "Please select at least one service" : step === 3 && !selectedStylist ? "Please select a stylist" : "Continue to next step"}
+                onClick={handleConfirm}
+                style={{flex: 1, cursor: "pointer"}}
               >
-                {step === 4 ? "Confirm" : "Continue"}
+                Confirm
               </button>
-            </div>
+            )}
+            {step === 4 && isConfirmed && (
+              <button 
+                className="appt-download-receipt-btn"
+                onClick={handleDownloadReceipt}
+                style={{flex: 1, cursor: "pointer", padding: "12px", fontSize: "16px", fontWeight: "600"}}
+              >
+                <DownloadIcon />
+                Download Receipt
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1187,6 +1250,34 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
         }}
         onCancel={() => setShowConfirmCancel(false)}
       />
+
+      {/* Receipt Reminder Confirmation Dialog - Only show if walk-in was confirmed */}
+      {isConfirmed && (
+        <ConfirmationDialog
+          isOpen={showReceiptReminder}
+          title="Save Your Walk-in Info"
+          message={`Have you saved your receipt and reference number?\n\nReference No.: ${receiptData?.id || "N/A"}\n\nYou'll need this for check-in.`}
+          confirmText="Yes, Saved"
+          cancelText="Download Again"
+          onConfirm={() => {
+            setShowReceiptReminder(false);
+            // Submit the walk-in appointment
+            onSubmit({ ...receiptData, selectedServices });
+            // Close modal after a short delay
+            setTimeout(() => {
+              handleClose();
+            }, 1500);
+          }}
+          onCancel={() => {
+            setShowReceiptReminder(false);
+            generateReceiptHTML();
+            // Reopen the dialog after a brief delay so user can download again
+            setTimeout(() => {
+              setShowReceiptReminder(true);
+            }, 100);
+          }}
+        />
+      )}
     </>
   );
 };
