@@ -4354,6 +4354,8 @@ html[data-theme="light"] {
     align-items: center;
     gap: 8px;
     padding: 7px 14px;
+    min-height: 36px;
+    height: 36px;
     background: var(--bg-card);
     border: 1px solid rgba(152, 143, 129, 0.5);
     border-radius: 8px;
@@ -4364,6 +4366,20 @@ html[data-theme="light"] {
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
+  }
+
+  /* Ensure SVG icons inside action buttons are consistent size and don't affect button height */
+  .dash-action-btn svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* Keep notification badge inside button without changing button height */
+  .dash-action-btn .admin-header-badge {
+    transform: translateY(0);
+    line-height: 20px;
   }
 
   .dash-action-btn:hover {

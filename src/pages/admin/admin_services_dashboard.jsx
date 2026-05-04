@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { EditServiceModal } from "../../components/modal/admin/edit_service";
-import { CreatePromoModal } from "../../components/modal/admin/create_promo";
-import { CreateDiscountModal } from "../../components/modal/admin/create_discount";
+import CouponModal from "../../components/modal/admin/coupon_modal";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 
 // ═══════════════════════════════════════════════════════════════════
@@ -480,7 +479,7 @@ const ServicesPanel = ({ serviceGroups, loading, error, onEditService }) => {
 };
 
 /* ── Quick Actions sidebar ── */
-const QuickActionsPanel = ({ onNewService, onCreatePromo, onCreateDiscount }) => (
+const QuickActionsPanel = ({ onNewService, onManageCoupons }) => (
   <div className="svc-quick-actions-panel">
     <h3 className="svc-quick-title">Quick Actions</h3>
 
@@ -494,18 +493,10 @@ const QuickActionsPanel = ({ onNewService, onCreatePromo, onCreateDiscount }) =>
 
     <button 
       className="svc-action-btn-secondary"
-      onClick={onCreatePromo}
+      onClick={onManageCoupons}
     >
       <PromoIcon size={16} color="currentColor" />
-      Create Promo
-    </button>
-
-    <button 
-      className="svc-action-btn-secondary"
-      onClick={onCreateDiscount}
-    >
-      <DiscountIcon size={16} color="currentColor" />
-      Create Discount
+      Manage Coupons
     </button>
   </div>
 );
@@ -539,8 +530,7 @@ export const AdminDashboardServices = ({ date }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingService, setEditingService] = useState(null);
-  const [isCreatingPromo, setIsCreatingPromo] = useState(false);
-  const [isCreatingDiscount, setIsCreatingDiscount] = useState(false);
+  const [isManagingCoupons, setIsManagingCoupons] = useState(false);
   const [stats, setStats] = useState([
     { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: "0",       label: "Today's Appointments" },
     { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱0.00",   label: "Revenue Today"        },
@@ -842,33 +832,8 @@ export const AdminDashboardServices = ({ date }) => {
     setEditingService(null);
   };
 
-  const handleCreatePromo = () => {
-    setIsCreatingPromo(true);
-  };
-
-  const handleClosePromoModal = () => {
-    setIsCreatingPromo(false);
-  };
-
-  const handleSavePromo = (formData) => {
-    console.log("Promo created:", formData);
-    // Here you can integrate with your API to create the promo
-    setIsCreatingPromo(false);
-  };
-
-  const handleCreateDiscount = () => {
-    setIsCreatingDiscount(true);
-  };
-
-  const handleCloseDiscountModal = () => {
-    setIsCreatingDiscount(false);
-  };
-
-  const handleSaveDiscount = (formData) => {
-    console.log("Discount created:", formData);
-    // Here you can integrate with your API to create the discount
-    setIsCreatingDiscount(false);
-  };
+  const handleOpenCoupons = () => setIsManagingCoupons(true);
+  const handleCloseCoupons = () => setIsManagingCoupons(false);
 
   // Generate header notifications from appointment and service data
   const headerNotifications = useMemo(() => {
@@ -944,11 +909,10 @@ export const AdminDashboardServices = ({ date }) => {
 
           {/* Right — Quick actions + Analytics */}
           <div>
-            <QuickActionsPanel 
-              onNewService={handleNewService} 
-              onCreatePromo={handleCreatePromo}
-              onCreateDiscount={handleCreateDiscount}
-            />
+                    <QuickActionsPanel 
+                      onNewService={handleNewService} 
+                      onManageCoupons={handleOpenCoupons}
+                    />
             <AnalyticsPanel />
           </div>
         </div>
@@ -966,17 +930,10 @@ export const AdminDashboardServices = ({ date }) => {
       />
 
       {/* Create Promo Modal - Rendered at page level */}
-      <CreatePromoModal 
-        isOpen={isCreatingPromo}
-        onClose={handleClosePromoModal}
-        onSave={handleSavePromo}
-      />
-
-      {/* Create Discount Modal - Rendered at page level */}
-      <CreateDiscountModal 
-        isOpen={isCreatingDiscount}
-        onClose={handleCloseDiscountModal}
-        onSave={handleSaveDiscount}
+      <CouponModal
+        isOpen={isManagingCoupons}
+        onClose={handleCloseCoupons}
+        services={services}
       />
     </div>
   );

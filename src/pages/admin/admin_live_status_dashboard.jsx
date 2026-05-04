@@ -523,8 +523,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
 
 /* ── Live Queue panel ── */
-const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAppointments, setPendingAppointments, onOpenWalkInModal, onProceedClick, refreshTrigger = 0 }) => {
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -914,6 +913,9 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   const [activeNav, setActiveNav] = useState("live-status");
   const [mounted, setMounted] = useState(false);
   const [scheduleRefreshTrigger, setScheduleRefreshTrigger] = useState(0);
+  const [currentAppointments, setCurrentAppointments] = useState([]);
+  const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [queueRefreshTrigger, setQueueRefreshTrigger] = useState(0);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
