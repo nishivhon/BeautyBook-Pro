@@ -557,6 +557,7 @@ const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick, refreshTrigger = 0 
   const handleCompleteService = async (itemId, customerName, service, staffName = "") => {
     try {
       console.log(`[LiveQueue] Completing service for ${customerName}: ${service}`);
+      console.log(`[LiveQueue] Sending status='done' for appointment ${itemId}`);
       
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
@@ -568,16 +569,22 @@ const LiveQueuePanel = ({ onOpenWalkInModal, onProceedClick, refreshTrigger = 0 
         })
       });
 
+      console.log(`[LiveQueue] Response status:`, response.status);
+
       if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[LiveQueue] Error response:', errorData);
         throw new Error(`Failed to mark service as complete: ${response.status}`);
       }
 
       const result = await response.json();
       console.log(`[LiveQueue] Service marked as complete:`, result);
+      console.log(`[LiveQueue] History synced:`, result.historyUpdated, result.historyUpdateReason);
       
-      // Remove from current appointments locally without reloading
+      // Remove from current appointments locally and trigger refresh
       setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
       setExpandedItemId(null);
+      alert(`✓ Service completed! Status updated to done.`);
     } catch (error) {
       console.error(`[LiveQueue] Error completing service:`, error);
       alert('Failed to mark service as complete: ' + error.message);

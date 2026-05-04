@@ -52,13 +52,18 @@ const normalizeHistories = (histories) => {
 };
 
 const updateCustomerHistoryStatus = async (supabase, slot, status) => {
+  console.log('[updateCustomerHistoryStatus] Called with slot:', { id: slot?.id, customer_contact: slot?.customer_contact, status });
+  
   const customerContact = slot?.customer_contact;
   if (!customerContact || !['current', 'done'].includes(status)) {
+    console.warn('[updateCustomerHistoryStatus] Invalid input - contact:', customerContact, 'status:', status);
     return { updated: false, reason: 'No customer contact or unsupported status' };
   }
 
   const contactValue = String(customerContact).trim();
   const isEmail = contactValue.includes('@');
+  console.log('[updateCustomerHistoryStatus] Looking up customer by', isEmail ? 'email' : 'phone', ':', contactValue);
+  
   const customerQuery = supabase
     .from('customers_accounts')
     .select('id, histories');
@@ -67,17 +72,24 @@ const updateCustomerHistoryStatus = async (supabase, slot, status) => {
     ? await customerQuery.eq('email', contactValue).limit(1)
     : await customerQuery.eq('phone', contactValue).limit(1);
 
+  console.log('[updateCustomerHistoryStatus] Customer lookup - error:', customerError, 'found:', customers?.length);
+
   if (customerError) {
+    console.error('[updateCustomerHistoryStatus] Customer error:', customerError.message);
     return { updated: false, reason: customerError.message };
   }
 
   const customer = customers?.[0];
   if (!customer) {
+    console.warn('[updateCustomerHistoryStatus] Customer not found with contact:', contactValue);
     return { updated: false, reason: 'Customer account not found' };
   }
 
+  console.log('[updateCustomerHistoryStatus] Customer found:', { id: customer.id, histories_count: Array.isArray(customer.histories) ? customer.histories.length : 0 });
+
   const histories = normalizeHistories(customer.histories);
   if (histories.length === 0) {
+    console.warn('[updateCustomerHistoryStatus] No histories in customer record');
     return { updated: false, reason: 'No history records found' };
   }
 
@@ -85,29 +97,40 @@ const updateCustomerHistoryStatus = async (supabase, slot, status) => {
   const targetDate = slot?.date;
   const targetStaff = slot?.assigned_staff;
 
+  console.log('[updateCustomerHistoryStatus] Searching for matching history - service:', serviceName, 'date:', targetDate, 'staff:', targetStaff);
+
   let matchIndex = -1;
   for (let index = histories.length - 1; index >= 0; index -= 1) {
     const historyItem = histories[index] || {};
-    const isPending = String(historyItem.status || '').toLowerCase() === 'pending';
+    const itemStatus = String(historyItem.status || '').toLowerCase();
+    const isUpdatable = itemStatus === 'pending' || itemStatus === 'current';
     const dateMatches = !targetDate || String(historyItem.date || '').trim() === String(targetDate || '').trim();
     const staffMatches = !targetStaff || String(historyItem.staff || '').trim() === String(targetStaff || '').trim();
     const serviceText = String(historyItem.service || '').toLowerCase();
     const targetServiceText = String(serviceName || '').toLowerCase();
     const serviceMatches = !serviceName || serviceText === targetServiceText || serviceText.includes(targetServiceText) || targetServiceText.includes(serviceText);
 
-    if (isPending && dateMatches && staffMatches && serviceMatches) {
+    if (isUpdatable && dateMatches && staffMatches && serviceMatches) {
+      console.log('[updateCustomerHistoryStatus] Found exact match at index:', index, 'with status:', itemStatus);
       matchIndex = index;
       break;
     }
   }
 
   if (matchIndex === -1) {
-    matchIndex = histories.findLastIndex((item) => String(item?.status || '').toLowerCase() === 'pending');
+    console.log('[updateCustomerHistoryStatus] No exact match, falling back to last updatable entry (pending or current)');
+    matchIndex = histories.findLastIndex((item) => {
+      const itemStatus = String(item?.status || '').toLowerCase();
+      return itemStatus === 'pending' || itemStatus === 'current';
+    });
   }
 
   if (matchIndex === -1) {
+    console.warn('[updateCustomerHistoryStatus] No pending history entry found');
     return { updated: false, reason: 'Matching pending history not found' };
   }
+
+  console.log('[updateCustomerHistoryStatus] Updating history at index', matchIndex, 'from status:', histories[matchIndex].status, 'to:', status);
 
   histories[matchIndex] = {
     ...histories[matchIndex],
@@ -121,9 +144,11 @@ const updateCustomerHistoryStatus = async (supabase, slot, status) => {
     .eq('id', customer.id);
 
   if (historyUpdateError) {
+    console.error('[updateCustomerHistoryStatus] Update error:', historyUpdateError.message);
     return { updated: false, reason: historyUpdateError.message };
   }
 
+  console.log('[updateCustomerHistoryStatus] ✓ History updated successfully for customer', customer.id);
   return { updated: true, customerId: customer.id, history: histories[matchIndex] };
 };
 
@@ -179,7 +204,6 @@ export default async (req, res) => {
       return res.status(500).json({ error: 'Failed to load appointment details', details: slotFetchError.message });
     }
 
-    // Update appointment status
     console.log(`[UpdateStatus] === STEP 2: Updating slot status to '${status}' ===`);
     const { data, error } = await supabase
       .from('available_slots')
@@ -198,6 +222,14 @@ export default async (req, res) => {
     console.log(`[UpdateStatus] ✓ Slot status updated to '${status}'`);
 
     console.log(`[UpdateStatus] === STEP 3: Syncing customer history ===`);
+    console.log('[UpdateStatus] Slot data for history sync:', {
+      id: slotData?.id,
+      customer_contact: slotData?.customer_contact,
+      date: slotData?.date,
+      assigned_staff: slotData?.assigned_staff,
+      services: slotData?.services
+    });
+    
     const historySync = await updateCustomerHistoryStatus(supabase, slotData, status);
     console.log('[UpdateStatus] History sync result:', historySync);
     

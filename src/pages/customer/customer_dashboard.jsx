@@ -72,7 +72,7 @@ export default function CustomerDashboard() {
 				service: item.service || 'Service',
 				stylist: item.staff || 'Unknown Stylist',
 				cost: parseFloat(item.price) || 0,
-				status: item.status === 'done' ? 'completed' : item.status === 'current' ? 'upcoming' : item.status || 'pending',
+				status: item.status || 'pending',
 				rated: false,
 				rating: 0,
 			}));
