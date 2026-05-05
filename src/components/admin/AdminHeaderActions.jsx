@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getOperatorSession } from "../../services/operatorAuth";
+import { Toast } from "../toast";
+import ConfirmExitDialog from "../modal/superadmin/ConfirmExitDialog";
 
 const BellIcon = ({ size = 15, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -41,8 +43,8 @@ const notificationItems = [
 ];
 
 const settingsItems = [
-  { id: "notification-preferences", label: "Notification preferences", description: "Choose which admin alerts should be visible." },
   { id: "profile-edit", label: "Profile settings", description: "Update username and avatar stored locally." },
+  { id: "notification-preferences", label: "Notification preferences", description: "Choose which admin alerts should be visible." },
 ];
 
 const themeStorageKey = "adminThemeMode";
@@ -69,6 +71,11 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
     }
     return { newBookings: true, bookingChanges: true, liveQueueUpdates: true, staffUpdates: true, systemAlerts: true, promotions: true, lowStock: true, soundAlerts: true };
   });
+  const [fileInputHover, setFileInputHover] = useState(false);
+  const [validationError, setValidationError] = useState(null);
+  const [editingUsername, setEditingUsername] = useState(null);
+  const [profileSaveToastCount, setProfileSaveToastCount] = useState(0);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
   const session = getOperatorSession();
   const [profile, setProfile] = useState(() => {
@@ -92,6 +99,8 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
   const notificationSeed = externalNotifications.length > 0 ? externalNotifications : notificationItems;
   const notificationSeedKey = useMemo(() => notificationSeed.map((item) => `${item.id}-${item.title}-${item.time}-${item.unread ? 1 : 0}`).join("|"), [notificationSeed]);
   const unreadCount = useMemo(() => notifications.filter((item) => item.unread).length, [notifications]);
+  const profileUsername = profile?.username || (session?.email || "").split("@")[0] || "Administrator";
+  const profileRole = session?.role || "Administrator";
 
   useEffect(() => { setNotifications(notificationSeed); }, [notificationSeedKey]);
   useEffect(() => { if (typeof document !== "undefined") { document.documentElement.dataset.theme = themeMode; window.localStorage.setItem(themeStorageKey, themeMode); } }, [themeMode]);
@@ -111,6 +120,48 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
   const toggleTheme = () => setThemeMode((m) => (m === "dark" ? "light" : "dark"));
   const markAllNotificationsRead = () => setNotifications((n) => n.map((it) => ({ ...it, unread: false })));
   const togglePreference = (key) => setNotificationPreferences((p) => ({ ...p, [key]: !p[key] }));
+
+  const formatRoleLabel = (role) => {
+    if (!role) return "Administrator";
+    return role
+      .split(" ")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
+
+  const validateProfile = () => {
+    if (!editingUsername || editingUsername.trim() === "") {
+      setValidationError("Username cannot be empty");
+      return false;
+    }
+    setValidationError(null);
+    return true;
+  };
+
+  useEffect(() => {
+    if (settingsView === "profile-edit" && editingUsername === null) {
+      setEditingUsername(profileUsername);
+    }
+    if (settingsView !== "profile-edit") {
+      setEditingUsername(null);
+    }
+  }, [settingsView, profileUsername]);
+
+  const handleSaveProfile = () => {
+    if (!validateProfile()) return;
+    setShowSaveConfirm(true);
+  };
+
+  const handleConfirmSaveProfile = () => {
+    setProfile((p) => ({ ...p, username: editingUsername }));
+    setProfileSaveToastCount((count) => count + 1);
+    setShowSaveConfirm(false);
+    setSettingsView("main");
+  };
+
+  const handleCancelSaveProfile = () => {
+    setShowSaveConfirm(false);
+  };
 
   const renderSettings = () => {
     switch (settingsView) {
@@ -207,27 +258,86 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
               <button type="button" className="admin-dropdown-link" onClick={() => setSettingsView("main")}>Back</button>
             </div>
 
-            <div className="admin-profile-edit">
-              <div className="admin-profile-edit-row">
-                <label className="admin-settings-item-title">Username</label>
-                <input className="admin-text-input" type="text" value={profile?.username || (session?.email || "").split("@")[0] || ""} onChange={(e) => setProfile((p) => ({ ...p, username: e.target.value }))} placeholder="Display username" />
-              </div>
-
-              <div className="admin-profile-edit-row">
-                <label className="admin-settings-item-title">Avatar</label>
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <div className="cdb-avatar" style={{ width: 56, height: 56 }}>
-                    {profile?.avatar ? (<img src={profile.avatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />) : (<span style={{ fontWeight: 700, color: "var(--color-amber)" }}>{(profile?.username || session?.email || "A")[0]}</span>)}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* Upper section: Avatar and File Input */}
+              <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                {/* Avatar column */}
+                <div style={{ flex: "0 0 auto" }}>
+                  <div className="cdb-avatar-edit-wrapper" style={{ width: 56, height: 56 }}>
+                    <div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${profileUsername} avatar`} style={{ width: "100%", height: "100%", fontSize: 20 }}>
+                      {profile?.avatar ? (
+                        <img src={profile.avatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span className="cdb-avatar-initial" style={{ fontSize: 24, lineHeight: 1 }}>{profileUsername.trim().charAt(0).toUpperCase() || "A"}</span>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleAvatarFile(f); }} />
+                </div>
+
+                {/* File input column */}
+                <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+                  <div className="cdb-form-section">
+                    <label className="cdb-field-label">Choose avatar</label>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => {
+                        const file = e.target.files && e.target.files[0];
+                        if (file) handleAvatarFile(file);
+                      }} 
+                      onMouseEnter={() => setFileInputHover(true)}
+                      onMouseLeave={() => setFileInputHover(false)}
+                      style={{ width: "100%", minWidth: 0, cursor: "pointer", padding: "6px 8px", borderRadius: "4px", border: fileInputHover ? "2px solid var(--color-amber, #dd901d)" : "1px solid var(--color-border, #e5e5e5)", backgroundColor: fileInputHover ? "rgba(221, 144, 29, 0.05)" : "transparent", transition: "all 0.2s ease" }} 
+                    />
                     <p className="admin-settings-item-copy">PNG/JPG, small images recommended. Saved locally.</p>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
-                <button type="button" className="cdb-btn-edit" onClick={() => { setSettingsView("main"); }}>Done</button>
+              {/* Lower section: Username, Email, Role */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div className="cdb-form-section">
+                  <label className="cdb-field-label">Username</label>
+                  <input
+                    className="cdb-input"
+                    type="text"
+                    autoComplete="off"
+                    value={editingUsername || ""}
+                    onChange={(e) => {
+                      setEditingUsername(e.target.value);
+                      setValidationError(null);
+                    }}
+                    placeholder="Display username"
+                    style={{
+                      width: "100%",
+                      minWidth: 0,
+                      background: "rgba(26, 15, 0, 0.5)",
+                      border: validationError ? "1px solid rgba(220, 38, 38, 0.85)" : "1px solid rgba(221, 144, 29, 0.3)",
+                      boxShadow: "none",
+                      outline: "none",
+                    }}
+                  />
+                  {validationError && (
+                    <p style={{ color: "var(--color-error, #dc2626)", fontSize: 12, marginTop: 4 }}>
+                      {validationError}
+                    </p>
+                  )}
+                </div>
+
+                <div className="cdb-form-section">
+                  <label className="cdb-field-label">Email</label>
+                  <p className="cdb-field-value cdb-field-value-lg" style={{ fontSize: 15, fontWeight: 500 }}>{session?.email || ""}</p>
+                </div>
+
+                <div className="cdb-form-section">
+                  <label className="cdb-field-label">Role</label>
+                  <p className="cdb-field-value cdb-field-value-lg" style={{ fontSize: 15, fontWeight: 500 }}>{formatRoleLabel(profileRole)}</p>
+                </div>
+
+                <div className="cdb-action-row" style={{ marginTop: 4, justifyContent: "flex-end", gap: 8 }}>
+                  <button type="button" className="cdb-btn cdb-btn-danger-outline" onClick={() => setSettingsView("main")}>Cancel</button>
+                  <button type="button" className="cdb-btn cdb-btn-success" onClick={handleSaveProfile}>Save</button>
+                </div>
               </div>
             </div>
           </>
@@ -250,13 +360,14 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
                   {profile?.avatar ? (
                     <img src={profile.avatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <span style={{ fontWeight: 700, color: "var(--color-amber)" }}>{(profile?.username || session?.email || "A")[0]}</span>
+                    <span style={{ fontWeight: 700, color: "var(--color-amber)" }}>{profileUsername[0] || "A"}</span>
                   )}
                 </div>
 
                 <div style={{ minWidth: 0 }}>
-                  <span className="admin-settings-item-title">{profile?.username || (session?.email || "").split("@")[0] || "Administrator"}</span>
+                  <span className="admin-settings-item-title">{profileUsername}</span>
                   <p className="admin-settings-item-copy">{session?.email || ""}</p>
+                  <p className="admin-settings-item-copy">{formatRoleLabel(profileRole)}</p>
                 </div>
               </div>
 
@@ -270,58 +381,78 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
   };
 
   return (
-    <div className="admin-header-actions" ref={wrapperRef}>
-      <button className={`dash-action-btn admin-header-trigger${openMenu === "notifications" ? " active" : ""}`} type="button" onClick={() => toggleMenu("notifications")} aria-expanded={openMenu === "notifications"} aria-haspopup="menu">
-        <BellIcon size={14} color="currentColor" />
-        Notifications
-        {unreadCount > 0 && <span className="admin-header-badge">{unreadCount}</span>}
-      </button>
+    <>
+      <div className="admin-header-actions" ref={wrapperRef}>
+        <button className={`dash-action-btn admin-header-trigger${openMenu === "notifications" ? " active" : ""}`} type="button" onClick={() => toggleMenu("notifications")} aria-expanded={openMenu === "notifications"} aria-haspopup="menu">
+          <BellIcon size={14} color="currentColor" />
+          Notifications
+          {unreadCount > 0 && <span className="admin-header-badge">{unreadCount}</span>}
+        </button>
 
-      <button className={`dash-action-btn admin-header-trigger${openMenu === "settings" ? " active" : ""}`} type="button" onClick={() => toggleMenu("settings")} aria-expanded={openMenu === "settings"} aria-haspopup="menu">
-        <SettingsIcon size={14} color="currentColor" />
-        Settings
-      </button>
+        <button className={`dash-action-btn admin-header-trigger${openMenu === "settings" ? " active" : ""}`} type="button" onClick={() => toggleMenu("settings")} aria-expanded={openMenu === "settings"} aria-haspopup="menu">
+          <SettingsIcon size={14} color="currentColor" />
+          Settings
+        </button>
 
-      {openMenu && (
-        <div className="admin-header-dropdown" role="menu" aria-label={openMenu === "notifications" ? "Notifications" : "Settings"}>
-          {openMenu === "notifications" ? (
-            <>
-              <div className="admin-dropdown-topbar">
-                <div>
-                  <p className="admin-dropdown-eyebrow">Inbox</p>
-                  <h3 className="admin-dropdown-title">Recent Notifications</h3>
+        {openMenu && (
+          <div className="admin-header-dropdown" role="menu" aria-label={openMenu === "notifications" ? "Notifications" : "Settings"}>
+            {openMenu === "notifications" ? (
+              <>
+                <div className="admin-dropdown-topbar">
+                  <div>
+                    <p className="admin-dropdown-eyebrow">Inbox</p>
+                    <h3 className="admin-dropdown-title">Recent Notifications</h3>
+                  </div>
+                  <button type="button" className="admin-dropdown-link" onClick={markAllNotificationsRead}>Mark all as read</button>
                 </div>
-                <button type="button" className="admin-dropdown-link" onClick={markAllNotificationsRead}>Mark all as read</button>
-              </div>
 
-              <div className="admin-notification-list">
-                {notifications.map((notification) => (
-                  <button key={notification.id} type="button" className={`admin-notification-item${notification.unread ? " unread" : ""}`} onClick={closeMenu}>
-                    <span className={`admin-notification-tone tone-${notification.tone}`} />
-                    <div className="admin-notification-copy">
-                      <div className="admin-notification-row">
-                        <span className="admin-notification-category">{notification.category}</span>
-                        {notification.unread && <span className="admin-notification-unread">New</span>}
+                <div className="admin-notification-list">
+                  {notifications.map((notification) => (
+                    <button key={notification.id} type="button" className={`admin-notification-item${notification.unread ? " unread" : ""}`} onClick={closeMenu}>
+                      <span className={`admin-notification-tone tone-${notification.tone}`} />
+                      <div className="admin-notification-copy">
+                        <div className="admin-notification-row">
+                          <span className="admin-notification-category">{notification.category}</span>
+                          {notification.unread && <span className="admin-notification-unread">New</span>}
+                        </div>
+                        <p className="admin-notification-title">{notification.title}</p>
+                        <p className="admin-notification-description">{notification.description}</p>
                       </div>
-                      <p className="admin-notification-title">{notification.title}</p>
-                      <p className="admin-notification-description">{notification.description}</p>
-                    </div>
-                    <span className="admin-notification-time">{notification.time}</span>
-                  </button>
-                ))}
-              </div>
+                      <span className="admin-notification-time">{notification.time}</span>
+                    </button>
+                  ))}
+                </div>
 
-              <div className="admin-dropdown-footer">
-                <span className="admin-dropdown-footnote">Showing recent activity across bookings, staff, and system alerts.</span>
-                <button type="button" className="admin-dropdown-link" onClick={closeMenu}>View all notifications</button>
-              </div>
-            </>
-          ) : (
-            renderSettings()
-          )}
-        </div>
-      )}
-    </div>
+                <div className="admin-dropdown-footer">
+                  <span className="admin-dropdown-footnote">Showing recent activity across bookings, staff, and system alerts.</span>
+                  <button type="button" className="admin-dropdown-link" onClick={closeMenu}>View all notifications</button>
+                </div>
+              </>
+            ) : (
+              renderSettings()
+            )}
+          </div>
+        )}
+      </div>
+
+      <Toast
+        key={`admin-profile-save-${profileSaveToastCount}`}
+        isVisible={profileSaveToastCount > 0}
+        message="Profile saved successfully!"
+        type="success"
+        duration={1800}
+      />
+
+      <ConfirmExitDialog
+        isOpen={showSaveConfirm}
+        onConfirm={handleConfirmSaveProfile}
+        onCancel={handleCancelSaveProfile}
+        title="Save Profile Changes?"
+        message={`You are about to update your profile details.\n\nUsername: ${editingUsername || ""}\nEmail: ${session?.email || ""}\nRole: ${formatRoleLabel(profileRole)}`}
+        confirmButtonLabel="Save Changes"
+        cancelButtonLabel="Continue Editing"
+      />
+    </>
   );
 }
 
