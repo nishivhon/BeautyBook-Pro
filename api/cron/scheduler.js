@@ -118,9 +118,78 @@ async function rotateAppointmentSlots() {
   }
 }
 
-// Schedule: Run at midnight every day (0 0 * * *)
-// Format: minute, hour, day-of-month, month, day-of-week
-cron.schedule('0 0 * * *', rotateAppointmentSlots);
+/**
+ * Sync daily staff statistics
+ */
+async function syncDailyStaffStats() {
+  try {
+    // Convert UTC to Philippine Time (UTC+8)
+    const now = new Date();
+    const phtDate = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    
+    console.log('[Scheduler] Starting daily staff statistics sync at', phtDate.toISOString(), '(Philippine Time)');
 
-console.log('[Scheduler] Appointment slot rotation scheduled for daily at midnight UTC');
+    const staff_list = await supabase
+      .from('staffs')
+      .select('id, names');
+
+    if (staff_list.error) throw staff_list.error;
+
+    const updates = [];
+
+    for (const s of staff_list.data || []) {
+      try {
+        // Count total bookings for this staff
+        const { count: totalBookings, error: totalError } = await supabase
+          .from('available_slots')
+          .select('id', { count: 'exact', head: true })
+          .eq('assigned_staff', s.names);
+
+        // Count done/completed bookings for this staff
+        const { count: doneBookings, error: doneError } = await supabase
+          .from('available_slots')
+          .select('id', { count: 'exact', head: true })
+          .eq('assigned_staff', s.names)
+          .eq('status', 'done');
+
+        const totalCount = totalBookings || 0;
+        const doneCount = doneBookings || 0;
+
+        // Update the staffs table
+        const { error: updateError } = await supabase
+          .from('staffs')
+          .update({
+            total_clients: totalCount,
+            done_clients: doneCount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', s.id);
+
+        if (!updateError) {
+          updates.push({ name: s.names, total: totalCount, done: doneCount });
+          console.log(`[Scheduler] ✓ Updated ${s.names}: total=${totalCount}, done=${doneCount}`);
+        }
+      } catch (err) {
+        console.error(`[Scheduler] Error updating ${s.names}:`, err.message);
+      }
+    }
+
+    console.log(`[Scheduler] ✓ Daily stats sync completed for ${updates.length} staff members\n`);
+
+  } catch (error) {
+    console.error('[Scheduler] Error syncing daily stats:', error.message);
+  }
+}
+
+// Schedule: Run at midnight Philippine Time every day (4:00 PM UTC = 12:00 AM PHT)
+// Format: minute, hour, day-of-month, month, day-of-week
+// PHT is UTC+8, so 12:00 AM PHT = 4:00 PM UTC (16:00)
+cron.schedule('0 16 * * *', rotateAppointmentSlots);
+
+// Schedule: Run at end of day - 11:59 PM Philippine Time (3:59 PM UTC)
+// PHT is UTC+8, so 11:59 PM PHT = 3:59 PM UTC (15:59)
+cron.schedule('59 15 * * *', syncDailyStaffStats);
+
+console.log('[Scheduler] Appointment slot rotation scheduled for daily at 12:00 AM Philippine Time (4:00 PM UTC)');
+console.log('[Scheduler] Daily staff stats sync scheduled for daily at 11:59 PM Philippine Time (3:59 PM UTC)');
 console.log('[Scheduler] Waiting for jobs...\n');

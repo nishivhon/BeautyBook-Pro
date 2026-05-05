@@ -22,8 +22,13 @@ export default async (req, res) => {
   try {
     console.log('[CronJob] Starting appointment slot rotation...');
     
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    // Convert UTC to Philippine Time (UTC+8)
+    const now = new Date();
+    const phtDate = new Date(now.getTime() + (8 * 60 * 60 * 1000)); // Add 8 hours for PHT
+    const today = phtDate.toISOString().split('T')[0]; // YYYY-MM-DD in PHT
+    const tomorrow = new Date(phtDate.getTime() + 86400000).toISOString().split('T')[0]; // Tomorrow in PHT
+
+    console.log(`[CronJob] Philippine Time - Today: ${today}, Tomorrow: ${tomorrow}`);
 
     // Step 1: Move yesterday's and older slots to appointment_logs
     console.log(`[CronJob] Moving slots before ${today} to appointment_logs...`);
@@ -67,12 +72,12 @@ export default async (req, res) => {
       console.log(`[CronJob] Moved ${pastSlots.length} past slots to appointment_logs`);
     }
 
-    // Step 2: Generate new slots for the next 5 days (only if they don't exist)
-    console.log(`[CronJob] Generating slots for the next 5 days...`);
+    // Step 2: Generate new slots for the next 5 days starting from today (only if they don't exist)
+    console.log(`[CronJob] Generating slots for the next 5 days starting from ${today}...`);
     
-    // Generate slots for today + next 5 days
+    // Generate slots for today and the next 4 days (5 days total)
     for (let dayOffset = 0; dayOffset < 5; dayOffset++) {
-      const targetDate = new Date(Date.now() + (dayOffset * 86400000)).toISOString().split('T')[0];
+      const targetDate = new Date(phtDate.getTime() + (dayOffset * 86400000)).toISOString().split('T')[0];
       
       const { data: existingSlots } = await supabase
         .from('available_slots')
