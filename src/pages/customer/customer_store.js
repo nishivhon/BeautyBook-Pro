@@ -71,3 +71,34 @@ export const useCustomerHistoryData = () => {
 };
 
 export const useCustomerCouponsData = () => usePersistentState(COUPONS_KEY, defaultCoupons);
+
+// Default appointment data for upcoming appointments
+export const defaultAppointments = [
+  {
+    id: 1,
+    date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+    time: "10:00 AM",
+    service: "Haircut",
+    duration: "30 mins",
+    price: 150,
+    stylist: "Maria Santos",
+    customerName: "Jake Quaker",
+    email: "quakerjake@gmail.com",
+    phone: "09171234567",
+    refNo: "18001-0001",
+    status: "upcoming",
+    booked_at: new Date().toISOString(),
+    cancelled: false,
+  },
+];
+
+export const useCustomerAppointmentsData = () => {
+  const appointmentsKey = "customerAppointmentsData";
+  const [appointments, setAppointments] = useState(() => readStorage(appointmentsKey, defaultAppointments));
+
+  useEffect(() => {
+    localStorage.setItem(appointmentsKey, JSON.stringify(appointments));
+  }, [appointments]);
+
+  return [appointments, setAppointments];
+};
