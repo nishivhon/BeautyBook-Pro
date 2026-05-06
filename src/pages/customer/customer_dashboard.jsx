@@ -10,10 +10,9 @@ export default function CustomerDashboard() {
 	const [coupons, setCoupons] = useCustomerCouponsData();
 	const [appointments, setAppointments] = useCustomerAppointmentsData();
 
-	const [historyFilter, setHistoryFilter] = useState("all");
+	
 	const [selectedForRating, setSelectedForRating] = useState(null);
 	const [ratingValue, setRatingValue] = useState(0);
-	const [couponFilter, setCouponFilter] = useState("all");
 	const [cancelModalOpen, setCancelModalOpen] = useState(false);
 	const [selectedAppointmentToCancel, setSelectedAppointmentToCancel] = useState(null);
 
@@ -88,20 +87,11 @@ export default function CustomerDashboard() {
 
 	console.log('[CustomerDashboard] Final history to display:', history);
 
-	const filteredHistory = history.filter((item) => {
-		const passes = historyFilter === "all" || 
-			(historyFilter === "previous" && item.status === "completed") || 
-			(historyFilter === "current" && item.status === "upcoming");
-		console.log(`[CustomerDashboard] Filter check - item: ${item.service}, status: ${item.status}, filter: ${historyFilter}, passes: ${passes}`);
-		return passes;
-	});
+	// Only show unrated transactions in the dashboard "Recent Transaction" section
+	const recentUnrated = history.filter((item) => !item.rated);
 
-	console.log('[CustomerDashboard] After filter - historyFilter:', historyFilter, 'filteredHistory.length:', filteredHistory.length);
-
-	const filteredCoupons = coupons.filter((coupon) => {
-		if (couponFilter === "all") return true;
-		return coupon.category === couponFilter;
-	});
+	// Only show unclaimed, non-expired coupons in the dashboard coupons section
+	const recentUnclaimedCoupons = coupons.filter((coupon) => !coupon.claimed && coupon.status !== "expired");
 
 	const profileInitial = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
 
@@ -309,28 +299,15 @@ export default function CustomerDashboard() {
 		</section>
 			<section className="cdb-section cdb-mounted">
 			<div className="cdb-card">
-				<h2 className="cdb-section-title">Service History</h2>
-					<div className="cdb-history-header">
-						<div className="cdb-history-left">
-							<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/history")}>View Full Transaction History</button>
-						</div>
-						<div className="cdb-history-right">
-							<div className="cdb-filter-row">
-								{[
-									{ id: "current", label: "Current" },
-									{ id: "previous", label: "Previous" },
-									{ id: "all", label: "All" },
-								].map((filter) => (
-									<button key={filter.id} className={`cdb-filter-btn ${historyFilter === filter.id ? "active" : ""}`} onClick={() => setHistoryFilter(filter.id)}>
-										{filter.label}
-									</button>
-								))}
-							</div>
-						</div>
+				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+					<h2 className="cdb-section-title">Recent Transaction</h2>
+					<div>
+						<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/history")}>View Full Transaction History</button>
 					</div>
+				</div>
 					<div className="cdb-grid cdb-grid-history">
-						{filteredHistory && filteredHistory.length > 0 ? (
-							filteredHistory.map((item) => (
+						{recentUnrated && recentUnrated.length > 0 ? (
+							recentUnrated.map((item) => (
 								<div key={item.id} className="cdb-item-card">
 									<div className="cdb-item-left">
 										<h3 className="cdb-item-title">{item.service}</h3>
@@ -342,7 +319,7 @@ export default function CustomerDashboard() {
 									</div>
 									<div className="cdb-item-right">
 										<span className={`cdb-status-badge ${item.status === "completed" ? "completed" : "upcoming"}`}>{item.status}</span>
-										{item.status === "completed" && !item.rated && (
+										{!item.rated && (
 											<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)}>Rate Service</button>
 										)}
 									</div>
@@ -350,8 +327,7 @@ export default function CustomerDashboard() {
 							))
 						) : (
 							<div style={{ padding: '20px', gridColumn: '1 / -1', textAlign: 'center', color: '#999' }}>
-								<p>No service history found. Your bookings will appear here.</p>
-								{history.length > 0 && <p style={{ fontSize: '12px' }}>Total history items: {history.length} (filtered: {historyFilter})</p>}
+								<p>No recent transactions needing rating</p>
 							</div>
 						)}
 					</div>
@@ -360,28 +336,14 @@ export default function CustomerDashboard() {
 
 			<section className="cdb-section cdb-mounted">
 			<div className="cdb-card">
-				<h2 className="cdb-section-title">Coupons</h2>
-					<div className="cdb-coupon-header">
-						<div className="cdb-coupon-left">
-							<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
-						</div>
-						<div className="cdb-coupon-right">
-							<div className="cdb-filter-row cdb-filter-wrap">
-								{[
-									{ id: "discount", label: "Discount" },
-									{ id: "promo", label: "Promo" },
-									{ id: "limited", label: "Limited Time" },
-									{ id: "all", label: "All" },
-								].map((filter) => (
-									<button key={filter.id} className={`cdb-filter-btn ${couponFilter === filter.id ? "active" : ""}`} onClick={() => setCouponFilter(filter.id)}>
-										{filter.label}
-									</button>
-								))}
-							</div>
-						</div>
+				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+					<h2 className="cdb-section-title">Coupons</h2>
+					<div>
+						<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
 					</div>
+				</div>
 					<div className="cdb-grid cdb-grid-coupons">
-						{filteredCoupons.map((coupon) => (
+						{recentUnclaimedCoupons.map((coupon) => (
 							<div key={coupon.id} className={`cdb-coupon-card ${coupon.status === "expired" ? "expired" : ""}`}>
 								<div className="cdb-coupon-left">
 									<h3 className={`cdb-coupon-title ${coupon.status === "expired" ? "expired" : ""}`}>{coupon.discount}</h3>

@@ -4490,7 +4490,7 @@ html[data-theme="light"] {
   ───────────────────────────────────── */
   .dash-page-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     width: 100%;
   }
@@ -5850,7 +5850,7 @@ html[data-theme="light"] {
     align-items: center;
     justify-content: space-between;
     padding: 13px 40px;
-    background: var(--bg-dark)b1707;
+    background: var(--bg-dark);
     border-bottom: 1px solid rgba(221, 144, 29, 0.1);
     gap: 40px;
     flex-shrink: 0;
