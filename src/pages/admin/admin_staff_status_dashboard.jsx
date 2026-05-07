@@ -508,10 +508,26 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [expandedStaff, setExpandedStaff] = useState(null);
   const [staff, setStaff] = useState(staffList);
+  const [walkInStatus, setWalkInStatus] = useState({});
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ 
+    isOpen: false, 
+    title: "", 
+    message: "", 
+    action: null, 
+    staffName: "",
+    staffId: null
+  });
 
   // Update staff when staffList changes
   useEffect(() => {
     setStaff(staffList);
+    // Initialize walk-in status for each staff member (default to "Accepting")
+    const initialWalkInStatus = {};
+    staffList.forEach(member => {
+      initialWalkInStatus[member.name] = "Accepting";
+    });
+    setWalkInStatus(initialWalkInStatus);
   }, [staffList]);
 
   const statuses = ["Available", "In Service", "On Break", "Off Today"];
@@ -610,11 +626,125 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                 <div className="staff-member-left">
                   <div className="staff-member-avatar">{s.initial}</div>
                   <span className="staff-member-name">{s.name}</span>
+                  {/* Walk-In Status Dropdown */}
+                  {s.status === "Available" && (
+                    <div style={{ position: "relative", marginLeft: "12px" }}>
+                      <button
+                        onClick={() => setOpenDropdown(openDropdown === s.name ? null : s.name)}
+                        style={{
+                          padding: "4px 12px",
+                          backgroundColor: walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.15)" : "rgba(239, 68, 68, 0.15)",
+                          border: walkInStatus[s.name] === "Accepting" ? "1px solid rgba(34, 197, 94, 0.3)" : "1px solid rgba(239, 68, 68, 0.3)",
+                          borderRadius: "6px",
+                          color: walkInStatus[s.name] === "Accepting" ? "#22c55e" : "#ef4444",
+                          fontSize: "11px",
+                          fontWeight: "600",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          whiteSpace: "nowrap",
+                          fontFamily: "Inter, sans-serif",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.opacity = "0.8";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.opacity = "1";
+                        }}
+                      >
+                        {walkInStatus[s.name] === "Accepting" ? "Accepting Walk-In" : "Not Accepting"}
+                      </button>
+                      
+                      {/* Dropdown Menu */}
+                      {openDropdown === s.name && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: "0",
+                            marginTop: "4px",
+                            backgroundColor: "#1a1a1a",
+                            border: "1px solid rgba(221, 144, 29, 0.2)",
+                            borderRadius: "6px",
+                            minWidth: "180px",
+                            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+                            zIndex: 100,
+                            overflow: "hidden",
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            onClick={() => {
+                              setConfirmModal({
+                                isOpen: true,
+                                title: "Confirm Walk-In Status",
+                                message: `Allow ${s.name} to accept walk-ins?`,
+                                action: "walk_in_accept",
+                                staffName: s.name,
+                                staffId: s.id
+                              });
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "10px 14px",
+                              backgroundColor: walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.1)" : "transparent",
+                              border: "none",
+                              textAlign: "left",
+                              color: "#f5f5f5",
+                              fontSize: "13px",
+                              fontFamily: "Inter, sans-serif",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.backgroundColor = "rgba(34, 197, 94, 0.15)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.backgroundColor = walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.1)" : "transparent";
+                            }}
+                          >
+                            Accepting Walk-In
+                          </button>
+                          <button
+                            onClick={() => {
+                              setConfirmModal({
+                                isOpen: true,
+                                title: "Confirm Walk-In Status",
+                                message: `Prevent ${s.name} from accepting walk-ins?`,
+                                action: "walk_in_reject",
+                                staffName: s.name,
+                                staffId: s.id
+                              });
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "10px 14px",
+                              backgroundColor: walkInStatus[s.name] === "Not Accepting" ? "rgba(239, 68, 68, 0.1)" : "transparent",
+                              border: "none",
+                              borderTop: "1px solid rgba(221, 144, 29, 0.1)",
+                              textAlign: "left",
+                              color: "#f5f5f5",
+                              fontSize: "13px",
+                              fontFamily: "Inter, sans-serif",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.backgroundColor = walkInStatus[s.name] === "Not Accepting" ? "rgba(239, 68, 68, 0.1)" : "transparent";
+                            }}
+                          >
+                            Not Accepting Walk-In
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="staff-member-right">
                   <div className="staff-member-status-col">
                     <span className={s.statusClass}>{s.status}</span>
-                    <span className="staff-member-sub">{s.subStatus}</span>
                   </div>
                   <button 
                     className="staff-member-chevron"
@@ -648,49 +778,47 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                   </div>
 
                   <div>
-                    <p className="dash-detail-label">Start of Service</p>
-                    <p className="dash-detail-value">{s.details.startOfService}</p>
-                  </div>
-
-                  <div>
-                    <p className="dash-detail-label">Service Done</p>
-                    <p className="dash-detail-value">{s.details.serviceDone}</p>
-                  </div>
-
-                  <div>
-                    <p className="dash-detail-label">Time of Break</p>
-                    <p className="dash-detail-value">{s.details.timeOfBreak}</p>
-                  </div>
-
-                  <div>
-                    <p className="dash-detail-label">Time of Clock In</p>
-                    <p className="dash-detail-value">{s.details.timeOfClockIn}</p>
-                  </div>
-
-                  <div>
                     <p className="dash-detail-label">Up Next Client</p>
                     <p className="dash-detail-value">{s.details.upNextClient}</p>
                   </div>
 
                   <div>
-                    <p className="dash-detail-label">No. of Client Today</p>
-                    <p className="dash-detail-value">{s.details.noOfClientToday}</p>
+                    <p className="dash-detail-label">Total Clients Today</p>
+                    <p className="dash-detail-value">{s.details.totalClients}</p>
                   </div>
 
                   <div>
-                    <p className="dash-detail-label">Available for Walk-In</p>
-                    <p className={s.details.availableForWalkIn ? "dash-detail-value-green" : "dash-detail-value-red"}>
-                      {s.details.availableForWalkIn ? "Yes" : "No"}
-                    </p>
+                    <p className="dash-detail-label">Done Clients Today</p>
+                    <p className="dash-detail-value">{s.details.doneClients}</p>
                   </div>
 
-                  {/* Update Status & Manage Service Buttons */}
+                  <div>
+                    <p className="dash-detail-label">Clock In</p>
+                    <p className="dash-detail-value">{s.clock_in}</p>
+                  </div>
+
+                  <div>
+                    <p className="dash-detail-label">Clock Out</p>
+                    <p className="dash-detail-value">{s.clock_out}</p>
+                  </div>
+
+                  {/* Clock-In & Manage Service Buttons */}
                   <div style={{ gridColumn: "1 / -1", marginTop: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                     <button
-                      onClick={() => onOpenStatusModal(s)}
+                      onClick={() => {
+                        const isClockIn = s.status === "Absent";
+                        setConfirmModal({
+                          isOpen: true,
+                          title: isClockIn ? "Confirm Clock In" : "Confirm Clock Out",
+                          message: `Are you sure you want to ${isClockIn ? 'clock in' : 'clock out'} ${s.name}?`,
+                          action: isClockIn ? "clock_in" : "clock_out",
+                          staffName: s.name,
+                          staffId: s.id
+                        });
+                      }}
                       style={{
                         padding: "10px 16px",
-                        backgroundColor: "#dd901d",
+                        backgroundColor: s.status === "Absent" ? "#22c55e" : "#ef4444",
                         border: "none",
                         borderRadius: "8px",
                         color: "#fff",
@@ -704,13 +832,13 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                         gap: "6px",
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = "#c97a15";
+                        e.target.style.backgroundColor = s.status === "Absent" ? "#16a34a" : "#dc2626";
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = "#dd901d";
+                        e.target.style.backgroundColor = s.status === "Absent" ? "#22c55e" : "#ef4444";
                       }}
                     >
-                      Update Status
+                      {s.status === "Absent" ? "Clock In" : "Clock Out"}
                     </button>
                     <button
                       onClick={() => onOpenManageServiceModal(s)}
@@ -736,8 +864,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                         e.target.style.backgroundColor = "#4387ef";
                       }}
                     >
-                      <ServiceIcon size={13} color="currentColor" />
-                      Manage Service
+                      Manage Specialty
                     </button>
                   </div>
                 </div>
@@ -749,6 +876,168 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
               <p>No staff found with this status</p>
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div 
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+            fontFamily: "Inter, sans-serif",
+          }}
+          onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        >
+          <div
+            style={{
+              backgroundColor: "#1a1a1a",
+              borderRadius: "12px",
+              padding: "32px",
+              maxWidth: "400px",
+              width: "90%",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.9)",
+              border: "1px solid rgba(221, 144, 29, 0.2)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#f5f5f5", margin: "0 0 12px 0" }}>
+              {confirmModal.title}
+            </h3>
+            
+            <p style={{ fontSize: "14px", color: "#988f81", margin: "0 0 24px 0", lineHeight: "1.5" }}>
+              {confirmModal.message}
+            </p>
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                style={{
+                  flex: 1,
+                  padding: "12px 16px",
+                  backgroundColor: "transparent",
+                  border: "1px solid rgba(221, 144, 29, 0.3)",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#988f81",
+                  transition: "all 0.2s ease",
+                  fontFamily: "Inter, sans-serif",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.6)";
+                  e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.3)";
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setConfirmModal({ ...confirmModal, isOpen: false });
+                  
+                  const isClockIn = confirmModal.action === "clock_in";
+                  const isClockOut = confirmModal.action === "clock_out";
+                  const isWalkInAccept = confirmModal.action === "walk_in_accept";
+                  const isWalkInReject = confirmModal.action === "walk_in_reject";
+                  
+                  try {
+                    if (isClockIn || isClockOut) {
+                      // Format time as HH:MM:SS in 24-hour format
+                      const now = new Date();
+                      const timeString = now.toLocaleTimeString('en-GB', { 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit',
+                        hour12: false 
+                      });
+                      
+                      // Update local state
+                      const updatedStaff = staff.map(staffMember => 
+                        staffMember.name === confirmModal.staffName 
+                          ? { 
+                              ...staffMember, 
+                              status: isClockIn ? "Available" : "Absent",
+                              statusClass: isClockIn ? "staff-status-green" : "staff-status-tan",
+                              subStatus: isClockIn ? "Available" : "Not clocked in",
+                              clock_in: isClockIn ? timeString : staffMember.clock_in,
+                              clock_out: isClockOut ? timeString : staffMember.clock_out
+                            }
+                          : staffMember
+                      );
+                      setStaff(updatedStaff);
+                      
+                      // Update database
+                      const updatePayload = {
+                        id: confirmModal.staffId,
+                      };
+                      
+                      if (isClockIn) {
+                        updatePayload.clock_in = timeString;
+                      } else if (isClockOut) {
+                        updatePayload.clock_out = timeString;
+                      }
+                      
+                      await fetch('/api/staffs/update', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updatePayload)
+                      });
+                      
+                      onStaffStatusUpdate?.(confirmModal.staffName, isClockIn ? "Available" : "Absent");
+                    } else if (isWalkInAccept || isWalkInReject) {
+                      setWalkInStatus({ ...walkInStatus, [confirmModal.staffName]: isWalkInAccept ? "Accepting" : "Not Accepting" });
+                      setOpenDropdown(null);
+                      
+                      await fetch('/api/staffs/update', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          id: confirmModal.staffId,
+                          walk_in: isWalkInAccept ? true : false
+                        })
+                      });
+                    }
+                  } catch (error) {
+                    console.error('Error updating staff:', error);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: "12px 16px",
+                  backgroundColor: "#dd901d",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#fff",
+                  transition: "all 0.2s ease",
+                  fontFamily: "Inter, sans-serif",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#e89f2d";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#dd901d";
+                }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -885,9 +1174,10 @@ export const AdminDashboardStaffStatus = ({ date }) => {
         const transformedStaff = staffData.map((s, index) => {
           // Determine status based on in_service column
           // Priority: check in_service first, then fallback to status
-          let status = 'Available';
-          let statusClass = 'staff-status-green';
-          let subStatus = 'Available';
+          // Default status is "Absent" - becomes "Available" when Clock In is clicked
+          let status = 'Absent';
+          let statusClass = 'staff-status-tan';
+          let subStatus = 'Not clocked in';
 
           // Normalize the in_service value (trim whitespace)
           const inServiceValue = (s.in_service || '').trim().toLowerCase();
@@ -919,11 +1209,14 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           }
 
           return {
+            id: s.id,
             initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
             name: staffName,
             status: status,
             statusClass: statusClass,
             subStatus: subStatus,
+            clock_in: s.clock_in || '—',
+            clock_out: s.clock_out || '—',
             details: {
               currentClient: s.current_client || 'None',
               startOfService: s.start_time || '—',
@@ -932,6 +1225,8 @@ export const AdminDashboardStaffStatus = ({ date }) => {
               timeOfClockIn: s.clock_in_time || '—',
               upNextClient: s.next_client || 'None',
               noOfClientToday: s.clients_today || 0,
+              totalClients: s.total_clients || 0,
+              doneClients: s.done_clients || 0,
               availableForWalkIn: statusValue === 'avail' || inServiceValue === 'avail'
             }
           };

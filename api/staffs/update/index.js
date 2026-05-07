@@ -9,7 +9,7 @@ export default async (req, res) => {
   }
 
   try {
-    const { id, names, category_specialty, employment } = req.body;
+    const { id, names, category_specialty, employment, clock_in, clock_out, walk_in, status, total_clients, done_clients } = req.body;
 
     if (!id) {
       return res.status(400).json({ error: 'Staff ID is required' });
@@ -24,13 +24,19 @@ export default async (req, res) => {
       auth: { persistSession: false }
     });
 
-    console.log(`[Staffs:Update] Updating staff ID: ${id}`, { names, category_specialty, employment });
+    console.log(`[Staffs:Update] Updating staff ID: ${id}`, { names, category_specialty, employment, clock_in, clock_out, walk_in, status, total_clients, done_clients });
 
     // Build update object with only provided fields
     const updateData = {};
     if (names !== undefined) updateData.names = names;
     if (category_specialty !== undefined) updateData.category_specialty = category_specialty;
     if (employment !== undefined) updateData.employment = employment;
+    if (clock_in !== undefined) updateData.clock_in = clock_in;
+    if (clock_out !== undefined) updateData.clock_out = clock_out;
+    if (walk_in !== undefined) updateData.walk_in = walk_in;
+    if (status !== undefined) updateData.status = status;
+    if (total_clients !== undefined) updateData.total_clients = total_clients;
+    if (done_clients !== undefined) updateData.done_clients = done_clients;
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
