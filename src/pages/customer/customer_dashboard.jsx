@@ -115,12 +115,12 @@ export default function CustomerDashboard() {
 		setCoupons((prev) => prev.map((coupon) => (coupon.id === id ? { ...coupon, claimed: true } : coupon)));
 	};
 
-	// Helper function to determine if appointment can be cancelled (not within 24 hours)
+	// Helper function to determine if appointment can be cancelled (not within 2 hours)
 	const canCancelAppointment = (appointmentDate, appointmentTime) => {
 		const now = new Date();
 		const appointmentDateTime = new Date(`${appointmentDate}T${convertTo24Hour(appointmentTime)}`);
 		const hoursDifference = (appointmentDateTime - now) / (1000 * 60 * 60);
-		return hoursDifference > 24;
+		return hoursDifference > 2;
 	};
 
 	// Helper function to convert 12-hour to 24-hour format
@@ -151,19 +151,39 @@ export default function CustomerDashboard() {
 	};
 
 	// Handle confirm cancellation
-	const handleConfirmCancelAppointment = () => {
+	const handleConfirmCancelAppointment = async () => {
 		if (!selectedAppointmentToCancel) return;
 
-		setAppointments((prev) =>
-			prev.map((appt) =>
-				appt.id === selectedAppointmentToCancel.id
-					? { ...appt, cancelled: true, status: 'cancelled' }
-					: appt
-			)
-		);
+		try {
+			console.log('[CustomerDashboard] Cancelling appointment:', selectedAppointmentToCancel.id);
 
-		setCancelModalOpen(false);
-		setSelectedAppointmentToCancel(null);
+			// Call API to reset appointment slot in database
+			const response = await fetch('/api/appointments/update/cancel', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ id: selectedAppointmentToCancel.id }),
+			});
+
+			if (!response.ok) {
+				throw new Error(`Failed to cancel appointment: ${response.statusText}`);
+			}
+
+			const data = await response.json();
+			console.log('[CustomerDashboard] Appointment cancelled:', data);
+
+			// Remove from appointments list in UI
+			setAppointments((prev) =>
+				prev.filter((appt) => appt.id !== selectedAppointmentToCancel.id)
+			);
+
+			alert('Appointment cancelled successfully');
+		} catch (err) {
+			console.error('[CustomerDashboard] Error cancelling appointment:', err);
+			alert('Failed to cancel appointment: ' + err.message);
+		} finally {
+			setCancelModalOpen(false);
+			setSelectedAppointmentToCancel(null);
+		}
 	};
 
 	return (
@@ -274,7 +294,7 @@ export default function CustomerDashboard() {
 						{canCancelAppointment(appointments[0].date, appointments[0].time) ? (
 							<button className="cdb-btn cdb-btn-secondary" onClick={() => handleInitiateCancelAppointment(appointments[0])} style={{ flex: 1 }}>Cancel Appointment</button>
 						) : (
-							<div style={{ flex: 1, textAlign: 'center', color: 'var(--color-tan)', fontSize: '13px', padding: '10px 0' }}>Cannot cancel within 24 hours of appointment</div>
+							<div style={{ flex: 1, textAlign: 'center', color: 'var(--color-tan)', fontSize: '13px', padding: '10px 0' }}>Cannot cancel within 2 hours of appointment</div>
 						)}
 					</div>
 				</div>
@@ -397,7 +417,7 @@ export default function CustomerDashboard() {
 						</p>
 						{!canCancelAppointment(selectedAppointmentToCancel.date, selectedAppointmentToCancel.time) && (
 							<div className="cdb-cancel-modal-warning">
-								⚠️ Warning: You are cancelling within 24 hours of your appointment. This may affect future booking privileges.
+								⚠️ Warning: You are cancelling within 2 hours of your appointment. This may affect future booking privileges.
 							</div>
 						)}
 						<div className="cdb-cancel-modal-actions">
