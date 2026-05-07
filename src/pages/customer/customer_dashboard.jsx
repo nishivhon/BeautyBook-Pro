@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { CustomerShell } from "./customer_shell";
 import { useCustomerCouponsData, useCustomerHistoryData, useCustomerProfileData, useCustomerAppointmentsData } from "./customer_store";
 
+const StarIcon = ({ filled = false }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? "#dd901d" : "none"} xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="#dd901d" strokeWidth="1.6" strokeLinejoin="round" />
+  </svg>
+);
+
 export default function CustomerDashboard() {
 	const navigate = useNavigate();
 	const [profile, setProfile] = useCustomerProfileData();
@@ -59,6 +65,14 @@ export default function CustomerDashboard() {
 		};
 
 		fetchFullCustomerData();
+
+		// Set up auto-refresh every 10 seconds to catch status updates from admin
+		const refreshInterval = setInterval(() => {
+			console.log('[CustomerDashboard] Auto-refreshing customer data');
+			fetchFullCustomerData();
+		}, 10000);
+
+		return () => clearInterval(refreshInterval);
 	}, [profile?.id]);
 
 	// Refetch history data when profile changes (to pick up new bookings from histories)
@@ -74,9 +88,10 @@ export default function CustomerDashboard() {
 				service: item.service || 'Service',
 				stylist: item.staff || 'Unknown Stylist',
 				cost: parseFloat(item.price) || 0,
-				status: item.status || 'pending',
-				rated: false,
-				rating: 0,
+				status: item.status === 'done' ? 'completed' : item.status === 'current' ? 'upcoming' : item.status || 'pending',
+				rated: item.rated || false,
+				rating: item.rating || 0,
+				rated_at: item.rated_at || null,
 			}));
 			console.log('[CustomerDashboard] Transformed history:', transformedHistory);
 			setHistory(transformedHistory);
@@ -87,8 +102,8 @@ export default function CustomerDashboard() {
 
 	console.log('[CustomerDashboard] Final history to display:', history);
 
-	// Only show unrated transactions in the dashboard "Recent Transaction" section
-	const recentUnrated = history.filter((item) => !item.rated);
+	// Only show completed (and unrated) transactions in the dashboard "Recent Transaction" section
+	const recentCompleted = history.filter((item) => item.status === 'completed' && !item.rated);
 
 	// Only show unclaimed, non-expired coupons in the dashboard coupons section
 	const recentUnclaimedCoupons = coupons.filter((coupon) => !coupon.claimed && coupon.status !== "expired");
@@ -103,12 +118,49 @@ export default function CustomerDashboard() {
 		setRatingValue(0);
 	};
 
-	const handleSubmitRating = () => {
-		if (!selectedForRating || ratingValue <= 0) return;
-		setHistory((prev) =>
-			prev.map((h) => (h.id === selectedForRating.id ? { ...h, rated: true, rating: ratingValue } : h))
-		);
-		setSelectedForRating(null);
+	const handleSubmitRating = async () => {
+		if (!selectedForRating || ratingValue <= 0 || !profile?.id) return;
+
+		try {
+			console.log('[CustomerDashboard] Submitting rating:', {
+				customerId: profile.id,
+				date: selectedForRating.date,
+				service: selectedForRating.service,
+				staff: selectedForRating.stylist,
+				rating: ratingValue,
+			});
+
+			// Call API to save rating to history
+			const response = await fetch('/api/customers/update/rating', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					customerId: profile.id,
+					date: selectedForRating.date,
+					service: selectedForRating.service,
+					staff: selectedForRating.stylist,
+					rating: ratingValue,
+				}),
+			});
+
+			if (!response.ok) {
+				throw new Error(`Failed to submit rating: ${response.statusText}`);
+			}
+
+			const data = await response.json();
+			console.log('[CustomerDashboard] Rating saved:', data);
+
+			// Update local history state to reflect the rating
+			setHistory((prev) =>
+				prev.map((h) => (h.id === selectedForRating.id ? { ...h, rated: true, rating: ratingValue } : h))
+			);
+
+			alert('Rating submitted successfully!');
+			setSelectedForRating(null);
+		} catch (err) {
+			console.error('[CustomerDashboard] Error submitting rating:', err);
+			alert('Failed to submit rating: ' + err.message);
+		}
 	};
 
 	const handleClaimCoupon = (id) => {
@@ -328,20 +380,18 @@ export default function CustomerDashboard() {
 					</div>
 				</div>
 					<div className="cdb-grid cdb-grid-history">
-						{recentUnrated && recentUnrated.length > 0 ? (
-							recentUnrated.map((item) => (
+						{recentCompleted && recentCompleted.length > 0 ? (
+							recentCompleted.map((item) => (
 								<div key={item.id} className="cdb-item-card">
 									<div className="cdb-item-left">
 										<h3 className="cdb-item-title">{item.service}</h3>
 										<p className="cdb-item-subtitle">{item.stylist} · ${item.cost.toFixed(2)}</p>
 										<p className="cdb-date-text">{new Date(item.date).toLocaleDateString()}</p>
-										{item.status === "completed" && (
-											item.rated && <div className="cdb-rating-row">{[1, 2, 3, 4, 5].map((star) => <span key={star}>{star <= item.rating ? "★" : "☆"}</span>)}</div>
-										)}
+										{item.rated && <div className="cdb-rating-row">{[1, 2, 3, 4, 5].map((star) => <span key={star}>{star <= item.rating ? "★" : "☆"}</span>)}</div>}
 									</div>
 									<div className="cdb-item-right">
 										<span className={`cdb-status-badge ${item.status === "completed" ? "completed" : "upcoming"}`}>{item.status}</span>
-										{!item.rated && (
+										{(item.rating === 0 || item.rating === undefined || item.rating === null) && (
 											<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)}>Rate Service</button>
 										)}
 									</div>
@@ -349,7 +399,7 @@ export default function CustomerDashboard() {
 							))
 						) : (
 							<div style={{ padding: '20px', gridColumn: '1 / -1', textAlign: 'center', color: '#999' }}>
-								<p>No recent transactions needing rating</p>
+								<p>No completed services yet</p>
 							</div>
 						)}
 					</div>
@@ -396,7 +446,7 @@ export default function CustomerDashboard() {
 						<div className="cdb-star-row">
 							{[1, 2, 3, 4, 5].map((star) => (
 								<button key={star} onClick={() => setRatingValue(star)} className={`cdb-star-btn ${ratingValue >= star ? "active" : ""}`}>
-									{star <= ratingValue ? "★" : "☆"}
+									<StarIcon filled={ratingValue >= star} />
 								</button>
 							))}
 						</div>

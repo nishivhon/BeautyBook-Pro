@@ -62,8 +62,9 @@ export const useCustomerHistoryData = () => {
       stylist: item.staff || 'Unknown Stylist',
       cost: parseFloat(item.price) || 0,
       status: item.status === 'done' ? 'completed' : item.status === 'current' ? 'upcoming' : item.status || 'pending',
-      rated: false,
-      rating: 0,
+      rated: item.rated || false,
+      rating: item.rating || 0,
+      rated_at: item.rated_at || null,
     }));
   });
 
