@@ -1344,6 +1344,181 @@ html[data-theme="light"] {
     gap: 8px;
   }
 
+  /* ═══════════════════════════════════════
+     APPOINTMENT SECTION
+  ═══════════════════════════════════════ */
+
+  .cdb-section-appointments {
+    transition-delay: 0.15s;
+  }
+
+  .cdb-appointment-receipt {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: var(--bg-darker);
+    border: 1px solid rgba(221, 144, 29, 0.2);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .cdb-appointment-header {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .cdb-appointment-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-white);
+    margin: 0 0 8px;
+  }
+
+  .cdb-appointment-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: rgba(221, 144, 29, 0.15);
+    color: var(--color-amber);
+  }
+
+  .cdb-appointment-status.today {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+  }
+
+  .cdb-appointment-divider {
+    height: 1px;
+    background: rgba(152, 143, 129, 0.2);
+  }
+
+  .cdb-appointment-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+  }
+
+  .cdb-appointment-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-tan);
+  }
+
+  .cdb-appointment-value {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-white);
+    text-align: right;
+  }
+
+  .cdb-appointment-price {
+    color: var(--color-amber);
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .cdb-appointment-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(152, 143, 129, 0.2);
+  }
+
+  .cdb-appointment-actions .cdb-btn {
+    flex: 1;
+  }
+
+  .cdb-appointment-cancelled {
+    opacity: 0.6;
+    background: rgba(152, 143, 129, 0.05);
+    border-color: rgba(152, 143, 129, 0.2);
+  }
+
+  .cdb-appointment-cancelled .cdb-appointment-title {
+    color: var(--color-tan);
+    text-decoration: line-through;
+  }
+
+  .cdb-appointment-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--color-tan);
+  }
+
+  .cdb-appointment-empty-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+
+  .cdb-appointment-empty-text {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .cdb-appointment-empty-subtext {
+    font-size: 13px;
+    color: rgba(152, 143, 129, 0.7);
+  }
+
+  .cdb-cancel-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(2px);
+  }
+
+  .cdb-cancel-modal-card {
+    width: min(380px, 90vw);
+    background: var(--bg-darker);
+    border: 1px solid rgba(221, 144, 29, 0.2);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .cdb-cancel-modal-title {
+    margin: 0 0 12px;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-white);
+  }
+
+  .cdb-cancel-modal-message {
+    margin: 0 0 24px;
+    font-size: 14px;
+    color: var(--color-light);
+    line-height: 1.5;
+  }
+
+  .cdb-cancel-modal-warning {
+    margin: 0 0 20px;
+    padding: 12px;
+    background: rgba(221, 144, 29, 0.1);
+    border-left: 3px solid var(--color-amber);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--color-tan);
+  }
+
+  .cdb-cancel-modal-actions {
+    display: flex;
+    gap: 12px;
+  }
+
   .cdb-toast {
     position: fixed;
     top: 80px;
@@ -4005,7 +4180,7 @@ html[data-theme="light"] {
     display: block;
     font-family: 'Georgia', 'Times New Roman', serif;
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 1.125rem; /* increased for better readability */
     color: var(--color-white);
   }
 
@@ -4013,7 +4188,7 @@ html[data-theme="light"] {
     display: block;
     font-family: 'Inter', sans-serif;
     font-weight: 400;
-    font-size: 0.75rem;
+    font-size: 0.9rem; /* increased */
     color: var(--color-tan);
   }
 
@@ -4038,7 +4213,7 @@ html[data-theme="light"] {
     display: block;
     font-family: 'Georgia', 'Times New Roman', serif;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.25rem; /* increased */
     color: var(--color-amber);
     text-align: right;
   }
@@ -4083,7 +4258,7 @@ html[data-theme="light"] {
     display: block;
     font-family: 'Inter', sans-serif;
     font-weight: 500;
-    font-size: 0.85rem;
+    font-size: 1rem; /* increased */
     color: var(--color-white);
     word-break: break-word;
   }
@@ -4103,7 +4278,7 @@ html[data-theme="light"] {
     border-radius: 20px;
     font-family: 'Inter', sans-serif;
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.9rem; /* increased */
     color: var(--color-amber);
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -4120,7 +4295,7 @@ html[data-theme="light"] {
   .confirm-reminder-text {
     font-family: 'Inter', sans-serif;
     font-weight: 400;
-    font-size: 0.78rem;
+    font-size: 0.9rem; /* increased */
     color: var(--color-tan);
     line-height: 1.5;
     margin: 0;
@@ -4315,7 +4490,7 @@ html[data-theme="light"] {
   ───────────────────────────────────── */
   .dash-page-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     width: 100%;
   }

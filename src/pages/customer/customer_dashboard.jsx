@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomerShell } from "./customer_shell";
-import { useCustomerCouponsData, useCustomerHistoryData, useCustomerProfileData } from "./customer_store";
+import { useCustomerCouponsData, useCustomerHistoryData, useCustomerProfileData, useCustomerAppointmentsData } from "./customer_store";
 
 export default function CustomerDashboard() {
 	const navigate = useNavigate();
 	const [profile, setProfile] = useCustomerProfileData();
 	const [history, setHistory] = useCustomerHistoryData();
 	const [coupons, setCoupons] = useCustomerCouponsData();
+	const [appointments, setAppointments] = useCustomerAppointmentsData();
 
-	const [historyFilter, setHistoryFilter] = useState("all");
+	
 	const [selectedForRating, setSelectedForRating] = useState(null);
 	const [ratingValue, setRatingValue] = useState(0);
-	const [couponFilter, setCouponFilter] = useState("all");
+	const [cancelModalOpen, setCancelModalOpen] = useState(false);
+	const [selectedAppointmentToCancel, setSelectedAppointmentToCancel] = useState(null);
 
 	// Fetch full customer data from database (including histories)
 	useEffect(() => {
@@ -85,20 +87,11 @@ export default function CustomerDashboard() {
 
 	console.log('[CustomerDashboard] Final history to display:', history);
 
-	const filteredHistory = history.filter((item) => {
-		const passes = historyFilter === "all" || 
-			(historyFilter === "previous" && item.status === "completed") || 
-			(historyFilter === "current" && item.status === "upcoming");
-		console.log(`[CustomerDashboard] Filter check - item: ${item.service}, status: ${item.status}, filter: ${historyFilter}, passes: ${passes}`);
-		return passes;
-	});
+	// Only show unrated transactions in the dashboard "Recent Transaction" section
+	const recentUnrated = history.filter((item) => !item.rated);
 
-	console.log('[CustomerDashboard] After filter - historyFilter:', historyFilter, 'filteredHistory.length:', filteredHistory.length);
-
-	const filteredCoupons = coupons.filter((coupon) => {
-		if (couponFilter === "all") return true;
-		return coupon.category === couponFilter;
-	});
+	// Only show unclaimed, non-expired coupons in the dashboard coupons section
+	const recentUnclaimedCoupons = coupons.filter((coupon) => !coupon.claimed && coupon.status !== "expired");
 
 	const profileInitial = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
 
@@ -120,6 +113,57 @@ export default function CustomerDashboard() {
 
 	const handleClaimCoupon = (id) => {
 		setCoupons((prev) => prev.map((coupon) => (coupon.id === id ? { ...coupon, claimed: true } : coupon)));
+	};
+
+	// Helper function to determine if appointment can be cancelled (not within 24 hours)
+	const canCancelAppointment = (appointmentDate, appointmentTime) => {
+		const now = new Date();
+		const appointmentDateTime = new Date(`${appointmentDate}T${convertTo24Hour(appointmentTime)}`);
+		const hoursDifference = (appointmentDateTime - now) / (1000 * 60 * 60);
+		return hoursDifference > 24;
+	};
+
+	// Helper function to convert 12-hour to 24-hour format
+	const convertTo24Hour = (time12) => {
+		const [time, period] = time12.split(' ');
+		let [hours, minutes] = time.split(':').map(Number);
+		if (period === 'PM' && hours !== 12) hours += 12;
+		if (period === 'AM' && hours === 12) hours = 0;
+		return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+	};
+
+	// Helper function to determine appointment status
+	const getAppointmentStatus = (appointmentDate) => {
+		const today = new Date().toISOString().split('T')[0];
+		return appointmentDate === today ? 'today' : 'upcoming';
+	};
+
+	// Handle cancel appointment button click
+	const handleInitiateCancelAppointment = (appointment) => {
+		const canCancel = canCancelAppointment(appointment.date, appointment.time);
+		if (!canCancel) {
+			setSelectedAppointmentToCancel(appointment);
+			setCancelModalOpen(true);
+			return;
+		}
+		setSelectedAppointmentToCancel(appointment);
+		setCancelModalOpen(true);
+	};
+
+	// Handle confirm cancellation
+	const handleConfirmCancelAppointment = () => {
+		if (!selectedAppointmentToCancel) return;
+
+		setAppointments((prev) =>
+			prev.map((appt) =>
+				appt.id === selectedAppointmentToCancel.id
+					? { ...appt, cancelled: true, status: 'cancelled' }
+					: appt
+			)
+		);
+
+		setCancelModalOpen(false);
+		setSelectedAppointmentToCancel(null);
 	};
 
 	return (
@@ -159,31 +203,111 @@ export default function CustomerDashboard() {
 								</>
 				</div>
 			</section>
-
-			<section className="cdb-section cdb-mounted">
-			<div className="cdb-card">
-				<h2 className="cdb-section-title">Service History</h2>
-					<div className="cdb-history-header">
-						<div className="cdb-history-left">
-							<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/history")}>View Full Transaction History</button>
-						</div>
-						<div className="cdb-history-right">
-							<div className="cdb-filter-row">
-								{[
-									{ id: "current", label: "Current" },
-									{ id: "previous", label: "Previous" },
-									{ id: "all", label: "All" },
-								].map((filter) => (
-									<button key={filter.id} className={`cdb-filter-btn ${historyFilter === filter.id ? "active" : ""}`} onClick={() => setHistoryFilter(filter.id)}>
-										{filter.label}
-									</button>
-								))}
+		<section className="cdb-section cdb-section-appointments cdb-mounted">
+		<div className="cdb-card">
+			<h2 className="cdb-section-title">Upcoming Appointment</h2>
+			{appointments && appointments.length > 0 && !appointments[0]?.cancelled ? (
+				<div className="confirm-card">
+					<div className="confirm-service-row">
+						<div className="confirm-service-left">
+							<div className="confirm-svc-text">
+								<span className="confirm-svc-name">{appointments[0].service}</span>
+								<span className="confirm-svc-duration">{appointments[0].duration}</span>
 							</div>
 						</div>
+						<div className="confirm-svc-meta">
+							<span className="confirm-svc-datetime">{new Date(appointments[0].date).toLocaleDateString()} · {appointments[0].time}</span>
+							<span className="confirm-svc-price">₱{appointments[0].price.toFixed(2)}</span>
+						</div>
 					</div>
+
+					{appointments[0].service && (
+						<>
+							<div style={{ marginBottom: 12 }}>
+								<div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-tan)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 8 }}>Services Selected</div>
+								<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+									<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+										<span style={{ color: 'var(--color-light)' }}>{appointments[0].service}</span>
+										<span style={{ color: 'var(--color-tan)' }}>₱{appointments[0].price.toFixed(2)}</span>
+									</div>
+								</div>
+							</div>
+							<div className="confirm-details">
+								<div className="confirm-detail-row">
+									<div className="confirm-detail-text">
+										<span className="confirm-detail-label">Name</span>
+										<span className="confirm-detail-value">{appointments[0].customerName}</span>
+									</div>
+								</div>
+								<div className="confirm-detail-row">
+									<div className="confirm-detail-text">
+										<span className="confirm-detail-label">Email</span>
+										<span className="confirm-detail-value">{appointments[0].email}</span>
+									</div>
+								</div>
+								<div className="confirm-detail-row">
+									<div className="confirm-detail-text">
+										<span className="confirm-detail-label">Phone</span>
+										<span className="confirm-detail-value">{appointments[0].phone}</span>
+									</div>
+								</div>
+								<div className="confirm-detail-row">
+									<div className="confirm-detail-text">
+										<span className="confirm-detail-label">Stylist</span>
+										<span className="confirm-detail-value">{appointments[0].stylist}</span>
+									</div>
+								</div>
+							</div>
+						</>
+					)}
+
+					<div className="confirm-bottom-row">
+						<div className="confirm-ref-pill">Ref. No.: {appointments[0].refNo}</div>
+						<div className="confirm-reminder-box">
+							<p className="confirm-reminder-text">You'll receive a reminder 15 minutes before your appointment.</p>
+						</div>
+					</div>
+
+					<div className="cdb-appointment-actions">
+						{canCancelAppointment(appointments[0].date, appointments[0].time) ? (
+							<button className="cdb-btn cdb-btn-secondary" onClick={() => handleInitiateCancelAppointment(appointments[0])} style={{ flex: 1 }}>Cancel Appointment</button>
+						) : (
+							<div style={{ flex: 1, textAlign: 'center', color: 'var(--color-tan)', fontSize: '13px', padding: '10px 0' }}>Cannot cancel within 24 hours of appointment</div>
+						)}
+					</div>
+				</div>
+			) : appointments && appointments.length > 0 && appointments[0]?.cancelled ? (
+				<div className="cdb-appointment-receipt cdb-appointment-cancelled">
+					<div className="cdb-appointment-header">
+						<h3 className="cdb-appointment-title">{appointments[0].service}</h3>
+						<span className="cdb-appointment-status" style={{ background: 'rgba(152, 143, 129, 0.15)', color: 'var(--color-tan)' }}>
+							Cancelled
+						</span>
+					</div>
+					<div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--color-tan)', fontSize: '14px' }}>
+						This appointment has been cancelled.
+					</div>
+				</div>
+			) : (
+				<div className="cdb-appointment-empty">
+					<div className="cdb-appointment-empty-icon">📅</div>
+					<div className="cdb-appointment-empty-text">No upcoming appointments</div>
+					<div className="cdb-appointment-empty-subtext">Book your next appointment to see it here.</div>
+				</div>
+			)}
+		</div>
+		</section>
+			<section className="cdb-section cdb-mounted">
+			<div className="cdb-card">
+				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+					<h2 className="cdb-section-title">Recent Transaction</h2>
+					<div>
+						<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/history")}>View Full Transaction History</button>
+					</div>
+				</div>
 					<div className="cdb-grid cdb-grid-history">
-						{filteredHistory && filteredHistory.length > 0 ? (
-							filteredHistory.map((item) => (
+						{recentUnrated && recentUnrated.length > 0 ? (
+							recentUnrated.map((item) => (
 								<div key={item.id} className="cdb-item-card">
 									<div className="cdb-item-left">
 										<h3 className="cdb-item-title">{item.service}</h3>
@@ -195,7 +319,7 @@ export default function CustomerDashboard() {
 									</div>
 									<div className="cdb-item-right">
 										<span className={`cdb-status-badge ${item.status === "completed" ? "completed" : "upcoming"}`}>{item.status}</span>
-										{item.status === "completed" && !item.rated && (
+										{!item.rated && (
 											<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)}>Rate Service</button>
 										)}
 									</div>
@@ -203,8 +327,7 @@ export default function CustomerDashboard() {
 							))
 						) : (
 							<div style={{ padding: '20px', gridColumn: '1 / -1', textAlign: 'center', color: '#999' }}>
-								<p>No service history found. Your bookings will appear here.</p>
-								{history.length > 0 && <p style={{ fontSize: '12px' }}>Total history items: {history.length} (filtered: {historyFilter})</p>}
+								<p>No recent transactions needing rating</p>
 							</div>
 						)}
 					</div>
@@ -213,28 +336,14 @@ export default function CustomerDashboard() {
 
 			<section className="cdb-section cdb-mounted">
 			<div className="cdb-card">
-				<h2 className="cdb-section-title">Coupons</h2>
-					<div className="cdb-coupon-header">
-						<div className="cdb-coupon-left">
-							<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
-						</div>
-						<div className="cdb-coupon-right">
-							<div className="cdb-filter-row cdb-filter-wrap">
-								{[
-									{ id: "discount", label: "Discount" },
-									{ id: "promo", label: "Promo" },
-									{ id: "limited", label: "Limited Time" },
-									{ id: "all", label: "All" },
-								].map((filter) => (
-									<button key={filter.id} className={`cdb-filter-btn ${couponFilter === filter.id ? "active" : ""}`} onClick={() => setCouponFilter(filter.id)}>
-										{filter.label}
-									</button>
-								))}
-							</div>
-						</div>
+				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+					<h2 className="cdb-section-title">Coupons</h2>
+					<div>
+						<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
 					</div>
+				</div>
 					<div className="cdb-grid cdb-grid-coupons">
-						{filteredCoupons.map((coupon) => (
+						{recentUnclaimedCoupons.map((coupon) => (
 							<div key={coupon.id} className={`cdb-coupon-card ${coupon.status === "expired" ? "expired" : ""}`}>
 								<div className="cdb-coupon-left">
 									<h3 className={`cdb-coupon-title ${coupon.status === "expired" ? "expired" : ""}`}>{coupon.discount}</h3>
@@ -272,6 +381,33 @@ export default function CustomerDashboard() {
 						<div className="cdb-modal-actions">
 							<button className="cdb-btn cdb-btn-danger-outline cdb-btn-flex" onClick={() => setSelectedForRating(null)}>Cancel</button>
 							<button className="cdb-btn cdb-btn-primary cdb-btn-flex" onClick={handleSubmitRating} disabled={ratingValue === 0}>Submit Rating</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{cancelModalOpen && selectedAppointmentToCancel && (
+				<div className="cdb-cancel-modal-overlay">
+					<div className="cdb-cancel-modal-card">
+						<h3 className="cdb-cancel-modal-title">Cancel Appointment?</h3>
+						<p className="cdb-cancel-modal-message">
+							Are you sure you want to cancel your {selectedAppointmentToCancel.service} appointment on {new Date(selectedAppointmentToCancel.date).toLocaleDateString()} at {selectedAppointmentToCancel.time}?
+						</p>
+						{!canCancelAppointment(selectedAppointmentToCancel.date, selectedAppointmentToCancel.time) && (
+							<div className="cdb-cancel-modal-warning">
+								⚠️ Warning: You are cancelling within 24 hours of your appointment. This may affect future booking privileges.
+							</div>
+						)}
+						<div className="cdb-cancel-modal-actions">
+							<button className="cdb-btn cdb-btn-primary" onClick={() => {
+								setCancelModalOpen(false);
+								setSelectedAppointmentToCancel(null);
+							}}>
+								Keep Appointment
+							</button>
+							<button className="cdb-btn cdb-btn-danger-outline" onClick={handleConfirmCancelAppointment}>
+								Confirm Cancellation
+							</button>
 						</div>
 					</div>
 				</div>
