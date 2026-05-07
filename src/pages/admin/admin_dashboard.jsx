@@ -806,7 +806,7 @@ const StaffStatus = () => {
       )}
       
       {!loading && !error && (
-        <div className="dash-staff-list live-queue-scroll-limited" style={{ maxHeight: "200px", paddingRight: "16px", padding: "12px 0" }}>
+        <div className="dash-staff-list live-queue-scroll-limited" style={{ maxHeight: "200px", padding: "12px 0" }}>
           {staff.map((s, i) => (
             <div key={i} className="dash-staff-row">
               <div className="dash-staff-left">
@@ -1108,7 +1108,7 @@ export const AdminDashboard = ({ date }) => {
       {/* Main Content */}
       <div className="super-admin-main">
         {/* Dashboard Header - Fixed Title and Actions */}
-        <header className="dashboard-header">
+        <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
           <div>
             <h1 className="dash-page-title">Admin Dashboard</h1>
             <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
