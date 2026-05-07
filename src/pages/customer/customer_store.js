@@ -93,12 +93,59 @@ export const defaultAppointments = [
 ];
 
 export const useCustomerAppointmentsData = () => {
-  const appointmentsKey = "customerAppointmentsData";
-  const [appointments, setAppointments] = useState(() => readStorage(appointmentsKey, defaultAppointments));
+  const [profile] = useCustomerProfileData();
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem(appointmentsKey, JSON.stringify(appointments));
-  }, [appointments]);
+    const fetchAppointments = async () => {
+      try {
+        setLoading(true);
+
+        // Use email or phone from profile to fetch appointments
+        const email = profile?.emails?.[0];
+        const phone = profile?.phones?.[0];
+
+        if (!email && !phone) {
+          console.log('[useCustomerAppointmentsData] No email or phone available');
+          setAppointments([]);
+          setLoading(false);
+          return;
+        }
+
+        console.log('[useCustomerAppointmentsData] Fetching appointments for email:', email, 'phone:', phone);
+
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (email) params.append('email', email);
+        if (phone) params.append('phone', phone);
+
+        const response = await fetch(`/api/appointments/read/by-customer?${params.toString()}`);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch appointments: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.appointments) {
+          console.log('[useCustomerAppointmentsData] Fetched appointments:', data.appointments);
+          setAppointments(data.appointments);
+        } else {
+          setAppointments([]);
+        }
+      } catch (err) {
+        console.error('[useCustomerAppointmentsData] Error fetching appointments:', err);
+        setAppointments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (profile?.id) {
+      fetchAppointments();
+    }
+  }, [profile?.id, profile?.emails, profile?.phones]);
 
   return [appointments, setAppointments];
 };

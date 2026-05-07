@@ -193,7 +193,7 @@ export default function CustomerDashboard() {
 											</div>
 											<div>
 												<label className="cdb-field-label">Notification Preference</label>
-												<p className="cdb-field-value cdb-field-value-lg">{profile.notificationPreference ? profile.notificationPreference.toUpperCase() : ""}</p>
+												<p className="cdb-field-value cdb-field-value-lg">{typeof profile.notificationPreference === 'string' ? profile.notificationPreference.toUpperCase() : (profile.notificationPreference ? 'ENABLED' : 'DISABLED')}</p>
 											</div>
 											<div className="cdb-action-row">
 												<button className="cdb-btn cdb-btn-edit" onClick={() => navigate("/customer/profile")}>Edit Profile</button>
@@ -211,13 +211,15 @@ export default function CustomerDashboard() {
 					<div className="confirm-service-row">
 						<div className="confirm-service-left">
 							<div className="confirm-svc-text">
-								<span className="confirm-svc-name">{appointments[0].service}</span>
-								<span className="confirm-svc-duration">{appointments[0].duration}</span>
+								<span className="confirm-svc-name">{String(appointments[0].category || 'General')}</span>
+								<span className="confirm-svc-duration">{String(appointments[0].duration || '1 hour')}</span>
 							</div>
 						</div>
 						<div className="confirm-svc-meta">
-							<span className="confirm-svc-datetime">{new Date(appointments[0].date).toLocaleDateString()} · {appointments[0].time}</span>
-							<span className="confirm-svc-price">₱{appointments[0].price.toFixed(2)}</span>
+							<span className="confirm-svc-datetime">
+								{appointments[0].date ? new Date(appointments[0].date).toLocaleDateString() : 'TBD'} · {String(appointments[0].time || '')}
+							</span>
+							<span className="confirm-svc-price">₱{typeof appointments[0].price === 'number' ? appointments[0].price.toFixed(2) : '0.00'}</span>
 						</div>
 					</div>
 
@@ -227,8 +229,8 @@ export default function CustomerDashboard() {
 								<div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-tan)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 8 }}>Services Selected</div>
 								<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 									<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-										<span style={{ color: 'var(--color-light)' }}>{appointments[0].service}</span>
-										<span style={{ color: 'var(--color-tan)' }}>₱{appointments[0].price.toFixed(2)}</span>
+										<span style={{ color: 'var(--color-light)' }}>{String(appointments[0].service || 'Service')}</span>
+										<span style={{ color: 'var(--color-tan)' }}>₱{typeof appointments[0].price === 'number' ? appointments[0].price.toFixed(2) : '0.00'}</span>
 									</div>
 								</div>
 							</div>
@@ -236,25 +238,25 @@ export default function CustomerDashboard() {
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Name</span>
-										<span className="confirm-detail-value">{appointments[0].customerName}</span>
+										<span className="confirm-detail-value">{String(appointments[0].customerName || '')}</span>
 									</div>
 								</div>
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Email</span>
-										<span className="confirm-detail-value">{appointments[0].email}</span>
+										<span className="confirm-detail-value">{String(appointments[0].email || '')}</span>
 									</div>
 								</div>
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Phone</span>
-										<span className="confirm-detail-value">{appointments[0].phone}</span>
+										<span className="confirm-detail-value">{String(appointments[0].phone || '')}</span>
 									</div>
 								</div>
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Stylist</span>
-										<span className="confirm-detail-value">{appointments[0].stylist}</span>
+										<span className="confirm-detail-value">{String(appointments[0].stylist || 'Unassigned')}</span>
 									</div>
 								</div>
 							</div>
@@ -262,7 +264,7 @@ export default function CustomerDashboard() {
 					)}
 
 					<div className="confirm-bottom-row">
-						<div className="confirm-ref-pill">Ref. No.: {appointments[0].refNo}</div>
+						<div className="confirm-ref-pill">Ref. No.: {String(appointments[0].refNo || appointments[0].id || '')}</div>
 						<div className="confirm-reminder-box">
 							<p className="confirm-reminder-text">You'll receive a reminder 15 minutes before your appointment.</p>
 						</div>
