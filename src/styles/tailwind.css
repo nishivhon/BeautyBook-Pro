@@ -6277,6 +6277,12 @@ html[data-theme="light"] {
     overflow-y: scroll;
   }
 
+  .admin-dashboard-page .dash-panel-manage-btn,
+  .admin-dashboard-page .dash-panel-manage-btn:hover {
+    background: none !important;
+    border: none !important;
+  }
+
   /* Hide all scrollbars globally */
   body, html {
     scrollbar-width: none;

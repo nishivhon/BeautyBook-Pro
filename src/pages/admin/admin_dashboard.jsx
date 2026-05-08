@@ -812,7 +812,7 @@ const StaffStatus = () => {
       )}
       
       {!loading && !error && (
-        <div className="dash-staff-list live-queue-scroll-limited admin-dashboard-scrollable" style={{ maxHeight: "200px", padding: "12px 0" }}>
+        <div className="dash-staff-list live-queue-scroll-limited admin-dashboard-scrollable" style={{ maxHeight: "200px", padding: "12px 0", paddingRight: "12px" }}>
           {staff.map((s, i) => (
             <div key={i} className="dash-staff-row">
               <div className="dash-staff-left">
