@@ -830,7 +830,6 @@ html[data-theme="light"] {
   html[data-theme="light"] .admin-nav-link,
   html[data-theme="light"] .logout-button,
   html[data-theme="light"] .admin-nav-logout,
-  html[data-theme="light"] .dash-action-btn,
   html[data-theme="light"] .dash-panel-manage-btn,
   html[data-theme="light"] .dash-download-btn,
   html[data-theme="light"] .svc-action-btn-secondary,
@@ -840,17 +839,28 @@ html[data-theme="light"] {
     color: #0c0a09;
   }
 
+  html[data-theme="light"] .dash-action-btn {
+    background: #f38ba6;
+    border-color: #f38ba6;
+    color: #000000;
+  }
+
   html[data-theme="light"] .nav-button:hover,
   html[data-theme="light"] .admin-nav-link:hover,
   html[data-theme="light"] .logout-button:hover,
   html[data-theme="light"] .admin-nav-logout:hover,
-  html[data-theme="light"] .dash-action-btn:hover,
   html[data-theme="light"] .svc-action-btn-secondary:hover,
   html[data-theme="light"] .staff-action-btn-secondary:hover,
   html[data-theme="light"] .dash-download-btn:hover {
     border-color: rgba(152, 143, 129, 0.5);
     background: rgba(250, 190, 206, 0.4);
     color: #0c0a09;
+  }
+
+  html[data-theme="light"] .dash-action-btn:hover {
+    background: #fabece;
+    border-color: #f38ba6;
+    color: #000000;
   }
 
   html[data-theme="light"] .nav-button.active,
@@ -878,8 +888,6 @@ html[data-theme="light"] {
   }
 
   html[data-theme="light"] .admin-header-dropdown,
-  html[data-theme="light"] .admin-notification-item,
-  html[data-theme="light"] .admin-settings-item,
   html[data-theme="light"] .admin-theme-toggle,
   html[data-theme="light"] .admin-profile-card {
     background: #ffffff;
@@ -887,9 +895,17 @@ html[data-theme="light"] {
     color: #0c0a09;
   }
 
-  html[data-theme="light"] .admin-notification-item.unread {
-    background: rgba(250, 190, 206, 0.4);
+  html[data-theme="light"] .admin-notification-item,
+  html[data-theme="light"] .admin-settings-item {
+    background: #f38ba6 !important;
+    color: #000000 !important;
     border-color: rgba(243, 139, 166, 0.35);
+  }
+
+  html[data-theme="light"] .admin-notification-item.unread {
+    background: #f38ba6 !important;
+    border-color: rgba(243, 139, 166, 0.45);
+    color: #000000 !important;
   }
 
   html[data-theme="light"] .admin-notification-title,
@@ -897,6 +913,11 @@ html[data-theme="light"] {
   html[data-theme="light"] .admin-settings-item-title,
   html[data-theme="light"] .admin-theme-copy strong {
     color: #0c0a09;
+  }
+
+  html[data-theme="light"] .admin-notification-item .admin-notification-title,
+  html[data-theme="light"] .admin-settings-item .admin-settings-item-title {
+    color: #000000 !important;
   }
 
   html[data-theme="light"] .admin-dropdown-eyebrow,
@@ -907,6 +928,12 @@ html[data-theme="light"] {
   html[data-theme="light"] .admin-settings-item-copy,
   html[data-theme="light"] .admin-theme-label {
     color: #988f81;
+  }
+
+  html[data-theme="light"] .admin-notification-item .admin-notification-description,
+  html[data-theme="light"] .admin-notification-item .admin-notification-time,
+  html[data-theme="light"] .admin-settings-item .admin-settings-item-copy {
+    color: #000000 !important;
   }
 
   html[data-theme="light"] .admin-settings-chip.is-on {
@@ -11116,11 +11143,21 @@ html[data-theme="light"] .staff-action-btn-primary:hover {
 html[data-theme="light"] .svc-action-btn-secondary,
 html[data-theme="light"] .staff-action-btn-secondary,
 html[data-theme="light"] .dash-download-btn,
-html[data-theme="light"] .dash-panel-manage-btn,
-html[data-theme="light"] .dash-action-btn {
+html[data-theme="light"] .dash-panel-manage-btn {
   background: #ffffff !important;
   border-color: #d5d2d3 !important;
   color: #0c0a09 !important;
+}
+
+html[data-theme="light"] .dash-action-btn {
+  background: #f38ba6 !important;
+  border-color: #f38ba6 !important;
+  color: #000000 !important;
+}
+
+html[data-theme="light"] .admin-header-badge {
+  background: #f5f0e8 !important;
+  color: #000000 !important;
 }
 
 html[data-theme="light"] .dash-action-btn:hover,
@@ -11128,9 +11165,9 @@ html[data-theme="light"] .svc-action-btn-secondary:hover,
 html[data-theme="light"] .staff-action-btn-secondary:hover,
 html[data-theme="light"] .dash-download-btn:hover,
 html[data-theme="light"] .dash-panel-manage-btn:hover {
-  background: rgba(250, 190, 206, 0.4) !important;
-  border-color: rgba(243, 139, 166, 0.5) !important;
-  color: #0c0a09 !important;
+  background: #fabece !important;
+  border-color: #f38ba6 !important;
+  color: #000000 !important;
 }
 
 html[data-theme="light"] .dash-page-title,
