@@ -664,31 +664,37 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
       {/* Sections */}
       {!loading && !error && (
-        <div className="live-queue-scroll-limited">
-          {queueSections.map((section, si) => (
-            <div key={si}>
-              <p className="live-section-label">{section.label}</p>
-              <div className="live-queue-group">
-                {section.items.length === 0 ? (
-                  <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
-                ) : (
-                  section.items.map((item, ii) => {
-                    const isUpNext = section.label === "Up Next";
-                    return (
-                      <QueueItem 
-                        key={ii} 
-                        {...item} 
-                        onCompleteService={handleCompleteService}
-                        showProceedButton={isUpNext}
-                        isProceedEnabled={ii < 3}
-                        onProceedClick={onProceedClick}
-                      />
-                    );
-                  })
-                )}
-              </div>
+        <div className="live-queue-scroll-limited admin-dashboard-scrollable">
+          {queueSections.every(s => s.items.length === 0) ? (
+            <div className="container-empty-state">
+              No live queue at the moment
             </div>
-          ))}
+          ) : (
+            queueSections.map((section, si) => (
+              <div key={si}>
+                <p className="live-section-label">{section.label}</p>
+                <div className="live-queue-group">
+                  {section.items.length === 0 ? (
+                    <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
+                  ) : (
+                    section.items.map((item, ii) => {
+                      const isUpNext = section.label === "Up Next";
+                      return (
+                        <QueueItem 
+                          key={ii} 
+                          {...item} 
+                          onCompleteService={handleCompleteService}
+                          showProceedButton={isUpNext}
+                          isProceedEnabled={ii < 3}
+                          onProceedClick={onProceedClick}
+                        />
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>
@@ -806,7 +812,7 @@ const StaffStatus = () => {
       )}
       
       {!loading && !error && (
-        <div className="dash-staff-list live-queue-scroll-limited" style={{ maxHeight: "200px", padding: "12px 0" }}>
+        <div className="dash-staff-list live-queue-scroll-limited admin-dashboard-scrollable" style={{ maxHeight: "200px", padding: "12px 0" }}>
           {staff.map((s, i) => (
             <div key={i} className="dash-staff-row">
               <div className="dash-staff-left">
@@ -1095,7 +1101,7 @@ export const AdminDashboard = ({ date }) => {
   }, []);
 
   return (
-    <div className="super-admin-container">
+    <div className="super-admin-container admin-dashboard-page">
       {/* Sidebar */}
       <AdminSidebar 
         activeNav={activeNav}

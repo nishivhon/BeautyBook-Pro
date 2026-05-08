@@ -470,6 +470,7 @@ html[data-theme="light"] {
   body, #root {
     background: var(--bg-dark);
     color: var(--color-white);
+    overflow: hidden;
   }
 
   html[data-theme="light"] body, html[data-theme="light"] #root {
@@ -1915,6 +1916,7 @@ html[data-theme="light"] {
     width: 100%;
     height: 100%;
     background: var(--bg-dark);
+    overflow: hidden;
   }
 }
 
@@ -5878,11 +5880,12 @@ html[data-theme="light"] {
   .super-admin-container {
     display: flex;
     width: calc(100vw - 340px);
+    height: 100vh;
     min-height: 100vh;
     background: var(--bg-dark);
     margin-left: 340px;
     transition: all 0.3s ease;
-    overflow-x: hidden;
+    overflow: hidden;
   }
 
   /* ── Sidebar ── */
@@ -6138,7 +6141,8 @@ html[data-theme="light"] {
     display: flex;
     flex-direction: column;
     flex: 1;
-    overflow: hidden;
+    min-height: 0;
+    overflow-y: hidden;
     overflow-x: hidden;
     width: 100%;
     max-width: 100%;
@@ -6248,7 +6252,8 @@ html[data-theme="light"] {
     display: flex;
     flex-direction: column;
     flex: 1;
-    overflow-y: auto;
+    min-height: 0;
+    overflow-y: hidden;
     overflow-x: hidden;
     padding: 32px;
     gap: 24px;
@@ -6260,6 +6265,16 @@ html[data-theme="light"] {
   main.dashboard-main::-webkit-scrollbar,
   .dashboard-main::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Admin dashboard: single page-level scroll only */
+  .admin-dashboard-page .dashboard-main {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .admin-dashboard-page .admin-dashboard-scrollable {
+    overflow-y: scroll;
   }
 
   /* Hide all scrollbars globally */
@@ -7675,6 +7690,7 @@ html[data-theme="light"] {
     border-radius: 14px;
     border: 1px solid rgba(152, 143, 129, 0.5);
     animation: fade-up 0.4s ease 0.2s both;
+    min-height: 420px;
   }
 
   .svc-group-header {
@@ -7744,6 +7760,7 @@ html[data-theme="light"] {
     flex-direction: column;
     gap: 0;
     padding-right: 12px;
+    flex: 1;
   }
 
   .svc-services-scroll-limited::-webkit-scrollbar {
@@ -8010,6 +8027,24 @@ html[data-theme="light"] {
      LIVE STATUS PAGE — All Styles
   ═══════════════════════════════════════ */
 
+  /* ── Empty state styling ── */
+  .container-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 280px;
+    padding: 20px;
+    text-align: center;
+    color: rgba(152, 143, 129, 0.7);
+    font-size: 0.95rem;
+    font-family: 'Inter', sans-serif;
+  }
+
+  html[data-theme="light"] .container-empty-state {
+    color: rgba(80, 80, 80, 0.6);
+  }
+
   /* ── Live status content grid ── */
   .live-page-grid {
     display: grid;
@@ -8043,6 +8078,7 @@ html[data-theme="light"] {
     border-radius: 14px;
     border: 1px solid rgba(152, 143, 129, 0.5);
     animation: fade-up 0.4s ease 0.2s both;
+    min-height: 420px;
   }
 
   /* section label (Current / Up Next / On Deck) */
@@ -8330,13 +8366,14 @@ html[data-theme="light"] {
   }
 
   .live-queue-scroll-limited {
-    max-height: 280px;
+    max-height: 320px;
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 12px;
     padding-right: 12px;
+    flex: 1;
   }
 
   .live-queue-scroll-limited::-webkit-scrollbar {
@@ -8707,6 +8744,7 @@ html[data-theme="light"] {
     border-radius: 14px;
     border: 1px solid rgba(152, 143, 129, 0.5);
     animation: fade-up 0.4s ease 0.2s both;
+    min-height: 420px;
   }
 
   .staff-list-header {
@@ -8934,13 +8972,14 @@ html[data-theme="light"] {
   }
 
   .staff-member-scroll-limited {
-    max-height: 220px;
+    max-height: 320px;
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 8px;
     padding-right: 12px;
+    flex: 1;
   }
 
   .staff-member-scroll-limited::-webkit-scrollbar {

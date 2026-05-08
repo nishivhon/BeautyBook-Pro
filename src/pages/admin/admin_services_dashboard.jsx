@@ -454,24 +454,32 @@ const ServicesPanel = ({ serviceGroups, loading, error, onEditService }) => {
       {/* Services List */}
       {!loading && !error && (
         <div className="svc-services-scroll-limited">
-          {/* Show all services grouped by category (both expanded and collapsed) */}
-          {serviceGroups.map((group, gi) => (
-            <div key={gi}>
-              <p className="svc-category-label">{group.category}</p>
-              <div className="svc-item-list">
-                {group.items.map((svc, i) => (
-                  <ServiceItem 
-                    key={i} 
-                    {...svc} 
-                    onEdit={onEditService}
-                  />
-                ))}
-              </div>
-              {gi < serviceGroups.length - 1 && (
-                <div className="svc-category-divider" />
-              )}
+          {serviceGroups.length === 0 ? (
+            <div className="container-empty-state">
+              No services found
             </div>
-          ))}
+          ) : (
+            <>
+              {/* Show all services grouped by category (both expanded and collapsed) */}
+              {serviceGroups.map((group, gi) => (
+                <div key={gi}>
+                  <p className="svc-category-label">{group.category}</p>
+                  <div className="svc-item-list">
+                    {group.items.map((svc, i) => (
+                      <ServiceItem 
+                        key={i} 
+                        {...svc} 
+                        onEdit={onEditService}
+                      />
+                    ))}
+                  </div>
+                  {gi < serviceGroups.length - 1 && (
+                    <div className="svc-category-divider" />
+                  )}
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>

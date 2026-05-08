@@ -619,7 +619,11 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
       {/* Staff List */}
       {!loading && !error && (
         <div className="staff-member-scroll-limited">
-          {filteredStaff.length > 0 ? (
+          {staff.length === 0 ? (
+            <div className="container-empty-state">
+              No staff available
+            </div>
+          ) : filteredStaff.length > 0 ? (
             filteredStaff.map((s, i) => (
             <div key={i}>
               <div className="staff-member-row">

@@ -685,32 +685,38 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
       {/* Sections */}
       {!loading && !error && (
         <div className="live-queue-scroll-limited">
-          {queueSections.map((section, si) => (
-            <div key={si}>
-              <p className="live-section-label">{section.label}</p>
-              <div className="live-queue-group">
-                {section.items.length === 0 ? (
-                  <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
-                ) : (
-                  section.items.map((item, ii) => {
-                    const isUpNext = section.label === "Up Next";
-                    return (
-                      <QueueItem 
-                        key={ii} 
-                        {...item}
-                        isExpanded={expandedItemId === item.id}
-                        onExpandToggle={handleExpandToggle}
-                        onCompleteService={handleCompleteService}
-                        showProceedButton={isUpNext}
-                        isProceedEnabled={ii < 3}
-                        onProceedClick={(id, name, service) => handleProceedClick(id, name, service, item.staff)}
-                      />
-                    );
-                  })
-                )}
-              </div>
+          {queueSections.every(s => s.items.length === 0) ? (
+            <div className="container-empty-state">
+              No live queue at the moment
             </div>
-          ))}
+          ) : (
+            queueSections.map((section, si) => (
+              <div key={si}>
+                <p className="live-section-label">{section.label}</p>
+                <div className="live-queue-group">
+                  {section.items.length === 0 ? (
+                    <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
+                  ) : (
+                    section.items.map((item, ii) => {
+                      const isUpNext = section.label === "Up Next";
+                      return (
+                        <QueueItem 
+                          key={ii} 
+                          {...item}
+                          isExpanded={expandedItemId === item.id}
+                          onExpandToggle={handleExpandToggle}
+                          onCompleteService={handleCompleteService}
+                          showProceedButton={isUpNext}
+                          isProceedEnabled={ii < 3}
+                          onProceedClick={(id, name, service) => handleProceedClick(id, name, service, item.staff)}
+                        />
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>
