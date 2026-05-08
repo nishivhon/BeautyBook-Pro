@@ -1259,10 +1259,60 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     navigate("/");
   };
 
-  const handleStaffStatusUpdate = (staffName, newStatus) => {
-    console.log(`Updated ${staffName} status to ${newStatus}`);
-    // Here you would typically make an API call to update the staff status in your backend
-    // Example: await updateStaffStatus(staffName, newStatus);
+  const handleStaffStatusUpdate = async (staffName, newStatus, attendanceData) => {
+    console.log(`Updated ${staffName} status to ${newStatus}`, attendanceData);
+    
+    try {
+      // Find staff member from the fetched staff data
+      const staffMember = staff.find(s => s.name === staffName);
+      if (!staffMember || !staffMember.id) {
+        console.error(`Staff member ${staffName} not found or has no id`);
+        return;
+      }
+
+      // When clocking in or setting available status
+      // Set both status and in_service to "avail"
+      const updateData = {
+        id: staffMember.id,
+        status: newStatus === "Available" || newStatus === "Open Slots" ? "avail" : newStatus,
+        in_service: newStatus === "Available" || newStatus === "Open Slots" ? "avail" : newStatus.toLowerCase(),
+      };
+
+      // Add clock_in if provided (means staff is clocking in)
+      if (attendanceData?.clockIn) {
+        updateData.clock_in = attendanceData.clockIn;
+      }
+
+      // Add clock_out if provided
+      if (attendanceData?.clockOut) {
+        updateData.clock_out = attendanceData.clockOut;
+      }
+
+      console.log('[Admin:StaffStatus] Sending update to API:', updateData);
+
+      // Make API call to update staff in database
+      const response = await fetch('/api/staffs/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error(`[Admin:StaffStatus] Failed to update staff: ${error.error}`, error.details);
+        return;
+      }
+
+      const result = await response.json();
+      console.log(`[Admin:StaffStatus] Successfully updated staff ${staffName}:`, result.staff);
+      
+      // Optionally refresh staff data to reflect changes
+      // fetchStaff();
+    } catch (error) {
+      console.error(`[Admin:StaffStatus] Error updating staff status:`, error);
+    }
   };
 
   const openStatusModal = (staffMember) => {
@@ -1383,7 +1433,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
         isOpen={statusUpdateModal.isOpen}
         staff={statusUpdateModal.staff}
         onClose={closeStatusModal}
-        onSave={(staffName, newStatus) => {
+        onSave={(staffName, newStatus, attendanceData) => {
           const updatedStaff = STAFF.map(s => 
             s.name === staffName 
               ? { 
@@ -1396,7 +1446,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
                 }
               : s
           );
-          handleStaffStatusUpdate(staffName, newStatus);
+          handleStaffStatusUpdate(staffName, newStatus, attendanceData);
           closeStatusModal();
         }}
       />

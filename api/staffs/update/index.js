@@ -9,7 +9,7 @@ export default async (req, res) => {
   }
 
   try {
-    const { id, names, category_specialty, employment, clock_in, clock_out, walk_in, status, total_clients, done_clients } = req.body;
+    const { id, names, category_specialty, employment, clock_in, clock_out, walk_in, status, in_service, total_clients, done_clients } = req.body;
 
     if (!id) {
       return res.status(400).json({ error: 'Staff ID is required' });
@@ -24,7 +24,7 @@ export default async (req, res) => {
       auth: { persistSession: false }
     });
 
-    console.log(`[Staffs:Update] Updating staff ID: ${id}`, { names, category_specialty, employment, clock_in, clock_out, walk_in, status, total_clients, done_clients });
+    console.log(`[Staffs:Update] Updating staff ID: ${id}`, { names, category_specialty, employment, clock_in, clock_out, walk_in, status, in_service, total_clients, done_clients });
 
     // Build update object with only provided fields
     const updateData = {};
@@ -35,6 +35,7 @@ export default async (req, res) => {
     if (clock_out !== undefined) updateData.clock_out = clock_out;
     if (walk_in !== undefined) updateData.walk_in = walk_in;
     if (status !== undefined) updateData.status = status;
+    if (in_service !== undefined) updateData.in_service = in_service;
     if (total_clients !== undefined) updateData.total_clients = total_clients;
     if (done_clients !== undefined) updateData.done_clients = done_clients;
 
