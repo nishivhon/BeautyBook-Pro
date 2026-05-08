@@ -544,8 +544,8 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         {isItemExpanded && (
           <div style={{
             padding: "12px 16px",
-            backgroundColor: "rgba(26, 15, 0, 0.15)",
-            borderLeft: "3px solid #dd901d",
+            backgroundColor: "rgba(250, 190, 206, 0.4)",
+            borderLeft: "3px solid rgba(243, 139, 166, 0.5)",
             marginBottom: "8px",
             borderRadius: "0 8px 8px 0"
           }}>

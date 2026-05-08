@@ -763,8 +763,8 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
               {/* Expanded Staff Details */}
               {expandedStaff === s.name && (
                 <div style={{
-                  backgroundColor: "rgba(221, 144, 29, 0.05)",
-                  borderLeft: "3px solid #dd901d",
+                  backgroundColor: "rgba(250, 190, 206, 0.4)",
+                  borderLeft: "3px solid rgba(243, 139, 166, 0.5)",
                   padding: "16px",
                   marginTop: "8px",
                   borderRadius: "6px",
