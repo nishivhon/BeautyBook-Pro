@@ -30,6 +30,191 @@ const getServiceNameFromSlot = (slot) => {
   return 'Service pending';
 };
 
+/**
+ * Extract service names from slot services (handles various formats)
+ * Returns array of service names
+ */
+const getServiceNamesArray = (slot) => {
+  if (!slot?.services) {
+    return ['Service pending'];
+  }
+
+  if (typeof slot.services === 'string') {
+    return [slot.services];
+  }
+
+  if (Array.isArray(slot.services)) {
+    return slot.services
+      .map((service) => service?.name || service?.title || service)
+      .filter(Boolean);
+  }
+
+  if (typeof slot.services === 'object') {
+    if (slot.services.name) {
+      return [slot.services.name];
+    }
+
+    const names = Object.values(slot.services).flat().filter(Boolean);
+    return names.length > 0 ? names : ['Service pending'];
+  }
+
+  return ['Service pending'];
+};
+
+/**
+ * Fetch service prices for given service names
+ */
+const getServicePrices = async (supabase, serviceNames) => {
+  try {
+    console.log('[Status] Fetching prices for services:', serviceNames);
+    
+    const { data: services, error } = await supabase
+      .from('services')
+      .select('service_name, price')
+      .in('service_name', serviceNames);
+
+    if (error) {
+      console.error('[Status] Error fetching service prices:', error);
+      return {};
+    }
+
+    // Build service name -> price map
+    const priceMap = {};
+    services.forEach(svc => {
+      priceMap[svc.service_name] = svc.price || 0;
+    });
+
+    console.log('[Status] Service price map:', priceMap);
+    return priceMap;
+  } catch (err) {
+    console.error('[Status] Exception fetching service prices:', err);
+    return {};
+  }
+};
+
+/**
+ * Calculate total price for appointment based on services
+ */
+const calculateTotalPrice = (serviceNames, priceMap) => {
+  let total = 0;
+  serviceNames.forEach(name => {
+    total += priceMap[name] || 0;
+  });
+  return total;
+};
+
+/**
+ * Create a complete history entry when appointment is marked as "done"
+ */
+const createDoneHistoryEntry = async (supabase, slot) => {
+  console.log('[Status:CreateDoneHistory] Creating history entry for slot:', { id: slot?.id, date: slot?.date });
+
+  try {
+    const serviceNames = getServiceNamesArray(slot);
+    const priceMap = await getServicePrices(supabase, serviceNames);
+    const totalPrice = calculateTotalPrice(serviceNames, priceMap);
+
+    const historyEntry = {
+      id: slot.id,
+      date: slot.date,
+      price: totalPrice,
+      staff: slot.assigned_staff || 'Unknown Staff',
+      service: getServiceNameFromSlot(slot),
+      status: 'done',
+      rated: false,
+      rating: 0,
+      created_at: slot.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    console.log('[Status:CreateDoneHistory] Created history entry:', historyEntry);
+    return historyEntry;
+  } catch (err) {
+    console.error('[Status:CreateDoneHistory] Error creating history entry:', err);
+    return null;
+  }
+};
+
+/**
+ * Add done history entry to customer's histories
+ */
+const addDoneHistoryToCustomer = async (supabase, slot) => {
+  console.log('[Status:AddDoneHistory] Adding done history for customer:', slot?.customer_contact);
+
+  const customerContact = slot?.customer_contact;
+  if (!customerContact) {
+    console.warn('[Status:AddDoneHistory] No customer contact provided');
+    return { updated: false, reason: 'No customer contact' };
+  }
+
+  const contactValue = String(customerContact).trim();
+  const isEmail = contactValue.includes('@');
+
+  try {
+    // Find customer by email or phone
+    const customerQuery = supabase
+      .from('customers_accounts')
+      .select('id, histories');
+
+    const { data: customers, error: customerError } = isEmail
+      ? await customerQuery.eq('email', contactValue).limit(1)
+      : await customerQuery.eq('phone', contactValue).limit(1);
+
+    if (customerError) {
+      console.error('[Status:AddDoneHistory] Customer lookup error:', customerError);
+      return { updated: false, reason: customerError.message };
+    }
+
+    const customer = customers?.[0];
+    if (!customer) {
+      console.warn('[Status:AddDoneHistory] Customer not found with contact:', contactValue);
+      return { updated: false, reason: 'Customer not found' };
+    }
+
+    console.log('[Status:AddDoneHistory] Found customer:', customer.id);
+
+    // Create the history entry
+    const historyEntry = await createDoneHistoryEntry(supabase, slot);
+    if (!historyEntry) {
+      return { updated: false, reason: 'Failed to create history entry' };
+    }
+
+    // Normalize existing histories
+    let histories = [];
+    if (customer.histories) {
+      if (typeof customer.histories === 'string') {
+        try {
+          histories = JSON.parse(customer.histories);
+        } catch {
+          histories = [];
+        }
+      } else if (Array.isArray(customer.histories)) {
+        histories = customer.histories;
+      }
+    }
+
+    // Add new entry
+    histories.push(historyEntry);
+
+    // Update customer with new history
+    const { error: updateError } = await supabase
+      .from('customers_accounts')
+      .update({ histories })
+      .eq('id', customer.id);
+
+    if (updateError) {
+      console.error('[Status:AddDoneHistory] Failed to update customer:', updateError);
+      return { updated: false, reason: updateError.message };
+    }
+
+    console.log('[Status:AddDoneHistory] ✓ Successfully added done history entry');
+    return { updated: true, customerId: customer.id, history: historyEntry };
+  } catch (err) {
+    console.error('[Status:AddDoneHistory] Exception:', err);
+    return { updated: false, reason: err.message };
+  }
+};
+
 const normalizeHistories = (histories) => {
   if (!histories) {
     return [];
@@ -192,7 +377,7 @@ export default async (req, res) => {
 
     const { data: slotData, error: slotFetchError } = await supabase
       .from('available_slots')
-      .select('id, date, time_slot, customer_name, customer_contact, assigned_staff, services, status')
+      .select('id, date, time_slot, customer_name, customer_contact, assigned_staff, services, status, created_at')
       .eq('id', id)
       .single();
 
@@ -230,11 +415,22 @@ export default async (req, res) => {
       services: slotData?.services
     });
     
-    const historySync = await updateCustomerHistoryStatus(supabase, slotData, status);
+    let historySync;
+    
+    // When status is 'done', create a new complete history entry
+    // Otherwise update the existing history entry status
+    if (status === 'done') {
+      console.log('[UpdateStatus] Status is "done" - creating new complete history entry');
+      historySync = await addDoneHistoryToCustomer(supabase, slotData);
+    } else {
+      console.log('[UpdateStatus] Status is "' + status + '" - updating existing history entry');
+      historySync = await updateCustomerHistoryStatus(supabase, slotData, status);
+    }
+    
     console.log('[UpdateStatus] History sync result:', historySync);
     
     if (historySync.updated) {
-      console.log('[UpdateStatus] ✓ Customer history status updated:', historySync.history);
+      console.log('[UpdateStatus] ✓ Customer history updated:', historySync.history);
     } else {
       console.warn('[UpdateStatus] ⚠ Customer history was not updated:', historySync.reason);
     }
