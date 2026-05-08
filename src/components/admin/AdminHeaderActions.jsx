@@ -54,7 +54,7 @@ const profileStorageKey = "adminOperatorProfile";
 const getInitialTheme = () => {
   if (typeof window === "undefined") return "dark";
   const savedTheme = window.localStorage.getItem(themeStorageKey);
-  return savedTheme === "light" ? "light" : "dark";
+  return savedTheme === "dark" ? "dark" : "light";
 };
 
 export function AdminHeaderActions({ notifications: externalNotifications = [] }) {

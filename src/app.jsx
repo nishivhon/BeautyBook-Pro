@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import Homepage from './pages/landpage'
 import About from './pages/about'
 import { Register } from './pages/register'
@@ -34,6 +34,7 @@ function App() {
 
   return (
     <Router>
+      <ThemeRouteSync />
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path="/landpage" element={<Homepage />} />
@@ -190,6 +191,22 @@ function App() {
       </Routes>
     </Router>
   )
+}
+
+function ThemeRouteSync() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const isAdminRoute = location.pathname.startsWith('/admin');
+    const savedAdminTheme = window.localStorage.getItem('adminThemeMode');
+    const nextTheme = isAdminRoute ? (savedAdminTheme === 'dark' ? 'dark' : 'light') : 'dark';
+
+    document.documentElement.dataset.theme = nextTheme;
+  }, [location.pathname]);
+
+  return null;
 }
 
 export default App
