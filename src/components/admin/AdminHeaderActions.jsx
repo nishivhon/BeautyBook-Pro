@@ -57,6 +57,7 @@ const getInitialTheme = () => {
 
 export function AdminHeaderActions({ notifications: externalNotifications = [] }) {
   const wrapperRef = useRef(null);
+  const themeTransitionTimerRef = useRef(null);
   const [openMenu, setOpenMenu] = useState(null);
   const [settingsView, setSettingsView] = useState("main");
   const [themeMode, setThemeMode] = useState(getInitialTheme);
@@ -78,6 +79,15 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
       try { window.localStorage.setItem(profileStorageKey, JSON.stringify(profile)); } catch {};
     }
   }, [profile]);
+
+  useEffect(() => () => {
+    if (themeTransitionTimerRef.current) {
+      window.clearTimeout(themeTransitionTimerRef.current);
+    }
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.remove("theme-transitioning");
+    }
+  }, []);
 
   const handleAvatarFile = (file) => {
     if (!file) return;
@@ -119,7 +129,19 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
 
   const toggleMenu = (menu) => { setOpenMenu((prev) => (prev === menu ? null : menu)); setSettingsView("main"); };
   const closeMenu = () => { setOpenMenu(null); setSettingsView("main"); };
-  const toggleTheme = () => setThemeMode((m) => (m === "dark" ? "light" : "dark"));
+  const toggleTheme = () => {
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.add("theme-transitioning");
+      if (themeTransitionTimerRef.current) {
+        window.clearTimeout(themeTransitionTimerRef.current);
+      }
+      themeTransitionTimerRef.current = window.setTimeout(() => {
+        document.documentElement.classList.remove("theme-transitioning");
+      }, 500);
+    }
+
+    setThemeMode((m) => (m === "dark" ? "light" : "dark"));
+  };
   const markAllNotificationsRead = () => setNotifications((n) => n.map((it) => ({ ...it, unread: false })));
 
   const formatRoleLabel = (role) => {

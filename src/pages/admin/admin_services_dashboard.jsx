@@ -251,7 +251,7 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, onLogout }) =>
     <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
       opacity: mounted ? 1 : 0,
       transform: mounted ? "translateX(0)" : "translateX(-16px)",
-      transition: "all 0.5s ease"
+      transition: "opacity 0.5s ease, transform 0.5s ease"
     }}>
       {/* Admin pill */}
       <div className="admin-badge-pill">
