@@ -11165,11 +11165,16 @@ html[data-theme="light"] .svc-group-panel,
 html[data-theme="light"] .svc-quick-actions-panel,
 html[data-theme="light"] .staff-list-panel,
 html[data-theme="light"] .staff-quick-panel,
-html[data-theme="light"] .live-schedule-panel,
-html[data-theme="light"] .dash-summary-row {
+html[data-theme="light"] .live-schedule-panel {
   background: rgba(250, 190, 206, 0.4) !important;
   border-color: #d5d2d3 !important;
   box-shadow: 0 8px 22px rgba(243, 139, 166, 0.1) !important;
+}
+
+html[data-theme="light"] .dash-sidebar-panel .dash-summary-row {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 html[data-theme="light"] .dash-panel-header,
