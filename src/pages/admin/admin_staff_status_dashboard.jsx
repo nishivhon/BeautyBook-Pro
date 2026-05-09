@@ -635,25 +635,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                     <div style={{ position: "relative", marginLeft: "12px" }}>
                       <button
                         onClick={() => setOpenDropdown(openDropdown === s.name ? null : s.name)}
-                        style={{
-                          padding: "4px 12px",
-                          backgroundColor: walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.15)" : "rgba(239, 68, 68, 0.15)",
-                          border: walkInStatus[s.name] === "Accepting" ? "1px solid rgba(34, 197, 94, 0.3)" : "1px solid rgba(239, 68, 68, 0.3)",
-                          borderRadius: "6px",
-                          color: walkInStatus[s.name] === "Accepting" ? "#22c55e" : "#ef4444",
-                          fontSize: "11px",
-                          fontWeight: "600",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          whiteSpace: "nowrap",
-                          fontFamily: "Inter, sans-serif",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.opacity = "0.8";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.opacity = "1";
-                        }}
+                        className={`walkin-chip ${walkInStatus[s.name] === "Accepting" ? 'walkin-accept' : 'walkin-reject'}`}
                       >
                         {walkInStatus[s.name] === "Accepting" ? "Accepting Walk-In" : "Not Accepting"}
                       </button>

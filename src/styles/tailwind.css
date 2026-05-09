@@ -9130,6 +9130,46 @@ html[data-theme="light"] .dash-page-title,
     gap: 2px;
   }
 
+  /* Walk-in availability chip (used in staff list) */
+  .walkin-chip {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: Inter, sans-serif;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: inline-block;
+  }
+
+  .walkin-chip.walkin-accept {
+    background-color: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+  }
+
+  .walkin-chip.walkin-reject {
+    background-color: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+  }
+
+  .walkin-chip:hover { opacity: 0.88; }
+
+  /* Light theme overrides for improved contrast */
+  html[data-theme="light"] .walkin-chip.walkin-accept {
+    background-color: rgba(34, 197, 94, 0.10);
+    border-color: rgba(34, 197, 94, 0.22);
+    color: #064e3b !important;
+  }
+
+  html[data-theme="light"] .walkin-chip.walkin-reject {
+    background-color: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.16);
+    color: #7f1d1d !important;
+  }
+
   /* status text colour variants */
   .staff-status-green  { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.8rem; color: #22c55e;              white-space: nowrap; }
   .staff-status-blue   { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.8rem; color: #4387ef;              white-space: nowrap; }
