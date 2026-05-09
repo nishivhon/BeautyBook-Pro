@@ -6,6 +6,7 @@ import CalendarAppointmentsModal from "../../components/modal/admin/calendar_app
 import { StatusUpdateModal } from "../../components/modal/admin/status_update";
 import { ManageServiceModal } from "../../components/modal/admin/manage_service";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
+import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -336,15 +337,14 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, onLogout }) =>
   };
 
   const handleLogout = () => {
-    logoutOperator();
-    navigate("/");
+    onLogout?.();
   };
 
   return (
     <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
       opacity: mounted ? 1 : 0,
       transform: mounted ? "translateX(0)" : "translateX(-16px)",
-      transition: "opacity 0.5s ease, transform 0.5s ease"
+      transition: "all 0.5s ease"
     }}>
       {/* Admin pill */}
       <div className="admin-badge-pill">
@@ -1067,6 +1067,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [statusUpdateModal, setStatusUpdateModal] = useState({ isOpen: false, staff: null });
   const [manageServiceModal, setManageServiceModal] = useState({ isOpen: false, staff: null });
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [activeNav, setActiveNav] = useState("staff-status");
   const [mounted, setMounted] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
@@ -1225,8 +1226,17 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   };
 
   const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
     logoutOperator();
+    setShowLogoutConfirm(false);
     navigate("/");
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   const handleStaffStatusUpdate = async (staffName, newStatus, attendanceData) => {
@@ -1446,6 +1456,16 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           acc[cat.id] = cat.services;
           return acc;
         }, {})}
+      />
+
+      <ConfirmationDialog
+        isOpen={showLogoutConfirm}
+        title="Log Out?"
+        message="Are you sure you want to log out of the admin dashboard?"
+        confirmText="Yes, Log Out"
+        cancelText="Stay Logged In"
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
       />
     </div>
   );

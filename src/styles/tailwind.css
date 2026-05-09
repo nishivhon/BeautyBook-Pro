@@ -45,22 +45,6 @@ html[data-theme="light"] {
   color: var(--color-black);
 }
 
-html.theme-transitioning .super-admin-container,
-html.theme-transitioning .super-admin-container *,
-html.theme-transitioning .super-admin-container *::before,
-html.theme-transitioning .super-admin-container *::after {
-  transition-property: background-color, color, border-color, box-shadow, fill, stroke, text-decoration-color, outline-color !important;
-  transition-duration: 0.5s !important;
-  transition-timing-function: ease !important;
-}
-
-html.theme-transitioning .super-admin-container svg,
-html.theme-transitioning .super-admin-container svg * {
-  transition-property: fill, stroke, color !important;
-  transition-duration: 0.5s !important;
-  transition-timing-function: ease !important;
-}
-
 /* ── Base Styles ── */
 @layer base {
   button,
@@ -11165,16 +11149,11 @@ html[data-theme="light"] .svc-group-panel,
 html[data-theme="light"] .svc-quick-actions-panel,
 html[data-theme="light"] .staff-list-panel,
 html[data-theme="light"] .staff-quick-panel,
-html[data-theme="light"] .live-schedule-panel {
+html[data-theme="light"] .live-schedule-panel,
+html[data-theme="light"] .dash-summary-row {
   background: rgba(250, 190, 206, 0.4) !important;
   border-color: #d5d2d3 !important;
   box-shadow: 0 8px 22px rgba(243, 139, 166, 0.1) !important;
-}
-
-html[data-theme="light"] .dash-sidebar-panel .dash-summary-row {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
 }
 
 html[data-theme="light"] .dash-panel-header,

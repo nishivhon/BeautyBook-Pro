@@ -4,6 +4,7 @@ import { logoutOperator } from "../../services/operatorAuth";
 import { EditServiceModal } from "../../components/modal/admin/edit_service";
 import CouponModal from "../../components/modal/admin/coupon_modal";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
+import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -243,15 +244,14 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, onLogout }) =>
   };
 
   const handleLogout = () => {
-    logoutOperator();
-    navigate("/");
+    onLogout?.();
   };
 
   return (
     <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
       opacity: mounted ? 1 : 0,
       transform: mounted ? "translateX(0)" : "translateX(-16px)",
-      transition: "opacity 0.5s ease, transform 0.5s ease"
+      transition: "all 0.5s ease"
     }}>
       {/* Admin pill */}
       <div className="admin-badge-pill">
@@ -523,6 +523,7 @@ export const AdminDashboardServices = ({ date }) => {
   const [error, setError] = useState(null);
   const [editingService, setEditingService] = useState(null);
   const [isManagingCoupons, setIsManagingCoupons] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [stats, setStats] = useState([
     { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: "0",       label: "Today's Appointments" },
     { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱0.00",   label: "Revenue Today"        },
@@ -669,8 +670,17 @@ export const AdminDashboardServices = ({ date }) => {
   const categories = serviceGroups.map(group => group.category);
 
   const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
     logoutOperator();
+    setShowLogoutConfirm(false);
     navigate("/");
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   const handleEditService = (service) => {
@@ -940,6 +950,16 @@ export const AdminDashboardServices = ({ date }) => {
         isOpen={isManagingCoupons}
         onClose={handleCloseCoupons}
         services={services}
+      />
+
+      <ConfirmationDialog
+        isOpen={showLogoutConfirm}
+        title="Log Out?"
+        message="Are you sure you want to log out of the admin dashboard?"
+        confirmText="Yes, Log Out"
+        cancelText="Stay Logged In"
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
       />
     </div>
   );

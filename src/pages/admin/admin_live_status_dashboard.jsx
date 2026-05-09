@@ -276,15 +276,14 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, onLogout }) =>
   };
 
   const handleLogout = () => {
-    logoutOperator();
-    navigate("/");
+    onLogout?.();
   };
 
   return (
     <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
       opacity: mounted ? 1 : 0,
       transform: mounted ? "translateX(0)" : "translateX(-16px)",
-      transition: "opacity 0.5s ease, transform 0.5s ease"
+      transition: "all 0.5s ease"
     }}>
       {/* Admin pill */}
       <div className="admin-badge-pill">
@@ -898,6 +897,7 @@ const AnalyticsPanel = () => (
 export const AdminDashboardLiveStatus = ({ date }) => {
   const navigate = useNavigate();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [proceedConfirmId, setProceedConfirmId] = useState(null);
   const [proceedConfirmData, setProceedConfirmData] = useState(null);
   const [activeNav, setActiveNav] = useState("live-status");
@@ -917,8 +917,17 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   }, [sidebarExpanded]);
 
   const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
     logoutOperator();
+    setShowLogoutConfirm(false);
     navigate("/");
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   const handleAddWalkIn = (walkInData) => {
@@ -1090,6 +1099,16 @@ export const AdminDashboardLiveStatus = ({ date }) => {
           onCancel={() => setProceedConfirmId(null)}
         />
       )}
+
+      <ConfirmationDialog
+        isOpen={showLogoutConfirm}
+        title="Log Out?"
+        message="Are you sure you want to log out of the admin dashboard?"
+        confirmText="Yes, Log Out"
+        cancelText="Stay Logged In"
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
+      />
     </div>
   );
 };
