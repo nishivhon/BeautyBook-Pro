@@ -217,7 +217,7 @@ const SERVICE_GROUPS = [
 
 /* ── Navbar ── */
 /* ── Sidebar ── */
-const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpanded, onLogout }) => {
+const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, onLogout }) => {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
 
@@ -253,27 +253,11 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
       transform: mounted ? "translateX(0)" : "translateX(-16px)",
       transition: "all 0.5s ease"
     }}>
-      {/* Logo + Toggle */}
-      <div className="sidebar-logo-section">
-        <button 
-          onClick={() => setSidebarExpanded(!sidebarExpanded)}
-          className="logo-toggle-btn"
-          title="Toggle sidebar"
-        >
-          <div className="logo-badge">
-            <LogoIcon />
-          </div>
-        </button>
-        {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
-      </div>
-
       {/* Admin pill */}
-      {sidebarExpanded && (
-        <div className="admin-badge-pill">
-          <div className="admin-badge-circle">A</div>
-          <span className="admin-badge-text">Administrator</span>
-        </div>
-      )}
+      <div className="admin-badge-pill">
+        <div className="admin-badge-circle">A</div>
+        <span className="admin-badge-text">Administrator</span>
+      </div>
 
       {/* Nav items */}
       <nav className="sidebar-nav">
@@ -879,13 +863,15 @@ export const AdminDashboardServices = ({ date }) => {
   }, [appointmentData, services]);
 
   return (
-    <div className="super-admin-container">
+    <div
+      className="super-admin-container"
+      style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
+    >
       {/* Sidebar */}
       <AdminSidebar 
         activeNav={activeNav}
         setActiveNav={setActiveNav}
         sidebarExpanded={sidebarExpanded}
-        setSidebarExpanded={setSidebarExpanded}
         onLogout={handleLogout}
       />
 
@@ -893,9 +879,21 @@ export const AdminDashboardServices = ({ date }) => {
       <div className="super-admin-main">
         {/* Dashboard Header - Fixed Title and Actions */}
         <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
-          <div>
-            <h1 className="dash-page-title">Services Management</h1>
-            <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+          <div className="dashboard-header-main">
+            <button
+              onClick={() => setSidebarExpanded((prev) => !prev)}
+              className="logo-toggle-btn dashboard-header-logo-btn"
+              title="Toggle sidebar"
+            >
+              <div className="logo-badge">
+                <LogoIcon />
+              </div>
+            </button>
+            <span className="dashboard-system-title">BeautyBook Pro</span>
+            <div className="dashboard-page-title-wrap">
+              <h1 className="dash-page-title">Services Management</h1>
+              <p className="dash-page-subtitle">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+            </div>
           </div>
           <AdminHeaderActions notifications={headerNotifications} />
         </header>

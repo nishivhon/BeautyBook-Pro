@@ -220,7 +220,7 @@ const SUMMARY = [
 // SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpanded, onLogout }) => {
+const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, onLogout }) => {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
 
@@ -253,27 +253,11 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
       transform: mounted ? "translateX(0)" : "translateX(-16px)",
       transition: "all 0.5s ease"
     }}>
-      {/* Logo + Toggle */}
-      <div className="sidebar-logo-section">
-        <button 
-          onClick={() => setSidebarExpanded(!sidebarExpanded)}
-          className="logo-toggle-btn"
-          title="Toggle sidebar"
-        >
-          <div className="logo-badge">
-            <LogoIcon />
-          </div>
-        </button>
-        {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
-      </div>
-
       {/* Admin pill */}
-      {sidebarExpanded && (
-        <div className="admin-badge-pill">
-          <div className="admin-badge-circle">A</div>
-          <span className="admin-badge-text">Administrator</span>
-        </div>
-      )}
+      <div className="admin-badge-pill">
+        <div className="admin-badge-circle">A</div>
+        <span className="admin-badge-text">Administrator</span>
+      </div>
 
       {/* Nav items */}
       <nav className="sidebar-nav">
@@ -1101,7 +1085,10 @@ export const AdminDashboard = ({ date }) => {
   }, []);
 
   return (
-    <div className="super-admin-container admin-dashboard-page">
+    <div
+      className="super-admin-container admin-dashboard-page"
+      style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
+    >
       {/* Sidebar */}
       <div
         inert={showWalkInModal ? "" : undefined}
@@ -1112,7 +1099,6 @@ export const AdminDashboard = ({ date }) => {
           activeNav={activeNav}
           setActiveNav={setActiveNav}
           sidebarExpanded={sidebarExpanded}
-          setSidebarExpanded={setSidebarExpanded}
           onLogout={handleLogout}
         />
       </div>
@@ -1120,10 +1106,27 @@ export const AdminDashboard = ({ date }) => {
       {/* Main Content */}
       <div className="super-admin-main">
         {/* Dashboard Header - Fixed Title and Actions */}
-        <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
-          <div>
-            <h1 className="dash-page-title">Admin Dashboard</h1>
-            <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+        <header 
+          className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
+          inert={showWalkInModal ? "" : undefined}
+          aria-hidden={showWalkInModal ? "true" : undefined}
+          style={{ pointerEvents: showWalkInModal ? "none" : "auto" }}
+        >
+          <div className="dashboard-header-main">
+            <button
+              onClick={() => setSidebarExpanded((prev) => !prev)}
+              className="logo-toggle-btn dashboard-header-logo-btn"
+              title="Toggle sidebar"
+            >
+              <div className="logo-badge">
+                <LogoIcon />
+              </div>
+            </button>
+            <span className="dashboard-system-title">BeautyBook Pro</span>
+            <div className="dashboard-page-title-wrap">
+              <h1 className="dash-page-title">Admin Dashboard</h1>
+              <p className="dash-page-subtitle">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+            </div>
           </div>
           <AdminHeaderActions notifications={headerNotifications} />
         </header>
