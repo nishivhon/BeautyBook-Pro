@@ -776,7 +776,32 @@ html[data-theme="light"] {
   html[data-theme="light"] .admin-nav-brand,
   html[data-theme="light"] .admin-nav-username,
   html[data-theme="light"] .admin-badge-text,
-  html[data-theme="light"] .dash-page-title,
+  html[data-theme="light"] .admin-header-trigger.active {
+  border-color: #f38ba6 !important;
+  background: rgba(243, 139, 166, 0.18) !important;
+  color: #000000 !important;
+}
+
+html[data-theme="light"] .admin-dropdown-chip,
+html[data-theme="light"] .admin-settings-chip {
+  border-color: rgba(243, 139, 166, 0.38) !important;
+  background: rgba(243, 139, 166, 0.14) !important;
+  color: #0c0a09 !important;
+}
+
+html[data-theme="light"] .admin-notification-unread {
+  background: rgba(243, 139, 166, 0.2) !important;
+  color: #0c0a09 !important;
+}
+
+html[data-theme="light"] .admin-notification-category {
+  color: #111827 !important;
+}
+
+html[data-theme="light"] .admin-notification-tone {
+  box-shadow: 0 0 0 4px rgba(243, 139, 166, 0.14) !important;
+}
+html[data-theme="light"] .dash-page-title,
   html[data-theme="light"] .dash-page-subtitle,
   html[data-theme="light"] .dash-stat-label,
   html[data-theme="light"] .dash-stat-value,
@@ -11215,6 +11240,47 @@ html[data-theme="light"] .dash-panel-manage-btn:hover {
   color: #000000 !important;
 }
 
+html[data-theme="light"] .admin-header-trigger.active {
+  border-color: #f38ba6 !important;
+  background: rgba(243, 139, 166, 0.18) !important;
+  color: #000000 !important;
+}
+
+html[data-theme="light"] .admin-dropdown-chip,
+html[data-theme="light"] .admin-settings-chip {
+  border-color: rgba(243, 139, 166, 0.38) !important;
+  background: rgba(243, 139, 166, 0.14) !important;
+  color: #0c0a09 !important;
+}
+
+html[data-theme="light"] .admin-notification-unread {
+  background: rgba(243, 139, 166, 0.2) !important;
+  color: #0c0a09 !important;
+}
+
+html[data-theme="light"] .admin-notification-tone {
+  box-shadow: 0 0 0 4px rgba(243, 139, 166, 0.14) !important;
+}
+
+html[data-theme="light"] .admin-mark-read-link {
+  color: #988f81 !important;
+}
+
+html[data-theme="light"] .admin-mark-read-link:hover {
+  color: #0c0a09 !important;
+}
+
+html[data-theme="light"] .admin-notification-item:hover,
+html[data-theme="light"] .admin-settings-item:hover {
+  border-color: rgba(243, 139, 166, 0.42) !important;
+  background: rgba(250, 190, 206, 0.35) !important;
+}
+
+html[data-theme="light"] .admin-theme-toggle:hover {
+  border-color: rgba(243, 139, 166, 0.4) !important;
+  background: rgba(250, 190, 206, 0.35) !important;
+}
+
 html[data-theme="light"] .dash-page-title,
 html[data-theme="light"] .dash-stat-value,
 html[data-theme="light"] .dash-panel-title,
@@ -11226,6 +11292,13 @@ html[data-theme="light"] .brand-name,
 html[data-theme="light"] .admin-badge-text,
 html[data-theme="light"] .admin-nav-brand {
   color: #000000 !important;
+}
+
+/* Admin Dashboard - Manage button override (higher specificity) */
+html[data-theme="light"] .admin-dashboard-page .dash-panel-manage-btn,
+html[data-theme="light"] .admin-dashboard-page .dash-panel-manage-btn:hover {
+  background: none !important;
+  border: none !important;
 }
 
 html[data-theme="light"] .dash-page-subtitle,
@@ -11317,3 +11390,5 @@ html[data-theme="light"] .sidebar-logo-section,
 html[data-theme="light"] aside > div:first-child {
   border-bottom-color: rgba(152, 143, 129, 0.5) !important;
 }
+
+

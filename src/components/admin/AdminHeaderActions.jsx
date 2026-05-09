@@ -44,11 +44,9 @@ const notificationItems = [
 
 const settingsItems = [
   { id: "profile-edit", label: "Profile settings", description: "Update username and avatar stored locally." },
-  { id: "notification-preferences", label: "Notification preferences", description: "Choose which admin alerts should be visible." },
 ];
 
 const themeStorageKey = "adminThemeMode";
-const notificationPreferencesStorageKey = "adminNotificationPreferences";
 const profileStorageKey = "adminOperatorProfile";
 
 const getInitialTheme = () => {
@@ -63,14 +61,6 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
   const [settingsView, setSettingsView] = useState("main");
   const [themeMode, setThemeMode] = useState(getInitialTheme);
   const [notifications, setNotifications] = useState(notificationItems);
-  const [notificationPreferences, setNotificationPreferences] = useState(() => {
-    if (typeof window === "undefined") return {};
-    const saved = window.localStorage.getItem(notificationPreferencesStorageKey);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { }
-    }
-    return { newBookings: true, bookingChanges: true, liveQueueUpdates: true, staffUpdates: true, systemAlerts: true, promotions: true, lowStock: true, soundAlerts: true };
-  });
   const [fileInputHover, setFileInputHover] = useState(false);
   const [validationError, setValidationError] = useState(null);
   const [editingUsername, setEditingUsername] = useState(null);
@@ -102,9 +92,21 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
   const profileUsername = profile?.username || (session?.email || "").split("@")[0] || "Administrator";
   const profileRole = session?.role || "Administrator";
 
-  useEffect(() => { setNotifications(notificationSeed); }, [notificationSeedKey]);
+  useEffect(() => {
+    const mapped = (notificationSeed || []).map((item) => {
+      const text = `${item.category || ""} ${item.title || ""} ${item.description || ""}`.toLowerCase();
+      const newBookingRe = /\b(pending appointment|upcoming booking|appointment created|new appointment|booked|new booking)\b/;
+      const bookingChangeRe = /\b(resched|rescheduled|reschedule|cancelled|canceled|cancellation|modified|updated|change|booking change)\b/;
+
+      if (newBookingRe.test(text)) return { ...item, category: "New booking" };
+      if (bookingChangeRe.test(text)) return { ...item, category: "Booking change" };
+      return null;
+    }).filter(Boolean);
+
+    setNotifications(mapped);
+  }, [notificationSeedKey]);
   useEffect(() => { if (typeof document !== "undefined") { document.documentElement.dataset.theme = themeMode; window.localStorage.setItem(themeStorageKey, themeMode); } }, [themeMode]);
-  useEffect(() => { if (typeof window !== "undefined") { window.localStorage.setItem(notificationPreferencesStorageKey, JSON.stringify(notificationPreferences)); } }, [notificationPreferences]);
+  // notification preferences removed — admin notification center shows booking events only
 
   useEffect(() => {
     const handlePointerDown = (event) => { if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setOpenMenu(null); };
@@ -119,7 +121,6 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
   const closeMenu = () => { setOpenMenu(null); setSettingsView("main"); };
   const toggleTheme = () => setThemeMode((m) => (m === "dark" ? "light" : "dark"));
   const markAllNotificationsRead = () => setNotifications((n) => n.map((it) => ({ ...it, unread: false })));
-  const togglePreference = (key) => setNotificationPreferences((p) => ({ ...p, [key]: !p[key] }));
 
   const formatRoleLabel = (role) => {
     if (!role) return "Administrator";
@@ -206,46 +207,7 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
           </>
         );
 
-      case "notification-preferences":
-        return (
-          <>
-            <div className="admin-dropdown-topbar">
-              <div>
-                <p className="admin-dropdown-eyebrow">Settings</p>
-                <h3 className="admin-dropdown-title">Notification preferences</h3>
-              </div>
-              <button type="button" className="admin-dropdown-link" onClick={() => setSettingsView("main")}>Back</button>
-            </div>
-
-            <div className="admin-settings-list">
-              {[
-                ["newBookings", "New bookings", "Alert me when a customer books an appointment."],
-                ["bookingChanges", "Booking changes", "Show reschedules, cancellations, and confirmations."],
-                ["liveQueueUpdates", "Live queue updates", "Notify me when the queue moves or staff start a service."],
-                ["staffUpdates", "Staff updates", "Track staff availability, break, and status changes."],
-                ["systemAlerts", "System alerts", "Show sync issues, system errors, and maintenance notices."],
-                ["promotions", "Promotions and sales", "Surface campaign and discount performance alerts."],
-                ["lowStock", "Low-stock warnings", "Warn me when supplies drop below the threshold."],
-                ["soundAlerts", "Sound alerts", "Play a soft cue for important updates."],
-              ].map(([key, label, description]) => {
-                const enabled = Boolean(notificationPreferences[key]);
-                return (
-                  <button key={key} type="button" className="admin-settings-item" onClick={() => togglePreference(key)}>
-                    <div>
-                      <span className="admin-settings-item-title">{label}</span>
-                      <p className="admin-settings-item-copy">{description}</p>
-                    </div>
-                    <span className={`admin-settings-chip ${enabled ? "is-on" : "is-off"}`}>{enabled ? "On" : "Off"}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="admin-dropdown-footer">
-              <span className="admin-dropdown-footnote">Preferences are saved on this device and applied across the admin area.</span>
-            </div>
-          </>
-        );
+      
 
       case "profile-edit":
         return (
@@ -403,29 +365,34 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
                     <p className="admin-dropdown-eyebrow">Inbox</p>
                     <h3 className="admin-dropdown-title">Recent Notifications</h3>
                   </div>
-                  <button type="button" className="admin-dropdown-link" onClick={markAllNotificationsRead}>Mark all as read</button>
+                  <button type="button" className="admin-dropdown-link admin-mark-read-link" onClick={markAllNotificationsRead}>Mark all as read</button>
                 </div>
 
-                <div className="admin-notification-list">
-                  {notifications.map((notification) => (
-                    <button key={notification.id} type="button" className={`admin-notification-item${notification.unread ? " unread" : ""}`} onClick={closeMenu}>
-                      <span className={`admin-notification-tone tone-${notification.tone}`} />
-                      <div className="admin-notification-copy">
-                        <div className="admin-notification-row">
-                          <span className="admin-notification-category">{notification.category}</span>
-                          {notification.unread && <span className="admin-notification-unread">New</span>}
+                <div className="admin-notification-list" style={{ minHeight: 220, maxHeight: 360, overflowY: 'auto' }}>
+                  {notifications.length === 0 ? (
+                    <div className="admin-notification-empty" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 20, color: 'var(--color-muted, #6b7280)' }}>
+                      No recent booking activity
+                    </div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <button key={notification.id} type="button" className={`admin-notification-item${notification.unread ? " unread" : ""}`} onClick={closeMenu}>
+                        <span className={`admin-notification-tone tone-${notification.tone}`} />
+                        <div className="admin-notification-copy">
+                          <div className="admin-notification-row">
+                            <span className="admin-notification-category">{notification.category}</span>
+                            {notification.unread && <span className="admin-notification-unread">New</span>}
+                          </div>
+                          <p className="admin-notification-title">{notification.title}</p>
+                          <p className="admin-notification-description">{notification.description}</p>
                         </div>
-                        <p className="admin-notification-title">{notification.title}</p>
-                        <p className="admin-notification-description">{notification.description}</p>
-                      </div>
-                      <span className="admin-notification-time">{notification.time}</span>
-                    </button>
-                  ))}
+                        <span className="admin-notification-time">{notification.time}</span>
+                      </button>
+                    ))
+                  )}
                 </div>
 
                 <div className="admin-dropdown-footer">
-                  <span className="admin-dropdown-footnote">Showing recent activity across bookings, staff, and system alerts.</span>
-                  <button type="button" className="admin-dropdown-link" onClick={closeMenu}>View all notifications</button>
+                  <span className="admin-dropdown-footnote">Showing recent booking activity (new bookings and booking changes).</span>
                 </div>
               </>
             ) : (
