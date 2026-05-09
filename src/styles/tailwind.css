@@ -5913,6 +5913,11 @@ html[data-theme="light"] .dash-page-title,
     overflow: hidden;
   }
 
+  body.walkin-modal-open .super-admin-container,
+  body.walkin-modal-open aside.super-admin-sidebar {
+    opacity: 0.5;
+  }
+
   /* ── Sidebar ── */
   aside.super-admin-sidebar {
     display: flex;

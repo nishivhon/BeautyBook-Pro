@@ -1103,13 +1103,19 @@ export const AdminDashboard = ({ date }) => {
   return (
     <div className="super-admin-container admin-dashboard-page">
       {/* Sidebar */}
-      <AdminSidebar 
-        activeNav={activeNav}
-        setActiveNav={setActiveNav}
-        sidebarExpanded={sidebarExpanded}
-        setSidebarExpanded={setSidebarExpanded}
-        onLogout={handleLogout}
-      />
+      <div
+        inert={showWalkInModal ? "" : undefined}
+        aria-hidden={showWalkInModal ? "true" : undefined}
+        style={{ pointerEvents: showWalkInModal ? "none" : "auto" }}
+      >
+        <AdminSidebar 
+          activeNav={activeNav}
+          setActiveNav={setActiveNav}
+          sidebarExpanded={sidebarExpanded}
+          setSidebarExpanded={setSidebarExpanded}
+          onLogout={handleLogout}
+        />
+      </div>
 
       {/* Main Content */}
       <div className="super-admin-main">

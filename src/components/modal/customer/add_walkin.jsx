@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../customer/confirmation_dialog";
 import { Toast } from "../../toast";
 
@@ -983,11 +984,21 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
     // After confirmation, the modal stays open for download
   };
 
+  // Manage body class for modal open state - must be before conditional return
+  useEffect(() => {
+    if (!isOpen || typeof document === "undefined") return undefined;
+
+    document.body.classList.add("walkin-modal-open");
+    return () => {
+      document.body.classList.remove("walkin-modal-open");
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const activeCategoryData = SERVICE_CATEGORIES.find(c => c.id === activeCategory);
 
-  return (
+  return createPortal(
     <>
       {/* ── Toast Notifications (Top Fixed Position) ── */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 999999, pointerEvents: "auto", display: "flex", justifyContent: "center", padding: "20px" }}>
@@ -1000,7 +1011,12 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
       </div>
       <div 
         className="appt-overlay walkin-force-dark"
-        style={DARK_MODAL_VARS}
+        style={{
+          ...DARK_MODAL_VARS,
+          zIndex: 10000001,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          backdropFilter: "blur(2px)",
+        }}
         onClick={(e) => {
           // Only trigger if clicking directly on the overlay, not on child elements
           if (e.target === e.currentTarget) {
@@ -1278,6 +1294,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
           }}
         />
       )}
-    </>
+    </>,
+    document.body
   );
 };
