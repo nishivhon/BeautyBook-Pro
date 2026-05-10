@@ -874,7 +874,7 @@ export const AdminDashboardServices = ({ date }) => {
 
   return (
     <div
-      className="super-admin-container"
+      className="super-admin-container admin-dashboard-page"
       style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
     >
       {/* Sidebar */}
