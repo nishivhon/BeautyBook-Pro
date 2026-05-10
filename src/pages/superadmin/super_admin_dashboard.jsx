@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
@@ -974,12 +975,12 @@ const CancelledChart = () => {
 };
 
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
-  { id: "staff-management", label: "Staff Management", icon: UserIcon },
-  { id: "clients", label: "Client Accounts", icon: DatabaseIcon },
-  { id: "services", label: "Services", icon: DatabaseIcon },
-  { id: "logs", label: "Logs", icon: DatabaseIcon },
-  { id: "security", label: "Security", icon: ShieldIcon },
+  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
+  { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
+  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
+  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
+  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
+  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
   // { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
@@ -1135,118 +1136,35 @@ export default function SuperAdminDashboard() {
   const currentAnalytics = ANALYTICS_CARDS[analyticsIndex];
 
   return (
-    <div className="super-admin-container">
+    <DashboardShell
+      navItems={NAV_ITEMS}
+      activeNav={activeNav}
+      roleLabel="Super Administrator"
+      roleInitial="S"
+      showSidebarHeader={false}
+      title="Super Admin Dashboard"
+      subtitle={`BeautyBook Pro • ${dateStr}`}
+      profile={null}
+      notifications={[]}
+      storageKey="superadminSidebarExpanded"
+      onLogoutConfirm={handleLogout}
+      logoutTitle="Log Out?"
+      logoutMessage="Are you sure you want to log out?"
+      logoutConfirmText="Yes, Log Out"
+      logoutCancelText="Stay Logged In"
+    >
+      {/* Password Reminder Banner */}
+      <PasswordReminderBanner />
 
-      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? "translateX(0)" : "translateX(-16px)",
-        transition: "all 0.5s ease"
-      }}>
-        {/* Logo + Toggle */}
-        <div className="sidebar-logo-section">
-          <button 
-            onClick={() => setSidebarExpanded(!sidebarExpanded)}
-            className="logo-toggle-btn"
-            title="Toggle sidebar"
-          >
-            <div className="logo-badge">
-              <LogoIcon />
-            </div>
-          </button>
-          {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
+      {/* ── Metrics Cards with Carousel ── */}
+      <div className="dash-stats-carousel-container">
+        {/* Carousel Header - Title Only */}
+        <div className="dash-stats-carousel-header">
+          <h3 className="dash-stats-set-title">Metrics</h3>
         </div>
 
-        {/* Admin pill */}
-        {sidebarExpanded && (
-          <div className="admin-badge-pill">
-            <div className="admin-badge-circle">S</div>
-            <span className="admin-badge-text">Super Administrator</span>
-          </div>
-        )}
-
-        {/* Nav items */}
-        <nav className="sidebar-nav">
-          {NAV_ITEMS.map((item, idx) => {
-            const isActive = activeNav === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === "staff-management") {
-                    navigate("/superadmin/users");
-                  } else if (item.id === "clients") {
-                    navigate("/superadmin/clients");
-                  } else if (item.id === "services") {
-                    navigate("/superadmin/services");
-                  } else if (item.id === "logs") {
-                    navigate("/superadmin/logs");
-                  } else if (item.id === "security") {
-                    navigate("/superadmin/security");
-                  } else if (item.id === "landing-page") {
-                    navigate("/superadmin/landing-page");
-                  } else {
-                    setActiveNav(item.id);
-                  }
-                }}
-                className={`nav-button ${isActive ? "active" : ""}`}
-                title={item.label}
-              >
-                <item.icon color={isActive ? "#000" : "currentColor"} />
-                {sidebarExpanded && <span>{item.label}</span>}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Log Out */}
-        <div className="sidebar-logout-section">
-          <button onClick={handleLogout} className="logout-button" title="Log out">
-            <LogOutIcon />
-            {sidebarExpanded && <span>Log Out</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* ── Main Content ─────────────────────────────────────────────────── */}
-      <div className="super-admin-main">
-
-        {/* Header */}
-        <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
-          {/* Title block */}
-          <div className="header-title-section">
-            <h1 className="header-main-title">Super Admin Dashboard</h1>
-            <p className="header-subtitle">BeautyBook Pro • {dateStr}</p>
-          </div>
-
-          {/* Actions */}
-          <div className="header-actions">
-            <button className="dash-action-btn">
-              <BellIcon />
-              Notifications
-            </button>
-            <button className="dash-action-btn">
-              <SettingsIcon />
-              Settings
-            </button>
-          </div>
-        </header>
-
-        {/* Scrollable body */}
-        <main className="dashboard-main">
-
-          {/* Password Reminder Banner */}
-          <PasswordReminderBanner />
-
-          {/* ── Metrics Cards with Carousel ── */}
-          <div className="dash-stats-carousel-container">
-            {/* Carousel Header - Title Only */}
-            <div className="dash-stats-carousel-header">
-              <h3 className="dash-stats-set-title">Metrics</h3>
-            </div>
-
-            {/* Metrics Cards - Display 4 at a time */}
-            <div className="dash-stats-row">
+        {/* Metrics Cards - Display 4 at a time */}
+        <div className="dash-stats-row">
               {visibleMetrics.map((m, idx) => (
                 <div
                   key={`${metricsIndex}-${idx}`}
@@ -1415,9 +1333,6 @@ export default function SuperAdminDashboard() {
 
           </div>
           {/* End chart row */}
-
-        </main>
-      </div>
-    </div>
+    </DashboardShell>
   );
 }

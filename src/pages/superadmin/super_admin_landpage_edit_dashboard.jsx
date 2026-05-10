@@ -815,7 +815,7 @@ export default function SuperAdminLandingPageEditor() {
         </div>
 
         {/* Landing Page Preview */}
-        <main className="dashboard-main" style={{transform: "scale(1.2)", transformOrigin: "top center", marginBottom: "300px", display: "flex", flexDirection: "column"}}>
+        <div className="superadmin-page-content" style={{transform: "scale(1.2)", transformOrigin: "top center", marginBottom: "300px", display: "flex", flexDirection: "column"}}>
           {/* HERO SECTION */}
           <section id="home" className="hero-section" style={{paddingTop: "40px", display: hiddenSections.hero ? "none" : "block", order: sectionOrder.indexOf("hero")}}>
             <div className="hero-badge">
@@ -2120,7 +2120,7 @@ export default function SuperAdminLandingPageEditor() {
               </div>
             </div>
           </footer>
-        </main>
+        </div>
 
         {/* How It Works Step Edit Modal - Outside transformed container */}
         <HowItWorksStepEditModal

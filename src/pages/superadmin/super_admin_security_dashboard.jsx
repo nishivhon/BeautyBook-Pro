@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { DashboardShell } from "../../components/dashboard/DashboardShell";
 
 
 // ─── SVG Icons ─────────────────────────────────────────────────────────
@@ -143,12 +144,12 @@ const SystemMaintenanceIcon = () => (
 // ─── Navigation Items ──────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
-  { id: "staff-management", label: "Staff Management", icon: UserIcon },
-  { id: "clients", label: "Client Accounts", icon: DatabaseIcon },
-  { id: "services", label: "Services", icon: DatabaseIcon },
-  { id: "logs", label: "Logs", icon: DatabaseIcon },
-  { id: "security", label: "Security", icon: ShieldIcon },
+  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
+  { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
+  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
+  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
+  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
+  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
   // { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
@@ -304,7 +305,23 @@ export default function SuperAdminSecurityDashboard() {
   };
 
   return (
-    <div className="super-admin-container">
+    <DashboardShell
+      navItems={NAV_ITEMS}
+      activeNav={activeNav}
+      roleLabel="Super Administrator"
+      roleInitial="S"
+      showSidebarHeader={false}
+      title="Security & Permissions"
+      subtitle="BeautyBook Pro · Manage access controls"
+      profile={null}
+      notifications={[]}
+      storageKey="superadminSidebarExpanded"
+      onLogoutConfirm={handleLogout}
+      logoutTitle="Log Out?"
+      logoutMessage="Are you sure you want to log out?"
+      logoutConfirmText="Yes, Log Out"
+      logoutCancelText="Stay Logged In"
+    >
       {/* ─── WARNING BANNERS ─── */}
       {showWarningBanner && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, background: 'rgba(221, 144, 29, 0.15)', border: '1px solid rgba(221, 144, 29, 0.3)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', zIndex: 1001, fontFamily: "'Inter', sans-serif" }}>
@@ -327,98 +344,9 @@ export default function SuperAdminSecurityDashboard() {
         </div>
       )}
 
-      {/* ─── SIDEBAR ─── */}
-      <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? "translateX(0)" : "translateX(-16px)",
-        transition: "all 0.5s ease"
-      }}>
-        <div className="sidebar-logo-section">
-          <button 
-            onClick={() => setSidebarExpanded(!sidebarExpanded)}
-            className="logo-toggle-btn"
-            title="Toggle sidebar"
-          >
-            <div className="logo-badge">
-              <LogoIcon />
-            </div>
-            {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
-          </button>
-        </div>
+      {/* ─── SIDEBAR & HEADER HANDLED BY DASHBOARDSHELL ─── */}
 
-        {sidebarExpanded && (
-          <div className="admin-badge-pill">
-            <div className="admin-badge-circle">S</div>
-            <span className="admin-badge-text">Super Administrator</span>
-          </div>
-        )}
-
-        <nav className="sidebar-nav">
-          {NAV_ITEMS.map((item) => {
-            const isActive = activeNav === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === "security") {
-                    navigate("/superadmin/security");
-                  } else if (item.id === "dashboard") {
-                    navigate("/superadmin/dashboard");
-                  } else if (item.id === "staff-management") {
-                    navigate("/superadmin/users");
-                  } else if (item.id === "clients") {
-                    navigate("/superadmin/clients");
-                  } else if (item.id === "services") {
-                    navigate("/superadmin/services");
-                  } else if (item.id === "logs") {
-                    navigate("/superadmin/logs");
-                  } else if (item.id === "landing-page") {
-                    navigate("/superadmin/landing-page");
-                  } else {
-                    setActiveNav(item.id);
-                    displayToast(`${item.label} section coming soon`);
-                  }
-                }}
-                className={`nav-button ${isActive ? "active" : ""}`}
-                title={item.label}
-              >
-                <item.icon color={isActive ? "#000" : "currentColor"} />
-                {sidebarExpanded && <span>{item.label}</span>}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="sidebar-logout-section">
-          <button className="logout-button" onClick={handleLogout} title="Log out">
-            <LogOutIcon color="#988f81" />
-            {sidebarExpanded && <span>Log Out</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* ─── MAIN CONTENT ─── */}
-      <div className="super-admin-main">
-        {/* Header */}
-        <header className="dashboard-header">
-          <div className="header-title-section">
-            <h1 className="header-main-title">System Security</h1>
-            <p className="header-subtitle">BeautyBook Pro • Saturday, Dec 7, 2024</p>
-          </div>
-          <div className="header-actions">
-            <button className="header-action-btn" onClick={() => displayToast('No new notifications')}>
-              <BellIcon />
-              <span>Notifications</span>
-            </button>
-            <button className="header-action-btn" onClick={() => displayToast('Settings coming soon')}>
-              <SettingsIcon />
-              <span>Settings</span>
-            </button>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main className="dashboard-main">
+      <div className="superadmin-page-content">
           <div className="dashboard-panel">
             {/* Panel header */}
             <div className="panel-header">
@@ -562,8 +490,7 @@ export default function SuperAdminSecurityDashboard() {
               )}
             </div>
           )}
-        </main>
-      </div>
+        </div>
 
       {/* ─── TOAST ─── */}
       {showToast && (
@@ -614,7 +541,7 @@ export default function SuperAdminSecurityDashboard() {
           </div>
         </div>
       )}
-    </div>
+    </DashboardShell>
   );
 }
 

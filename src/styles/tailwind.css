@@ -6304,7 +6304,12 @@ html[data-theme="light"] .dash-page-title,
     gap: 24px;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding-top: 110px;
+    padding-top: 88px; /* reduced to match admin/customer dashboard spacing */
+  }
+
+  /* Superadmin-specific: match customer/admin dashboard top spacing exactly */
+  .super-admin-container .dashboard-main {
+    padding-top: 88px;
   }
 
   main.dashboard-main::-webkit-scrollbar,
@@ -6752,6 +6757,12 @@ html[data-theme="light"] .dash-page-title,
     border: 1px solid rgba(152, 143, 129, 0.35);
     border-radius: 10px;
     padding: 24px;
+  }
+
+  .superadmin-page-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
   }
 
   /* Panel header */

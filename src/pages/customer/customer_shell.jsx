@@ -7,6 +7,7 @@ import { AppointmentFormPhase3 } from "../../components/modal/customer/appointme
 import { AppointmentFormPhase4 } from "../../components/modal/customer/appointment/phase_four";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 import { Toast } from "../../components/toast";
+import { DashboardShell } from "../../components/dashboard/DashboardShell";
 
 const LogoIcon = () => (
   <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -293,6 +294,94 @@ export function CustomerShell({ activeNav, profile, children }) {
       setShowBackdropConfirm(true);
     }
   };
+
+  return (
+    <>
+      <DashboardShell
+        navItems={NAV_ITEMS}
+        activeNav={activeNav}
+        roleLabel="Customer"
+        roleInitial="C"
+        showSidebarHeader={false}
+        title={PAGE_META[activeNav].title}
+        subtitle={`BeautyBook Pro · ${todayDate} · ${PAGE_META[activeNav].subtitle}`}
+        profile={profile}
+        notifications={[]}
+        storageKey="customerSidebarExpanded"
+        sidebarExtraAction={(
+          <button onClick={() => setShowAppointment(true)} className="nav-button cdb-book-nav-btn" title="Book Appointment" type="button">
+            <BookingIcon color="currentColor" />
+            {sidebarExpanded && <span>Book Appointment</span>}
+          </button>
+        )}
+        onLogoutConfirm={handleLogout}
+        logoutTitle="Log Out?"
+        logoutMessage="Are you sure you want to log out of your customer dashboard?"
+        logoutConfirmText="Yes, Log Out"
+        logoutCancelText="Stay Logged In"
+        profileActionLabel="Edit Profile"
+        profileActionPath="/customer/profile"
+      >
+        {children}
+      </DashboardShell>
+
+      {showAppointment && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 101,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backdropFilter: "blur(3px)",
+            backgroundColor: "rgba(0,0,0,0.72)",
+          }}
+          onClick={handleBackdropClick}
+        >
+          {appointmentPhase === 1 ? (
+            <AppointmentForm onBack={handleCancelBooking} onContinue={handleAppointmentContinue} />
+          ) : appointmentPhase === 2 ? (
+            <AppointmentFormPhase2
+              onBack={() => setAppointmentPhase(1)}
+              onContinue={handlePhase2Continue}
+              onCancel={handleCancelBooking}
+              initialData={appointmentData?.services}
+            />
+          ) : appointmentPhase === 3 ? (
+            <AppointmentFormPhase3
+              onBack={handleBackPhase3}
+              onContinue={handlePhase3Continue}
+              onCancel={handleCancelBooking}
+              initialData={appointmentData}
+            />
+          ) : appointmentPhase === 4 ? (
+            <AppointmentFormPhase4
+              onBack={() => setAppointmentPhase(3)}
+              onConfirm={handlePhase4Confirm}
+              onCancel={handleCancelBooking}
+              booking={formatBooking()}
+            />
+          ) : null}
+        </div>
+      )}
+
+      <ConfirmationDialog
+        isOpen={showBackdropConfirm}
+        title="Cancel Booking?"
+        message="Are you sure you want to cancel? Your booking progress will be lost."
+        confirmText="Yes, Cancel Booking"
+        cancelText="Keep Booking"
+        onConfirm={() => {
+          setShowBackdropConfirm(false);
+          handleCancelBooking();
+        }}
+        onCancel={() => setShowBackdropConfirm(false)}
+      />
+
+      <Toast isVisible={showToast} message={toastMessage} type="info" duration={1200} />
+    </>
+  );
 
   return (
     <div className="super-admin-container">
