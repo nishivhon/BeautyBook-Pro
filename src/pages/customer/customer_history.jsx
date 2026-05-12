@@ -17,15 +17,8 @@ export default function CustomerHistoryPage() {
   const [ratingValue, setRatingValue] = useState(0);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const serviceCategories = [
-    { id: "All", label: "All" },
-    { id: "Hair Services", label: "Hair" },
-    { id: "Skin Care Services", label: "Skin Care" },
-    { id: "Massage Services", label: "Massage" },
-    { id: "Nail Services", label: "Nails" },
-    { id: "Premium Services", label: "Premium" },
-  ];
+  const [serviceCategories, setServiceCategories] = useState([{ id: "All", label: "All" }]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -42,6 +35,55 @@ export default function CustomerHistoryPage() {
       }
     };
     fetchServices();
+  }, []);
+
+  // Fetch service categories dynamically from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        console.log('[CustomerHistory] Fetching service categories from API');
+        setCategoriesLoading(true);
+        
+        const response = await fetch('/api/services/categories');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch categories: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('[CustomerHistory] Service categories fetched:', data.categories);
+        
+        // Separate "Other" category and sort the rest
+        const otherCategory = data.categories.find(cat => cat.name === 'Other');
+        const otherCategories = data.categories.filter(cat => cat.name !== 'Other');
+        
+        // Build categories array with "All" first, then sorted categories, then "Other" at end
+        const categories = [
+          { id: "All", label: "All" },
+          ...otherCategories.map(cat => ({
+            id: cat.name,
+            label: cat.name
+          }))
+        ];
+        
+        // Add "Other" at the end if it exists
+        if (otherCategory) {
+          categories.push({
+            id: otherCategory.name,
+            label: otherCategory.name
+          });
+        }
+        
+        setServiceCategories(categories);
+      } catch (err) {
+        console.error('[CustomerHistory] Error fetching service categories:', err);
+        // Fallback to just "All" option if fetch fails
+        setServiceCategories([{ id: "All", label: "All" }]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
   }, []);
 
   const filteredHistory = history.filter((h) => {
@@ -123,11 +165,62 @@ export default function CustomerHistoryPage() {
           <div className="cdb-history-header">
             <div className="cdb-history-left">
               <div className="cdb-filter-row">
-                {serviceCategories.map((category) => (
-                  <button key={category.id} className={`cdb-filter-btn ${serviceFilter === category.id ? "active" : ""}`} onClick={() => setServiceFilter(category.id)}>
-                    {category.label}
-                  </button>
-                ))}
+                <div
+                  style={{
+                    position: "relative",
+                    display: "inline-block",
+                    width: "auto",
+                  }}
+                >
+                  <select 
+                    value={serviceFilter} 
+                    onChange={(e) => setServiceFilter(e.target.value)}
+                    style={{
+                      padding: "8px 32px 8px 12px",
+                      paddingRight: "32px",
+                      backgroundColor: "#1a0f00",
+                      border: "1px solid rgba(221, 144, 29, 0.3)",
+                      borderRadius: "6px",
+                      color: "#dd901d",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      fontFamily: "Inter, sans-serif",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      appearance: "none",
+                      WebkitAppearance: "none",
+                      MozAppearance: "none",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
+                      e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.borderColor = "rgba(221, 144, 29, 0.3)";
+                      e.target.style.backgroundColor = "#1a0f00";
+                    }}
+                  >
+                    {serviceCategories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      pointerEvents: "none",
+                      color: "#dd901d",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    ▼
+                  </span>
+                </div>
               </div>
             </div>
             <div className="cdb-history-right">
