@@ -1210,7 +1210,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
 
   // Fetch staff data on component mount
   useEffect(() => {
-    
+    fetchStaff();
     return () => {};
   }, []);
 

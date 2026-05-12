@@ -1,9 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { HairServicesModal } from "./services/haircut_service";
-import { NailServicesModal } from "./services/nail_service";
-import { SkincareServicesModal } from "./services/skin_care_service";
-import { MassageServicesModal } from "./services/massage_service";
-import { PremiumServicesModal } from "./services/premium_service";
+import { DynamicServiceModal } from "./services/dynamic_service";
 import { ConfirmationDialog } from "../confirmation_dialog";
 
 /* Hair Services — broom/brush icon */
@@ -58,13 +54,34 @@ const PremiumIcon = () => (
   </svg>
 );
 
-const SERVICES = [
-  { id: 1, title: "Hair Services",     desc: "Haircuts, Hair Styling, Hair Color, & Hair Treatment", Icon: HairIcon     },
-  { id: 2, title: "Nail Services",     desc: "Manicure, pedicure & nail art",                        Icon: NailIcon     },
-  { id: 3, title: "Skin Care Services",          desc: "Facials, treatments & body care",                      Icon: SkincareIcon },
-  { id: 4, title: "Massage Services",  desc: "Relaxation & therapeutic bodywork",                    Icon: MassageIcon  },
-  { id: 5, title: "Premium Services",  desc: "Exclusive packages & VIP experiences",                 Icon: PremiumIcon  },
-];
+// Service grouping configuration - maps database categories to service groups
+const SERVICE_GROUP_CONFIG = {
+  'Hair Services': {
+    keywords: ['Hair Color', 'Hair Cut', 'Highlights', 'Rebonding', 'Styling', 'Hair Treatment'],
+    Icon: HairIcon,
+    desc: "Haircuts, Hair Styling, Hair Color, & Hair Treatment"
+  },
+  'Nail Services': {
+    keywords: ['Nail Care', 'Manicure', 'Pedicure', 'Nail Art'],
+    Icon: NailIcon,
+    desc: "Manicure, pedicure & nail art"
+  },
+  'Skin Care Services': {
+    keywords: ['Treatment', 'Skincare', 'Skin Care', 'Facial'],
+    Icon: SkincareIcon,
+    desc: "Facials, treatments & body care"
+  },
+  'Massage Services': {
+    keywords: ['Massage', 'Massage Services'],
+    Icon: MassageIcon,
+    desc: "Relaxation & therapeutic bodywork"
+  },
+  'Premium Services': {
+    keywords: ['Premium Services', 'Premium', 'Other'],
+    Icon: PremiumIcon,
+    desc: "Exclusive packages & VIP experiences"
+  },
+};
 
 const STEPS = [
   { number: 1, label: "Schedule" },
@@ -129,30 +146,10 @@ const ProgressIndicator = ({ currentStep = 2 }) => (
 );
 
 /* ── Service card ── */
-const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNailModal, onOpenSkincareModal, onOpenMassageModal, onOpenPremiumModal, selectedHairServicesCount = 0, selectedNailServicesCount = 0, selectedSkincareServicesCount = 0, selectedMassageServicesCount = 0, selectedPremiumServicesCount = 0 }) => (
+const ServiceCard = ({ service, isSelected, onSelect, onOpenServiceModal, selectedServicesCount = 0 }) => (
   <button
     className={`appt-svc-card${isSelected ? " selected" : ""}`}
-    onClick={() => {
-      if (service.id === 1) {
-        // Hair Services — open the hair services modal
-        onOpenHairModal();
-      } else if (service.id === 2) {
-        // Nail Services — open the nail services modal
-        onOpenNailModal();
-      } else if (service.id === 3) {
-        // Skincare Services — open the skincare services modal
-        onOpenSkincareModal();
-      } else if (service.id === 4) {
-        // Massage Services — open the massage services modal
-        onOpenMassageModal();
-      } else if (service.id === 5) {
-        // Premium Services — open the premium services modal
-        onOpenPremiumModal();
-      } else {
-        // For other services, toggle selection
-        onSelect(service.id);
-      }
-    }}
+    onClick={() => onOpenServiceModal(service.id)}
     aria-pressed={isSelected}
     style={{
       transition: "all 0.3s ease",
@@ -161,31 +158,19 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNai
     onMouseEnter={(e) => {
       if (!isSelected) {
         e.currentTarget.style.transform = "translateY(-8px) scale(1.03)";
-        const iconCircle = e.currentTarget.querySelector('.appt-svc-icon-circle');
-        if (iconCircle) {
-          iconCircle.style.transform = "scale(1.1) rotate(5deg)";
-        }
       }
     }}
     onMouseLeave={(e) => {
       if (!isSelected) {
         e.currentTarget.style.transform = "translateY(0) scale(1)";
-        const iconCircle = e.currentTarget.querySelector('.appt-svc-icon-circle');
-        if (iconCircle) {
-          iconCircle.style.transform = "scale(1) rotate(0deg)";
-        }
       }
     }}
   >
-    {/* amber circle with dark icon */}
-    <div className="appt-svc-icon-circle" style={{transition: "all 0.3s ease"}}>
-      <service.Icon />
-    </div>
     <p className="appt-svc-title">{service.title}</p>
     <p className="appt-svc-desc">{service.desc}</p>
     
-    {/* Service count badge for Hair Services */}
-    {service.id === 1 && isSelected && selectedHairServicesCount > 0 && (
+    {/* Service count badge */}
+    {isSelected && selectedServicesCount > 0 && (
       <div style={{
         position: "absolute",
         top: "8px",
@@ -202,121 +187,104 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenHairModal, onOpenNai
         fontWeight: "700",
         fontFamily: "Inter, sans-serif",
       }}>
-        {selectedHairServicesCount}
-      </div>
-    )}
-    
-    {/* Service count badge for Nail Services */}
-    {service.id === 2 && isSelected && selectedNailServicesCount > 0 && (
-      <div style={{
-        position: "absolute",
-        top: "8px",
-        right: "8px",
-        background: "var(--color-amber)",
-        color: "var(--color-black)",
-        borderRadius: "50%",
-        width: "28px",
-        height: "28px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "0.85rem",
-        fontWeight: "700",
-        fontFamily: "Inter, sans-serif",
-      }}>
-        {selectedNailServicesCount}
-      </div>
-    )}
-    
-    {/* Service count badge for Skincare Services */}
-    {service.id === 3 && isSelected && selectedSkincareServicesCount > 0 && (
-      <div style={{
-        position: "absolute",
-        top: "8px",
-        right: "8px",
-        background: "var(--color-amber)",
-        color: "var(--color-black)",
-        borderRadius: "50%",
-        width: "28px",
-        height: "28px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "0.85rem",
-        fontWeight: "700",
-        fontFamily: "Inter, sans-serif",
-      }}>
-        {selectedSkincareServicesCount}
-      </div>
-    )}
-    
-    {/* Service count badge for Premium Services */}
-    {service.id === 5 && isSelected && selectedPremiumServicesCount > 0 && (
-      <div style={{
-        position: "absolute",
-        top: "8px",
-        right: "8px",
-        background: "var(--color-amber)",
-        color: "var(--color-black)",
-        borderRadius: "50%",
-        width: "28px",
-        height: "28px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "0.85rem",
-        fontWeight: "700",
-        fontFamily: "Inter, sans-serif",
-      }}>
-        {selectedPremiumServicesCount}
-      </div>
-    )}
-
-    {/* Service count badge for Massage Services */}
-    {service.id === 4 && isSelected && selectedMassageServicesCount > 0 && (
-      <div style={{
-        position: "absolute",
-        top: "8px",
-        right: "8px",
-        background: "var(--color-amber)",
-        color: "var(--color-black)",
-        borderRadius: "50%",
-        width: "28px",
-        height: "28px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "0.85rem",
-        fontWeight: "700",
-        fontFamily: "Inter, sans-serif",
-      }}>
-        {selectedMassageServicesCount}
+        {selectedServicesCount}
       </div>
     )}
   </button>
 );
 
 export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialData }) => {
-  const [selectedServices, setSelectedServices] = useState([]); // Array to allow multiple selections
-  const [showHairModal, setShowHairModal] = useState(false);
-  const [showNailModal, setShowNailModal] = useState(false);
-  const [showSkincareModal, setShowSkincareModal] = useState(false);
-  const [showMassageModal, setShowMassageModal] = useState(false);
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
-  const [selectedHairServices, setSelectedHairServices] = useState([]);
-  const [selectedNailServices, setSelectedNailServices] = useState([]);
-  const [selectedSkincareServices, setSelectedSkincareServices] = useState([]);
-  const [selectedMassageServices, setSelectedMassageServices] = useState([]);
-  const [selectedPremiumServices, setSelectedPremiumServices] = useState([]);
-  const [hasVisitedHairModal, setHasVisitedHairModal] = useState(false); // Track if hair modal has been visited
-  const [hasVisitedNailModal, setHasVisitedNailModal] = useState(false); // Track if nail modal has been visited
-  const [hasVisitedSkincareModal, setHasVisitedSkincareModal] = useState(false); // Track if skincare modal has been visited
-  const [hasVisitedMassageModal, setHasVisitedMassageModal] = useState(false); // Track if massage modal has been visited
-  const [hasVisitedPremiumModal, setHasVisitedPremiumModal] = useState(false); // Track if premium modal has been visited
+  const [selectedServices, setSelectedServices] = useState([]);
+  
+  // Dynamic modal state
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [currentModalCategory, setCurrentModalCategory] = useState(null);
+  const [currentModalKeywords, setCurrentModalKeywords] = useState([]);
+  
+  // Store selected services by service card ID
+  const [selectedServicesByCard, setSelectedServicesByCard] = useState({
+    1: [], // Hair Services
+    2: [], // Nail Services
+    3: [], // Skin Care Services
+    4: [], // Massage Services
+    5: [], // Premium Services
+  });
+  
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [promoCode, setPromoCode] = useState("");
+  const [sortedServices, setSortedServices] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [dynamicCategoryKeywordsMap, setDynamicCategoryKeywordsMap] = useState({});
   const promoCodeRef = useRef(null);
+
+  // Fetch categories dynamically and generate service cards
+  useEffect(() => {
+    const fetchAndGenerateServiceCards = async () => {
+      try {
+        console.log('[Phase2] Fetching service categories from API');
+        setCategoriesLoading(true);
+        
+        const response = await fetch('/api/services/categories');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch categories: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('[Phase2] Service categories fetched:', data.categories);
+        
+        if (!data.categories || data.categories.length === 0) {
+          console.log('[Phase2] No categories returned');
+          setSortedServices([]);
+          setCategoriesLoading(false);
+          return;
+        }
+        
+        // Create a card for each unique database category
+        let generatedServiceCards = data.categories.map((category, index) => ({
+          id: index + 1,
+          title: category.name,
+          desc: category.description || `Services in ${category.name}`,
+          Icon: HairIcon, // Default icon, you can customize per category later
+          keywords: [category.name] // Each card filters by its own category name
+        }));
+        
+        // Move 'Other' category to the end
+        const otherIndex = generatedServiceCards.findIndex(card => card.title === 'Other');
+        if (otherIndex > -1) {
+          const [otherCard] = generatedServiceCards.splice(otherIndex, 1);
+          generatedServiceCards.push(otherCard);
+        }
+        
+        // Reassign IDs after reordering
+        generatedServiceCards = generatedServiceCards.map((card, index) => ({
+          ...card,
+          id: index + 1
+        }));
+        
+        console.log('[Phase2] Generated service cards:', generatedServiceCards.map(s => ({ id: s.id, title: s.title })));
+        
+        // Build dynamic categoryKeywordsMap for the modal
+        const newCategoryKeywordsMap = {};
+        generatedServiceCards.forEach(card => {
+          newCategoryKeywordsMap[card.id] = {
+            name: card.title,
+            keywords: card.keywords
+          };
+        });
+        
+        setDynamicCategoryKeywordsMap(newCategoryKeywordsMap);
+        setSortedServices(generatedServiceCards);
+      } catch (err) {
+        console.error('[Phase2] Error fetching service categories:', err);
+        setSortedServices([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchAndGenerateServiceCards();
+  }, []);
 
   // Initialize state with previously selected services when component mounts or initialData changes
   useEffect(() => {
@@ -324,20 +292,8 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
       const serviceIds = initialData.services.map(s => s.id);
       setSelectedServices(serviceIds);
     }
-    if (initialData?.selectedHairServices) {
-      setSelectedHairServices(initialData.selectedHairServices);
-    }
-    if (initialData?.selectedNailServices) {
-      setSelectedNailServices(initialData.selectedNailServices);
-    }
-    if (initialData?.selectedSkincareServices) {
-      setSelectedSkincareServices(initialData.selectedSkincareServices);
-    }
-    if (initialData?.selectedMassageServices) {
-      setSelectedMassageServices(initialData.selectedMassageServices);
-    }
-    if (initialData?.selectedPremiumServices) {
-      setSelectedPremiumServices(initialData.selectedPremiumServices);
+    if (initialData?.selectedServicesByCard) {
+      setSelectedServicesByCard(initialData.selectedServicesByCard);
     }
     if (initialData?.promoCode) {
       setPromoCode(initialData.promoCode);
@@ -353,133 +309,70 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
     }
   }, [selectedServices]);
 
+  const openServiceModal = (serviceCardId) => {
+    const categoryInfo = dynamicCategoryKeywordsMap[serviceCardId];
+    if (categoryInfo) {
+      setCurrentModalCategory(categoryInfo.name);
+      setCurrentModalKeywords(categoryInfo.keywords);
+      setShowServiceModal(true);
+    }
+  };
+
+  const handleServiceModalContinue = (serviceCardId) => (data) => {
+    console.log(`[Phase2] Service modal closed for card ${serviceCardId}:`, data);
+    
+    // Update selected services for this card
+    setSelectedServicesByCard(prev => ({
+      ...prev,
+      [serviceCardId]: data.services
+    }));
+    
+    // Update overall selected services
+    if (data.services.length > 0) {
+      if (!selectedServices.includes(serviceCardId)) {
+        setSelectedServices([...selectedServices, serviceCardId]);
+      }
+    } else {
+      setSelectedServices(selectedServices.filter(id => id !== serviceCardId));
+    }
+    
+    setShowServiceModal(false);
+  };
 
   const handleSelectService = (serviceId) => {
     if (selectedServices.includes(serviceId)) {
-      // Remove from selected
       setSelectedServices(selectedServices.filter((id) => id !== serviceId));
     } else {
-      // Add to selected
       setSelectedServices([...selectedServices, serviceId]);
     }
   };
 
   const handleContinue = () => {
     onContinue?.({ 
-      services: SERVICES.filter((s) => selectedServices.includes(s.id)), 
-      selectedHairServices, 
-      selectedNailServices,
-      selectedSkincareServices,
-      selectedMassageServices,
-      selectedPremiumServices,
+      services: sortedServices.filter((s) => selectedServices.includes(s.id)), 
+      selectedServicesByCard, 
       promoCode
     });
   };
 
-  const handleHairContinue = (data) => {
-    // When user continues/saves from hair services modal
-    setSelectedHairServices(data.services); // Store the selected hair services
-    setHasVisitedHairModal(true); // Mark as visited
-    
-    // Add Hair Services ID only if there are services selected, otherwise remove it
-    if (data.services.length > 0) {
-      if (!selectedServices.includes(1)) {
-        setSelectedServices([...selectedServices, 1]);
-      }
-    } else {
-      // Remove Hair Services ID if all services are deselected
-      setSelectedServices(selectedServices.filter((id) => id !== 1));
-    }
-    
-    setShowHairModal(false); // Return to phase_two
-  };
+  // No need for separate modal handlers anymore - just render the dynamic modal
 
-  const handleNailContinue = (data) => {
-    // When user continues/saves from nail services modal
-    setSelectedNailServices(data.services);
-    setHasVisitedNailModal(true);
+  if (showServiceModal) {
+    // Find the card ID from currentModalCategory
+    const cardId = Object.keys(dynamicCategoryKeywordsMap).find(
+      key => dynamicCategoryKeywordsMap[key].name === currentModalCategory
+    );
     
-    // Add Nail Services ID only if there are services selected, otherwise remove it
-    if (data.services.length > 0) {
-      if (!selectedServices.includes(2)) {
-        setSelectedServices([...selectedServices, 2]);
-      }
-    } else {
-      setSelectedServices(selectedServices.filter((id) => id !== 2));
-    }
-    
-    setShowNailModal(false);
-  };
-
-  const handleSkincareeContinue = (data) => {
-    // When user continues/saves from skincare services modal
-    setSelectedSkincareServices(data.services);
-    setHasVisitedSkincareModal(true);
-    
-    // Add Skincare Services ID only if there are services selected, otherwise remove it
-    if (data.services.length > 0) {
-      if (!selectedServices.includes(3)) {
-        setSelectedServices([...selectedServices, 3]);
-      }
-    } else {
-      setSelectedServices(selectedServices.filter((id) => id !== 3));
-    }
-    
-    setShowSkincareModal(false);
-  };
-
-  const handleMassageContinue = (data) => {
-    // When user continues/saves from massage services modal
-    setSelectedMassageServices(data.services);
-    setHasVisitedMassageModal(true);
-    
-    // Add Massage Services ID only if there are services selected, otherwise remove it
-    if (data.services.length > 0) {
-      if (!selectedServices.includes(4)) {
-        setSelectedServices([...selectedServices, 4]);
-      }
-    } else {
-      setSelectedServices(selectedServices.filter((id) => id !== 4));
-    }
-    
-    setShowMassageModal(false);
-  };
-
-  const handlePremiumContinue = (data) => {
-    // When user continues/saves from premium services modal
-    setSelectedPremiumServices(data.services);
-    setHasVisitedPremiumModal(true);
-    
-    // Add Premium Services ID only if there are services selected, otherwise remove it
-    if (data.services.length > 0) {
-      if (!selectedServices.includes(5)) {
-        setSelectedServices([...selectedServices, 5]);
-      }
-    } else {
-      setSelectedServices(selectedServices.filter((id) => id !== 5));
-    }
-    
-    setShowPremiumModal(false);
-  };
-
-  if (showHairModal) {
-    return <HairServicesModal onBack={() => setShowHairModal(false)} onContinue={handleHairContinue} initialSelected={selectedHairServices.map((s) => s.id)} isUpdating={hasVisitedHairModal} />;
-  }
-
-  if (showNailModal) {
-    return <NailServicesModal onBack={() => setShowNailModal(false)} onContinue={handleNailContinue} initialSelected={selectedNailServices.map((s) => s.id)} isUpdating={hasVisitedNailModal} />;
-  }
-
-  if (showSkincareModal) {
-    return <SkincareServicesModal onBack={() => setShowSkincareModal(false)} onContinue={handleSkincareeContinue} initialSelected={selectedSkincareServices.map((s) => s.id)} isUpdating={hasVisitedSkincareModal} />;
-  }
-
-  if (showMassageModal) {
-    return <MassageServicesModal onBack={() => setShowMassageModal(false)} onContinue={handleMassageContinue} initialSelected={selectedMassageServices.map((s) => s.id)} isUpdating={hasVisitedMassageModal} />;
-  }
-
-  if (showPremiumModal) {
-    return <PremiumServicesModal onBack={() => setShowPremiumModal(false)} onContinue={handlePremiumContinue} initialSelected={selectedPremiumServices.map((s) => s.id)} isUpdating={hasVisitedPremiumModal} />;
+    return (
+      <DynamicServiceModal
+        categoryName={currentModalCategory}
+        categoryKeywords={currentModalKeywords}
+        onBack={() => setShowServiceModal(false)}
+        onContinue={handleServiceModalContinue(cardId)}
+        initialSelected={currentModalCategory && cardId ? selectedServicesByCard[cardId]?.map(s => s.id) || [] : []}
+        isUpdating={false}
+      />
+    );
   }
 
   return (
@@ -515,22 +408,14 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
 
         {/* 3-col top row + 2-col bottom row */}
         <div className="appt-svc-grid">
-          {SERVICES.map((svc) => (
+          {sortedServices.map((svc) => (
             <ServiceCard
               key={svc.id}
               service={svc}
               isSelected={selectedServices.includes(svc.id)}
               onSelect={handleSelectService}
-              onOpenHairModal={() => setShowHairModal(true)}
-              onOpenNailModal={() => setShowNailModal(true)}
-              onOpenSkincareModal={() => setShowSkincareModal(true)}
-              onOpenMassageModal={() => setShowMassageModal(true)}
-              onOpenPremiumModal={() => setShowPremiumModal(true)}
-              selectedHairServicesCount={svc.id === 1 ? selectedHairServices.length : 0}
-              selectedNailServicesCount={svc.id === 2 ? selectedNailServices.length : 0}
-              selectedSkincareServicesCount={svc.id === 3 ? selectedSkincareServices.length : 0}
-              selectedMassageServicesCount={svc.id === 4 ? selectedMassageServices.length : 0}
-              selectedPremiumServicesCount={svc.id === 5 ? selectedPremiumServices.length : 0}
+              onOpenServiceModal={openServiceModal}
+              selectedServicesCount={selectedServicesByCard[svc.id]?.length || 0}
             />
           ))}
         </div>
