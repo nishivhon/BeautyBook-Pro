@@ -2387,7 +2387,7 @@ html[data-theme="light"] .dash-page-title,
   }
 
   .hero-text {
-    color: var(--color-tan);
+    color: var(--color-white);
     line-height: 1.7;
     max-width: 580px;
     margin: 0 0 32px;

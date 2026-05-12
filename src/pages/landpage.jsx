@@ -1,5 +1,7 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+
+const HERO_BG_IMAGE = "/images/DarkmodeBG.png";
 
 /* ── NAVBAR logo: scissors <> mark (white strokes on amber bg) ── */
 const LogoMark = () => (
@@ -165,9 +167,7 @@ const NavBar = ({ onBookAppointment }) => {
         <div className="logo-badge">
           <LogoMark/>
         </div>
-        <span className="brand-name">
-          BeautyBook Pro
-        </span>
+        <span className="brand-name">BeautyBook Pro</span>
       </div>
 
       {/* Mobile menu button */}
@@ -239,7 +239,16 @@ const HeroSection = ({ onBookAppointment }) => {
   const navigate = useNavigate();
   
   return (
-    <section id="home" className="hero-section">
+    <section
+      id="home"
+      className="hero-section"
+      style={{
+        backgroundImage: `linear-gradient(rgba(10, 9, 8, 0.55), rgba(10, 9, 8, 0.72)), url('${HERO_BG_IMAGE}')`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       {/* Badge */}
       <div className="hero-badge">
         <span>
@@ -262,8 +271,8 @@ const HeroSection = ({ onBookAppointment }) => {
       </p>
 
       {/* CTA */}
-      <button onClick={() => navigate("/operators/login")} className="btn-large btn-hero">
-        Get Started - Login
+      <button onClick={() => navigate("/register")} className="btn-large btn-hero">
+        Create Your Account
       </button>
     </section>
   );
@@ -308,27 +317,266 @@ const SvcCard = ({icon,title,items}) => (
   </div>
 );
 
+const SERVICE_CATEGORIES = [
+  {
+    name: "Haircut",
+    description: "Precision cuts, clean trims, and tailored shapes for everyday grooming and polish.",
+    imageLabel: "Category Visual",
+    imageNote: "Primary image: haircut workstation with stylist and client.",
+  },
+  {
+    name: "Styling (No Color/Chemical)",
+    description: "Blow-dry finishes, formal looks, and style sets without chemical or color services.",
+    imageLabel: "Category Visual",
+    imageNote: "Primary image: styling station with tools and finishing products.",
+  },
+  {
+    name: "Hair Color",
+    description: "Root retouch, single-process color, and full-color refresh services for vibrant results.",
+    imageLabel: "Category Visual",
+    imageNote: "Primary image: color application and mixing setup.",
+  },
+  {
+    name: "Highlights & Specialty Color",
+    description: "Foils, balayage, dimensional blends, and custom color work for standout depth and contrast.",
+    imageLabel: "Category Visual",
+    imageNote: "Primary image: highlight foils and specialty color application.",
+  },
+  {
+    name: "Rebonding & Chemical Treatments",
+    description: "Rebonding, smoothing, and controlled chemical services for long-lasting structure and manageability.",
+    imageLabel: "Category Visual",
+    imageNote: "Primary image: chemical treatment and rebonding station.",
+  },
+  {
+    name: "Treatments",
+    description: "Deep conditioning, scalp care, and restorative treatments that support healthy hair and scalp balance.",
+    imageLabel: "Category Visual",
+    imageNote: "Primary image: hair treatment setup and care products.",
+  },
+  {
+    name: "Hand & Foot Care",
+    description: "Manicure and pedicure services for clean, refreshed hands and feet with polished finishes.",
+    imageLabel: "Category Visual",
+    imageNote: "Primary image: manicure and pedicure station.",
+  },
+  {
+    name: "Other Services",
+    description: "Additional salon offerings and custom requests that support a complete beauty appointment experience.",
+    imageLabel: "Category Visual",
+    imageNote: "Primary image: assorted salon service tools and accessories.",
+  },
+];
+
 const ServicesSection = () => {
-  const row1 = [
-    {icon:<ScissorsIcon/>, title:"Haircut Services",   items:["Haircut & Styling","Hair Color","Hair Treatment","Beard Trimming"]},
-    {icon:<NailIcon/>,     title:"Nail Services",      items:["Manicures","Pedicures","Nail Enhancement","Nail Art & Design"]},
-    {icon:<SkinIcon/>,     title:"Skin Care Services", items:["Facial Treatments","Advance Treatments","Specialized Facials","Body Treatment"]},
-  ];
-  const row2 = [
-    {icon:<MassageIcon/>,  title:"Massage Services",   items:["Swedish Massage","Deep Tissue Massage","Hot Stone Massage","Foot Reflexology"]},
-    {icon:<StarIcon/>,     title:"Premium Services",   items:["Bridal Package","Couple's Massage","Hair & Glow Combo","VIP Lounge Experience"]},
-  ];
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [hoveredSlide, setHoveredSlide] = useState(null);
+  const [isSliding, setIsSliding] = useState(false);
+  const [slideDirection, setSlideDirection] = useState(1);
+  const currentCategory = SERVICE_CATEGORIES[activeSlide];
+  const sectionSidePadding = 40;
+  const contentGridWidth = 860;
+  const leftAlignedGridInset = `max(0px, calc((100% - ${contentGridWidth}px) / 2))`;
+
+  const rotateTo = (targetIndex) => {
+    if (isSliding || targetIndex === activeSlide) return;
+
+    const total = SERVICE_CATEGORIES.length;
+    const forwardSteps = (targetIndex - activeSlide + total) % total;
+    const backwardSteps = (activeSlide - targetIndex + total) % total;
+    const direction = forwardSteps <= backwardSteps ? 1 : -1;
+
+    setSlideDirection(direction);
+    setIsSliding(true);
+
+    window.setTimeout(() => {
+      setActiveSlide(targetIndex);
+      setIsSliding(false);
+    }, 220);
+  };
+
+  const orderedCategories = SERVICE_CATEGORIES.map((_, offset) => {
+    const sourceIndex = (activeSlide + offset) % SERVICE_CATEGORIES.length;
+    return {
+      sourceIndex,
+      category: SERVICE_CATEGORIES[sourceIndex],
+    };
+  });
+
   return (
     <section id="services" className="services-section">
-      <h2 className="section-title">Our Services</h2>
-      <p className="section-subtitle">Professional grooming services tailored to your style</p>
-
-      <div className="section-flex-col">
-        <div className="grid-auto">
-          {row1.map((s,i) => <SvcCard key={i} {...s}/>)}
+      <div
+        className="service-carousel-shell"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "270px minmax(0, 1fr)",
+          gap: "34px",
+          alignItems: "center",
+          marginLeft: leftAlignedGridInset,
+          width: `calc(100% - ${leftAlignedGridInset} + ${sectionSidePadding}px)`,
+          marginRight: `-${sectionSidePadding}px`,
+        }}
+      >
+        <div
+          className="service-carousel-copy"
+          style={{
+            background: "transparent",
+            border: "none",
+            borderRadius: "0",
+            padding: "0",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: "16px",
+            minHeight: "280px",
+          }}
+        >
+          <h3
+            style={{
+              margin: 0,
+              color: "var(--color-white)",
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              fontSize: "2.1rem",
+              lineHeight: 1.1,
+            }}
+          >
+            {currentCategory.name}
+          </h3>
+          <p
+            style={{
+              margin: 0,
+              color: "#c9c2b8",
+              fontFamily: "Inter, sans-serif",
+              fontSize: "0.93rem",
+              lineHeight: 1.45,
+              maxWidth: "240px",
+            }}
+          >
+            {currentCategory.description}
+          </p>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => {}}
+            style={{
+              alignSelf: "flex-start",
+              marginTop: "14px",
+              minWidth: "130px",
+              height: "34px",
+              borderRadius: "5px",
+              fontSize: "0.85rem",
+              padding: "0 14px",
+            }}
+          >
+            Check Service
+          </button>
         </div>
-        <div className="grid-2col">
-          {row2.map((s,i) => <SvcCard key={i} {...s}/>)}
+
+        <div
+          className="service-carousel-panel"
+          style={{
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+            transform: "translateX(-10px)",
+          }}
+        >
+          <div
+            className="hide-scrollbar"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "20px",
+              overflow: "visible",
+              borderRadius: "0",
+              border: "none",
+              background: "transparent",
+              boxShadow: "none",
+              padding: "12px 10px 16px 24px",
+              pointerEvents: isSliding ? "none" : "auto",
+            }}
+          >
+            {orderedCategories.map(({ sourceIndex, category }, orderedIndex) => (
+              (() => {
+                const isHovered = hoveredSlide === sourceIndex;
+                const isPrimary = orderedIndex === 0;
+
+                return (
+              <button
+                key={category.name}
+                type="button"
+                onClick={() => rotateTo(sourceIndex)}
+                onMouseEnter={() => setHoveredSlide(sourceIndex)}
+                onMouseLeave={() => setHoveredSlide(null)}
+                style={{
+                  flex: "0 0 auto",
+                  width: isPrimary ? "330px" : "235px",
+                  height: isPrimary ? "250px" : "182px",
+                  boxSizing: "border-box",
+                  borderRadius: "8px",
+                  border: "2px solid #e1d4b8",
+                  background: "#ececec",
+                  padding: 0,
+                  cursor: "pointer",
+                  position: "relative",
+                  transition: "width 340ms cubic-bezier(0.22, 0.61, 0.36, 1), height 340ms cubic-bezier(0.22, 0.61, 0.36, 1), transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 280ms ease, filter 280ms ease, border-color 240ms ease",
+                  transform: isPrimary ? (isHovered ? "translateY(-6px)" : "translateY(0)") : (isHovered ? "translateY(-2px)" : "translateY(4px)"),
+                  boxShadow: isHovered ? "0 16px 30px rgba(221, 144, 29, 0.28), 0 0 0 1px rgba(221, 144, 29, 0.26)" : "0 0 0 rgba(0, 0, 0, 0)",
+                  filter: isHovered ? "brightness(1.03) saturate(1.02)" : "none",
+                  borderColor: isHovered ? "rgba(221, 144, 29, 0.88)" : "#e1d4b8",
+                  display: "grid",
+                  placeItems: "center",
+                  willChange: "transform, box-shadow, filter",
+                }}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{
+                    width: isPrimary ? "88px" : "62px",
+                    height: isPrimary ? "88px" : "62px",
+                    transform: isHovered ? "scale(1.04)" : "scale(1)",
+                    transition: "width 340ms cubic-bezier(0.22, 0.61, 0.36, 1), height 340ms cubic-bezier(0.22, 0.61, 0.36, 1), transform 240ms ease",
+                  }}
+                >
+                  <rect x="1" y="1" width="22" height="22" stroke="#a6a6a6" strokeWidth="1" fill="none"/>
+                  <circle cx="6" cy="6" r="1.8" fill="#a6a6a6"/>
+                  <path d="M3.8 18.8L9.6 11.9L13.1 15.4L16.6 10.8L20.3 18.8H3.8Z" fill="#a6a6a6"/>
+                </svg>
+              </button>
+                );
+              })()
+            ))}
+          </div>
+
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
+            {SERVICE_CATEGORIES.map((category, index) => {
+              const isActive = index === activeSlide;
+              return (
+                <button
+                  key={`${category.name}-pill`}
+                  type="button"
+                  aria-label={`Go to ${category.name}`}
+                  aria-pressed={isActive}
+                  onClick={() => rotateTo(index)}
+                  style={{
+                    width: isActive ? "34px" : "20px",
+                    height: "10px",
+                    borderRadius: "999px",
+                    border: "none",
+                    background: isActive ? "#dd901d" : "rgba(255, 255, 255, 0.28)",
+                    boxShadow: isActive ? "0 0 0 3px rgba(221, 144, 29, 0.18)" : "none",
+                    transition: "all 0.25s ease",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                />
+              );
+            })}
+          </div>
+
         </div>
       </div>
     </section>

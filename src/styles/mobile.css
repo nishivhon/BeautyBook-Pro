@@ -229,6 +229,30 @@
   .grid-auto {
     display: contents;
   }
+
+  /* utility to hide scrollbars for horizontal carousels */
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 960px) {
+  .service-carousel-shell {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+
+  .service-carousel-copy {
+    min-height: auto !important;
+  }
+
+  .service-carousel-copy p {
+    max-width: none !important;
+  }
 }
 
 /* Phones (480px and down) */
