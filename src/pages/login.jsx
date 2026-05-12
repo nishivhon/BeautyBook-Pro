@@ -115,8 +115,9 @@ const FEATURES = [
 // ── Main Component ────────────────────────────────────────────────
 export const LogIn = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const magicToken = searchParams.get('token');
+  const shouldOpenCreateAccountModal = searchParams.get('createAccount') === '1';
 
   const [password, setPassword] = useState("");
   const [email,    setEmail]    = useState("");
@@ -170,6 +171,15 @@ export const LogIn = () => {
     // Allow normal form-based login (no magic token required)
     setMounted(true);
   }, [magicToken, navigate]);
+
+  useEffect(() => {
+    if (!shouldOpenCreateAccountModal) return;
+
+    setShowCreateAccountModal(true);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('createAccount');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams, shouldOpenCreateAccountModal]);
 
   // Trigger shake animation when form error appears
   useEffect(() => {

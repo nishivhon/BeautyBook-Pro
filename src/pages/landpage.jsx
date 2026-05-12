@@ -156,7 +156,7 @@ const NavBar = ({ onBookAppointment }) => {
   const navigate = useNavigate();
 
   const handleBooking = () => {
-    navigate("/register");
+    navigate("/operators/login");
     setMenuOpen(false);
   };
 
@@ -271,7 +271,7 @@ const HeroSection = ({ onBookAppointment }) => {
       </p>
 
       {/* CTA */}
-      <button onClick={() => navigate("/register")} className="btn-large btn-hero">
+      <button onClick={() => navigate("/operators/login?createAccount=1")} className="btn-large btn-hero">
         Create Your Account
       </button>
     </section>
@@ -632,7 +632,7 @@ const FooterSection = () => (
 
 export default function App() {
   const navigate = useNavigate();
-  const handleBook = () => navigate("/register");
+  const handleBook = () => navigate("/operators/login");
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
 
   useEffect(() => {
