@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const HERO_BG_IMAGE = "/images/DarkmodeBG.png";
@@ -123,6 +123,10 @@ const PAGE_STYLES = `
     text-align: center;
     line-height: 1.55;
   }
+
+  /* Hero headline line color controls */
+  .hero-title .hero-line-1 { color: var(--color-white); display: block; }
+  .hero-title .hero-line-2 { color: var(--color-amber); display: block; }
 
   .hiw-journey {
     padding-top: 56px;
@@ -780,6 +784,7 @@ function HeroSection() {
 
   return (
     <section
+      id="hero"
       className="hero-section"
       style={{
         backgroundImage: `linear-gradient(rgba(10, 9, 8, 0.55), rgba(10, 9, 8, 0.72)), url('${HERO_BG_IMAGE}')`,
@@ -804,10 +809,9 @@ function HeroSection() {
           textAlign: "center",
         }}
       >
-        <h1 className="hero-title" style={{ color: "#fff" }}>
-          Book Smart. <span className="accent">Get Glamorous.</span>
-          <br />
-          <span>No</span> <span className="accent">Wait</span>
+        <h1 className="hero-title">
+          <span className="hero-line-1">Book Smart</span>
+          <span className="hero-line-2">Get Glamorous. No Wait</span>
         </h1>
 
         <p className="hero-text" style={{ marginTop: 10, marginBottom: 90, maxWidth: 760 }}>
@@ -930,6 +934,24 @@ function Footer() {
 
 export default function HowItWorksPage() {
   usePageStyles();
+
+  useLayoutEffect(() => {
+    const resetToTop = () => {
+      window.scrollTo(0, 0);
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+    };
+
+    resetToTop();
+    const raf1 = window.requestAnimationFrame(() => {
+      resetToTop();
+      window.requestAnimationFrame(resetToTop);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(raf1);
+    };
+  }, []);
 
   return (
     <main className="hiw-page-root" style={{ background: "#060505", minHeight: "100vh", width: "100%" }}>

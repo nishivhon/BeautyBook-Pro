@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useLayoutEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import Homepage from './pages/landpage'
 import About from './pages/about'
@@ -37,6 +37,7 @@ function App() {
   return (
     <Router>
       <ThemeRouteSync />
+      <ScrollToTopOnRouteChange />
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path="/landpage" element={<Homepage />} />
@@ -208,6 +209,30 @@ function ThemeRouteSync() {
     const nextTheme = isAdminRoute ? (savedAdminTheme === 'dark' ? 'dark' : 'light') : 'dark';
 
     document.documentElement.dataset.theme = nextTheme;
+  }, [location.pathname]);
+
+  return null;
+}
+
+function ScrollToTopOnRouteChange() {
+  const location = useLocation();
+
+  useLayoutEffect(() => {
+    const resetToTop = () => {
+      window.scrollTo(0, 0);
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+    };
+
+    resetToTop();
+    const raf1 = window.requestAnimationFrame(() => {
+      resetToTop();
+      window.requestAnimationFrame(resetToTop);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(raf1);
+    };
   }, [location.pathname]);
 
   return null;

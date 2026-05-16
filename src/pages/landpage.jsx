@@ -279,6 +279,7 @@ const HeroSection = ({ onBookAppointment }) => {
 };
 
 const HowItWorksSection = () => {
+  const navigate = useNavigate();
   const steps = [
     {icon:<CalendarIcon/>,   title:"Book Online",    desc:"Select your service, preferred stylist, and convenient time slot"},
     {icon:<BellIcon/>,       title:"Get Notified",   desc:"Receive real-time updates and \u2018Your Turn Soon\u2019 alerts"},
@@ -291,7 +292,20 @@ const HowItWorksSection = () => {
 
       <div className="grid-3col">
         {steps.map((s,i) => (
-          <div key={i} className="step-card">
+          <div
+            key={i}
+            className="step-card"
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate("/how-it-works")}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                navigate("/how-it-works");
+              }
+            }}
+            aria-label={`Go to How It Works page: ${s.title}`}
+          >
             <div className="icon-box">{s.icon}</div>
             <div className="step-title">{s.title}</div>
             <p className="step-desc">{s.desc}</p>
