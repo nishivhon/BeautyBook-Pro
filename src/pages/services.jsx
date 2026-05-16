@@ -177,16 +177,19 @@ const NavBar = () => {
 function HeroSection() {
   return (
     <section
-      className="hero-section"
+      id="hero"
+      className="hero-section services-hero"
       style={{
         backgroundImage: `linear-gradient(rgba(10, 9, 8, 0.55), rgba(10, 9, 8, 0.72)), url('/images/DarkmodeBG.png')`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        position: 'relative',
       }}
     >
       <h1 className="hero-title">
-        <span style={{ display: "block", color: "var(--color-white)" }}>Discover Our</span>
-        <span style={{ display: "block" }} className="accent">Premium Services</span>
+        <span className="hero-line-1">Discover Our</span>
+        <span className="hero-line-2 accent">Premium Services</span>
       </h1>
 
       <p className="hero-text">
