@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import Homepage from './pages/landpage'
 import About from './pages/about'
+import HowItWorksPage from './pages/how_it_works'
 import ServicesPage from './pages/services'
 import { Register } from './pages/register'
 import { LogIn } from './pages/login'
@@ -39,6 +40,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path="/landpage" element={<Homepage />} />
+        <Route path="/how-it-works" element={<HowItWorksPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/register" element={<Register />} />

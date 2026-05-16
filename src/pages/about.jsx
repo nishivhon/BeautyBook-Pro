@@ -143,8 +143,8 @@ const NavBar = () => {
       <div className="flex-center-gap-1 nav-links-desktop">
         {[
           {label:"Home",         path:"/"},
+          {label:"How It Works",  path:"/how-it-works"},
           {label:"Services",     path:"/services"},
-          {label:"How It Works",  path:"/#howitworks"},
           {label:"About",         path:"/about"},
         ].map(item => (
           <button key={item.label} onClick={() => handleNavClick(item)} className="nav-link">
@@ -164,8 +164,8 @@ const NavBar = () => {
           <div className="mobile-menu-content">
             {[
               {label:"Home",         path:"/"},
+              {label:"How It Works",  path:"/how-it-works"},
               {label:"Services",     path:"/services"},
-              {label:"How It Works",  path:"/#howitworks"},
               {label:"About",         path:"/about"},
             ].map(item => (
               <button 
