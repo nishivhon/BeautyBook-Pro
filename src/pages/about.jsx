@@ -104,7 +104,10 @@ const NavBar = () => {
   };
 
   const handleNavClick = (item) => {
-    if (item.label === "Services" || item.label === "How It Works") {
+    if (item.label === "Services") {
+      navigate("/services");
+      setMenuOpen(false);
+    } else if (item.label === "How It Works") {
       // Navigate to home with hash to trigger scroll
       window.location.href = item.path;
     } else {
@@ -140,7 +143,7 @@ const NavBar = () => {
       <div className="flex-center-gap-1 nav-links-desktop">
         {[
           {label:"Home",         path:"/"},
-          {label:"Services",     path:"/#services"},
+          {label:"Services",     path:"/services"},
           {label:"How It Works",  path:"/#howitworks"},
           {label:"About",         path:"/about"},
         ].map(item => (
@@ -161,7 +164,7 @@ const NavBar = () => {
           <div className="mobile-menu-content">
             {[
               {label:"Home",         path:"/"},
-              {label:"Services",     path:"/#services"},
+              {label:"Services",     path:"/services"},
               {label:"How It Works",  path:"/#howitworks"},
               {label:"About",         path:"/about"},
             ].map(item => (

@@ -185,13 +185,15 @@ const NavBar = ({ onBookAppointment }) => {
       <div className="flex-center-gap-1 nav-links-desktop">
         {[
           {label:"Home",       id:"home"},
-          {label:"Services",   id:"services"},
           {label:"How It Works",id:"howitworks"},
         ].map(item => (
           <button key={item.id} onClick={() => scrollToSection(item.id)} className="nav-link">
             {item.label}
           </button>
         ))}
+        <button onClick={() => { navigate("/services"); setMenuOpen(false); }} className="nav-link">
+          Services
+        </button>
         <button onClick={() => { navigate("/about"); setMenuOpen(false); }} className="nav-link">
           About
         </button>
@@ -208,7 +210,6 @@ const NavBar = ({ onBookAppointment }) => {
           <div className="mobile-menu-content">
             {[
               {label:"Home",       id:"home"},
-              {label:"Services",   id:"services"},
               {label:"How It Works",id:"howitworks"},
             ].map(item => (
               <button 
@@ -219,6 +220,12 @@ const NavBar = ({ onBookAppointment }) => {
                 {item.label}
               </button>
             ))}
+            <button 
+              onClick={() => { navigate("/services"); setMenuOpen(false); }} 
+              className="mobile-menu-link"
+            >
+              Services
+            </button>
             <button 
               onClick={() => { navigate("/about"); setMenuOpen(false); }} 
               className="mobile-menu-link"

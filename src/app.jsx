@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import Homepage from './pages/landpage'
 import About from './pages/about'
+import ServicesPage from './pages/services'
 import { Register } from './pages/register'
 import { LogIn } from './pages/login'
 import { logMagicLinksForTesting } from './services/magicLink'
@@ -39,6 +40,7 @@ function App() {
         <Route path="/" element={<Homepage />} />
         <Route path="/landpage" element={<Homepage />} />
         <Route path="/about" element={<About />} />
+        <Route path="/services" element={<ServicesPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/operators/login" element={<LogIn />} />
         <Route

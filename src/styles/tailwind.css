@@ -2471,7 +2471,8 @@ html[data-theme="light"] .dash-page-title,
   ───────────────────────────────────── */
   .services-section {
     background: var(--bg-dark);
-    padding: 40px 40px;
+    padding: 40px 40px 0;
+    overflow: hidden;
   }
 
   .service-card {
