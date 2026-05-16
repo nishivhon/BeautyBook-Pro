@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const HERO_BG_IMAGE = "/images/DarkmodeBG.png";
 
@@ -376,10 +376,14 @@ const SERVICE_CATEGORIES = [
 ];
 
 const ServicesSection = () => {
+  const navigate = useNavigate();
   const [activeSlide, setActiveSlide] = useState(0);
   const [hoveredSlide, setHoveredSlide] = useState(null);
   const [isSliding, setIsSliding] = useState(false);
   const [slideDirection, setSlideDirection] = useState(1);
+  const [isHovered, setIsHovered] = useState(false);
+  const wheelCooldownRef = useRef(false);
+  const containerRef = useRef(null);
   const currentCategory = SERVICE_CATEGORIES[activeSlide];
   const sectionSidePadding = 40;
   const contentGridWidth = 860;
@@ -402,6 +406,27 @@ const ServicesSection = () => {
     }, 220);
   };
 
+  // Wheel scroll listener
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const listener = (event) => {
+      if (!isHovered) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (wheelCooldownRef.current) return;
+      const delta = event.deltaY;
+      const dir = delta > 0 ? 1 : -1;
+      const target = ((activeSlide + dir) % SERVICE_CATEGORIES.length + SERVICE_CATEGORIES.length) % SERVICE_CATEGORIES.length;
+      rotateTo(target);
+      wheelCooldownRef.current = true;
+      window.setTimeout(() => { wheelCooldownRef.current = false; }, 200);
+    };
+
+    el.addEventListener('wheel', listener, { passive: false });
+    return () => el.removeEventListener('wheel', listener);
+  }, [isHovered, activeSlide]);
+
   const orderedCategories = SERVICE_CATEGORIES.map((_, offset) => {
     const sourceIndex = (activeSlide + offset) % SERVICE_CATEGORIES.length;
     return {
@@ -411,7 +436,7 @@ const ServicesSection = () => {
   });
 
   return (
-    <section id="services" className="services-section">
+    <section id="services" className="services-section" style={{ paddingBottom: "40px" }}>
       <div
         className="service-carousel-shell"
         style={{
@@ -464,7 +489,7 @@ const ServicesSection = () => {
           <button
             type="button"
             className="btn-primary"
-            onClick={() => {}}
+            onClick={() => navigate("/services")}
             style={{
               alignSelf: "flex-start",
               marginTop: "14px",
@@ -480,7 +505,10 @@ const ServicesSection = () => {
         </div>
 
         <div
+          ref={containerRef}
           className="service-carousel-panel"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           style={{
             minWidth: 0,
             display: "flex",
