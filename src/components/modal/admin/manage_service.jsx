@@ -288,7 +288,9 @@ export const ManageServiceModal = ({ isOpen, staff, onClose, onSave, serviceCate
                   ))}
                 </div>
               ) : (
-                <p style={{ color: "#988f81", fontSize: "13px", margin: "0" }}>No categories available</p>
+                <p style={{ color: "#988f81", fontSize: "13px", margin: "0", fontStyle: "italic" }}>
+                  No service categories available. Please add services first.
+                </p>
               )}
             </div>
           </div>

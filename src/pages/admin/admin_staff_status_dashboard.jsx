@@ -1070,6 +1070,8 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [activeNav, setActiveNav] = useState("staff-status");
   const [mounted, setMounted] = useState(false);
+  const [serviceCategories, setServiceCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -1085,135 +1087,130 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     return () => clearTimeout(t);
   }, []);
 
-  // Sample service categories and services data
-  // TODO: Replace with actual API call to fetch categories and services
-  const serviceCategories = [
-    {
-      id: 'hair',
-      name: 'Hair Services',
-      services: [
-        { id: 'haircut', name: 'Haircut' },
-        { id: 'hair-color', name: 'Hair Color' },
-        { id: 'hair-treatment', name: 'Hair Treatment' },
-        { id: 'styling', name: 'Styling' }
-      ]
-    },
-    {
-      id: 'nails',
-      name: 'Nail Services',
-      services: [
-        { id: 'manicure', name: 'Manicure' },
-        { id: 'pedicure', name: 'Pedicure' },
-        { id: 'nail-art', name: 'Nail Art' }
-      ]
-    },
-    {
-      id: 'massage',
-      name: 'Massage Services',
-      services: [
-        { id: 'body-massage', name: 'Body Massage' },
-        { id: 'foot-massage', name: 'Foot Massage' },
-        { id: 'facial-massage', name: 'Facial Massage' }
-      ]
-    },
-    {
-      id: 'skincare',
-      name: 'Skincare',
-      services: [
-        { id: 'facial', name: 'Facial' },
-        { id: 'skin-treatment', name: 'Skin Treatment' },
-        { id: 'waxing', name: 'Waxing' }
-      ]
-    }
-  ];
-
-  // Fetch staff data on component mount
+  // Fetch service categories from API dynamically
   useEffect(() => {
-    const fetchStaff = async () => {
+    const fetchServiceCategories = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        console.log('[AdminStaff] Fetching service categories from API');
+        setCategoriesLoading(true);
         
-        const res = await fetch('/api/staffs');
-        if (!res.ok) {
-          throw new Error(`Failed to fetch staff: ${res.status}`);
+        const response = await fetch('/api/services/categories');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch categories: ${response.status}`);
         }
         
-        const staffData = await res.json();
+        const data = await response.json();
+        console.log('[AdminStaff] Service categories fetched:', data.categories);
         
-        // Transform staff data to match the dashboard format
-        const transformedStaff = staffData.map((s, index) => {
-          // Determine status based on in_service column
-          // Priority: check in_service first, then fallback to status
-          // Default status is "Absent" - becomes "Available" when Clock In is clicked
-          let status = 'Absent';
-          let statusClass = 'staff-status-tan';
-          let subStatus = 'Not clocked in';
-
-          // Normalize the in_service value (trim whitespace)
-          const inServiceValue = (s.in_service || '').trim().toLowerCase();
-          const statusValue = (s.status || '').trim().toLowerCase();
-          
-          // Get the name - handle both 'name' and 'names' column variants
-          const staffName = s.names || s.name || 'Unknown';
-
-          console.log(`Processing staff: ${staffName} | status: ${statusValue} | in_service: ${inServiceValue}`);
-
-          // Check in_service column first for specific statuses
-          if (inServiceValue === 'in-service') {
-            status = 'In Service';
-            statusClass = 'staff-status-blue';
-            subStatus = 'Serving: ' + (s.current_client || 'Client');
-          } else if (inServiceValue === 'on-break') {
-            status = 'On Break';
-            statusClass = 'staff-status-amber';
-            subStatus = 'On Break';
-          } else if (inServiceValue === 'off') {
-            status = 'Off Today';
-            statusClass = 'staff-status-tan';
-            subStatus = 'Off Today';
-          } else if (statusValue === 'avail' || inServiceValue === 'avail') {
-            // If no specific in_service status, check status column for 'avail'
-            status = 'Available';
-            statusClass = 'staff-status-green';
-            subStatus = 'Available';
-          }
-
-          return {
-            id: s.id,
-            initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
-            name: staffName,
-            status: status,
-            statusClass: statusClass,
-            subStatus: subStatus,
-            clock_in: s.clock_in || '—',
-            clock_out: s.clock_out || '—',
-            details: {
-              currentClient: s.current_client || 'None',
-              startOfService: s.start_time || '—',
-              serviceDone: s.current_service || '—',
-              timeOfBreak: s.break_time || '—',
-              timeOfClockIn: s.clock_in_time || '—',
-              upNextClient: s.next_client || 'None',
-              noOfClientToday: s.clients_today || 0,
-              totalClients: s.total_clients || 0,
-              doneClients: s.done_clients || 0,
-              availableForWalkIn: statusValue === 'avail' || inServiceValue === 'avail'
-            }
-          };
-        });
-
-        setStaff(transformedStaff);
+        // Separate "Other" category and sort the rest
+        const otherCategory = data.categories.find(cat => cat.name === 'Other');
+        const otherCategories = data.categories.filter(cat => cat.name !== 'Other');
+        
+        // Build sorted categories with "Other" at the end
+        const sortedCategories = [
+          ...otherCategories,
+          ...(otherCategory ? [otherCategory] : [])
+        ];
+        
+        setServiceCategories(sortedCategories);
       } catch (err) {
-        console.error('Error fetching staff:', err);
-        setError(err.message);
+        console.error('[AdminStaff] Error fetching service categories:', err);
+        setServiceCategories([]);
       } finally {
-        setLoading(false);
+        setCategoriesLoading(false);
       }
     };
 
+    fetchServiceCategories();
+  }, []);
+
+  // Define fetchStaff outside useEffect so it can be called from multiple handlers
+  const fetchStaff = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const res = await fetch('/api/staffs');
+      if (!res.ok) {
+        throw new Error(`Failed to fetch staff: ${res.status}`);
+      }
+      
+      const staffData = await res.json();
+      
+      // Transform staff data to match the dashboard format
+      const transformedStaff = staffData.map((s, index) => {
+        // Determine status based on in_service column
+        // Priority: check in_service first, then fallback to status
+        // Default status is "Absent" - becomes "Available" when Clock In is clicked
+        let status = 'Absent';
+        let statusClass = 'staff-status-tan';
+        let subStatus = 'Not clocked in';
+
+        // Normalize the in_service value (trim whitespace)
+        const inServiceValue = (s.in_service || '').trim().toLowerCase();
+        const statusValue = (s.status || '').trim().toLowerCase();
+        
+        // Get the name - handle both 'name' and 'names' column variants
+        const staffName = s.names || s.name || 'Unknown';
+
+        console.log(`Processing staff: ${staffName} | status: ${statusValue} | in_service: ${inServiceValue}`);
+
+        // Check in_service column first for specific statuses
+        if (inServiceValue === 'in-service') {
+          status = 'In Service';
+          statusClass = 'staff-status-blue';
+          subStatus = 'Serving: ' + (s.current_client || 'Client');
+        } else if (inServiceValue === 'on-break') {
+          status = 'On Break';
+          statusClass = 'staff-status-amber';
+          subStatus = 'On Break';
+        } else if (inServiceValue === 'off') {
+          status = 'Off Today';
+          statusClass = 'staff-status-tan';
+          subStatus = 'Off Today';
+        } else if (statusValue === 'avail' || inServiceValue === 'avail') {
+          // If no specific in_service status, check status column for 'avail'
+          status = 'Available';
+          statusClass = 'staff-status-green';
+          subStatus = 'Available';
+        }
+
+        return {
+          id: s.id,
+          initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
+          name: staffName,
+          status: status,
+          statusClass: statusClass,
+          subStatus: subStatus,
+          clock_in: s.clock_in || '—',
+          clock_out: s.clock_out || '—',
+          details: {
+            currentClient: s.current_client || 'None',
+            startOfService: s.start_time || '—',
+            serviceDone: s.current_service || '—',
+            timeOfBreak: s.break_time || '—',
+            timeOfClockIn: s.clock_in_time || '—',
+            upNextClient: s.next_client || 'None',
+            noOfClientToday: s.clients_today || 0,
+            totalClients: s.total_clients || 0,
+            doneClients: s.done_clients || 0,
+            availableForWalkIn: statusValue === 'avail' || inServiceValue === 'avail'
+          }
+        };
+      });
+
+      setStaff(transformedStaff);
+    } catch (err) {
+      console.error('Error fetching staff:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch staff data on component mount
+  useEffect(() => {
     fetchStaff();
-    
     return () => {};
   }, []);
 
@@ -1311,10 +1308,69 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     setManageServiceModal({ isOpen: false, staff: null });
   };
 
-  const handleManageServiceSave = (staffName, categoryServicePairs) => {
-    console.log(`Updated ${staffName} services:`, categoryServicePairs);
-    // Here you would typically make an API call to update the staff services in your backend
-    // Example: await updateStaffServices(staffName, categoryServicePairs);
+  const handleManageServiceSave = async (staffName, selectedCategories) => {
+    console.log(`Saving specialties for ${staffName}:`, selectedCategories);
+    
+    try {
+      // Find staff member from the fetched staff data
+      const staffMember = staff.find(s => s.name === staffName);
+      if (!staffMember || !staffMember.id) {
+        console.error(`Staff member ${staffName} not found or has no id`);
+        alert(`Error: Staff member ${staffName} not found`);
+        return;
+      }
+
+      // Validate at least one category is selected
+      if (!selectedCategories || selectedCategories.length === 0) {
+        console.warn('[Admin:ManageService] No categories selected');
+        alert('Please select at least one specialty');
+        return;
+      }
+
+      // Get category names from IDs
+      const selectedCategoryNames = serviceCategories
+        .filter(cat => selectedCategories.includes(cat.id))
+        .map(cat => cat.name);
+
+      console.log('[Admin:ManageService] Sending update to API:', {
+        id: staffMember.id,
+        category_specialty: selectedCategoryNames
+      });
+
+      // Make API call to update staff specialties in database
+      const response = await fetch('/api/staffs/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: staffMember.id,
+          category_specialty: selectedCategoryNames,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error(`[Admin:ManageService] Failed to update specialties: ${error.error}`, error.details);
+        alert(`Failed to update specialties: ${error.error}`);
+        return;
+      }
+
+      const result = await response.json();
+      console.log(`[Admin:ManageService] Successfully updated ${staffName} specialties:`, result.staff);
+      
+      // Close the modal
+      closeManageServiceModal();
+      
+      // Refresh staff data to reflect changes
+      fetchStaff();
+      
+      // Show success message
+      alert(`Successfully updated ${staffName}'s specialties to: ${selectedCategoryNames.join(', ')}`);
+    } catch (error) {
+      console.error(`[Admin:ManageService] Error updating specialties:`, error);
+      alert(`Error updating specialties: ${error.message}`);
+    }
   };
 
   const headerNotifications = useMemo(() => {
