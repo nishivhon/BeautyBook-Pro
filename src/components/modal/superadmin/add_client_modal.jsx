@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { databaseAPI } from "../../../services/databaseApi";
+import { useEffect, useState } from "react";
 
 const CloseIcon = ({ color = "currentColor" }) => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -39,7 +38,7 @@ const ConfirmationDialog = ({
         maxWidth: '360px',
         width: '90%',
         boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-        animation: 'fade-up 0.3s ease forwards'
+        animation: 'fade-up 0.3s ease forwards',
       }}>
         <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1a0f00', marginBottom: '12px', textAlign: 'center', fontFamily: 'Inter, sans-serif', marginTop: 0 }}>
           {title}
@@ -102,16 +101,15 @@ const ConfirmationDialog = ({
   );
 };
 
-export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
+export const AddClientModal = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
-    names: '',
-    category_specialty: []
+    name: '',
+    email: '',
+    phone: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [categories, setCategories] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen || showConfirmation) return;
@@ -126,39 +124,8 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, showConfirmation]);
 
-  useEffect(() => {
-    if (isOpen && categories.length === 0) {
-      fetchCategories();
-    }
-  }, [isOpen]);
-
-  const fetchCategories = async () => {
-    setCategoriesLoading(true);
-    try {
-      const tablesInfo = await databaseAPI.getTablesInfo(['services']);
-      if (tablesInfo && Array.isArray(tablesInfo) && tablesInfo.length > 0) {
-        const dataResult = await databaseAPI.getTableData('services', 1000, 0);
-        const data = dataResult.data || [];
-        
-        const uniqueCategories = [...new Set(
-          data
-            .map(s => s.category || s.service_category)
-            .filter(c => c && c.trim())
-        )].sort();
-        
-        setCategories(uniqueCategories.length > 0 ? uniqueCategories : ['General']);
-      }
-    } catch (err) {
-      console.error('[AddStaffModal] Error fetching categories:', err);
-      setCategories(['General']);
-    } finally {
-      setCategoriesLoading(false);
-    }
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -166,31 +133,30 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
     setError(null);
   };
 
-  const handleSpecialtyToggle = (specialty) => {
-    setFormData(prev => {
-      const selected = Array.isArray(prev.category_specialty) ? prev.category_specialty : [];
-      const nextSelected = selected.includes(specialty)
-        ? selected.filter(item => item !== specialty)
-        : [...selected, specialty];
-
-      return {
-        ...prev,
-        category_specialty: nextSelected,
-      };
-    });
-    setError(null);
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      setError('Client name is required');
+      return false;
+    }
+    if (!formData.email.trim()) {
+      setError('Email is required');
+      return false;
+    }
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      setError('Please enter a valid email');
+      return false;
+    }
+    if (!formData.phone.trim()) {
+      setError('Phone number is required');
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.names.trim()) {
-      setError('Staff name is required');
-      return;
-    }
-
-    if (!Array.isArray(formData.category_specialty) || formData.category_specialty.length === 0) {
-      setError('Select at least one specialty');
+    if (!validateForm()) {
       return;
     }
 
@@ -204,12 +170,10 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
 
   const handleConfirmExit = () => {
     setShowConfirmation(false);
-    setFormData({ names: '', category_specialty: [] });
+    setFormData({ name: '', email: '', phone: '' });
     setError(null);
     onClose();
   };
-
-  const selectedSpecialties = Array.isArray(formData.category_specialty) ? formData.category_specialty : [];
 
   const handleConfirmAdd = async () => {
     setShowConfirmation(false);
@@ -217,36 +181,37 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
     setError(null);
 
     try {
-      const response = await fetch('/api/staffs/create', {
+      const response = await fetch('/api/customers/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          names: formData.names,
-          category_specialty: selectedSpecialties.join(', ')
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone
         })
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.details || errorData.error || 'Failed to create staff');
+        throw new Error(errorData.details || errorData.error || 'Failed to create client');
       }
 
       const result = await response.json();
-      console.log('[AddStaffModal] Staff created:', result);
+      console.log('[AddClientModal] Client created:', result);
       
-      onSave(result.staff);
-      setFormData({ names: '', category_specialty: [] });
+      onSave(result);
+      setFormData({ name: '', email: '', phone: '' });
       onClose();
     } catch (err) {
-      console.error('[AddStaffModal] Error:', err);
-      setError(err.message || 'An error occurred while creating staff');
+      console.error('[AddClientModal] Error:', err);
+      setError(err.message || 'An error occurred while creating client');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleClose = () => {
-    setFormData({ names: '', category_specialty: [] });
+    setFormData({ name: '', email: '', phone: '' });
     setError(null);
     setShowConfirmation(false);
     onClose();
@@ -282,7 +247,7 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <h2 style={{ margin: 0, color: '#D4C5B9', fontSize: '18px', fontWeight: '600' }}>
-              Add New Staff Member
+              Add New Client
             </h2>
             <button
               onClick={handleExitAttempt}
@@ -326,14 +291,14 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
             {/* Name Field */}
             <div>
               <label style={{ display: 'block', color: '#D4C5B9', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>
-                Staff Name
+                Client Name
               </label>
               <input
                 type="text"
-                name="names"
-                value={formData.names}
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
-                placeholder="Enter staff name"
+                placeholder="e.g., John Doe"
                 disabled={isLoading}
                 style={{
                   width: '100%',
@@ -353,75 +318,70 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
               />
             </div>
 
-            {/* Specialty Field - Checkboxes */}
+            {/* Email Field */}
             <div>
               <label style={{ display: 'block', color: '#D4C5B9', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>
-                Specialty / Category
+                Email Address
               </label>
-              <div style={{
-                width: '100%',
-                padding: '5px 5px',
-                backgroundColor: 'rgba(35, 29, 26, 0.8)',
-                border: '1px solid rgba(152, 143, 129, 0.3)',
-                borderRadius: '6px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0',
-                boxSizing: 'border-box',
-                opacity: (isLoading || categoriesLoading) ? 0.6 : 1,
-                paddingRight: '5px',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                  maxHeight: '220px',
-                  overflowY: 'auto',
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="john@example.com"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  backgroundColor: 'rgba(35, 29, 26, 0.8)',
+                  border: '1px solid rgba(152, 143, 129, 0.3)',
+                  borderRadius: '6px',
+                  color: '#D4C5B9',
+                  fontSize: '13px',
                   boxSizing: 'border-box',
-                  padding: '5px 5px'
-                }} className="service-list-scroll-limited">
-                  {categoriesLoading ? (
-                    <div style={{ color: '#988f81', fontSize: '13px' }}>Loading categories...</div>
-                  ) : (
-                    categories.map((category) => {
-                      const checked = selectedSpecialties.includes(category);
-                      return (
-                        <label
-                          key={category}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            color: checked ? '#D4C5B9' : '#988f81',
-                            fontSize: '13px',
-                            fontWeight: '500',
-                            cursor: isLoading ? 'not-allowed' : 'pointer',
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            className="staff-specialty-checkbox"
-                            checked={checked}
-                            disabled={isLoading || categoriesLoading}
-                            onChange={() => handleSpecialtyToggle(category)}
-                          />
-                          <span>{category}</span>
-                        </label>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-              <div style={{ color: '#988f81', fontSize: '12px', marginTop: '6px' }}>
-                Select one or more specialties.
-              </div>
+                  transition: 'all 0.2s',
+                  outline: 'none',
+                  opacity: isLoading ? 0.6 : 1
+                }}
+                onFocus={(e) => !isLoading && (e.target.style.borderColor = 'rgba(221, 144, 29, 0.5)', e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.95)')}
+                onBlur={(e) => !isLoading && (e.target.style.borderColor = 'rgba(152, 143, 129, 0.3)', e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.8)')}
+              />
             </div>
 
-            {/* Buttons */}
+            {/* Phone Field */}
+            <div>
+              <label style={{ display: 'block', color: '#D4C5B9', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="+1 (555) 000-0000"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  backgroundColor: 'rgba(35, 29, 26, 0.8)',
+                  border: '1px solid rgba(152, 143, 129, 0.3)',
+                  borderRadius: '6px',
+                  color: '#D4C5B9',
+                  fontSize: '13px',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.2s',
+                  outline: 'none',
+                  opacity: isLoading ? 0.6 : 1
+                }}
+                onFocus={(e) => !isLoading && (e.target.style.borderColor = 'rgba(221, 144, 29, 0.5)', e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.95)')}
+                onBlur={(e) => !isLoading && (e.target.style.borderColor = 'rgba(152, 143, 129, 0.3)', e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.8)')}
+              />
+            </div>
+
+            {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading || categoriesLoading}
+              disabled={isLoading}
               style={{
                 padding: '12px 16px',
                 marginTop: '8px',
@@ -431,14 +391,14 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontWeight: '600',
-                cursor: (isLoading || categoriesLoading) ? 'not-allowed' : 'pointer',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
-                opacity: (isLoading || categoriesLoading) ? 0.6 : 1
+                opacity: isLoading ? 0.6 : 1
               }}
-              onMouseEnter={(e) => !isLoading && !categoriesLoading && (e.target.style.background = '#c17a14', e.target.style.transform = 'translateY(-2px)')}
-              onMouseLeave={(e) => !isLoading && !categoriesLoading && (e.target.style.background = '#dd901d', e.target.style.transform = 'translateY(0)')}
+              onMouseEnter={(e) => !isLoading && (e.target.style.background = '#c17a14', e.target.style.transform = 'translateY(-2px)')}
+              onMouseLeave={(e) => !isLoading && (e.target.style.background = '#dd901d', e.target.style.transform = 'translateY(0)')}
             >
-              {isLoading ? 'Adding...' : 'Add Staff Member'}
+              {isLoading ? 'Adding...' : 'Add Client'}
             </button>
           </form>
         </div>
@@ -454,56 +414,6 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
         onConfirm={handleConfirmExit}
         onCancel={() => setShowConfirmation(false)}
       />
-
-      <style>{`
-        @keyframes fadeInScale {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        select {
-          appearance: none;
-        }
-        .staff-specialty-checkbox {
-          appearance: none;
-          -webkit-appearance: none;
-          width: 18px;
-          height: 18px;
-          border: 1.5px solid rgba(152, 143, 129, 0.8);
-          border-radius: 5px;
-          background: rgba(35, 29, 26, 0.95);
-          display: inline-grid;
-          place-content: center;
-          flex: 0 0 auto;
-          transition: all 0.2s ease;
-          cursor: pointer;
-        }
-        .staff-specialty-checkbox::before {
-          content: '';
-          width: 10px;
-          height: 10px;
-          transform: scale(0);
-          transition: transform 0.15s ease-in-out;
-          box-shadow: inset 1em 1em #1a1a1a;
-          clip-path: polygon(14% 44%, 0 65%, 38% 100%, 100% 18%, 82% 0, 37% 56%);
-        }
-        .staff-specialty-checkbox:checked {
-          background: #dd901d;
-          border-color: #dd901d;
-        }
-        .staff-specialty-checkbox:checked::before {
-          transform: scale(1);
-        }
-        .staff-specialty-checkbox:disabled {
-          cursor: not-allowed;
-          opacity: 0.7;
-        }
-      `}</style>
     </>
   );
 };
