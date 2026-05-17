@@ -235,6 +235,8 @@ export default function SuperAdminClientsDashboard() {
       subtitle="BeautyBook Pro • Manage customer database"
       profile={null}
       notifications={[]}
+      useSuperAdminHeaderActions={true}
+      superAdminNoNotificationsMessage="No recent client registration notifications to review."
       storageKey="superadminSidebarExpanded"
       onLogoutConfirm={handleLogout}
       logoutTitle="Log Out?"
@@ -328,7 +330,7 @@ export default function SuperAdminClientsDashboard() {
                       const startIdx = (currentClientPage - 1) * itemsPerPage;
                       const endIdx = startIdx + itemsPerPage;
                       return filteredClients.slice(startIdx, endIdx).map((client, idx) => (
-                        <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                        <tr key={idx} className="db-row">
                           {clientsData.cols.map((col) => {
                             const cellValue = client[col];
                             const displayValue = formatCellValue(cellValue, col);

@@ -1052,6 +1052,7 @@ const getMetricChartKey = (label) => {
   if (label === "Revenue Today") return "revenue";
   if (label === "Avg. Waiting Time") return "waitingTime";
   if (label === "Promo Bookings Today") return "promoBookings";
+  if (label === "Discounts Applied") return "discounts";
   if (label === "Discounts Applied Today") return "discounts";
   if (label === "Completed") return "completed";
   if (label === "In Progress") return "inProgress";
@@ -1060,7 +1061,6 @@ const getMetricChartKey = (label) => {
 };
 
 // ─── Analytics Carousel Data ──────────────────────────────────────────────
-
 const ANALYTICS_CARDS = [
   {
     id: "dashboard",
@@ -1329,6 +1329,8 @@ export default function SuperAdminDashboard() {
       subtitle={`BeautyBook Pro • ${dateStr}`}
       profile={null}
       notifications={[]}
+      useSuperAdminHeaderActions={true}
+      superAdminNoNotificationsMessage="No recent super admin activity across client, staff, security, or database events."
       storageKey="superadminSidebarExpanded"
       onLogoutConfirm={handleLogout}
       logoutTitle="Log Out?"
@@ -1354,7 +1356,7 @@ export default function SuperAdminDashboard() {
           {METRICS_CAROUSEL_CARDS.map((m, idx) => (
             <div
               key={`${m.label}-${idx}`}
-              className="dash-stat-card"
+              className={`dash-stat-card ${getMetricChartKey(m.label) === selectedChart ? "is-active" : ""}`}
               style={{
                 animationDelay: `${0.08 + idx * 0.07}s`,
                 cursor: "pointer",
@@ -1363,26 +1365,13 @@ export default function SuperAdminDashboard() {
                 scrollSnapAlign: "start",
               }}
               onClick={() => {
-                const label = m.label;
-                if (label === "In Queue Now") {
-                  setSelectedChart("queue");
-                } else if (label === "Today's Appointments") {
-                  setSelectedChart("appointments");
-                } else if (label === "Revenue Today") {
-                  setSelectedChart("revenue");
-                } else if (label === "Avg. Waiting Time") {
-                  setSelectedChart("waitingTime");
-                } else if (label === "Promo Bookings Today") {
-                  setSelectedChart("promoBookings");
-                } else if (label === "Discounts Applied Today") {
-                  setSelectedChart("discounts");
-                } else if (label === "Completed") {
-                  setSelectedChart("completed");
-                } else if (label === "In Progress") {
-                  setSelectedChart("inProgress");
-                } else if (label === "Cancelled") {
-                  setSelectedChart("cancelled");
+                const metricIndex = METRICS_CARDS.findIndex((card) => card.label === m.label);
+                if (metricIndex !== -1) {
+                  scrollToMetric(metricIndex);
+                  return;
                 }
+
+                setSelectedChart(getMetricChartKey(m.label));
               }}
             >
               <div className="dash-stat-top">

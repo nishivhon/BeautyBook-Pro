@@ -270,6 +270,8 @@ export default function SuperAdminLogsDashboard() {
       subtitle="BeautyBook Pro • System activity logs"
       profile={null}
       notifications={[]}
+      useSuperAdminHeaderActions={true}
+      superAdminNoNotificationsMessage="No recent system log alerts requiring super admin action."
       storageKey="superadminSidebarExpanded"
       onLogoutConfirm={handleLogout}
       logoutTitle="Log Out?"
@@ -338,7 +340,7 @@ export default function SuperAdminLogsDashboard() {
                       const startIdx = (currentLogsPage - 1) * itemsPerPage;
                       const endIdx = startIdx + itemsPerPage;
                       return logsData.rows.slice(startIdx, endIdx).map((log, idx) => (
-                      <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                      <tr key={idx} className="db-row">
                         {logsData.cols.map((col) => {
                           const cellValue = log[col];
                           const displayValue = formatCellValue(cellValue, col);

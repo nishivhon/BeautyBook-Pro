@@ -296,6 +296,8 @@ export default function SuperAdminServicesDashboard() {
       subtitle="BeautyBook Pro • Manage services catalog"
       profile={null}
       notifications={[]}
+      useSuperAdminHeaderActions={true}
+      superAdminNoNotificationsMessage="No recent super admin system notifications for services monitoring."
       storageKey="superadminSidebarExpanded"
       onLogoutConfirm={handleLogout}
       logoutTitle="Log Out?"
@@ -402,7 +404,7 @@ export default function SuperAdminServicesDashboard() {
                       const startIdx = (currentServicePage - 1) * itemsPerPage;
                       const endIdx = startIdx + itemsPerPage;
                       return filteredServices.slice(startIdx, endIdx).map((service, idx) => (
-                      <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                      <tr key={idx} className="db-row">
                           {servicesData.cols.map((col) => {
                           const cellValue = service[col];
                           const displayValue = formatCellValue(cellValue, col);

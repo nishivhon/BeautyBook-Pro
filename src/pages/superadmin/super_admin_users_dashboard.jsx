@@ -332,6 +332,8 @@ export default function SuperAdminUsersDashboard() {
       subtitle={`BeautyBook Pro • Manage your team`}
       profile={null}
       notifications={[]}
+      useSuperAdminHeaderActions={true}
+      superAdminNoNotificationsMessage="No recent staff account creation or deletion notifications."
       storageKey="superadminSidebarExpanded"
       onLogoutConfirm={handleLogout}
       logoutTitle="Log Out?"
@@ -433,7 +435,7 @@ export default function SuperAdminUsersDashboard() {
                           const startIdx = (currentStaffPage - 1) * itemsPerPage;
                           const endIdx = startIdx + itemsPerPage;
                           return filteredStaff.slice(startIdx, endIdx).map((staff, idx) => (
-                        <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                        <tr key={idx} className="db-row">
                           {staffsData.cols.map((col) => {
                             const cellValue = staff[col];
                             const displayValue = formatCellValue(cellValue, col);

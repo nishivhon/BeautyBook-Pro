@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ConfirmationDialog } from "../modal/customer/confirmation_dialog";
+import SuperAdminHeaderActions from "../superadmin/SuperAdminHeaderActions";
 import {
   BellIcon,
   LogOutIcon,
@@ -38,6 +39,8 @@ export function DashboardShell({
   logoutCancelText = "Stay Logged In",
   profileActionLabel = "Profile",
   profileActionPath,
+  useSuperAdminHeaderActions = false,
+  superAdminNoNotificationsMessage,
   children,
 }) {
   const navigate = useNavigate();
@@ -202,89 +205,97 @@ export function DashboardShell({
             </div>
           </div>
 
-          <div className="admin-header-actions" ref={wrapperRef}>
-            {headerExtraActions}
+          {useSuperAdminHeaderActions ? (
+            <SuperAdminHeaderActions
+              notifications={notifications}
+              roleLabel={roleLabel}
+              noNotificationsMessage={superAdminNoNotificationsMessage}
+            />
+          ) : (
+            <div className="admin-header-actions" ref={wrapperRef}>
+              {headerExtraActions}
 
-            <button className={`dash-action-btn admin-header-trigger${openMenu === "notifications" ? " active" : ""}`} type="button" onClick={() => toggleMenu("notifications")} aria-expanded={openMenu === "notifications"} aria-haspopup="menu">
-              <BellIcon size={14} color="currentColor" />
-              Notifications
-              {unreadCount > 0 && <span className="admin-header-badge">{unreadCount}</span>}
-            </button>
+              <button className={`dash-action-btn admin-header-trigger${openMenu === "notifications" ? " active" : ""}`} type="button" onClick={() => toggleMenu("notifications")} aria-expanded={openMenu === "notifications"} aria-haspopup="menu">
+                <BellIcon size={14} color="currentColor" />
+                Notifications
+                {unreadCount > 0 && <span className="admin-header-badge">{unreadCount}</span>}
+              </button>
 
-            <button className={`dash-action-btn admin-header-trigger${openMenu === "settings" ? " active" : ""}`} type="button" onClick={() => toggleMenu("settings")} aria-expanded={openMenu === "settings"} aria-haspopup="menu">
-              <SettingsIcon size={14} color="currentColor" />
-              Settings
-            </button>
+              <button className={`dash-action-btn admin-header-trigger${openMenu === "settings" ? " active" : ""}`} type="button" onClick={() => toggleMenu("settings")} aria-expanded={openMenu === "settings"} aria-haspopup="menu">
+                <SettingsIcon size={14} color="currentColor" />
+                Settings
+              </button>
 
-            {openMenu && (
-              <div className="admin-header-dropdown" role="menu" aria-label={openMenu === "notifications" ? "Notifications" : "Settings"}>
-                {openMenu === "notifications" ? (
-                  <>
-                    <div className="admin-dropdown-topbar">
-                      <div>
-                        <p className="admin-dropdown-eyebrow">Inbox</p>
-                        <h3 className="admin-dropdown-title">Recent Notifications</h3>
-                      </div>
-                    </div>
-
-                    <div className="admin-notification-list" style={{ minHeight: 220, maxHeight: 360, overflowY: "auto" }}>
-                      {notifications.length === 0 ? (
-                        <div className="admin-notification-empty" style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", padding: 20, color: "var(--color-muted, #6b7280)" }}>
-                          No recent notifications
+              {openMenu && (
+                <div className="admin-header-dropdown" role="menu" aria-label={openMenu === "notifications" ? "Notifications" : "Settings"}>
+                  {openMenu === "notifications" ? (
+                    <>
+                      <div className="admin-dropdown-topbar">
+                        <div>
+                          <p className="admin-dropdown-eyebrow">Inbox</p>
+                          <h3 className="admin-dropdown-title">Recent Notifications</h3>
                         </div>
-                      ) : (
-                        notifications.map((notification) => (
-                          <button key={notification.id} type="button" className={`admin-notification-item${notification.unread ? " unread" : ""}`} onClick={() => setOpenMenu(null)}>
-                            <span className={`admin-notification-tone tone-${notification.tone || "amber"}`} />
-                            <div className="admin-notification-copy">
-                              <div className="admin-notification-row">
-                                <span className="admin-notification-category">{notification.category}</span>
-                                {notification.unread && <span className="admin-notification-unread">New</span>}
+                      </div>
+
+                      <div className="admin-notification-list" style={{ minHeight: 220, maxHeight: 360, overflowY: "auto" }}>
+                        {notifications.length === 0 ? (
+                          <div className="admin-notification-empty" style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", padding: 20, color: "var(--color-muted, #6b7280)" }}>
+                            No recent notifications
+                          </div>
+                        ) : (
+                          notifications.map((notification) => (
+                            <button key={notification.id} type="button" className={`admin-notification-item${notification.unread ? " unread" : ""}`} onClick={() => setOpenMenu(null)}>
+                              <span className={`admin-notification-tone tone-${notification.tone || "amber"}`} />
+                              <div className="admin-notification-copy">
+                                <div className="admin-notification-row">
+                                  <span className="admin-notification-category">{notification.category}</span>
+                                  {notification.unread && <span className="admin-notification-unread">New</span>}
+                                </div>
+                                <p className="admin-notification-title">{notification.title}</p>
+                                <p className="admin-notification-description">{notification.description}</p>
                               </div>
-                              <p className="admin-notification-title">{notification.title}</p>
-                              <p className="admin-notification-description">{notification.description}</p>
-                            </div>
-                            <span className="admin-notification-time">{notification.time}</span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="admin-dropdown-topbar">
-                      <div>
-                        <p className="admin-dropdown-eyebrow">Account</p>
-                        <h3 className="admin-dropdown-title">Profile</h3>
+                              <span className="admin-notification-time">{notification.time}</span>
+                            </button>
+                          ))
+                        )}
                       </div>
-                      <span className="admin-dropdown-chip">{roleLabel}</span>
-                    </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="admin-dropdown-topbar">
+                        <div>
+                          <p className="admin-dropdown-eyebrow">Account</p>
+                          <h3 className="admin-dropdown-title">Profile</h3>
+                        </div>
+                        <span className="admin-dropdown-chip">{roleLabel}</span>
+                      </div>
 
-                    <div className="admin-profile-card">
-                      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                        <div className="cdb-avatar" style={{ width: 56, height: 56 }}>
-                          <span style={{ fontWeight: 700, color: "var(--color-amber)" }}>{(displayName || roleLabel).trim().charAt(0).toUpperCase() || roleInitial}</span>
+                      <div className="admin-profile-card">
+                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                          <div className="cdb-avatar" style={{ width: 56, height: 56 }}>
+                            <span style={{ fontWeight: 700, color: "var(--color-amber)" }}>{(displayName || roleLabel).trim().charAt(0).toUpperCase() || roleInitial}</span>
+                          </div>
+
+                          <div style={{ minWidth: 0 }}>
+                            <span className="admin-settings-item-title">{displayName}</span>
+                            {displayEmail && <p className="admin-settings-item-copy">{displayEmail}</p>}
+                            <p className="admin-settings-item-copy">{roleLabel}</p>
+                          </div>
                         </div>
 
-                        <div style={{ minWidth: 0 }}>
-                          <span className="admin-settings-item-title">{displayName}</span>
-                          {displayEmail && <p className="admin-settings-item-copy">{displayEmail}</p>}
-                          <p className="admin-settings-item-copy">{roleLabel}</p>
+                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
+                          {profileActionPath ? (
+                            <button type="button" className="cdb-btn-edit" onClick={() => navigate(profileActionPath)}>{profileActionLabel}</button>
+                          ) : null}
+                          <button type="button" className="cdb-btn cdb-btn-danger-outline" onClick={handleLogout}>Log out</button>
                         </div>
                       </div>
-
-                      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
-                        {profileActionPath ? (
-                          <button type="button" className="cdb-btn-edit" onClick={() => navigate(profileActionPath)}>{profileActionLabel}</button>
-                        ) : null}
-                        <button type="button" className="cdb-btn cdb-btn-danger-outline" onClick={handleLogout}>Log out</button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </header>
 
         <main className="dashboard-main">

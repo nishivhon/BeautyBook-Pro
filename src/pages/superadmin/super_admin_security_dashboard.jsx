@@ -315,6 +315,8 @@ export default function SuperAdminSecurityDashboard() {
       subtitle="BeautyBook Pro · Manage access controls"
       profile={null}
       notifications={[]}
+      useSuperAdminHeaderActions={true}
+      superAdminNoNotificationsMessage="No new security or backup notifications at this time."
       storageKey="superadminSidebarExpanded"
       onLogoutConfirm={handleLogout}
       logoutTitle="Log Out?"
@@ -350,8 +352,8 @@ export default function SuperAdminSecurityDashboard() {
           <div className="dashboard-panel superadmin-fixed-panel">
             {/* Panel header */}
             <div className="panel-header">
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", color: "#fff" }}>
-                <ShieldIcon color="#fff" /> Security Overview
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", color: "#0c0a09" }}>
+                <ShieldIcon color="#0c0a09" /> Security Overview
               </div>
               <button onClick={handleDownloadLog} className="btn-ghost">
                 ↓ Download Log
@@ -390,10 +392,10 @@ export default function SuperAdminSecurityDashboard() {
 
           {/* Security Settings Panel */}
           <div className="dashboard-panel">
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", color: "#fff", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", color: "#0c0a09", marginBottom: "16px" }}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <rect x="2" y="8" width="14" height="9" rx="2" stroke="#fff" strokeWidth="1.3"/>
-                <path d="M5 8V6a4 4 0 018 0v2" stroke="#fff" strokeWidth="1.3" strokeLinecap="round"/>
+                <rect x="2" y="8" width="14" height="9" rx="2" stroke="#0c0a09" strokeWidth="1.3"/>
+                <path d="M5 8V6a4 4 0 018 0v2" stroke="#0c0a09" strokeWidth="1.3" strokeLinecap="round"/>
               </svg>
               Security Settings
             </div>
