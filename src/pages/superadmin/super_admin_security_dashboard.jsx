@@ -346,8 +346,8 @@ export default function SuperAdminSecurityDashboard() {
 
       {/* ─── SIDEBAR & HEADER HANDLED BY DASHBOARDSHELL ─── */}
 
-      <div className="superadmin-page-content">
-          <div className="dashboard-panel">
+      <div className="superadmin-page-content" style={{ paddingTop: '20px' }}>
+          <div className="dashboard-panel superadmin-fixed-panel">
             {/* Panel header */}
             <div className="panel-header">
               <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", color: "#fff" }}>

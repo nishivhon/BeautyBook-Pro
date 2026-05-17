@@ -339,8 +339,8 @@ export default function SuperAdminUsersDashboard() {
       logoutConfirmText="Yes, Log Out"
       logoutCancelText="Stay Logged In"
     >
-      <div className="superadmin-page-content">
-          <div className="dashboard-panel">
+      <div className="superadmin-page-content" style={{ paddingTop: '20px' }}>
+          <div className="dashboard-panel superadmin-fixed-panel">
             {/* Panel header with search and add button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div className="panel-title">
@@ -408,7 +408,7 @@ export default function SuperAdminUsersDashboard() {
 
             {/* Staff Table View */}
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading staff data...</div>
+              <div className="container-empty-state">Loading staff data...</div>
             ) : (() => {
               // Filter staff by search query
               const filteredStaff = staffsData.rows ? staffsData.rows.filter(staff =>
@@ -417,8 +417,8 @@ export default function SuperAdminUsersDashboard() {
               
               return staffsData.rows && staffsData.rows.length > 0 ? (
                 filteredStaff.length > 0 ? (
-                  <div style={{ marginTop: '0px', overflowX: 'auto' }}>
-                    <table className="data-table" style={{ minWidth: '800px' }}>
+                  <div style={{ marginTop: '0px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                    <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                       <thead>
                         <tr>
                           {staffsData.cols.map((col) => (
@@ -429,7 +429,7 @@ export default function SuperAdminUsersDashboard() {
                       </thead>
                       <tbody>
                         {(() => {
-                          const itemsPerPage = 12;
+                          const itemsPerPage = 6;
                           const startIdx = (currentStaffPage - 1) * itemsPerPage;
                           const endIdx = startIdx + itemsPerPage;
                           return filteredStaff.slice(startIdx, endIdx).map((staff, idx) => (
@@ -483,13 +483,13 @@ export default function SuperAdminUsersDashboard() {
                   );
                   if (filteredStaff.length === 0) return null;
                   
-                  const itemsPerPage = 12;
+                  const itemsPerPage = 6;
                   const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
                   const startIdx = (currentStaffPage - 1) * itemsPerPage + 1;
                   const endIdx = Math.min(currentStaffPage * itemsPerPage, filteredStaff.length);
                   
                   return (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
                         Showing {startIdx}–{endIdx} of {filteredStaff.length} staff
                       </div>
@@ -559,12 +559,12 @@ export default function SuperAdminUsersDashboard() {
                 })()}
               </div>
                 ) : (
-                  <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>
+                  <div className="container-empty-state">
                     No staff members match your search
                   </div>
                 )
               ) : (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No staff members found</div>
+                <div className="container-empty-state">No staff members found</div>
               );
             })()}
           </div>

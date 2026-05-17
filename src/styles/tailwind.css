@@ -5852,8 +5852,8 @@ html[data-theme="light"] .dash-page-title,
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 2px 8px;
-    border-radius: 20px;
+    padding: 3px 10px;
+    border-radius: 999px;
     font-family: 'Inter', sans-serif;
     font-weight: 400;
     font-size: 0.65rem;
@@ -6904,6 +6904,8 @@ html[data-theme="light"] .dash-page-title,
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 12px;
+    width: 100%;
   }
 
   .dash-stats-carousel-nav {
@@ -6956,9 +6958,9 @@ html[data-theme="light"] .dash-page-title,
   }
 
   .stats-carousel-dot {
-    width: 8px;
+    width: 24px;
     height: 8px;
-    border-radius: 50%;
+    border-radius: 999px;
     border: none;
     background: rgba(152, 143, 129, 0.3);
     cursor: pointer;
@@ -6967,12 +6969,12 @@ html[data-theme="light"] .dash-page-title,
   }
 
   .stats-carousel-dot:hover {
-    background: rgba(152, 143, 129, 0.6);
+    background: rgba(152, 143, 129, 0.55);
   }
 
   .stats-carousel-dot.active {
-    width: 20px;
-    border-radius: 4px;
+    width: 28px;
+    border-radius: 999px;
     background: var(--color-amber);
   }
 
@@ -7023,14 +7025,13 @@ html[data-theme="light"] .dash-page-title,
   .dash-stat-badge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     padding: 3px 10px;
-    border-radius: 20px;
+    border-radius: 999px;
     font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 12px;
+    font-weight: 400;
+    font-size: 0.65rem;
     white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
   }
 
   .dash-stat-badge-green {
@@ -7289,6 +7290,23 @@ html[data-theme="light"] .dash-page-title,
     border: 1px solid rgba(152, 143, 129, 0.35);
     border-radius: 10px;
     padding: 24px;
+  }
+
+  .superadmin-fixed-panel {
+    height: calc(100vh - 220px);
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .dash-stats-carousel-row {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    padding-bottom: 8px;
   }
 
   .superadmin-page-content {
@@ -7588,21 +7606,25 @@ html[data-theme="light"] .dash-page-title,
     top: 80px;
     left: 50%;
     transform: translateX(-50%);
-    background: var(--bg-darker);
-    border: 1px solid rgba(221, 144, 29, 0.3);
+    background: rgba(35, 29, 26, 0.95);
+    border: 1px solid rgba(221, 144, 29, 0.35);
     border-radius: 8px;
-    padding: 12px 20px;
+    padding: 12px 16px;
     color: var(--color-white);
     font-family: 'Inter', sans-serif;
     font-weight: 500;
     font-size: 13px;
-    z-index: 1500;
-    transition: transform 0.3s ease;
+    z-index: 10000000;
+    transition: opacity 0.25s ease, transform 0.25s ease;
     max-width: 400px;
     text-align: center;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+    opacity: 0;
+    pointer-events: none;
   }
 
   .toast.show {
+    opacity: 1;
     transform: translateX(-50%);
   }
 
@@ -8229,18 +8251,19 @@ html[data-theme="light"] .dash-page-title,
     position: fixed;
     top: 80px;
     left: 50%;
-    background: var(--bg-card);
-    border: 1px solid var(--color-amber);
+    background: rgba(35, 29, 26, 0.95);
+    border: 1px solid rgba(221, 144, 29, 0.35);
     border-radius: 8px;
-    padding: 14px 20px;
-    font-size: 14px;
-    color: var(--color-amber);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--color-white);
     opacity: 0;
     transform: translateX(-50%) translateY(-20px);
     pointer-events: none;
     transition: opacity 0.25s ease, transform 0.25s ease;
-    z-index: 999;
+    z-index: 10000000;
     font-family: 'Inter', sans-serif;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
   }
 
   .toast.show {
@@ -8626,9 +8649,10 @@ html[data-theme="light"] .dash-page-title,
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100%;
-    min-height: 280px;
-    padding: 20px;
+    width: 100%;
+    min-height: 320px;
+    flex: 1 1 auto;
+    padding: 24px;
     text-align: center;
     color: rgba(152, 143, 129, 0.7);
     font-size: 0.95rem;

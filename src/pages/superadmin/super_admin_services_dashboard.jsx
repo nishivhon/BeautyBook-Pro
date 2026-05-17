@@ -6,6 +6,7 @@ import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
 import { EditServiceModal } from "../../components/modal/superadmin/edit_service_modal";
 import { AddServiceModal } from "../../components/modal/superadmin/add_service_modal";
+import { Toast } from "../../components/toast";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -123,6 +124,7 @@ export default function SuperAdminServicesDashboard() {
   const [editingService, setEditingService] = useState(null);
   const [isEditServiceModalOpen, setIsEditServiceModalOpen] = useState(false);
   const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
+  const [toastType, setToastType] = useState("success");
 
   // Persist sidebar state
   useEffect(() => {
@@ -159,7 +161,7 @@ export default function SuperAdminServicesDashboard() {
           let rowData = [];
           try {
             const dataResult = await databaseAPI.getTableData('services', 10000, 0);
-            rowData = dataResult.data || [];
+            rowData = (dataResult.data || []).filter(service => !service.is_deleted);
             console.log(`[Services] Fetched ${rowData.length} rows`);
           } catch (dataError) {
             console.warn(`[Services] Error fetching data:`, dataError);
@@ -192,6 +194,7 @@ export default function SuperAdminServicesDashboard() {
 
   const displayToast = (message) => {
     setToastMessage(message);
+    setToastType(/^(failed|error|invalid)/i.test(message) ? "error" : "success");
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2800);
   };
@@ -254,11 +257,13 @@ export default function SuperAdminServicesDashboard() {
   const handleSaveService = (updatedService) => {
     setServicesData(prev => ({
       ...prev,
-      rows: prev.rows.map(service =>
-        service.id === updatedService.id ? { ...service, ...updatedService } : service
-      )
+      rows: updatedService.is_deleted
+        ? prev.rows.filter(service => service.id !== updatedService.id)
+        : prev.rows.map(service =>
+            service.id === updatedService.id ? { ...service, ...updatedService } : service
+          )
     }));
-    displayToast('Service updated successfully');
+            displayToast(updatedService.is_deleted ? 'Service removed successfully' : 'Service updated successfully');
   };
 
   // Handle opening add modal
@@ -298,10 +303,10 @@ export default function SuperAdminServicesDashboard() {
       logoutConfirmText="Yes, Log Out"
       logoutCancelText="Stay Logged In"
     >
-      {/* ─── SIDEBAR & HEADER HANDLED BY DASHBOARDSHELL ─── */}
+        {/* ─── SIDEBAR & HEADER HANDLED BY DASHBOARDSHELL ─── */}
 
-      
-          <div className="dashboard-panel">
+        <div className="superadmin-page-content" style={{ paddingTop: '20px' }}>
+          <div className="dashboard-panel superadmin-fixed-panel">
             {/* Panel header with search and add button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div className="panel-title">
@@ -369,7 +374,7 @@ export default function SuperAdminServicesDashboard() {
 
             {/* Services Table View */}
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading services...</div>
+              <div className="container-empty-state">Loading services...</div>
             ) : (() => {
               const filteredServices = servicesData.rows ? servicesData.rows.filter(service =>
                 matchesServiceQuery(service, searchQuery)
@@ -377,8 +382,8 @@ export default function SuperAdminServicesDashboard() {
               
               return servicesData.rows && servicesData.rows.length > 0 ? (
                 filteredServices.length > 0 ? (
-                  <div style={{ marginTop: '0px', overflowX: 'auto' }}>
-                <table className="data-table" style={{ minWidth: '800px' }}>
+                  <div style={{ marginTop: '0px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
                       {servicesData.cols.map((col) => (
@@ -393,19 +398,31 @@ export default function SuperAdminServicesDashboard() {
                       const filteredServices = servicesData.rows.filter(service =>
                         matchesServiceQuery(service, searchQuery)
                       );
-                      const itemsPerPage = 10;
+                      const itemsPerPage = 6;
                       const startIdx = (currentServicePage - 1) * itemsPerPage;
                       const endIdx = startIdx + itemsPerPage;
                       return filteredServices.slice(startIdx, endIdx).map((service, idx) => (
                       <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                        {servicesData.cols.map((col) => {
+                          {servicesData.cols.map((col) => {
                           const cellValue = service[col];
                           const displayValue = formatCellValue(cellValue, col);
                           return (
-                            <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
+                            <td
+                              key={col}
+                              style={{
+                                fontSize: '13px',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: 0,
+                              }}
+                              title={displayValue}
+                            >
+                              {displayValue}
+                            </td>
                           );
                         })}
-                        <td style={{ fontSize: '13px' }}>
+                        <td style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>
                           <button
                             onClick={() => handleEditService(service)}
                             title="Edit service"
@@ -446,12 +463,12 @@ export default function SuperAdminServicesDashboard() {
                   );
                   if (filteredServices.length === 0) return null;
                   
-                  const itemsPerPage = 10;
+                  const itemsPerPage = 6;
                   const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
                   const startIdx = (currentServicePage - 1) * itemsPerPage + 1;
                   const endIdx = Math.min(currentServicePage * itemsPerPage, filteredServices.length);
                   return (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
                         Showing {startIdx}–{endIdx} of {filteredServices.length} services
                       </div>
@@ -521,18 +538,18 @@ export default function SuperAdminServicesDashboard() {
                 })()}
               </div>
                 ) : (
-                  <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>
+                  <div className="container-empty-state">
                     No services match your search
                   </div>
                 )
               ) : (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No services found</div>
+                <div className="container-empty-state">No services found</div>
               );
             })()}
+            </div>
           </div>
-        
 
-      {/* ─── MODAL ─── */}
+          {/* ─── MODAL ─── */}
       <DatabaseTableModal
         showModal={showModal}
         modalTable={modalTable}
@@ -557,11 +574,7 @@ export default function SuperAdminServicesDashboard() {
       />
 
       {/* ─── TOAST ─── */}
-      {showToast && (
-        <div className="toast show">
-          {toastMessage}
-        </div>
-      )}
+      <Toast isVisible={showToast} message={toastMessage} type={toastType} duration={2800} />
     </DashboardShell>
   );
 }

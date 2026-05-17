@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
+import { AddClientModal } from "../../components/modal/superadmin/add_client_modal";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -105,6 +106,7 @@ export default function SuperAdminClientsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -177,6 +179,28 @@ export default function SuperAdminClientsDashboard() {
     setTimeout(() => setShowToast(false), 2800);
   };
 
+  const handleOpenAddClientModal = () => {
+    setIsAddClientModalOpen(true);
+  };
+
+  const handleCloseAddClientModal = () => {
+    setIsAddClientModalOpen(false);
+  };
+
+  const handleAddNewClient = (result) => {
+    const newClient = result?.account || result?.client || result?.customer || result;
+
+    if (newClient) {
+      setClientsData((prev) => ({
+        ...prev,
+        rows: [newClient, ...prev.rows],
+        meta: `${(prev.rows?.length || 0) + 1} clients`,
+      }));
+    }
+
+    displayToast('Client added successfully');
+  };
+
   // Format column names for display
   const formatColumnName = (colName) => {
     return colName.charAt(0).toUpperCase() + colName.slice(1).replace(/_/g, ' ');
@@ -218,8 +242,8 @@ export default function SuperAdminClientsDashboard() {
       logoutConfirmText="Yes, Log Out"
       logoutCancelText="Stay Logged In"
     >
-      <div className="superadmin-page-content">
-          <div className="dashboard-panel">
+      <div className="superadmin-page-content" style={{ paddingTop: '20px' }}>
+          <div className="dashboard-panel superadmin-fixed-panel">
             {/* Panel header with search and add button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div className="panel-title">
@@ -262,7 +286,7 @@ export default function SuperAdminClientsDashboard() {
                 
                 {/* Add Button */}
                 <button
-                  onClick={() => displayToast('Add client feature coming soon')}
+                  onClick={handleOpenAddClientModal}
                   style={{
                     padding: '8px 16px',
                     backgroundColor: '#dd901d',
@@ -287,10 +311,10 @@ export default function SuperAdminClientsDashboard() {
 
             {/* Clients Table View */}
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading client data...</div>
+              <div className="container-empty-state">Loading client data...</div>
             ) : clientsData.rows && clientsData.rows.length > 0 ? (
-              <div style={{ marginTop: '0px', overflowX: 'auto' }}>
-                <table className="data-table" style={{ minWidth: '800px' }}>
+              <div style={{ marginTop: '0px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
                       {clientsData.cols.map((col) => (
@@ -300,7 +324,7 @@ export default function SuperAdminClientsDashboard() {
                   </thead>
                   <tbody>
                     {(() => {
-                      const itemsPerPage = 12;
+                      const itemsPerPage = 6;
                       const startIdx = (currentClientPage - 1) * itemsPerPage;
                       const endIdx = startIdx + itemsPerPage;
                       return filteredClients.slice(startIdx, endIdx).map((client, idx) => (
@@ -318,12 +342,12 @@ export default function SuperAdminClientsDashboard() {
                   </tbody>
                 </table>
                 {filteredClients.length > 0 && (() => {
-                  const itemsPerPage = 12;
+                  const itemsPerPage = 6;
                   const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
                   const startIdx = (currentClientPage - 1) * itemsPerPage + 1;
                   const endIdx = Math.min(currentClientPage * itemsPerPage, filteredClients.length);
                   return (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
                         Showing {startIdx}–{endIdx} of {filteredClients.length} clients
                       </div>
@@ -393,10 +417,18 @@ export default function SuperAdminClientsDashboard() {
                 })()}
               </div>
             ) : (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No client accounts found</div>
+                  <div className="container-empty-state">
+                    {searchQuery ? 'No clients match your search' : 'No clients found'}
+                  </div>
             )}
           </div>
       </div>
+
+      <AddClientModal
+        isOpen={isAddClientModalOpen}
+        onClose={handleCloseAddClientModal}
+        onSave={handleAddNewClient}
+      />
 
       {/* ─── TOAST ─── */}
       {showToast && (

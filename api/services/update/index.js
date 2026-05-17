@@ -12,7 +12,7 @@ export default async (req, res) => {
 
   try {
     const { id } = req.query;
-    const { name, service_name, category, description, meta, price, available, availability, est_time, estimated_time } = req.body;
+    const { name, service_name, category, description, meta, price, available, availability, est_time, estimated_time, is_deleted } = req.body;
 
     if (!id) {
       return res.status(400).json({ error: 'Service ID is required' });
@@ -60,6 +60,7 @@ export default async (req, res) => {
     if ('estimated_time' in existingService) updateData.estimated_time = serviceEstimatedTime !== undefined && serviceEstimatedTime !== '' ? parseInt(serviceEstimatedTime, 10) : null;
     if ('availability' in existingService) updateData.availability = serviceAvailability !== false;
     if ('available' in existingService) updateData.available = serviceAvailability !== false;
+    if ('is_deleted' in existingService && is_deleted !== undefined) updateData.is_deleted = Boolean(is_deleted);
 
     console.log(`[Services:Update] Updating service ID: ${id}`, updateData);
 

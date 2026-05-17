@@ -277,10 +277,10 @@ export default function SuperAdminLogsDashboard() {
       logoutConfirmText="Yes, Log Out"
       logoutCancelText="Stay Logged In"
     >
-      {/* ─── SIDEBAR & HEADER HANDLED BY DASHBOARDSHELL ─── */}
+        {/* ─── SIDEBAR & HEADER HANDLED BY DASHBOARDSHELL ─── */}
 
-      
-          <div className="dashboard-panel">
+        <div className="superadmin-page-content" style={{ paddingTop: '20px' }}>
+          <div className="dashboard-panel superadmin-fixed-panel">
             {/* Panel header with search and add button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div className="panel-title">All Appointment Logs ({logsData.rows?.length || 0})</div>
@@ -321,10 +321,10 @@ export default function SuperAdminLogsDashboard() {
 
             {/* Logs Table View */}
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading logs...</div>
+              <div className="container-empty-state">Loading logs...</div>
             ) : logsData.rows && logsData.rows.length > 0 ? (
-              <div style={{ marginTop: '0px', overflowX: 'auto' }}>
-                <table className="data-table" style={{ minWidth: '800px' }}>
+              <div style={{ marginTop: '0px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
                       {logsData.cols.map((col) => (
@@ -334,7 +334,7 @@ export default function SuperAdminLogsDashboard() {
                   </thead>
                   <tbody>
                     {(() => {
-                      const itemsPerPage = 12;
+                      const itemsPerPage = 6;
                       const startIdx = (currentLogsPage - 1) * itemsPerPage;
                       const endIdx = startIdx + itemsPerPage;
                       return logsData.rows.slice(startIdx, endIdx).map((log, idx) => (
@@ -352,12 +352,12 @@ export default function SuperAdminLogsDashboard() {
                   </tbody>
                 </table>
                 {logsData.rows.length > 0 && (() => {
-                  const itemsPerPage = 12;
+                  const itemsPerPage = 6;
                   const totalPages = Math.ceil(logsData.rows.length / itemsPerPage);
                   const startIdx = (currentLogsPage - 1) * itemsPerPage + 1;
                   const endIdx = Math.min(currentLogsPage * itemsPerPage, logsData.rows.length);
                   return (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
                         Showing {startIdx}–{endIdx} of {logsData.rows.length} logs
                       </div>
@@ -427,12 +427,12 @@ export default function SuperAdminLogsDashboard() {
                 })()}
               </div>
             ) : (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No appointment logs found</div>
+              <div className="container-empty-state">No appointment logs found</div>
             )}
+            </div>
           </div>
-        
 
-      {/* ─── MODAL ─── */}
+          {/* ─── MODAL ─── */}
       <DatabaseTableModal
         showModal={showModal}
         modalTable={modalTable}
