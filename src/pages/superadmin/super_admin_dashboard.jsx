@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
@@ -1043,6 +1043,22 @@ const METRICS_CARDS = [
   },
 ];
 
+const METRICS_CAROUSEL_CARDS = [...METRICS_CARDS, ...METRICS_CARDS, ...METRICS_CARDS];
+const METRICS_CAROUSEL_MIDDLE_OFFSET = METRICS_CARDS.length;
+
+const getMetricChartKey = (label) => {
+  if (label === "In Queue Now") return "queue";
+  if (label === "Today's Appointments") return "appointments";
+  if (label === "Revenue Today") return "revenue";
+  if (label === "Avg. Waiting Time") return "waitingTime";
+  if (label === "Promo Bookings Today") return "promoBookings";
+  if (label === "Discounts Applied Today") return "discounts";
+  if (label === "Completed") return "completed";
+  if (label === "In Progress") return "inProgress";
+  if (label === "Cancelled") return "cancelled";
+  return "appointments";
+};
+
 // ─── Analytics Carousel Data ──────────────────────────────────────────────
 
 const ANALYTICS_CARDS = [
@@ -1079,9 +1095,18 @@ export default function SuperAdminDashboard() {
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
   });
-  const [metricsIndex, setMetricsIndex] = useState(0);
   const [analyticsIndex, setAnalyticsIndex] = useState(0);
   const [selectedChart, setSelectedChart] = useState("appointments");
+  const [metricsActiveIndex, setMetricsActiveIndex] = useState(0);
+  const metricsActiveIndexRef = useRef(0);
+  const metricsPhysicalIndexRef = useRef(METRICS_CAROUSEL_MIDDLE_OFFSET);
+  const metricsScrollRef = useRef(null);
+  const metricsAnimationRef = useRef(0);
+  const metricsWheelCooldownRef = useRef(false);
+
+  useEffect(() => {
+    metricsActiveIndexRef.current = metricsActiveIndex;
+  }, [metricsActiveIndex]);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -1107,22 +1132,174 @@ export default function SuperAdminDashboard() {
     year: "numeric",
   });
 
-  // Metrics carousel handlers
-  const handlePrevMetrics = () => {
-    setMetricsIndex((prev) => (prev === 0 ? METRICS_CARDS.length - 1 : prev - 1));
-  };
+  useEffect(() => {
+    const container = metricsScrollRef.current;
+    if (!container) return undefined;
 
-  const handleNextMetrics = () => {
-    setMetricsIndex((prev) => (prev === METRICS_CARDS.length - 1 ? 0 : prev + 1));
-  };
+    const easeInOutService = (value) => 0.5 - Math.cos(Math.PI * value) / 2;
 
-  // Get 4 cards starting from metricsIndex, wrapping around if needed
-  const visibleMetrics = [
-    METRICS_CARDS[metricsIndex],
-    METRICS_CARDS[(metricsIndex + 1) % METRICS_CARDS.length],
-    METRICS_CARDS[(metricsIndex + 2) % METRICS_CARDS.length],
-    METRICS_CARDS[(metricsIndex + 3) % METRICS_CARDS.length],
-  ];
+    const getPhysicalIndexFromScroll = () => {
+      const cards = Array.from(container.children || []);
+      if (cards.length === 0) return metricsPhysicalIndexRef.current;
+
+      const scrollCenter = container.scrollLeft + container.clientWidth / 2;
+      let closestIndex = 0;
+      let closestDistance = Number.POSITIVE_INFINITY;
+
+      cards.forEach((card, index) => {
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+        const distance = Math.abs(cardCenter - scrollCenter);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+
+      return closestIndex;
+    };
+
+    const getScrollLeftForPhysicalIndex = (physicalIndex) => {
+      const card = container.children?.[physicalIndex];
+      return card ? card.offsetLeft : null;
+    };
+
+    const recenterIfNeeded = (physicalIndex) => {
+      const total = METRICS_CARDS.length;
+      if (physicalIndex >= total && physicalIndex < total * 2) return physicalIndex;
+
+      const normalizedPhysicalIndex = total + (physicalIndex % total + total) % total;
+      const normalizedLeft = getScrollLeftForPhysicalIndex(normalizedPhysicalIndex);
+      if (normalizedLeft === null) return physicalIndex;
+
+      container.scrollLeft = normalizedLeft;
+      return normalizedPhysicalIndex;
+    };
+
+    const animateScrollLeft = (targetPhysicalIndex, duration = 480) => {
+      window.cancelAnimationFrame(metricsAnimationRef.current);
+
+      const startLeft = container.scrollLeft;
+      const targetLeft = getScrollLeftForPhysicalIndex(targetPhysicalIndex);
+      if (targetLeft === null) return;
+
+      const deltaLeft = targetLeft - startLeft;
+
+      if (deltaLeft === 0) return;
+
+      const startTime = window.performance.now();
+
+      const step = (now) => {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const easedProgress = easeInOutService(progress);
+        container.scrollLeft = startLeft + deltaLeft * easedProgress;
+
+        if (progress < 1) {
+          metricsAnimationRef.current = window.requestAnimationFrame(step);
+        } else {
+          const recenteredPhysicalIndex = recenterIfNeeded(targetPhysicalIndex);
+          metricsPhysicalIndexRef.current = recenteredPhysicalIndex;
+          metricsActiveIndexRef.current = recenteredPhysicalIndex % METRICS_CARDS.length;
+        }
+      };
+
+      metricsAnimationRef.current = window.requestAnimationFrame(step);
+    };
+
+    const updateActiveMetric = () => {
+      const cards = Array.from(container.children || []);
+      if (cards.length === 0) return;
+
+      const scrollCenter = container.scrollLeft + container.clientWidth / 2;
+      let closestIndex = 0;
+      let closestDistance = Number.POSITIVE_INFINITY;
+
+      cards.forEach((card, index) => {
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+        const distance = Math.abs(cardCenter - scrollCenter);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+
+      metricsPhysicalIndexRef.current = closestIndex;
+      const logicalIndex = closestIndex % METRICS_CARDS.length;
+      metricsActiveIndexRef.current = logicalIndex;
+      setMetricsActiveIndex(logicalIndex);
+    };
+
+    const initialPhysicalIndex = METRICS_CAROUSEL_MIDDLE_OFFSET + metricsActiveIndexRef.current;
+    const initialLeft = getScrollLeftForPhysicalIndex(initialPhysicalIndex);
+    if (initialLeft !== null) {
+      container.scrollLeft = initialLeft;
+      metricsPhysicalIndexRef.current = initialPhysicalIndex;
+    }
+
+    const handleWheel = (event) => {
+      if (event.deltaY === 0 && event.deltaX === 0) return;
+      event.preventDefault();
+
+      if (metricsWheelCooldownRef.current) return;
+
+      const delta = event.deltaY !== 0 ? event.deltaY : event.deltaX;
+      const direction = delta > 0 ? 1 : -1;
+      const currentPhysicalIndex = metricsPhysicalIndexRef.current;
+      const targetPhysicalIndex = currentPhysicalIndex + direction;
+      if (!container.children?.[targetPhysicalIndex]) return;
+
+      metricsWheelCooldownRef.current = true;
+      animateScrollLeft(targetPhysicalIndex);
+      window.setTimeout(() => { metricsWheelCooldownRef.current = false; }, 480);
+    };
+
+    updateActiveMetric();
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    container.addEventListener("scroll", updateActiveMetric, { passive: true });
+    return () => {
+      window.cancelAnimationFrame(metricsAnimationRef.current);
+      container.removeEventListener("wheel", handleWheel);
+      container.removeEventListener("scroll", updateActiveMetric);
+    };
+  }, []);
+
+  const scrollToMetric = (index) => {
+    const container = metricsScrollRef.current;
+    if (!container) return;
+
+    const targetPhysicalIndex = METRICS_CAROUSEL_MIDDLE_OFFSET + index;
+    const card = container.children?.[targetPhysicalIndex];
+    if (!card) return;
+
+    window.cancelAnimationFrame(metricsAnimationRef.current);
+    const startLeft = container.scrollLeft;
+    const targetLeft = card.offsetLeft;
+    const deltaLeft = targetLeft - startLeft;
+    const duration = 480;
+    const startTime = window.performance.now();
+
+    const easeInOutService = (value) => 0.5 - Math.cos(Math.PI * value) / 2;
+
+    const step = (now) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const easedProgress = easeInOutService(progress);
+      container.scrollLeft = startLeft + deltaLeft * easedProgress;
+
+      if (progress < 1) {
+        metricsAnimationRef.current = window.requestAnimationFrame(step);
+      } else {
+        metricsPhysicalIndexRef.current = targetPhysicalIndex;
+        metricsActiveIndexRef.current = index;
+        const recenteredPhysicalIndex = METRICS_CAROUSEL_MIDDLE_OFFSET + index;
+        const recenteredLeft = container.children?.[recenteredPhysicalIndex]?.offsetLeft;
+        if (recenteredLeft !== null && recenteredLeft !== undefined) {
+          container.scrollLeft = recenteredLeft;
+        }
+      }
+    };
+
+    metricsAnimationRef.current = window.requestAnimationFrame(step);
+    setMetricsActiveIndex(index);
+  };
 
   // Analytics carousel handlers
   const handlePrevAnalytics = () => {
@@ -1134,6 +1311,12 @@ export default function SuperAdminDashboard() {
   };
 
   const currentAnalytics = ANALYTICS_CARDS[analyticsIndex];
+
+  useEffect(() => {
+    const activeMetric = METRICS_CARDS[metricsActiveIndex];
+    if (!activeMetric) return;
+    setSelectedChart(getMetricChartKey(activeMetric.label));
+  }, [metricsActiveIndex]);
 
   return (
     <DashboardShell
@@ -1164,96 +1347,95 @@ export default function SuperAdminDashboard() {
         </div>
 
         {/* Metrics Cards - Display 4 at a time */}
-        <div className="dash-stats-row">
-              {visibleMetrics.map((m, idx) => (
-                <div
-                  key={`${metricsIndex}-${idx}`}
-                  className="dash-stat-card"
-                  style={{ animationDelay: `${0.08 + idx * 0.07}s`, cursor: "pointer" }}
-                  onClick={() => {
-                    const label = m.label;
-                    if (label === "In Queue Now") {
-                      setSelectedChart("queue");
-                    } else if (label === "Today's Appointments") {
-                      setSelectedChart("appointments");
-                    } else if (label === "Revenue Today") {
-                      setSelectedChart("revenue");
-                    } else if (label === "Avg. Waiting Time") {
-                      setSelectedChart("waitingTime");
-                    } else if (label === "Promo Bookings Today") {
-                      setSelectedChart("promoBookings");
-                    } else if (label === "Discounts Applied Today") {
-                      setSelectedChart("discounts");
-                    } else if (label === "Completed") {
-                      setSelectedChart("completed");
-                    } else if (label === "In Progress") {
-                      setSelectedChart("inProgress");
-                    } else if (label === "Cancelled") {
-                      setSelectedChart("cancelled");
-                    }
-                  }}
-                >
-                  <div className="dash-stat-top">
-                    <div className="dash-stat-icon-box">{m.icon}</div>
-                    {m.badge && (
-                      <span
-                        className={`dash-stat-badge ${
-                          m.badge.type === "green"
-                            ? "dash-stat-badge-green"
-                            : "dash-stat-badge-blue"
-                        }`}
-                      >
-                        {m.badge.text}
-                      </span>
-                    )}
-                  </div>
-                  <div className="dash-stat-bottom">
-                    <p className="dash-stat-value">{m.value}</p>
-                    <p className="dash-stat-label">{m.label}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Carousel Navigation - Bottom */}
-            <div className="dash-stats-carousel-bottom">
-              <div className="dash-stats-carousel-nav">
-                <button
-                  onClick={handlePrevMetrics}
-                  className="stats-carousel-btn"
-                  title="Previous metrics"
-                  aria-label="Previous"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-
-                {/* Carousel Dots - 9 dots for 9 cards */}
-                <div className="dash-stats-carousel-dots">
-                  {METRICS_CARDS.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setMetricsIndex(idx)}
-                      className={`stats-carousel-dot ${idx === metricsIndex ? "active" : ""}`}
-                      title={`View card ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-
-                <button
-                  onClick={handleNextMetrics}
-                  className="stats-carousel-btn"
-                  title="Next metrics"
-                  aria-label="Next"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
+        <div
+          ref={metricsScrollRef}
+          className="dash-stats-carousel-row hide-scrollbar"
+        >
+          {METRICS_CAROUSEL_CARDS.map((m, idx) => (
+            <div
+              key={`${m.label}-${idx}`}
+              className="dash-stat-card"
+              style={{
+                animationDelay: `${0.08 + idx * 0.07}s`,
+                cursor: "pointer",
+                flex: "0 0 calc((100% - 48px) / 4)",
+                minWidth: "0",
+                scrollSnapAlign: "start",
+              }}
+              onClick={() => {
+                const label = m.label;
+                if (label === "In Queue Now") {
+                  setSelectedChart("queue");
+                } else if (label === "Today's Appointments") {
+                  setSelectedChart("appointments");
+                } else if (label === "Revenue Today") {
+                  setSelectedChart("revenue");
+                } else if (label === "Avg. Waiting Time") {
+                  setSelectedChart("waitingTime");
+                } else if (label === "Promo Bookings Today") {
+                  setSelectedChart("promoBookings");
+                } else if (label === "Discounts Applied Today") {
+                  setSelectedChart("discounts");
+                } else if (label === "Completed") {
+                  setSelectedChart("completed");
+                } else if (label === "In Progress") {
+                  setSelectedChart("inProgress");
+                } else if (label === "Cancelled") {
+                  setSelectedChart("cancelled");
+                }
+              }}
+            >
+              <div className="dash-stat-top">
+                <div className="dash-stat-icon-box">{m.icon}</div>
+                {m.badge && (
+                  <span
+                    className={`dash-stat-badge ${
+                      m.badge.type === "green"
+                        ? "dash-stat-badge-green"
+                        : "dash-stat-badge-blue"
+                    }`}
+                  >
+                    {m.badge.text}
+                  </span>
+                )}
+              </div>
+              <div className="dash-stat-bottom">
+                <p className="dash-stat-value">{m.value}</p>
+                <p className="dash-stat-label">{m.label}</p>
               </div>
             </div>
+          ))}
+        </div>
+
+        <div className="dash-stats-carousel-bottom">
+          <div className="dash-stats-carousel-dots" aria-label="Metrics carousel navigation">
+            {METRICS_CARDS.map((m, index) => (
+              <button
+                key={`${m.label}-dot-${index}`}
+                type="button"
+                className={`stats-carousel-dot ${metricsActiveIndex === index ? "active" : ""}`}
+                aria-label={`Scroll to ${m.label}`}
+                aria-pressed={metricsActiveIndex === index}
+                onClick={() => scrollToMetric(index)}
+              />
+            ))}
           </div>
+        </div>
+
+        <style>{`
+          .dash-stats-carousel-row.hide-scrollbar {
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
+          }
+
+          .dash-stats-carousel-row.hide-scrollbar::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+          }
+        `}</style>
+
+      </div>
 
           {/* ── Chart + Analytics row ── */}
           <div className="flex gap-5 items-start w-full">
