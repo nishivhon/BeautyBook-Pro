@@ -7568,8 +7568,26 @@ html[data-theme="light"] .dash-page-title,
   }
 
   .db-row:hover {
-    background: rgba(35, 29, 26, 0.8);
-    border-color: rgba(152, 143, 129, 0.3);
+    background: rgba(221, 144, 29, 0.12);
+    border-color: rgba(221, 144, 29, 0.45);
+  }
+
+  .data-table tbody tr.db-row {
+    display: table-row !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .data-table tbody tr.db-row td {
+    background: transparent !important;
+    padding: 12px 8px;
+  }
+
+  .data-table tbody tr.db-row:hover,
+  .data-table tbody tr.db-row:hover td {
+    background: rgba(221, 144, 29, 0.12) !important;
   }
 
   .db-icon {
