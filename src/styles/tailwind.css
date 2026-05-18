@@ -1691,13 +1691,20 @@ html[data-theme="light"] .dash-page-title,
   }
 
   html[data-theme="light"] .admin-dropdown-eyebrow,
-  html[data-theme="light"] .admin-dropdown-link,
   html[data-theme="light"] .admin-dropdown-footnote,
   html[data-theme="light"] .admin-notification-description,
   html[data-theme="light"] .admin-notification-time,
   html[data-theme="light"] .admin-settings-item-copy,
   html[data-theme="light"] .admin-theme-label {
     color: #988f81;
+  }
+
+  html[data-theme="light"] .admin-dropdown-link {
+    color: #f38ba6 !important;
+  }
+
+  html[data-theme="light"] .admin-dropdown-link:hover {
+    color: #ec6f92 !important;
   }
 
   html[data-theme="light"] .admin-notification-item .admin-notification-description,
@@ -5968,6 +5975,111 @@ html[data-theme="light"] .dash-page-title,
 
   html[data-theme="light"] .admin-profile-card {
     background: rgba(255, 255, 255, 0.82);
+  }
+
+  .admin-profile-view-grid {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .admin-profile-top-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+  }
+
+  .admin-profile-avatar-panel,
+  .admin-profile-role-panel {
+    min-width: 0;
+  }
+
+  .admin-profile-avatar-badge {
+    width: 72px;
+    height: 72px;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(221, 144, 29, 0.26), rgba(26, 15, 0, 0.9));
+    border: 1px solid rgba(221, 144, 29, 0.24);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  }
+
+  html[data-theme="light"] .admin-profile-avatar-badge {
+    background: linear-gradient(135deg, rgba(253, 247, 249, 0.98), rgba(250, 190, 206, 0.92));
+    border-color: rgba(243, 139, 166, 0.34);
+    box-shadow: 0 10px 20px rgba(243, 139, 166, 0.16);
+  }
+
+  html[data-theme="light"] .admin-profile-avatar-badge span {
+    color: #d94680;
+  }
+
+  .admin-profile-avatar-badge-text {
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--color-amber);
+    font-size: 20px;
+  }
+
+  html[data-theme="light"] .admin-profile-avatar-badge-text {
+    color: #d94680;
+  }
+
+  .admin-profile-role-panel {
+    display: grid;
+    gap: 4px;
+    align-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .admin-profile-bottom-row {
+    display: grid;
+    gap: 10px;
+  }
+
+  .admin-profile-field {
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(152, 143, 129, 0.18);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  html[data-theme="light"] .admin-profile-field {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(152, 143, 129, 0.22);
+  }
+
+  .admin-profile-field-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-amber);
+  }
+
+  html[data-theme="light"] .admin-profile-field-label {
+    color: #f38ba6;
+  }
+
+  .admin-profile-field-value {
+    display: block;
+    min-height: 1.25em;
+    font-size: 0.96rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--color-white);
+  }
+
+  html[data-theme="light"] .admin-profile-field-value {
+    color: #0c0a09;
   }
 
   .admin-settings-chip.is-on {
