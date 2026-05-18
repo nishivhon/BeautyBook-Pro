@@ -22,6 +22,7 @@ const formatService = (service) => ({
   desc: service.description,
   price: `₱${parseFloat(service.price).toFixed(2)}`,
   estTime: `${service.est_time} min`,
+  category: service.category,
 });
 
 /* ── Header — shows the service category name ── */

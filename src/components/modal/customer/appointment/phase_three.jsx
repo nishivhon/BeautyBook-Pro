@@ -166,10 +166,12 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Extract ALL service categories from initialData (Phase 2)
-  const selectedCategories = useMemo(() => 
-    initialData?.services?.services?.map(s => s.title) || []
-  , [initialData?.services?.services]);
+  // Extract ALL service categories from selected services (Phase 2)
+  const selectedCategories = useMemo(() => {
+    const categories = initialData?.services?.map(s => s.category).filter(Boolean) || [];
+    // Get unique categories
+    return [...new Set(categories)];
+  }, [initialData?.services]);
 
   // Fetch staff from API on component mount and filter by category
   useEffect(() => {
@@ -187,7 +189,12 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
         // Filter staff: if categories selected, show only staff matching ANY of those categories
         // If no categories selected, show all staff
         const staffToShow = selectedCategories.length > 0
-          ? filteredStaff.filter(staff => selectedCategories.includes(staff.category_specialty))
+          ? filteredStaff.filter(staff => {
+              // staff.category_specialty is a JSONB array like ['Hair Cut', 'Styling']
+              const staffCategories = staff.category_specialty || [];
+              // Check if any selected category is in the staff's categories
+              return selectedCategories.some(category => staffCategories.includes(category));
+            })
           : filteredStaff;
         
         console.log('[Phase3] Filtered staff count:', staffToShow.length);

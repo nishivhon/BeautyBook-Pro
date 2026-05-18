@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../customer/confirmation_dialog";
 import { Toast } from "../../toast";
+import { AppointmentFormPhase2 } from "./appointment/phase_two";
+import { AppointmentFormPhase3 } from "./appointment/phase_three";
 
 const BackArrowIcon = () => (
   <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width={16} height={16}>
@@ -131,18 +133,6 @@ const PremiumIcon = () => (
   </svg>
 );
 
-/* Icon mapping based on category ID */
-const getIconForCategory = (categoryId) => {
-  const iconMap = {
-    hair: HairIcon,
-    nail: NailIcon,
-    skincare: SkincareIcon,
-    massage: MassageIcon,
-    premium: PremiumIcon,
-  };
-  return iconMap[categoryId] || null;
-};
-
 const STEPS = [
   { number: 1, label: "Name" },
   { number: 2, label: "Service" },
@@ -211,348 +201,21 @@ const ProgressIndicator = ({ currentStep }) => (
   </div>
 );
 
-/* ── Category Card ── */
-const CategoryCard = ({ category, selectedCount = 0, onSelect }) => {
-  const IconComponent = getIconForCategory(category.id);
-  
-  return (
-    <button
-      className={`appt-svc-card${selectedCount > 0 ? " selected" : ""}`}
-      onClick={() => onSelect(category.id)}
-      aria-pressed={selectedCount > 0}
-      style={{
-        transition: "all 0.3s ease",
-        position: "relative",
-      }}
-      onMouseEnter={(e) => {
-        if (selectedCount === 0) {
-          e.currentTarget.style.transform = "translateY(-8px) scale(1.03)";
-          const iconCircle = e.currentTarget.querySelector('.appt-svc-icon-circle');
-          if (iconCircle) {
-            iconCircle.style.transform = "scale(1.1) rotate(5deg)";
-          }
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (selectedCount === 0) {
-          e.currentTarget.style.transform = "translateY(0) scale(1)";
-          const iconCircle = e.currentTarget.querySelector('.appt-svc-icon-circle');
-          if (iconCircle) {
-            iconCircle.style.transform = "scale(1) rotate(0deg)";
-          }
-        }
-      }}
-    >
-      {IconComponent && (
-        <div className="appt-svc-icon-circle" style={{transition: "all 0.3s ease"}}>
-          <IconComponent />
-        </div>
-      )}
-      <p className="appt-svc-title">{category.label}</p>
-      
-      {selectedCount > 0 && (
-        <div style={{
-          position: "absolute",
-          top: "8px",
-          right: "8px",
-          background: "var(--color-amber)",
-          color: "var(--color-black)",
-          borderRadius: "50%",
-          width: "28px",
-          height: "28px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "0.85rem",
-          fontWeight: "700",
-          fontFamily: "Inter, sans-serif",
-        }}>
-          {selectedCount}
-        </div>
-      )}
-    </button>
-  );
-};
-
-/* ── Service Selection Modal (nested) ── */
-const ServiceSelectionModal = ({ isOpen, categoryId, categoryLabel, services, selectedServices, onSelect, onClose, isUpdating = false, onCloseWholeModal }) => {
-  const [showConfirmCancel, setShowConfirmCancel] = useState(false);
-
-  if (!isOpen) return null;
-
-  const categoryServices = services.filter(s => s.category === categoryId);
-  const categoryServiceIds = categoryServices.map(s => s.id);
-  const selectedInCategory = selectedServices.filter(id => categoryServiceIds.includes(id));
-
-  const ServiceRow = ({ service, isSelected }) => (
-    <button
-      className={`svc-list-row${isSelected ? " selected" : ""}`}
-      onClick={() => onSelect(service.id)}
-      aria-pressed={isSelected}
-    >
-      <div className="svc-list-left">
-        <div className="svc-list-icon-box">
-          <ScissorsIcon />
-        </div>
-        <div className="svc-list-text">
-          <span className="svc-list-title">{service.title}</span>
-          <span className="svc-list-desc">{service.desc}</span>
-        </div>
-      </div>
-
-      <div className="svc-list-right">
-        <span className="svc-list-price">{service.price}</span>
-        <span className="svc-list-est">{service.estTime}</span>
-      </div>
-    </button>
-  );
-
-  const handleCancelClick = () => {
-    setShowConfirmCancel(true);
-  };
-
-  const handleConfirmCancel = () => {
-    setShowConfirmCancel(false);
-    onCloseWholeModal();
-  };
-
-  return (
-    <>
-      <div 
-        className="appt-overlay walkin-force-dark" 
-        style={{ zIndex: 1100, ...DARK_MODAL_VARS }}
-        onClick={(e) => {
-          // Only trigger if clicking directly on the overlay, not on child elements
-          if (e.target === e.currentTarget) {
-            handleCancelClick();
-          }
-        }}
-      >
-        <div className="appt-root" style={{ maxHeight: "80vh" }}>
-          <header className="appt-header">
-            <button className="appt-back-btn" onClick={onClose} aria-label="Go back">
-              <BackArrowIcon />
-              Back
-            </button>
-            <h1 className="appt-header-title">{categoryLabel}</h1>
-            <div className="appt-back-btn" aria-hidden style={{ visibility: "hidden" }}>Back</div>
-          </header>
-
-          <div className="appt-body">
-            <div className="appt-section-heading">
-              <h2 className="appt-section-title">Choose a service</h2>
-              <p className="appt-section-sub">Select a service you'd like to book</p>
-              <div className="svc-list">
-                {categoryServices.length > 0 ? (
-                  categoryServices.map((service) => (
-                    <ServiceRow
-                      key={service.id}
-                      service={service}
-                      isSelected={selectedServices.includes(service.id)}
-                    />
-                  ))
-                ) : (
-                  <p style={{ textAlign: "center", color: "var(--color-tan)", padding: "20px" }}>
-                    No services available
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="appt-footer">
-            <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "12px" }}>
-              {selectedInCategory.length === 0 && !isUpdating && (
-                <p className="service-error"> Please select at least one service</p>
-              )}
-              <div style={{ display: "flex", gap: "12px" }}>
-                <button className="appt-cancel-btn" onClick={handleCancelClick}>
-                  Cancel
-                </button>
-                <button 
-                  className="appt-continue-btn"
-                  onClick={onClose}
-                  disabled={selectedInCategory.length === 0 && !isUpdating}
-                  style={{
-                    opacity: selectedInCategory.length > 0 || isUpdating ? 1 : 0.5,
-                    cursor: selectedInCategory.length > 0 || isUpdating ? "pointer" : "not-allowed",
-                  }}
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Cancel Confirmation Dialog for Service Modal */}
-      <ConfirmationDialog
-        isOpen={showConfirmCancel}
-        title="Cancel Walk-in?"
-        message="Are you sure you want to cancel? Your progress will be lost."
-        confirmText="Yes, Cancel Walk-in"
-        cancelText="Keep Going"
-        onConfirm={handleConfirmCancel}
-        onCancel={() => setShowConfirmCancel(false)}
-      />
-    </>
-  );
-};
-
-/* ── "Any available" row ── */
-const AnyRow = ({ isSelected, onSelect }) => (
-  <button
-    className={`stylist-row${isSelected ? " selected" : ""}`}
-    onClick={() => onSelect(isSelected ? null : "any")}
-    aria-pressed={isSelected}
-  >
-    <div className="stylist-row-left">
-      {/* amber circle with person icon */}
-      <div className="stylist-avatar">
-        <PersonIcon />
-      </div>
-      <div className="stylist-text">
-        <span className="stylist-name">Any available stylist</span>
-        <span className="stylist-specialty">First available stylist will be assigned</span>
-      </div>
-    </div>
-    {/* no rating column for "any" row */}
-  </button>
-);
-
-/* ── Named stylist row ── */
-const StylistRow = ({ stylist, isSelected, onSelect }) => (
-  <button
-    className={`stylist-row${isSelected ? " selected" : ""}${stylist.unavailable ? " unavailable" : ""}`}
-    onClick={() => !stylist.unavailable && onSelect(isSelected ? null : stylist.id)}
-    disabled={stylist.unavailable}
-    aria-pressed={isSelected}
-    aria-disabled={stylist.unavailable}
-  >
-    <div className="stylist-row-left">
-      {/* initial avatar circle */}
-      <div className={`stylist-avatar${stylist.unavailable ? " muted" : ""}`}>
-        <span className="stylist-initial">{stylist.initial}</span>
-      </div>
-      <div className="stylist-text">
-        <span className={`stylist-name${stylist.unavailable ? " muted" : ""}`}>{stylist.name}</span>
-        <span className={`stylist-specialty${stylist.unavailable ? " muted" : ""}`}>{stylist.specialty}</span>
-      </div>
-    </div>
-
-    {/* right: rating + reviews + unavailable badge */}
-    <div className="stylist-rating-col">
-      <div className="stylist-rating-row">
-        <StarIcon muted={stylist.unavailable} />
-        <span className={`stylist-rating${stylist.unavailable ? " muted" : ""}`}>{stylist.rating}</span>
-      </div>
-      <span className={`stylist-reviews${stylist.unavailable ? " muted" : ""}`}>{stylist.reviews}</span>
-      {stylist.unavailable && <span className="stylist-unavailable-tag">Unavailable</span>}
-    </div>
-  </button>
-);
-
 /* ── Thin divider ── */
 const Divider = () => (
   <div style={{ width: "100%", height: 1, background: "rgba(152,143,129,0.25)", flexShrink: 0 }} />
 );
 
-export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsServicesList, serviceCategories: propsServiceCategories, stylistsList: propsStylistsList }) => {
-  // Default service data if not provided via props
-  const SERVICES_LIST = propsServicesList || [
-    // Hair Services (4)
-    { id: 1, title: "Hair cuts",      desc: "Classic Haircut with Styling", category: "hair", price: "₱00.00", estTime: "est time" },
-    { id: 2, title: "Hair color",     desc: "Full hair color service", category: "hair", price: "₱00.00", estTime: "est time" },
-    { id: 3, title: "Hair treatment", desc: "Full hair color service", category: "hair", price: "₱00.00", estTime: "est time" },
-    { id: 4, title: "Beard trimming", desc: "Trim and beard shaping", category: "hair", price: "₱00.00", estTime: "est time" },
-    // Nail Services (4)
-    { id: 5, title: "Manicure",          desc: "Care & beautification for fingernails", category: "nail", price: "₱00.00", estTime: "est time" },
-    { id: 6, title: "Pedicure",          desc: "Care & beautification for toenails",    category: "nail", price: "₱00.00", estTime: "est time" },
-    { id: 7, title: "Nail enhancement",  desc: "Artificial nail application",           category: "nail", price: "₱00.00", estTime: "est time" },
-    { id: 8, title: "Nail art & design", desc: "Arts & Design for nails",               category: "nail", price: "₱00.00", estTime: "est time" },
-    // Skincare Services (4)
-    { id: 9, title: "Facial treatment",   desc: "Care & beautification for face & skin", category: "skincare", price: "₱00.00", estTime: "est time" },
-    { id: 10, title: "Advance treatment",  desc: "High-tech solutions for skin concerns", category: "skincare", price: "₱00.00", estTime: "est time" },
-    { id: 11, title: "Specialized facials", desc: "Targeted care for specific skin needs", category: "skincare", price: "₱00.00", estTime: "est time" },
-    { id: 12, title: "Body treatment",     desc: "Full-body skincare services", category: "skincare", price: "₱00.00", estTime: "est time" },
-    // Massage Services (4)
-    { id: 13, title: "Swedish massage",      desc: "Gently stroke for relaxation", category: "massage", price: "₱00.00", estTime: "est time" },
-    { id: 14, title: "Deep tissue massage",  desc: "Intense pressure for muscle knots", category: "massage", price: "₱00.00", estTime: "est time" },
-    { id: 15, title: "Hot stone massage",    desc: "Heated stones to melt tension", category: "massage", price: "₱00.00", estTime: "est time" },
-    { id: 16, title: "Foot reflexology",     desc: "Pressure points for overall wellness", category: "massage", price: "₱00.00", estTime: "est time" },
-    // Premium Services (4)
-    { id: 17, title: "Bridal package",    desc: "Full wedding day beauty", category: "premium", price: "₱00.00", estTime: "est time" },
-    { id: 18, title: "Couple's Massage",  desc: "Relaxation for 2", category: "premium", price: "₱00.00", estTime: "est time" },
-    { id: 19, title: "Hair & glow combo", desc: "Scalp treatment + facial", category: "premium", price: "₱00.00", estTime: "est time" },
-    { id: 20, title: "VIP experience",    desc: "Private room + drinks", category: "premium", price: "₱00.00", estTime: "est time" },
-  ];
-
-  const SERVICE_CATEGORIES = propsServiceCategories || [
-    { id: "hair", label: "Hair Service", icon: "✂️" },
-    { id: "nail", label: "Nail Service", icon: "💅" },
-    { id: "skincare", label: "Skin Care Service", icon: "✨" },
-    { id: "massage", label: "Massage Service", icon: "🧘" },
-    { id: "premium", label: "Premium Service", icon: "👑" },
-  ];
-
-  const STYLISTS_LIST = propsStylistsList || [
-    {
-      id: "any",
-      isAny: true,
-      initial: null,
-      name: "Any available stylist",
-      specialty: "First available stylist will be assigned",
-      rating: null,
-      reviews: null,
-      unavailable: false,
-    },
-    {
-      id: "mike",
-      isAny: false,
-      initial: "M",
-      name: "Mike Santos",
-      specialty: "Fades & Modern cuts",
-      rating: "4.9",
-      reviews: "124 reviews",
-      unavailable: false,
-    },
-    {
-      id: "john",
-      isAny: false,
-      initial: "J",
-      name: "John Dela Cruz",
-      specialty: "Classic styles",
-      rating: "4.7",
-      reviews: "89 reviews",
-      unavailable: false,
-    },
-    {
-      id: "carlos",
-      isAny: false,
-      initial: "C",
-      name: "Carlos Reyes",
-      specialty: "Beard Expert",
-      rating: "4.8",
-      reviews: "156 reviews",
-      unavailable: true,
-    },
-  ];
+export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
+  // Phase data state
+  const [phase2Data, setPhase2Data] = useState(null);
+  const [phase3Data, setPhase3Data] = useState(null);
 
   const [step, setStep] = useState(1);
   const [walkInName, setWalkInName] = useState("");
   const [nameError, setNameError] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
-  const [selectedServices, setSelectedServices] = useState([]);
-  const [serviceError, setServiceError] = useState("");
-  const [serviceTouched, setServiceTouched] = useState(false);
-  const [selectedStylist, setSelectedStylist] = useState(null);
-  const [stylistError, setStylistError] = useState("");
-  const [stylistTouched, setStylistTouched] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
-  const [showServiceModal, setShowServiceModal] = useState(false);
-  const [activeCategory, setActiveCategory] = useState(null);
-  const [visitedCategories, setVisitedCategories] = useState(new Set());
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showReceiptReminder, setShowReceiptReminder] = useState(false);
@@ -603,45 +266,26 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
     validateName(walkInName);
   };
 
-  const validateServices = (services) => {
-    if (!services || services.length === 0) {
-      setServiceError("Please select at least one service");
-      return false;
-    }
-    setServiceError("");
-    return true;
+  const handlePhase2Continue = (data) => {
+    console.log('[AddWalkIn] Phase 2 data:', data);
+    setPhase2Data(data.services);  // Extract only the services array
+    setStep(3);
   };
 
-  const validateStylist = (stylistId) => {
-    if (!stylistId) {
-      setStylistError("Please select a stylist");
-      return false;
-    }
-    setStylistError("");
-    return true;
+  const handlePhase3Continue = (data) => {
+    console.log('[AddWalkIn] Phase 3 data:', data);
+    setPhase3Data(data);
+    generateReceipt();
   };
 
-  const handleServiceToggle = (serviceId) => {
-    setSelectedServices(prev => {
-      const updated = prev.includes(serviceId)
-        ? prev.filter(id => id !== serviceId)
-        : [...prev, serviceId];
-      if (serviceTouched) {
-        validateServices(updated);
+  const handleContinue = () => {
+    if (step === 1) {
+      if (!validateName(walkInName)) {
+        setNameTouched(true);
+        return;
       }
-      return updated;
-    });
-  };
-
-  const handleOpenCategoryModal = (categoryId) => {
-    setActiveCategory(categoryId);
-    setShowServiceModal(true);
-  };
-
-  const handleServiceModalClose = (categoryId) => {
-    // Mark category as visited after closing the modal
-    setVisitedCategories(prev => new Set([...prev, categoryId]));
-    setShowServiceModal(false);
+      setStep(2);
+    }
   };
 
   const handleClose = () => {
@@ -649,16 +293,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
     setWalkInName("");
     setNameError("");
     setNameTouched(false);
-    setSelectedServices([]);
-    setServiceError("");
-    setServiceTouched(false);
-    setSelectedStylist(null);
-    setStylistError("");
-    setStylistTouched(false);
     setReceiptData(null);
-    setShowServiceModal(false);
-    setActiveCategory(null);
-    setVisitedCategories(new Set());
+    setPhase2Data(null);
+    setPhase3Data(null);
     setShowConfirmCancel(false);
     setIsConfirmed(false);
     setShowReceiptReminder(false);
@@ -672,47 +309,30 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
 
   const handleBack = () => {
     if (step > 1) {
-      setStep(step - 1);
+      if (step === 3) {
+        // Going back from Phase 3 to Phase 2
+        setPhase3Data(null);
+        setStep(2);
+      } else {
+        // Going back from Phase 2 to step 1
+        setPhase2Data(null);
+        setStep(step - 1);
+      }
     } else {
       // Step 1, show confirmation dialog
       setShowConfirmCancel(true);
     }
   };
 
-  const handleContinue = () => {
-    if (step === 1) {
-      if (!validateName(walkInName)) {
-        setNameTouched(true);
-        return;
-      }
-      setStep(2);
-    } else if (step === 2) {
-      setServiceTouched(true);
-      if (!validateServices(selectedServices)) {
-        return;
-      }
-      setStep(3);
-    } else if (step === 3) {
-      setStylistTouched(true);
-      if (!validateStylist(selectedStylist)) {
-        return;
-      }
-      generateReceipt();
-    }
-  };
-
-  // Calculate service count per category
-  const getServiceCountForCategory = (categoryId) => {
-    return SERVICES_LIST.filter(s => 
-      s.category === categoryId && selectedServices.includes(s.id)
-    ).length;
-  };
-
   const generateReceipt = () => {
-    const services = SERVICES_LIST.filter(s => selectedServices.includes(s.id));
-    const stylist = STYLISTS_LIST.find(s => s.id === selectedStylist);
+    if (!phase2Data || !phase3Data) return;
+
+    const services = phase2Data.services || [];
+    const stylist = phase3Data.stylist || null;
+    
     const totalDuration = services.reduce((acc, s) => {
-      const mins = parseInt(s.estTime);
+      // Handle both numeric and string est times
+      const mins = parseInt(s.estTime) || parseInt(s.est_time) || 0;
       return acc + mins;
     }, 0);
 
@@ -722,7 +342,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
       services: services,
       totalDuration: totalDuration,
       price: "₱00.00",
-      stylist: stylist.name,
+      stylist: stylist?.name || "Any available",
       timestamp: new Date().toLocaleString(),
     };
 
@@ -996,8 +616,6 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
 
   if (!isOpen) return null;
 
-  const activeCategoryData = SERVICE_CATEGORIES.find(c => c.id === activeCategory);
-
   return createPortal(
     <>
       {/* ── Toast Notifications (Top Fixed Position) ── */}
@@ -1065,40 +683,27 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
               </div>
             )}
 
-            {/* Step 2: Service Categories */}
+            {/* Step 2: Service Selection (Using Phase 2 Component) */}
             {step === 2 && (
-              <div className="appt-section-heading">
-                <h2 className="appt-section-title">Select Services</h2>
-                <p className="appt-section-sub">Choose service categories to browse</p>
-                <div className="appt-svc-grid">
-                  {SERVICE_CATEGORIES.map((category) => (
-                    <CategoryCard
-                      key={category.id}
-                      category={category}
-                      selectedCount={getServiceCountForCategory(category.id)}
-                      onSelect={handleOpenCategoryModal}
-                    />
-                  ))}
-                </div>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "column" }}>
+                <AppointmentFormPhase2
+                  onBack={handleBack}
+                  onContinue={handlePhase2Continue}
+                  onCancel={handleCancelClick}
+                  initialData={null}
+                />
               </div>
             )}
 
-            {/* Step 3: Stylist Selection */}
-            {step === 3 && (
-              <div className="appt-section-heading">
-                <h2 className="appt-section-title">Choose a stylist</h2>
-                <p className="appt-section-sub">Pick your preferred stylist or choose "Any Available"</p>
-                <div className="stylist-list">
-                  <AnyRow isSelected={selectedStylist === "any"} onSelect={setSelectedStylist} />
-                  {STYLISTS_LIST.filter((s) => !s.isAny).map((stylist) => (
-                    <StylistRow
-                      key={stylist.id}
-                      stylist={stylist}
-                      isSelected={selectedStylist === stylist.id}
-                      onSelect={setSelectedStylist}
-                    />
-                  ))}
-                </div>
+            {/* Step 3: Stylist Selection (Using Phase 3 Component) */}
+            {step === 3 && phase2Data && (
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "column" }}>
+                <AppointmentFormPhase3
+                  onBack={handleBack}
+                  onContinue={handlePhase3Continue}
+                  onCancel={handleCancelClick}
+                  initialData={{ services: phase2Data }}
+                />
               </div>
             )}
 
@@ -1194,7 +799,8 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
               flexShrink: 0
             }}
           >
-            {step !== 4 && (
+            {/* Only show footer buttons for Step 1 and Step 4 */}
+            {step === 1 && (
               <>
                 <button 
                   className="appt-cancel-btn"
@@ -1207,9 +813,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
                 <button 
                   className="appt-continue-btn" 
                   onClick={handleContinue}
-                  disabled={(step === 1 && (!!nameError || !walkInName.trim())) || (step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)}
-                  style={((step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)) ? { opacity: 0.5, cursor: "not-allowed", flex: 1 } : { opacity: 1, flex: 1 }}
-                  title={step === 1 && !!nameError ? nameError : step === 2 && selectedServices.length === 0 ? "Please select at least one service" : step === 3 && !selectedStylist ? "Please select a stylist" : "Continue to next step"}
+                  disabled={!!nameError || !walkInName.trim()}
+                  style={(!!nameError || !walkInName.trim()) ? { opacity: 0.5, cursor: "not-allowed", flex: 1 } : { opacity: 1, flex: 1 }}
+                  title={nameError || "Continue to service selection"}
                 >
                   Continue
                 </button>
@@ -1238,21 +844,6 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
         </div>
       </div>
 
-      {/* Service Selection Modal (nested) */}
-      {activeCategoryData && (
-        <ServiceSelectionModal
-          isOpen={showServiceModal}
-          categoryId={activeCategory}
-          categoryLabel={activeCategoryData.label}
-          services={SERVICES_LIST}
-          selectedServices={selectedServices}
-          onSelect={handleServiceToggle}
-          onClose={() => handleServiceModalClose(activeCategory)}
-          isUpdating={visitedCategories.has(activeCategory)}
-          onCloseWholeModal={handleClose}
-        />
-      )}
-
       {/* Cancel Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={showConfirmCancel}
@@ -1278,7 +869,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
           onConfirm={() => {
             setShowReceiptReminder(false);
             // Submit the walk-in appointment
-            onSubmit({ ...receiptData, selectedServices });
+            onSubmit({ ...receiptData, services: phase2Data?.services });
             // Close modal after a short delay
             setTimeout(() => {
               handleClose();

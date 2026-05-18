@@ -353,7 +353,7 @@ export function CustomerShell({ activeNav, profile, children }) {
               onBack={handleBackPhase3}
               onContinue={handlePhase3Continue}
               onCancel={handleCancelBooking}
-              initialData={appointmentData}
+              initialData={{ services: appointmentData?.services?.services || [] }}
             />
           ) : appointmentPhase === 4 ? (
             <AppointmentFormPhase4
@@ -494,7 +494,7 @@ export function CustomerShell({ activeNav, profile, children }) {
               onBack={handleBackPhase3}
               onContinue={handlePhase3Continue}
               onCancel={handleCancelBooking}
-              initialData={appointmentData}
+              initialData={{ services: appointmentData?.services?.services || [] }}
             />
           ) : appointmentPhase === 4 ? (
             <AppointmentFormPhase4
