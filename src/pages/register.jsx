@@ -421,7 +421,7 @@ export const Register = () => {
 
   const handlePhase2Continue = (phase2Details) => {
     // Move to phase 3
-    setAppointmentData(appointmentData ? { ...appointmentData, services: phase2Details } : { services: phase2Details });
+    setAppointmentData(appointmentData ? { ...appointmentData, services: phase2Details.services } : { services: phase2Details.services });
     setAppointmentPhase(3);
   };
 
@@ -519,22 +519,14 @@ export const Register = () => {
 
       // Get all selected services and join them
       let allServices = [];
-      if (servicesData) {
-        const selectedArrays = [
-          servicesData.selectedHairServices,
-          servicesData.selectedNailServices,
-          servicesData.selectedSkincareServices,
-          servicesData.selectedMassageServices,
-          servicesData.selectedPremiumServices
-        ];
-
-        selectedArrays.forEach(arr => {
-          if (Array.isArray(arr) && arr.length > 0) {
-            allServices = allServices.concat(arr.map(s => s.title || s.name || s.service));
-          }
-        });
+      if (Array.isArray(servicesData)) {
+        // New Phase 2 format - direct array of services
+        allServices = servicesData.map(s => s.title || s.name || s.service);
       }
 
+      console.log('[Phase4] Services data:', servicesData);
+      console.log('[Phase4] Extracted services:', allServices);
+      
       const servicesList = allServices.length > 0 ? allServices.join(", ") : "General Service";
       const stylistName = stylistData?.name || "Any Available Stylist";
 

@@ -146,7 +146,7 @@ export function CustomerShell({ activeNav, profile, children }) {
   };
 
   const handlePhase2Continue = (details) => {
-    setAppointmentData((prev) => ({ ...(prev || {}), services: details }));
+    setAppointmentData((prev) => ({ ...(prev || {}), services: details.services }));
     setAppointmentPhase(3);
   };
 
@@ -166,31 +166,19 @@ export function CustomerShell({ activeNav, profile, children }) {
 
   const formatBooking = () => {
     const scheduleInfo = appointmentData?.schedule;
-    const servicesData = appointmentData?.services;
+    const servicesData = appointmentData?.services; // Now guaranteed to be array
     const stylistName = appointmentData?.stylist?.name || "Any Available Stylist";
 
-    let allServices = [];
-    if (servicesData) {
-      const groups = [
-        servicesData.selectedHairServices,
-        servicesData.selectedNailServices,
-        servicesData.selectedSkincareServices,
-        servicesData.selectedMassageServices,
-        servicesData.selectedPremiumServices,
-      ];
+    let allServices = servicesData || [];
 
-      groups.forEach((arr) => {
-        if (Array.isArray(arr) && arr.length > 0) {
-          allServices = allServices.concat(arr);
-        }
-      });
-    }
+    console.log("[formatBooking] Services data:", servicesData);
+    console.log("[formatBooking] All services:", allServices);
 
     const formattedServices = allServices.map((service) => ({
       title: service.title || service.name || "Service",
-      duration: service.duration || "N/A",
+      duration: service.duration || service.est_time || "N/A",
       price: service.price || "N/A",
-      est: service.duration || "N/A",
+      est: service.duration || service.est_time || "N/A",
     }));
 
     return {

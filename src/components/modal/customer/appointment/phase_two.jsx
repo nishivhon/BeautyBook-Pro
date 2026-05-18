@@ -348,8 +348,18 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   };
 
   const handleContinue = () => {
+    // Collect all actual services from selectedServicesByCard
+    const allSelectedServices = [];
+    Object.values(selectedServicesByCard).forEach(services => {
+      if (Array.isArray(services)) {
+        allSelectedServices.push(...services);
+      }
+    });
+
+    console.log('[Phase2] handleContinue - collected services:', allSelectedServices);
+    
     onContinue?.({ 
-      services: sortedServices.filter((s) => selectedServices.includes(s.id)), 
+      services: allSelectedServices, 
       selectedServicesByCard, 
       promoCode
     });

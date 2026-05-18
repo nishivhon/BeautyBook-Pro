@@ -866,14 +866,84 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
           message={`Have you saved your receipt and reference number?\n\nReference No.: ${receiptData?.id || "N/A"}\n\nYou'll need this for check-in.`}
           confirmText="Yes, Saved"
           cancelText="Download Again"
-          onConfirm={() => {
+          onConfirm={async () => {
             setShowReceiptReminder(false);
-            // Submit the walk-in appointment
-            onSubmit({ ...receiptData, services: phase2Data?.services });
-            // Close modal after a short delay
-            setTimeout(() => {
-              handleClose();
-            }, 1500);
+            try {
+              // Log the walk-in to walk_in_logs table
+              const apiUrl = import.meta.env.VITE_API_URL;
+              
+              // Format services - phase2Data is already an array of service objects
+              const formattedServices = (phase2Data || []).map(s => ({
+                id: s.id,
+                title: s.title || s.service_name,
+                price: typeof s.price === 'string' ? parseFloat(s.price.replace('₱', '')) : s.price,
+                duration: s.est_time || s.estTime,
+                category: s.category,
+              }));
+
+              console.log("[AddWalkIn] Preparing walk-in data");
+              console.log("[AddWalkIn] Customer name:", walkInName);
+              console.log("[AddWalkIn] Stylist:", receiptData?.stylist);
+              console.log("[AddWalkIn] Services:", formattedServices);
+
+              const walkInPayload = {
+                name: walkInName,
+                contact: null,
+                stylist: receiptData?.stylist,
+                services: formattedServices,
+                refNo: receiptData?.id,
+              };
+
+              console.log("[AddWalkIn] API URL:", apiUrl);
+              console.log("[AddWalkIn] Posting to:", `${apiUrl}/appointments/create-walk-in`);
+
+              const response = await fetch(`${apiUrl}/appointments/create-walk-in`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(walkInPayload),
+              });
+
+              console.log("[AddWalkIn] Response status:", response.status);
+              
+              let data;
+              try {
+                // Read response as text first to avoid double-read issues
+                const responseText = await response.text();
+                console.log("[AddWalkIn] Response text:", responseText);
+                
+                try {
+                  data = JSON.parse(responseText);
+                } catch (parseErr) {
+                  console.error("[AddWalkIn] Failed to parse response as JSON:", parseErr);
+                  data = { success: false, error: responseText };
+                }
+              } catch (fetchErr) {
+                console.error("[AddWalkIn] Fetch error:", fetchErr);
+                data = { success: false, error: fetchErr.message };
+              }
+
+              console.log("[AddWalkIn] Walk-in log response:", data);
+
+              if (!response.ok) {
+                console.error("[AddWalkIn] Failed to log walk-in. Status:", response.status, "Data:", data);
+              } else {
+                console.log("[AddWalkIn] Walk-in successfully logged to database");
+              }
+
+              // Submit the walk-in appointment regardless of log result
+              onSubmit({ ...receiptData, services: phase2Data });
+              // Close modal after a short delay
+              setTimeout(() => {
+                handleClose();
+              }, 1500);
+            } catch (err) {
+              console.error("[AddWalkIn] Error logging walk-in:", err);
+              // Still complete the flow even if logging fails
+              onSubmit({ ...receiptData, services: phase2Data });
+              setTimeout(() => {
+                handleClose();
+              }, 1500);
+            }
           }}
           onCancel={() => {
             setShowReceiptReminder(false);

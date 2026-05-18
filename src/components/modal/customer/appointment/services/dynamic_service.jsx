@@ -20,8 +20,10 @@ const formatService = (service) => ({
   id: service.id,
   title: service.service_name,
   desc: service.description,
-  price: `₱${parseFloat(service.price).toFixed(2)}`,
-  estTime: `${service.est_time} min`,
+  price: parseFloat(service.price), // Keep as number for API
+  est_time: parseInt(service.est_time), // Keep as number for API
+  displayPrice: `₱${parseFloat(service.price).toFixed(2)}`, // For display only
+  displayTime: `${service.est_time} min`, // For display only
   category: service.category,
 });
 

@@ -23,9 +23,19 @@ export const ConfirmationDialog = ({
 
   if (!isVisible) return null;
 
-  const handleConfirm = () => {
-    setIsVisible(false);
-    onConfirm?.();
+  const handleConfirm = async () => {
+    if (onConfirm) {
+      try {
+        await onConfirm();
+        // Close dialog after async operation completes
+        setIsVisible(false);
+      } catch (err) {
+        console.error('[ConfirmationDialog] Error in onConfirm:', err);
+        setIsVisible(false);
+      }
+    } else {
+      setIsVisible(false);
+    }
   };
 
   const handleCancel = () => {
