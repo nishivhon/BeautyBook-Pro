@@ -272,10 +272,38 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
     setStep(3);
   };
 
-  const handlePhase3Continue = (data) => {
+  const handlePhase3Continue = async (data) => {
     console.log('[AddWalkIn] Phase 3 data:', data);
     setPhase3Data(data);
-    generateReceipt();
+    
+    // Generate receipt first to get receipt data
+    if (!phase2Data || !data) return;
+    const services = phase2Data.services || [];
+    const stylist = data.stylist || null;
+    
+    const totalDuration = services.reduce((acc, s) => {
+      const mins = parseInt(s.estTime) || parseInt(s.est_time) || 0;
+      return acc + mins;
+    }, 0);
+
+    const receipt = {
+      id: Math.random().toString(36).substr(2, 9).toUpperCase(),
+      name: walkInName,
+      services: services,
+      totalDuration: totalDuration,
+      price: "₱00.00",
+      stylist: stylist?.name || "Any available",
+      timestamp: new Date().toLocaleString(),
+    };
+
+    setReceiptData(receipt);
+    setStep(4);
+    
+    // Log to database immediately
+    await logWalkInToDatabase(receipt);
+    
+    // Submit the walk-in to admin dashboard
+    onSubmit({ ...receipt, services: phase2Data });
   };
 
   const handleContinue = () => {
@@ -348,6 +376,49 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
     setReceiptData(receipt);
     setStep(4);
+  };
+
+  /* Log walk-in to database */
+  const logWalkInToDatabase = async (receipt) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      
+      // Format services - phase2Data is already an array of service objects
+      const formattedServices = (phase2Data || []).map(s => ({
+        id: s.id,
+        title: s.title || s.service_name,
+        price: typeof s.price === 'string' ? parseFloat(s.price.replace('₱', '')) : s.price,
+        duration: s.est_time || s.estTime,
+        category: s.category,
+      }));
+
+      const walkInPayload = {
+        name: receipt.name,
+        contact: null,
+        stylist: receipt.stylist,
+        services: formattedServices,
+        refNo: receipt.id,
+      };
+
+      console.log("[AddWalkIn] Logging walk-in to database:", walkInPayload);
+
+      const response = await fetch(`${apiUrl}/appointments/create-walk-in`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(walkInPayload),
+      });
+
+      const responseText = await response.text();
+      console.log("[AddWalkIn] DB response status:", response.status);
+
+      if (!response.ok) {
+        console.error("[AddWalkIn] Failed to log walk-in. Status:", response.status, "Details:", responseText);
+      } else {
+        console.log("[AddWalkIn] Walk-in successfully logged to database");
+      }
+    } catch (err) {
+      console.error("[AddWalkIn] Error logging walk-in:", err);
+    }
   };
 
   /* Handle final confirmation */
@@ -866,84 +937,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
           message={`Have you saved your receipt and reference number?\n\nReference No.: ${receiptData?.id || "N/A"}\n\nYou'll need this for check-in.`}
           confirmText="Yes, Saved"
           cancelText="Download Again"
-          onConfirm={async () => {
+          onConfirm={() => {
             setShowReceiptReminder(false);
-            try {
-              // Log the walk-in to walk_in_logs table
-              const apiUrl = import.meta.env.VITE_API_URL;
-              
-              // Format services - phase2Data is already an array of service objects
-              const formattedServices = (phase2Data || []).map(s => ({
-                id: s.id,
-                title: s.title || s.service_name,
-                price: typeof s.price === 'string' ? parseFloat(s.price.replace('₱', '')) : s.price,
-                duration: s.est_time || s.estTime,
-                category: s.category,
-              }));
-
-              console.log("[AddWalkIn] Preparing walk-in data");
-              console.log("[AddWalkIn] Customer name:", walkInName);
-              console.log("[AddWalkIn] Stylist:", receiptData?.stylist);
-              console.log("[AddWalkIn] Services:", formattedServices);
-
-              const walkInPayload = {
-                name: walkInName,
-                contact: null,
-                stylist: receiptData?.stylist,
-                services: formattedServices,
-                refNo: receiptData?.id,
-              };
-
-              console.log("[AddWalkIn] API URL:", apiUrl);
-              console.log("[AddWalkIn] Posting to:", `${apiUrl}/appointments/create-walk-in`);
-
-              const response = await fetch(`${apiUrl}/appointments/create-walk-in`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(walkInPayload),
-              });
-
-              console.log("[AddWalkIn] Response status:", response.status);
-              
-              let data;
-              try {
-                // Read response as text first to avoid double-read issues
-                const responseText = await response.text();
-                console.log("[AddWalkIn] Response text:", responseText);
-                
-                try {
-                  data = JSON.parse(responseText);
-                } catch (parseErr) {
-                  console.error("[AddWalkIn] Failed to parse response as JSON:", parseErr);
-                  data = { success: false, error: responseText };
-                }
-              } catch (fetchErr) {
-                console.error("[AddWalkIn] Fetch error:", fetchErr);
-                data = { success: false, error: fetchErr.message };
-              }
-
-              console.log("[AddWalkIn] Walk-in log response:", data);
-
-              if (!response.ok) {
-                console.error("[AddWalkIn] Failed to log walk-in. Status:", response.status, "Data:", data);
-              } else {
-                console.log("[AddWalkIn] Walk-in successfully logged to database");
-              }
-
-              // Submit the walk-in appointment regardless of log result
-              onSubmit({ ...receiptData, services: phase2Data });
-              // Close modal after a short delay
-              setTimeout(() => {
-                handleClose();
-              }, 1500);
-            } catch (err) {
-              console.error("[AddWalkIn] Error logging walk-in:", err);
-              // Still complete the flow even if logging fails
-              onSubmit({ ...receiptData, services: phase2Data });
-              setTimeout(() => {
-                handleClose();
-              }, 1500);
-            }
+            handleClose();
           }}
           onCancel={() => {
             setShowReceiptReminder(false);
