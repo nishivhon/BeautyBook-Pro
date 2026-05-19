@@ -335,6 +335,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [walkInAppointments, setWalkInAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -344,6 +345,10 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
       try {
         setLoading(true);
         setError(null);
+
+        // Get today's date
+        const today = new Date().toISOString().split('T')[0];
+        console.log('[LiveQueue] Fetching for date:', today);
 
         // Fetch current appointments
         const currentRes = await fetch('/api/appointments/read/by-status?status=current');
@@ -359,11 +364,30 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         }
         const pendingData = await pendingRes.json();
 
+        // Fetch walk-in logs for today
+        console.log('[LiveQueue] Fetching walk-ins from:', `/api/appointments/walk-in-logs?date=${today}`);
+        const walkInRes = await fetch(`/api/appointments/walk-in-logs?date=${today}`);
+        console.log('[LiveQueue] Walk-in response status:', walkInRes.status);
+        
+        if (!walkInRes.ok) {
+          console.error('[LiveQueue] Walk-in API error:', walkInRes.status, walkInRes.statusText);
+        }
+        
+        const walkInData = await walkInRes.json();
+        console.log('[LiveQueue] Walk-in data received:', Array.isArray(walkInData) ? walkInData.length : 'not array', walkInData);
+
         if (currentData.success) {
           setCurrentAppointments(currentData.appointments || []);
         }
         if (pendingData.success) {
           setPendingAppointments(pendingData.appointments || []);
+        }
+        if (walkInRes.ok && Array.isArray(walkInData)) {
+          setWalkInAppointments(walkInData);
+          console.log('[LiveQueue] Set walk-ins:', walkInData.length, 'items');
+        } else {
+          console.log('[LiveQueue] Walk-in data not valid array or not ok response');
+          setWalkInAppointments([]);
         }
       } catch (err) {
         console.error('Error fetching appointments:', err);
@@ -446,12 +470,47 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
   const currentItems = formatQueueItems(currentAppointments, 'active');
   
+  // Format walk-in items
+  const formatWalkInItems = (walkIns) => {
+    return walkIns.map((walkin, index) => {
+      // Extract service names from the services JSONB array
+      const serviceNames = Array.isArray(walkin.services) 
+        ? walkin.services.map(s => s.title || s.name).join(', ')
+        : 'Walk-in Service';
+      
+      return {
+        id: `walkin-${walkin.id}`,
+        type: 'waiting',
+        number: index + 1,
+        name: walkin.customer_name,
+        staff: walkin.assigned_staff,
+        service: `${serviceNames} • ${walkin.assigned_staff}`,
+        statusTop: 'Walk-in',
+        statusSub: 'Waiting',
+        details: {
+          serviceSelected: serviceNames,
+          currentService: 'Pending',
+          startTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          estimatedTime: '45 mins'
+        },
+        isWalkIn: true
+      };
+    });
+  };
+
+  const walkInItems = formatWalkInItems(walkInAppointments);
+  console.log('[LiveQueue] Formatted walk-in items:', walkInItems);
+  
   // Filter pending items to only show today's appointments with actual bookings (not empty slots)
   const today = new Date().toISOString().split('T')[0];
   const todayPendingAppointments = pendingAppointments.filter(apt => 
     apt.date === today && apt.name && apt.name !== 'Unknown'
   );
   const pendingItems = formatQueueItems(todayPendingAppointments, 'waiting');
+
+  // Combine pending appointments with walk-ins
+  const allUpNextItems = [...pendingItems, ...walkInItems];
+  console.log('[LiveQueue] All up next items (appointments + walk-ins):', allUpNextItems.length);
 
   // Create queue sections - only include sections with items
   const queueSections = [
@@ -461,7 +520,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     },
     {
       label: "Up Next",
-      items: pendingItems
+      items: allUpNextItems
     }
   ].filter(section => section.items.length > 0); // Only show sections with items
 

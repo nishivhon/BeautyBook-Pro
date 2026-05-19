@@ -510,6 +510,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [walkInAppointments, setWalkInAppointments] = useState([]);
 
   // Fetch appointments data on component mount
   useEffect(() => {
@@ -517,6 +518,10 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
       try {
         setLoading(true);
         setError(null);
+
+        // Get today's date
+        const today = new Date().toISOString().split('T')[0];
+        console.log('[LiveQueue] Fetching data for date:', today);
 
         // Fetch current appointments
         const currentRes = await fetch('/api/appointments/read/by-status?status=current');
@@ -526,11 +531,32 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
         const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
         const pendingData = await pendingRes.json();
 
+        // Fetch walk-in logs for today
+        console.log('[LiveQueue] Fetching walk-ins from:', `/api/appointments/walk-in-logs?date=${today}`);
+        const walkInRes = await fetch(`/api/appointments/walk-in-logs?date=${today}`);
+        console.log('[LiveQueue] Walk-in response status:', walkInRes.status);
+        
+        if (!walkInRes.ok) {
+          console.error('[LiveQueue] Walk-in API error:', walkInRes.status, walkInRes.statusText);
+          const errorText = await walkInRes.text();
+          console.error('[LiveQueue] Error details:', errorText);
+        }
+        
+        const walkInData = await walkInRes.json();
+        console.log('[LiveQueue] Raw walk-in data:', walkInData);
+
         if (currentData.success) {
           setCurrentAppointments(currentData.appointments || []);
         }
         if (pendingData.success) {
           setPendingAppointments(pendingData.appointments || []);
+        }
+        if (walkInRes.ok && Array.isArray(walkInData)) {
+          setWalkInAppointments(walkInData);
+          console.log('[LiveQueue] Fetched walk-ins for today:', walkInData.length, 'items');
+        } else {
+          console.log('[LiveQueue] No walk-ins data or not ok response');
+          setWalkInAppointments([]);
         }
       } catch (err) {
         console.error('Error fetching appointments:', err);
@@ -613,8 +639,41 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
     }));
   };
 
+  // Transform walk-ins to queue item format
+  const formatWalkInItems = (walkIns, type) => {
+    return walkIns.map((walkin, index) => {
+      // Extract service names from the services JSONB array
+      const serviceNames = Array.isArray(walkin.services) 
+        ? walkin.services.map(s => s.title || s.name).join(', ')
+        : 'Walk-in Service';
+      
+      return {
+        id: `walkin-${walkin.id}`,
+        type: type,
+        number: index + 1,
+        name: walkin.customer_name,
+        staff: walkin.assigned_staff,
+        service: `${serviceNames} • ${walkin.assigned_staff}`,
+        statusTop: type === 'active' ? 'Now' : 'Walk-in',
+        statusSub: type === 'active' ? 'In Progress' : 'Waiting',
+        details: {
+          serviceSelected: serviceNames,
+          currentService: type === 'active' ? 'In Progress' : 'Pending',
+          startTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          estimatedTime: '45 mins',
+          refNo: walkin.refNo || walkin.id
+        },
+        isWalkIn: true
+      };
+    });
+  };
+
   const currentItems = formatQueueItems(currentAppointments, 'active');
   const pendingItems = formatQueueItems(pendingAppointments, 'waiting');
+  const walkInItems = formatWalkInItems(walkInAppointments, 'waiting');
+
+  // Combine pending items with walk-ins
+  const combinedPendingItems = [...pendingItems, ...walkInItems];
 
   // Create queue sections - only Current and Up Next, no On Deck
   const queueSections = [
@@ -624,7 +683,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
     },
     {
       label: "Up Next",
-      items: pendingItems
+      items: combinedPendingItems
     }
   ];
 
