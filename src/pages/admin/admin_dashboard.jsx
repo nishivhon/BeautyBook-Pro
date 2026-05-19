@@ -799,21 +799,28 @@ const StaffStatus = () => {
           // Get the name - handle both 'name' and 'names' column variants
           const staffName = s.names || s.name || 'Unknown';
           
-          // Determine status based on in_service column
+          // Check if clocked out
+          const hasClockOut = s.clock_out && s.clock_out.trim() && s.clock_out !== '—';
+          
+          // Determine status based on clock out, status column, then in_service column
           let dotClass = 'dash-staff-status-dot-gray';
           let subStatus = 'Available';
           
+          const statusValue = (s.status || '').trim().toLowerCase();
           const inServiceValue = (s.in_service || '').trim().toLowerCase();
           
-          if (inServiceValue === 'in-service') {
+          // Priority 1: Check if clocked out or status is 'off'
+          if (hasClockOut || statusValue === 'off') {
+            dotClass = 'dash-staff-status-dot-gray';
+            subStatus = 'Off';
+          }
+          // Priority 2: Check in_service status
+          else if (inServiceValue === 'in-service') {
             dotClass = 'dash-staff-status-dot-green';
-            subStatus = `Serving: ${s.current_client || 'Client'}`;
+            subStatus = 'In Service';
           } else if (inServiceValue === 'on-break') {
             dotClass = 'dash-staff-status-dot-amber';
             subStatus = 'On Break';
-          } else if (inServiceValue === 'off') {
-            dotClass = 'dash-staff-status-dot-red';
-            subStatus = 'Off Today';
           } else {
             dotClass = 'dash-staff-status-dot-green';
             subStatus = 'Available';

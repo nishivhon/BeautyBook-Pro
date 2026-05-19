@@ -766,11 +766,12 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
 };
 
 /* ── Single schedule row ── */
-const ScheduleRow = ({ stylist, time, client, service, status, dotClass, staffStatus }) => {
+const ScheduleRow = ({ stylist, time, client, service, status, dotClass, staffStatus, inServiceStatus }) => {
   const isActive = status === "active";
   const isDone   = status === "done";
   const isNext   = status === "next";
   const isOff    = staffStatus === "off";
+  const isInService = inServiceStatus != null;
 
   const StatusIcon = isDone   ? () => <DoneIcon size={14} color="#22c55e" />
                    : isActive ? () => <PlayIcon size={14} color="#dd901d" />
@@ -804,7 +805,8 @@ const ScheduleRow = ({ stylist, time, client, service, status, dotClass, staffSt
             <span className={`live-sched-dot ${dotClass}`} />
             <span className="live-schedule-stylist-name">{stylist}</span>
           </div>
-          <span className="live-schedule-time">{time}</span>
+          {isInService && <span className="live-schedule-time" style={{ color: '#dd901d', fontWeight: 600 }}>{inServiceStatus}</span>}
+          {!isInService && <span className="live-schedule-time">{time}</span>}
         </div>
         <div className="live-schedule-divider-v" />
         <div className="live-schedule-client">
@@ -864,12 +866,10 @@ const SchedulePanel = ({ date = "Dec 7, 2024", refreshTrigger = 0 }) => {
           const inService = (s.in_service || '').toLowerCase(); // 'avail', 'in-service', etc.
           const hasClockOut = s.clock_out && s.clock_out.trim() && s.clock_out !== '—';
 
-          // Determine dot color based on in_service field
+          // Determine dot color - check clock out and status first
           let dotColor = 'live-sched-dot-amber'; // default
-          if (hasClockOut) {
-            // If clocked out, show grey
-            dotColor = 'live-sched-dot-grey';
-          } else if (staffStatus === 'off') {
+          if (hasClockOut || staffStatus === 'off') {
+            // If clocked out or status is off, show grey
             dotColor = 'live-sched-dot-grey';
           } else if (inService === 'avail') {
             dotColor = 'live-sched-dot-green';
@@ -884,6 +884,7 @@ const SchedulePanel = ({ date = "Dec 7, 2024", refreshTrigger = 0 }) => {
             service: appointment?.service || 'N/A',
             status: appointment ? (currentAppointments.includes(appointment) ? 'active' : 'next') : 'next',
             staffStatus: staffStatus,
+            inServiceStatus: inService === 'in-service' ? 'In Service' : null,
             dotClass: dotColor
           };
         });

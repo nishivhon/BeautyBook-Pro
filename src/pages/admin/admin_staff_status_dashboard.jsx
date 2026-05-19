@@ -1130,12 +1130,38 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       setLoading(true);
       setError(null);
       
-      const res = await fetch('/api/staffs');
-      if (!res.ok) {
-        throw new Error(`Failed to fetch staff: ${res.status}`);
+      // Fetch staff data and appointments in parallel
+      const [resStaff, resCurrentAppts, resPendingAppts] = await Promise.all([
+        fetch('/api/staffs'),
+        fetch('/api/appointments/read/by-status?status=current'),
+        fetch('/api/appointments/read/by-status?status=pending')
+      ]);
+      
+      if (!resStaff.ok) {
+        throw new Error(`Failed to fetch staff: ${resStaff.status}`);
       }
       
-      const staffData = await res.json();
+      const staffData = await resStaff.json();
+      const currentAppts = resCurrentAppts.ok ? await resCurrentAppts.json() : { appointments: [] };
+      const pendingAppts = resPendingAppts.ok ? await resPendingAppts.json() : { appointments: [] };
+      
+      // Create maps for quick lookup by staff name
+      const currentApptMap = {};
+      const pendingApptMap = {};
+      
+      (currentAppts.appointments || []).forEach(appt => {
+        const staffName = appt.staff || '';
+        if (staffName && !currentApptMap[staffName]) {
+          currentApptMap[staffName] = appt;
+        }
+      });
+      
+      (pendingAppts.appointments || []).forEach(appt => {
+        const staffName = appt.staff || '';
+        if (staffName && !pendingApptMap[staffName]) {
+          pendingApptMap[staffName] = appt;
+        }
+      });
       
       // Transform staff data to match the dashboard format
       const transformedStaff = staffData.map((s, index) => {
@@ -1189,6 +1215,13 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           subStatus = 'Available';
         }
 
+        // Get current and next client from appointment data
+        const currentAppt = currentApptMap[staffName];
+        const pendingAppt = pendingApptMap[staffName];
+        
+        const currentClient = currentAppt ? currentAppt.name : 'None';
+        const upNextClient = pendingAppt ? pendingAppt.name : 'None';
+
         return {
           id: s.id,
           initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
@@ -1199,12 +1232,12 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           clock_in: s.clock_in || '—',
           clock_out: s.clock_out || '—',
           details: {
-            currentClient: s.current_client || 'None',
+            currentClient: currentClient,
             startOfService: s.start_time || '—',
             serviceDone: s.current_service || '—',
             timeOfBreak: s.break_time || '—',
             timeOfClockIn: s.clock_in_time || '—',
-            upNextClient: s.next_client || 'None',
+            upNextClient: upNextClient,
             noOfClientToday: s.clients_today || 0,
             totalClients: s.total_clients || 0,
             doneClients: s.done_clients || 0,
