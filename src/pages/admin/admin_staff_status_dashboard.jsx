@@ -1139,9 +1139,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       
       // Transform staff data to match the dashboard format
       const transformedStaff = staffData.map((s, index) => {
-        // Determine status based on in_service column
-        // Priority: check in_service first, then fallback to status
-        // Default status is "Absent" - becomes "Available" when Clock In is clicked
+        // Determine status based on clock in/out first, then fallback to in_service
         let status = 'Absent';
         let statusClass = 'staff-status-tan';
         let subStatus = 'Not clocked in';
@@ -1153,10 +1151,26 @@ export const AdminDashboardStaffStatus = ({ date }) => {
         // Get the name - handle both 'name' and 'names' column variants
         const staffName = s.names || s.name || 'Unknown';
 
-        console.log(`Processing staff: ${staffName} | status: ${statusValue} | in_service: ${inServiceValue}`);
+        // Get clock in/out values
+        const hasClockIn = s.clock_in && s.clock_in.trim() && s.clock_in !== '—';
+        const hasClockOut = s.clock_out && s.clock_out.trim() && s.clock_out !== '—';
 
-        // Check in_service column first for specific statuses
-        if (inServiceValue === 'in-service') {
+        console.log(`Processing staff: ${staffName} | clock_in: ${s.clock_in} | clock_out: ${s.clock_out} | in_service: ${inServiceValue}`);
+
+        // Priority 1: Check clock in/out status
+        if (hasClockIn && !hasClockOut) {
+          // Clocked in and not clocked out → Available
+          status = 'Available';
+          statusClass = 'staff-status-green';
+          subStatus = 'Available';
+        } else if (hasClockOut) {
+          // Clocked out → Not available
+          status = 'Clocked out';
+          statusClass = 'staff-status-tan';
+          subStatus = 'Clocked out';
+        } 
+        // Priority 2: Check in_service column for specific statuses
+        else if (inServiceValue === 'in-service') {
           status = 'In Service';
           statusClass = 'staff-status-blue';
           subStatus = 'Serving: ' + (s.current_client || 'Client');
