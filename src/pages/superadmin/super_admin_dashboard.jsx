@@ -131,6 +131,27 @@ const DownloadIcon = () => (
   </svg>
 );
 
+const ChevronLeftIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M9.5 3.5L5 8l4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const ChevronRightIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6.5 3.5L11 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const GiftIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 1v7M10 1H6a1 1 0 0 0-1 1v4h10V2a1 1 0 0 0-1-1h-4z" stroke="#DD901D" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 1h4a1 1 0 0 1 1 1v4H6V2a1 1 0 0 1 1-1h3z" stroke="#DD901D" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 6h16v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6z" stroke="#DD901D" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 8v9" stroke="#DD901D" strokeWidth="1.7" strokeLinecap="round"/>
+  </svg>
+);
+
 // ─── Chart Component (SVG Line Chart) ────────────────────────────────────────
 
 const AppointmentLineChart = () => {
@@ -543,83 +564,7 @@ const WaitingTimeChart = () => {
   );
 };
 
-// ─── Promo Bookings Chart Component ────────────────────────────────────────
-
-const PromoBookingsChart = () => {
-  const data = [
-    { time: "9 AM", revenue: 450, color: "#DD901D" },
-    { time: "10 AM", revenue: 650, color: "#DD901D" },
-    { time: "11 AM", revenue: 380, color: "#DD901D" },
-    { time: "12 PM", revenue: 820, color: "#DD901D" },
-    { time: "1 PM", revenue: 720, color: "#DD901D" },
-  ];
-
-  const width = 520;
-  const height = 300;
-  const paddingLeft = 48;
-  const paddingRight = 20;
-  const paddingTop = 16;
-  const paddingBottom = 44;
-
-  const maxRevenue = Math.max(...data.map(d => d.revenue));
-  const chartW = width - paddingLeft - paddingRight;
-  const chartH = height - paddingTop - paddingBottom;
-
-  const toX = (i) => paddingLeft + (i / (data.length - 1)) * chartW;
-  const toY = (v) => paddingTop + chartH - ((v / maxRevenue) * chartH);
-
-  const yLines = [0, 200, 400, 600, 800, 1000];
-  const pointsStr = data.map((d, i) => `${toX(i)},${toY(d.revenue)}`).join(" ");
-
-  const areaPath = `M ${toX(0)},${toY(data[0].revenue)} ` +
-    data.slice(1).map((d, i) => `L ${toX(i + 1)},${toY(d.revenue)}`).join(" ") +
-    ` L ${toX(data.length - 1)},${paddingTop + chartH} L ${toX(0)},${paddingTop + chartH} Z`;
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
-      <defs>
-        <linearGradient id="promoGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#DD901D" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#DD901D" stopOpacity="0.03" />
-        </linearGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-          <feMerge>
-            <feMergeNode in="coloredBlur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
-      {yLines.map((v) => (
-        <g key={v}>
-          <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-          <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
-            ₱{v}
-          </text>
-        </g>
-      ))}
-
-      <path d={areaPath} fill="url(#promoGrad)" />
-      <polyline points={pointsStr} fill="none" stroke="#DD901D" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" filter="url(#glow)" />
-
-      {data.map((d, i) => (
-        <g key={d.time}>
-          <circle cx={toX(i)} cy={toY(d.revenue)} r="5" fill="#0a0908" stroke="#DD901D" strokeWidth="2.5" />
-          <circle cx={toX(i)} cy={toY(d.revenue)} r="2" fill="#DD901D" />
-        </g>
-      ))}
-
-      {data.map((d, i) => (
-        <text key={d.time} x={toX(i)} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
-          {d.time}
-        </text>
-      ))}
-    </svg>
-  );
-};
-
-// ─── Loyalty Cards Chart Component ─────────────────────────────────────────
+// ─── Coupons Chart Component (Loyalty Cards) ───────────────────────────────────
 
 const LoyaltyCardsChart = () => {
   const data = [
@@ -984,7 +929,7 @@ const NAV_ITEMS = [
   // { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
-// ─── Metrics Carousel Data (9 cards, showing 4 at a time) ──────────────────
+// ─── Metrics Carousel Data (8 cards, showing 4 at a time) ───────────────────
 
 const METRICS_CARDS = [
   {
@@ -1012,18 +957,6 @@ const METRICS_CARDS = [
     badge: { text: "-5mins", type: "blue" },
   },
   {
-    icon: <ScissorsIcon />,
-    value: "14",
-    label: "Promo Bookings Today",
-    badge: null,
-  },
-  {
-    icon: <ScissorsIcon />,
-    value: "₱1,780",
-    label: "Discounts Applied Today",
-    badge: { text: "+12%", type: "green" },
-  },
-  {
     icon: <CalendarIcon />,
     value: "16",
     label: "Completed",
@@ -1036,6 +969,12 @@ const METRICS_CARDS = [
     badge: null,
   },
   {
+    icon: <GiftIcon />,
+    value: "₱2,340",
+    label: "Coupons Used",
+    badge: { text: "+8%", type: "green" },
+  },
+  {
     icon: <RevenueIcon />,
     value: "2",
     label: "Cancelled",
@@ -1043,19 +982,16 @@ const METRICS_CARDS = [
   },
 ];
 
-const METRICS_CAROUSEL_CARDS = [...METRICS_CARDS, ...METRICS_CARDS, ...METRICS_CARDS];
-const METRICS_CAROUSEL_MIDDLE_OFFSET = METRICS_CARDS.length;
+const VISIBLE_METRICS_COUNT = 4;
 
 const getMetricChartKey = (label) => {
   if (label === "In Queue Now") return "queue";
   if (label === "Today's Appointments") return "appointments";
   if (label === "Revenue Today") return "revenue";
   if (label === "Avg. Waiting Time") return "waitingTime";
-  if (label === "Promo Bookings Today") return "promoBookings";
-  if (label === "Discounts Applied") return "discounts";
-  if (label === "Discounts Applied Today") return "discounts";
   if (label === "Completed") return "completed";
   if (label === "In Progress") return "inProgress";
+  if (label === "Coupons Used") return "coupons";
   if (label === "Cancelled") return "cancelled";
   return "appointments";
 };
@@ -1098,15 +1034,22 @@ export default function SuperAdminDashboard() {
   const [analyticsIndex, setAnalyticsIndex] = useState(0);
   const [selectedChart, setSelectedChart] = useState("appointments");
   const [metricsActiveIndex, setMetricsActiveIndex] = useState(0);
+  const [metricsHovered, setMetricsHovered] = useState(false);
+  const [metricsIsSliding, setMetricsIsSliding] = useState(false);
   const metricsActiveIndexRef = useRef(0);
-  const metricsPhysicalIndexRef = useRef(METRICS_CAROUSEL_MIDDLE_OFFSET);
-  const metricsScrollRef = useRef(null);
-  const metricsAnimationRef = useRef(0);
+  const metricsCarouselRef = useRef(null);
   const metricsWheelCooldownRef = useRef(false);
+  const metricsSlideTimeoutRef = useRef(0);
 
   useEffect(() => {
     metricsActiveIndexRef.current = metricsActiveIndex;
   }, [metricsActiveIndex]);
+
+  useEffect(() => () => {
+    if (metricsSlideTimeoutRef.current) {
+      window.clearTimeout(metricsSlideTimeoutRef.current);
+    }
+  }, []);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -1132,173 +1075,66 @@ export default function SuperAdminDashboard() {
     year: "numeric",
   });
 
-  useEffect(() => {
-    const container = metricsScrollRef.current;
-    if (!container) return undefined;
+  const normalizeMetricIndex = (index) => ((index % METRICS_CARDS.length) + METRICS_CARDS.length) % METRICS_CARDS.length;
 
-    const easeInOutService = (value) => 0.5 - Math.cos(Math.PI * value) / 2;
+  const rotateMetricsTo = (targetIndex) => {
+    const normalizedIndex = normalizeMetricIndex(targetIndex);
+    if (metricsIsSliding || normalizedIndex === metricsActiveIndexRef.current) return;
 
-    const getPhysicalIndexFromScroll = () => {
-      const cards = Array.from(container.children || []);
-      if (cards.length === 0) return metricsPhysicalIndexRef.current;
+    setMetricsIsSliding(true);
+    setMetricsActiveIndex(normalizedIndex);
 
-      const scrollCenter = container.scrollLeft + container.clientWidth / 2;
-      let closestIndex = 0;
-      let closestDistance = Number.POSITIVE_INFINITY;
-
-      cards.forEach((card, index) => {
-        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-        const distance = Math.abs(cardCenter - scrollCenter);
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestIndex = index;
-        }
-      });
-
-      return closestIndex;
-    };
-
-    const getScrollLeftForPhysicalIndex = (physicalIndex) => {
-      const card = container.children?.[physicalIndex];
-      return card ? card.offsetLeft : null;
-    };
-
-    const recenterIfNeeded = (physicalIndex) => {
-      const total = METRICS_CARDS.length;
-      if (physicalIndex >= total && physicalIndex < total * 2) return physicalIndex;
-
-      const normalizedPhysicalIndex = total + (physicalIndex % total + total) % total;
-      const normalizedLeft = getScrollLeftForPhysicalIndex(normalizedPhysicalIndex);
-      if (normalizedLeft === null) return physicalIndex;
-
-      container.scrollLeft = normalizedLeft;
-      return normalizedPhysicalIndex;
-    };
-
-    const animateScrollLeft = (targetPhysicalIndex, duration = 480) => {
-      window.cancelAnimationFrame(metricsAnimationRef.current);
-
-      const startLeft = container.scrollLeft;
-      const targetLeft = getScrollLeftForPhysicalIndex(targetPhysicalIndex);
-      if (targetLeft === null) return;
-
-      const deltaLeft = targetLeft - startLeft;
-
-      if (deltaLeft === 0) return;
-
-      const startTime = window.performance.now();
-
-      const step = (now) => {
-        const progress = Math.min((now - startTime) / duration, 1);
-        const easedProgress = easeInOutService(progress);
-        container.scrollLeft = startLeft + deltaLeft * easedProgress;
-
-        if (progress < 1) {
-          metricsAnimationRef.current = window.requestAnimationFrame(step);
-        } else {
-          const recenteredPhysicalIndex = recenterIfNeeded(targetPhysicalIndex);
-          metricsPhysicalIndexRef.current = recenteredPhysicalIndex;
-          metricsActiveIndexRef.current = recenteredPhysicalIndex % METRICS_CARDS.length;
-        }
-      };
-
-      metricsAnimationRef.current = window.requestAnimationFrame(step);
-    };
-
-    const updateActiveMetric = () => {
-      const cards = Array.from(container.children || []);
-      if (cards.length === 0) return;
-
-      const scrollCenter = container.scrollLeft + container.clientWidth / 2;
-      let closestIndex = 0;
-      let closestDistance = Number.POSITIVE_INFINITY;
-
-      cards.forEach((card, index) => {
-        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-        const distance = Math.abs(cardCenter - scrollCenter);
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestIndex = index;
-        }
-      });
-
-      metricsPhysicalIndexRef.current = closestIndex;
-      const logicalIndex = closestIndex % METRICS_CARDS.length;
-      metricsActiveIndexRef.current = logicalIndex;
-      setMetricsActiveIndex(logicalIndex);
-    };
-
-    const initialPhysicalIndex = METRICS_CAROUSEL_MIDDLE_OFFSET + metricsActiveIndexRef.current;
-    const initialLeft = getScrollLeftForPhysicalIndex(initialPhysicalIndex);
-    if (initialLeft !== null) {
-      container.scrollLeft = initialLeft;
-      metricsPhysicalIndexRef.current = initialPhysicalIndex;
+    if (metricsSlideTimeoutRef.current) {
+      window.clearTimeout(metricsSlideTimeoutRef.current);
     }
 
+    metricsSlideTimeoutRef.current = window.setTimeout(() => {
+      setMetricsIsSliding(false);
+    }, 220);
+  };
+
+  useEffect(() => {
+    const container = metricsCarouselRef.current;
+    if (!container) return undefined;
+
     const handleWheel = (event) => {
+      if (!metricsHovered) return;
       if (event.deltaY === 0 && event.deltaX === 0) return;
       event.preventDefault();
 
-      if (metricsWheelCooldownRef.current) return;
+      if (metricsWheelCooldownRef.current || metricsIsSliding) return;
 
       const delta = event.deltaY !== 0 ? event.deltaY : event.deltaX;
       const direction = delta > 0 ? 1 : -1;
-      const currentPhysicalIndex = metricsPhysicalIndexRef.current;
-      const targetPhysicalIndex = currentPhysicalIndex + direction;
-      if (!container.children?.[targetPhysicalIndex]) return;
+      rotateMetricsTo(metricsActiveIndexRef.current + direction);
 
       metricsWheelCooldownRef.current = true;
-      animateScrollLeft(targetPhysicalIndex);
-      window.setTimeout(() => { metricsWheelCooldownRef.current = false; }, 480);
+      window.setTimeout(() => {
+        metricsWheelCooldownRef.current = false;
+      }, 220);
     };
 
-    updateActiveMetric();
     container.addEventListener("wheel", handleWheel, { passive: false });
-    container.addEventListener("scroll", updateActiveMetric, { passive: true });
     return () => {
-      window.cancelAnimationFrame(metricsAnimationRef.current);
       container.removeEventListener("wheel", handleWheel);
-      container.removeEventListener("scroll", updateActiveMetric);
     };
-  }, []);
+  }, [metricsHovered, metricsIsSliding]);
 
-  const scrollToMetric = (index) => {
-    const container = metricsScrollRef.current;
-    if (!container) return;
-
-    const targetPhysicalIndex = METRICS_CAROUSEL_MIDDLE_OFFSET + index;
-    const card = container.children?.[targetPhysicalIndex];
-    if (!card) return;
-
-    window.cancelAnimationFrame(metricsAnimationRef.current);
-    const startLeft = container.scrollLeft;
-    const targetLeft = card.offsetLeft;
-    const deltaLeft = targetLeft - startLeft;
-    const duration = 480;
-    const startTime = window.performance.now();
-
-    const easeInOutService = (value) => 0.5 - Math.cos(Math.PI * value) / 2;
-
-    const step = (now) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const easedProgress = easeInOutService(progress);
-      container.scrollLeft = startLeft + deltaLeft * easedProgress;
-
-      if (progress < 1) {
-        metricsAnimationRef.current = window.requestAnimationFrame(step);
-      } else {
-        metricsPhysicalIndexRef.current = targetPhysicalIndex;
-        metricsActiveIndexRef.current = index;
-        const recenteredPhysicalIndex = METRICS_CAROUSEL_MIDDLE_OFFSET + index;
-        const recenteredLeft = container.children?.[recenteredPhysicalIndex]?.offsetLeft;
-        if (recenteredLeft !== null && recenteredLeft !== undefined) {
-          container.scrollLeft = recenteredLeft;
-        }
-      }
+  const visibleMetrics = Array.from({ length: VISIBLE_METRICS_COUNT }, (_, offset) => {
+    const index = normalizeMetricIndex(metricsActiveIndex + offset);
+    return {
+      card: METRICS_CARDS[index],
+      index,
+      offset,
     };
+  });
 
-    metricsAnimationRef.current = window.requestAnimationFrame(step);
-    setMetricsActiveIndex(index);
+  const handleMetricsPrev = () => {
+    rotateMetricsTo(metricsActiveIndexRef.current - 1);
+  };
+
+  const handleMetricsNext = () => {
+    rotateMetricsTo(metricsActiveIndexRef.current + 1);
   };
 
   // Analytics carousel handlers
@@ -1344,34 +1180,35 @@ export default function SuperAdminDashboard() {
       {/* ── Metrics Cards with Carousel ── */}
       <div className="dash-stats-carousel-container">
         {/* Carousel Header - Title Only */}
-        <div className="dash-stats-carousel-header">
+        <div className="dash-stats-carousel-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <h3 className="dash-stats-set-title">Metrics</h3>
         </div>
 
         {/* Metrics Cards - Display 4 at a time */}
         <div
-          ref={metricsScrollRef}
+          ref={metricsCarouselRef}
           className="dash-stats-carousel-row hide-scrollbar"
+          onMouseEnter={() => setMetricsHovered(true)}
+          onMouseLeave={() => setMetricsHovered(false)}
+          style={{
+            overflow: "hidden",
+            paddingBottom: "8px",
+            pointerEvents: metricsIsSliding ? "none" : "auto",
+          }}
         >
-          {METRICS_CAROUSEL_CARDS.map((m, idx) => (
+          {visibleMetrics.map(({ card: m, index, offset }) => (
             <div
-              key={`${m.label}-${idx}`}
-              className={`dash-stat-card ${getMetricChartKey(m.label) === selectedChart ? "is-active" : ""}`}
+              key={`${m.label}-${index}`}
+              className={`dash-stat-card ${index === metricsActiveIndex ? "is-active" : ""}`}
               style={{
-                animationDelay: `${0.08 + idx * 0.07}s`,
+                animationDelay: `${0.08 + offset * 0.07}s`,
                 cursor: "pointer",
-                flex: "0 0 calc((100% - 48px) / 4)",
+                flex: `0 0 calc((100% - ${16 * (VISIBLE_METRICS_COUNT - 1)}px) / ${VISIBLE_METRICS_COUNT})`,
                 minWidth: "0",
                 scrollSnapAlign: "start",
               }}
               onClick={() => {
-                const metricIndex = METRICS_CARDS.findIndex((card) => card.label === m.label);
-                if (metricIndex !== -1) {
-                  scrollToMetric(metricIndex);
-                  return;
-                }
-
-                setSelectedChart(getMetricChartKey(m.label));
+                rotateMetricsTo(index);
               }}
             >
               <div className="dash-stat-top">
@@ -1405,24 +1242,11 @@ export default function SuperAdminDashboard() {
                 className={`stats-carousel-dot ${metricsActiveIndex === index ? "active" : ""}`}
                 aria-label={`Scroll to ${m.label}`}
                 aria-pressed={metricsActiveIndex === index}
-                onClick={() => scrollToMetric(index)}
+                onClick={() => rotateMetricsTo(index)}
               />
             ))}
           </div>
         </div>
-
-        <style>{`
-          .dash-stats-carousel-row.hide-scrollbar {
-            -ms-overflow-style: none !important;
-            scrollbar-width: none !important;
-          }
-
-          .dash-stats-carousel-row.hide-scrollbar::-webkit-scrollbar {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-          }
-        `}</style>
 
       </div>
 
@@ -1438,13 +1262,11 @@ export default function SuperAdminDashboard() {
                   {selectedChart === "appointments" && "Today's Appointment Chart"}
                   {selectedChart === "revenue" && "Revenue by Service"}
                   {selectedChart === "waitingTime" && "Waiting Time Trends"}
-                  {selectedChart === "promoBookings" && "Promo Bookings by Type"}
-                  {selectedChart === "loyaltyCards" && "Loyalty Cards by Level"}
                   {selectedChart === "completed" && "Completed Appointments"}
                   {selectedChart === "inProgress" && "In Progress Appointments"}
-                  {selectedChart === "pending" && "Pending Appointments"}
+                  {selectedChart === "coupons" && "Coupons Used Today"}
                   {selectedChart === "cancelled" && "Cancelled Appointments"}
-                  {selectedChart === "discounts" && "Discounts Applied Today"}
+                  {selectedChart === "pending" && "Pending Appointments"}
                 </h2>
                 <div className="chart-divider" />
               </div>
@@ -1455,8 +1277,7 @@ export default function SuperAdminDashboard() {
                 {selectedChart === "appointments" && <AppointmentLineChart />}
                 {selectedChart === "revenue" && <RevenueChart />}
                 {selectedChart === "waitingTime" && <WaitingTimeChart />}
-                {selectedChart === "promoBookings" && <PromoBookingsChart />}
-                {selectedChart === "discounts" && <LoyaltyCardsChart />}
+                {selectedChart === "coupons" && <LoyaltyCardsChart />}
                 {selectedChart === "completed" && <CompletedChart />}
                 {selectedChart === "inProgress" && <InProgressChart />}
                 {selectedChart === "pending" && <PendingChart />}

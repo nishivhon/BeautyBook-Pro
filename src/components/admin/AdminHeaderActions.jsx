@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getOperatorSession } from "../../services/operatorAuth";
-import { Toast } from "../toast";
-import ConfirmExitDialog from "../modal/superadmin/ConfirmExitDialog";
 
 const BellIcon = ({ size = 15, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -43,16 +41,20 @@ const notificationItems = [
 ];
 
 const settingsItems = [
-  { id: "profile-edit", label: "Profile settings", description: "Update username and avatar stored locally." },
+  { id: "profile-view", label: "Profile settings", description: "View your account details and role." },
 ];
 
 const themeStorageKey = "adminThemeMode";
-const profileStorageKey = "adminOperatorProfile";
 
 const getInitialTheme = () => {
   if (typeof window === "undefined") return "dark";
   const savedTheme = window.localStorage.getItem(themeStorageKey);
   return savedTheme === "dark" ? "dark" : "light";
+};
+
+const getDisplayUsername = (session) => {
+  const emailPrefix = (session?.email || "").split("@")[0];
+  return session?.username || emailPrefix || "Administrator";
 };
 
 export function AdminHeaderActions({ notifications: externalNotifications = [] }) {
@@ -62,23 +64,8 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
   const [settingsView, setSettingsView] = useState("main");
   const [themeMode, setThemeMode] = useState(getInitialTheme);
   const [notifications, setNotifications] = useState(notificationItems);
-  const [fileInputHover, setFileInputHover] = useState(false);
-  const [validationError, setValidationError] = useState(null);
-  const [editingUsername, setEditingUsername] = useState(null);
-  const [profileSaveToastCount, setProfileSaveToastCount] = useState(0);
-  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
   const session = getOperatorSession();
-  const [profile, setProfile] = useState(() => {
-    if (typeof window === "undefined") return { username: null, avatar: null };
-    try { const raw = window.localStorage.getItem(profileStorageKey); return raw ? JSON.parse(raw) : { username: null, avatar: null }; } catch { return { username: null, avatar: null }; }
-  });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try { window.localStorage.setItem(profileStorageKey, JSON.stringify(profile)); } catch {};
-    }
-  }, [profile]);
 
   useEffect(() => () => {
     if (themeTransitionTimerRef.current) {
@@ -89,17 +76,10 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
     }
   }, []);
 
-  const handleAvatarFile = (file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setProfile((p) => ({ ...p, avatar: reader.result }));
-    reader.readAsDataURL(file);
-  };
-
   const notificationSeed = externalNotifications.length > 0 ? externalNotifications : notificationItems;
   const notificationSeedKey = useMemo(() => notificationSeed.map((item) => `${item.id}-${item.title}-${item.time}-${item.unread ? 1 : 0}`).join("|"), [notificationSeed]);
   const unreadCount = useMemo(() => notifications.filter((item) => item.unread).length, [notifications]);
-  const profileUsername = profile?.username || (session?.email || "").split("@")[0] || "Administrator";
+  const profileDisplayUsername = getDisplayUsername(session);
   const profileRole = session?.role || "Administrator";
 
   useEffect(() => {
@@ -116,7 +96,6 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
     setNotifications(mapped);
   }, [notificationSeedKey]);
   useEffect(() => { if (typeof document !== "undefined") { document.documentElement.dataset.theme = themeMode; window.localStorage.setItem(themeStorageKey, themeMode); } }, [themeMode]);
-  // notification preferences removed — admin notification center shows booking events only
 
   useEffect(() => {
     const handlePointerDown = (event) => { if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setOpenMenu(null); };
@@ -150,40 +129,6 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
       .split(" ")
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(" ");
-  };
-
-  const validateProfile = () => {
-    if (!editingUsername || editingUsername.trim() === "") {
-      setValidationError("Username cannot be empty");
-      return false;
-    }
-    setValidationError(null);
-    return true;
-  };
-
-  useEffect(() => {
-    if (settingsView === "profile-edit" && editingUsername === null) {
-      setEditingUsername(profileUsername);
-    }
-    if (settingsView !== "profile-edit") {
-      setEditingUsername(null);
-    }
-  }, [settingsView, profileUsername]);
-
-  const handleSaveProfile = () => {
-    if (!validateProfile()) return;
-    setShowSaveConfirm(true);
-  };
-
-  const handleConfirmSaveProfile = () => {
-    setProfile((p) => ({ ...p, username: editingUsername }));
-    setProfileSaveToastCount((count) => count + 1);
-    setShowSaveConfirm(false);
-    setSettingsView("main");
-  };
-
-  const handleCancelSaveProfile = () => {
-    setShowSaveConfirm(false);
   };
 
   const renderSettings = () => {
@@ -229,98 +174,39 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
           </>
         );
 
-      
-
-      case "profile-edit":
+      case "profile-view":
         return (
           <>
             <div className="admin-dropdown-topbar">
               <div>
                 <p className="admin-dropdown-eyebrow">Account</p>
-                <h3 className="admin-dropdown-title">Edit profile</h3>
+                <h3 className="admin-dropdown-title">Profile details</h3>
               </div>
               <button type="button" className="admin-dropdown-link" onClick={() => setSettingsView("main")}>Back</button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {/* Upper section: Avatar and File Input */}
-              <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-                {/* Avatar column */}
-                <div style={{ flex: "0 0 auto" }}>
-                  <div className="cdb-avatar-edit-wrapper" style={{ width: 56, height: 56 }}>
-                    <div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${profileUsername} avatar`} style={{ width: "100%", height: "100%", fontSize: 20 }}>
-                      {profile?.avatar ? (
-                        <img src={profile.avatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <span className="cdb-avatar-initial" style={{ fontSize: 24, lineHeight: 1 }}>{profileUsername.trim().charAt(0).toUpperCase() || "A"}</span>
-                      )}
-                    </div>
+            <div className="admin-profile-card">
+              <div className="admin-profile-top-row">
+                <div className="admin-profile-avatar-panel">
+                  <div className="cdb-avatar admin-profile-avatar-badge" aria-hidden="true">
+                    <span className="admin-profile-avatar-badge-text">BB</span>
                   </div>
                 </div>
 
-                {/* File input column */}
-                <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-                  <div className="cdb-form-section">
-                    <label className="cdb-field-label">Choose avatar</label>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={(e) => {
-                        const file = e.target.files && e.target.files[0];
-                        if (file) handleAvatarFile(file);
-                      }} 
-                      onMouseEnter={() => setFileInputHover(true)}
-                      onMouseLeave={() => setFileInputHover(false)}
-                      style={{ width: "100%", minWidth: 0, cursor: "pointer", padding: "6px 8px", borderRadius: "4px", border: fileInputHover ? "2px solid var(--color-amber, #dd901d)" : "1px solid var(--color-border, #e5e5e5)", backgroundColor: fileInputHover ? "rgba(221, 144, 29, 0.05)" : "transparent", transition: "all 0.2s ease" }} 
-                    />
-                    <p className="admin-settings-item-copy">PNG/JPG, small images recommended. Saved locally.</p>
-                  </div>
+                <div className="admin-profile-role-panel">
+                  <span className="admin-profile-field-label">Role</span>
+                  <span className="admin-profile-field-value">{formatRoleLabel(profileRole)}</span>
                 </div>
               </div>
 
-              {/* Lower section: Username, Email, Role */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <div className="cdb-form-section">
-                  <label className="cdb-field-label">Username</label>
-                  <input
-                    className="cdb-input"
-                    type="text"
-                    autoComplete="off"
-                    value={editingUsername || ""}
-                    onChange={(e) => {
-                      setEditingUsername(e.target.value);
-                      setValidationError(null);
-                    }}
-                    placeholder="Display username"
-                    style={{
-                      width: "100%",
-                      minWidth: 0,
-                      background: "rgba(26, 15, 0, 0.5)",
-                      border: validationError ? "1px solid rgba(220, 38, 38, 0.85)" : "1px solid rgba(221, 144, 29, 0.3)",
-                      boxShadow: "none",
-                      outline: "none",
-                    }}
-                  />
-                  {validationError && (
-                    <p style={{ color: "var(--color-error, #dc2626)", fontSize: 12, marginTop: 4 }}>
-                      {validationError}
-                    </p>
-                  )}
+              <div className="admin-profile-bottom-row">
+                <div className="admin-profile-field">
+                  <span className="admin-profile-field-label">Username</span>
+                  <span className="admin-profile-field-value">{profileDisplayUsername}</span>
                 </div>
-
-                <div className="cdb-form-section">
-                  <label className="cdb-field-label">Email</label>
-                  <p className="cdb-field-value cdb-field-value-lg" style={{ fontSize: 15, fontWeight: 500 }}>{session?.email || ""}</p>
-                </div>
-
-                <div className="cdb-form-section">
-                  <label className="cdb-field-label">Role</label>
-                  <p className="cdb-field-value cdb-field-value-lg" style={{ fontSize: 15, fontWeight: 500 }}>{formatRoleLabel(profileRole)}</p>
-                </div>
-
-                <div className="cdb-action-row" style={{ marginTop: 4, justifyContent: "flex-end", gap: 8 }}>
-                  <button type="button" className="cdb-btn cdb-btn-danger-outline" onClick={() => setSettingsView("main")}>Cancel</button>
-                  <button type="button" className="cdb-btn cdb-btn-success" onClick={handleSaveProfile}>Save</button>
+                <div className="admin-profile-field">
+                  <span className="admin-profile-field-label">Email</span>
+                  <span className="admin-profile-field-value">{session?.email || "Not available"}</span>
                 </div>
               </div>
             </div>
@@ -340,23 +226,15 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
 
             <div className="admin-profile-card">
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <div className="cdb-avatar" style={{ width: 56, height: 56 }}>
-                  {profile?.avatar ? (
-                    <img src={profile.avatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <span style={{ fontWeight: 700, color: "var(--color-amber)" }}>{profileUsername[0] || "A"}</span>
-                  )}
+                <div className="cdb-avatar admin-profile-avatar-badge">
+                  <span className="admin-profile-avatar-badge-text">BB</span>
                 </div>
 
                 <div style={{ minWidth: 0 }}>
-                  <span className="admin-settings-item-title">{profileUsername}</span>
-                  <p className="admin-settings-item-copy">{session?.email || ""}</p>
+                  <span className="admin-settings-item-title">{profileDisplayUsername}</span>
+                  <p className="admin-settings-item-copy">{session?.email || "Not available"}</p>
                   <p className="admin-settings-item-copy">{formatRoleLabel(profileRole)}</p>
                 </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
-                <button type="button" className="cdb-btn-edit" onClick={() => setSettingsView("profile-edit")}>Edit profile</button>
               </div>
             </div>
           </>
@@ -424,23 +302,6 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
         )}
       </div>
 
-      <Toast
-        key={`admin-profile-save-${profileSaveToastCount}`}
-        isVisible={profileSaveToastCount > 0}
-        message="Profile saved successfully!"
-        type="success"
-        duration={1800}
-      />
-
-      <ConfirmExitDialog
-        isOpen={showSaveConfirm}
-        onConfirm={handleConfirmSaveProfile}
-        onCancel={handleCancelSaveProfile}
-        title="Save Profile Changes?"
-        message={`You are about to update your profile details.\n\nUsername: ${editingUsername || ""}\nEmail: ${session?.email || ""}\nRole: ${formatRoleLabel(profileRole)}`}
-        confirmButtonLabel="Save Changes"
-        cancelButtonLabel="Continue Editing"
-      />
     </>
   );
 }
