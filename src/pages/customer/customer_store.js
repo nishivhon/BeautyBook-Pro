@@ -71,7 +71,58 @@ export const useCustomerHistoryData = () => {
   return [history, setHistory];
 };
 
-export const useCustomerCouponsData = () => usePersistentState(COUPONS_KEY, defaultCoupons);
+export const useCustomerCouponsData = () => {
+  const [profile] = useCustomerProfileData();
+  const [coupons, setCoupons] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCoupons = async () => {
+      if (!profile?.id) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // Fetch all coupons with claimed status for this customer
+        const response = await fetch(`/api/customers/coupons-status?customerId=${profile.id}`);
+        if (!response.ok) throw new Error('Failed to fetch coupons');
+        
+        const result = await response.json();
+        const couponsWithStatus = result.data || [];
+        
+        // Transform to match dashboard format
+        const transformedCoupons = couponsWithStatus.map(coupon => ({
+          id: coupon.id,
+          code: coupon.code,
+          discount: coupon.value_type === 'percentage' 
+            ? `${coupon.value}% OFF` 
+            : `₱${coupon.value.toFixed(2)} OFF`,
+          description: coupon.description || 'Special discount',
+          expiration: coupon.end_date,
+          status: coupon.status,
+          claimed: coupon.isClaimed,
+          value: coupon.value,
+          value_type: coupon.value_type,
+          max_uses: coupon.max_uses,
+          number_of_uses: coupon.number_of_uses
+        }));
+        
+        setCoupons(transformedCoupons);
+      } catch (err) {
+        console.error('[useCustomerCouponsData] Error fetching coupons:', err);
+        setCoupons([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCoupons();
+  }, [profile?.id]);
+
+  return [coupons, setCoupons];
+};
 
 // Default appointment data for upcoming appointments
 export const defaultAppointments = [

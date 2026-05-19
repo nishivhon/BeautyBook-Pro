@@ -971,6 +971,109 @@ const AnalyticsPanel = () => (
   </div>
 );
 
+const CouponsPanel = () => {
+  const [coupons, setCoupons] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAvailableCoupons = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/coupons/available');
+        if (!response.ok) throw new Error('Failed to fetch coupons');
+        const result = await response.json();
+        setCoupons(result.data || []);
+      } catch (err) {
+        console.error('Error loading available coupons:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAvailableCoupons();
+  }, []);
+
+  const formatDiscount = (coupon) => {
+    if (coupon.value_type === 'percentage') {
+      return `${coupon.value}%`;
+    } else {
+      return `₱${coupon.value.toFixed(2)}`;
+    }
+  };
+
+  const CouponIcon = ({ size = 20, color = "#dd901d" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="5" width="9" height="14" rx="2" stroke={color} strokeWidth="1.8" />
+      <rect x="12" y="5" width="9" height="14" rx="2" stroke={color} strokeWidth="1.8" />
+      <line x1="12" y1="5" x2="12" y2="19" stroke={color} strokeWidth="1.8" strokeDasharray="2,2" />
+      <circle cx="7.5" cy="9" r="1.5" fill={color} />
+      <circle cx="16.5" cy="15" r="1.5" fill={color} />
+    </svg>
+  );
+
+  return (
+    <div className="dash-sidebar-panel">
+      <div className="dash-sidebar-header">
+        <h3 className="dash-sidebar-title">Available Coupons</h3>
+        {!loading && coupons.length > 0 && (
+          <span style={{ fontSize: '12px', color: '#dd901d', fontWeight: 600 }}>
+            {coupons.length}
+          </span>
+        )}
+      </div>
+      
+      {loading ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13 }}>
+          Loading coupons...
+        </div>
+      ) : coupons.length === 0 ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13 }}>
+          No available coupons
+        </div>
+      ) : (
+        <div className="dash-coupons-list live-queue-scroll-limited" style={{ maxHeight: "280px", padding: "12px 0", paddingRight: "12px" }}>
+          {coupons.map((coupon) => (
+            <div key={coupon.id} style={{
+              padding: '12px',
+              marginBottom: '8px',
+              background: '#f9f9f9',
+              borderRadius: 6,
+              border: '1px solid #e0e0e0',
+              fontSize: 13,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start'
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, color: '#000', marginBottom: 4 }}>
+                  {formatDiscount(coupon)} OFF
+                </div>
+                <div style={{ color: '#666', fontSize: 12, marginBottom: 2 }}>
+                  Code: <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{coupon.code}</span>
+                </div>
+                <div style={{ color: '#999', fontSize: 11 }}>
+                  Claims: {coupon.number_of_uses}{coupon.max_uses ? ` / ${coupon.max_uses}` : ''}
+                </div>
+              </div>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                width: 28,
+                height: 28,
+                background: '#dd901d15',
+                borderRadius: 4
+              }}>
+                <CouponIcon size={16} color="#dd901d" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ═══════════════════════════════════════════════════════════════════
 // MAIN EXPORT
 // ═══════════════════════════════════════════════════════════════════
@@ -1237,6 +1340,7 @@ export const AdminDashboard = ({ date }) => {
             <div className="dash-sidebar">
               <StaffStatus />
               <SummaryPanel />
+              <CouponsPanel />
               <AnalyticsPanel />
             </div>
           </div>

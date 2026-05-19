@@ -91,5 +91,74 @@ export const couponService = {
       console.error('Error deleting coupon:', err);
       throw err;
     }
+  },
+
+  /**
+   * Fetch active coupons for customer (within date range, not deleted, active status)
+   */
+  async getCustomerCoupons() {
+    try {
+      const response = await fetch(`${API_BASE}/coupons/customer`);
+      if (!response.ok) throw new Error('Failed to fetch customer coupons');
+      const result = await response.json();
+      return result.data || [];
+    } catch (err) {
+      console.error('Error loading customer coupons:', err);
+      throw err;
+    }
+  },
+
+  /**
+   * Claim a coupon for a customer
+   */
+  async claimCoupon(customerId, couponCode) {
+    try {
+      const response = await fetch(`${API_BASE}/coupons/claim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, couponCode })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to claim coupon');
+      }
+
+      return result.coupon;
+    } catch (err) {
+      console.error('Error claiming coupon:', err);
+      throw err;
+    }
+  },
+
+  /**
+   * Fetch all coupons with claimed status for a customer
+   */
+  async getAllCouponsWithStatus(customerId) {
+    try {
+      const response = await fetch(`${API_BASE}/customers/coupons-status?customerId=${customerId}`);
+      if (!response.ok) throw new Error('Failed to fetch coupons');
+      const result = await response.json();
+      return result.data || [];
+    } catch (err) {
+      console.error('Error loading coupons with status:', err);
+      throw err;
+    }
+  },
+
+  /**
+   * Fetch available coupons (active, valid date range, within usage limit)
+   */
+  async getAvailableCoupons() {
+    try {
+      const response = await fetch(`${API_BASE}/coupons/available`);
+      if (!response.ok) throw new Error('Failed to fetch available coupons');
+      const result = await response.json();
+      return result.data || [];
+    } catch (err) {
+      console.error('Error loading available coupons:', err);
+      throw err;
+    }
   }
 };
