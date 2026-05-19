@@ -375,28 +375,52 @@ export default async (req, res) => {
 
     console.log(`[UpdateStatus] === STEP 1: Fetching slot with id=${id} ===`);
 
+    // First try to fetch from available_slots
     const { data: slotData, error: slotFetchError } = await supabase
       .from('available_slots')
       .select('id, date, time_slot, customer_name, customer_contact, assigned_staff, services, status, created_at')
       .eq('id', id)
       .single();
 
-    console.log('[UpdateStatus] Slot fetch - error:', slotFetchError);
+    console.log('[UpdateStatus] Slot fetch from available_slots - error:', slotFetchError?.message);
     console.log('[UpdateStatus] Slot fetch - data:', slotData);
 
-    if (slotFetchError) {
-      console.error('[UpdateStatus] Slot fetch error:', slotFetchError);
-      return res.status(500).json({ error: 'Failed to load appointment details', details: slotFetchError.message });
+    // If not found in available_slots, try walk_in_logs
+    let isWalkIn = false;
+    let actualSlotData = slotData;
+    if (slotFetchError || !slotData) {
+      console.log('[UpdateStatus] Slot not found in available_slots, trying walk_in_logs...');
+      const { data: walkInData, error: walkInFetchError } = await supabase
+        .from('walk_in_logs')
+        .select('id, date, customer_name, customer_contact, assigned_staff, services, status, created_at')
+        .eq('id', id)
+        .single();
+
+      console.log('[UpdateStatus] Slot fetch from walk_in_logs - error:', walkInFetchError?.message);
+      console.log('[UpdateStatus] Walk-in data:', walkInData);
+
+      if (walkInFetchError || !walkInData) {
+        console.error('[UpdateStatus] Slot not found in either table. Original error:', slotFetchError?.message);
+        return res.status(500).json({ error: 'Failed to load appointment details', details: slotFetchError?.message || walkInFetchError?.message });
+      }
+
+      isWalkIn = true;
+      actualSlotData = walkInData;
     }
 
+    console.log('[UpdateStatus] Using slot from:', isWalkIn ? 'walk_in_logs' : 'available_slots');
     console.log(`[UpdateStatus] === STEP 2: Updating slot status to '${status}' ===`);
-    const { data, error } = await supabase
-      .from('available_slots')
-      .update({ status })
+    
+    // Update the appropriate table
+    const updateQuery = supabase
+      .from(isWalkIn ? 'walk_in_logs' : 'available_slots')
+      .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select();
 
-    console.log('[UpdateStatus] Slot update - error:', error);
+    const { data, error } = await updateQuery;
+
+    console.log('[UpdateStatus] Slot update - error:', error?.message);
     console.log('[UpdateStatus] Slot update - data:', data);
 
     if (error) {
@@ -408,11 +432,11 @@ export default async (req, res) => {
 
     console.log(`[UpdateStatus] === STEP 3: Syncing customer history ===`);
     console.log('[UpdateStatus] Slot data for history sync:', {
-      id: slotData?.id,
-      customer_contact: slotData?.customer_contact,
-      date: slotData?.date,
-      assigned_staff: slotData?.assigned_staff,
-      services: slotData?.services
+      id: actualSlotData?.id,
+      customer_contact: actualSlotData?.customer_contact,
+      date: actualSlotData?.date,
+      assigned_staff: actualSlotData?.assigned_staff,
+      services: actualSlotData?.services
     });
     
     let historySync;
@@ -421,10 +445,10 @@ export default async (req, res) => {
     // Otherwise update the existing history entry status
     if (status === 'done') {
       console.log('[UpdateStatus] Status is "done" - creating new complete history entry');
-      historySync = await addDoneHistoryToCustomer(supabase, slotData);
+      historySync = await addDoneHistoryToCustomer(supabase, actualSlotData);
     } else {
       console.log('[UpdateStatus] Status is "' + status + '" - updating existing history entry');
-      historySync = await updateCustomerHistoryStatus(supabase, slotData, status);
+      historySync = await updateCustomerHistoryStatus(supabase, actualSlotData, status);
     }
     
     console.log('[UpdateStatus] History sync result:', historySync);

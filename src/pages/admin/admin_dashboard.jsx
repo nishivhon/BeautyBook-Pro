@@ -470,26 +470,29 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
   const currentItems = formatQueueItems(currentAppointments, 'active');
   
-  // Format walk-in items
-  const formatWalkInItems = (walkIns) => {
+  // Format walk-in items with status consideration
+  const formatWalkInItems = (walkIns, itemType) => {
     return walkIns.map((walkin, index) => {
       // Extract service names from the services JSONB array
       const serviceNames = Array.isArray(walkin.services) 
         ? walkin.services.map(s => s.title || s.name).join(', ')
         : 'Walk-in Service';
       
+      const isCurrentType = itemType === 'active';
+      
       return {
         id: `walkin-${walkin.id}`,
-        type: 'waiting',
+        actualId: walkin.id,  // Store actual UUID for API calls
+        type: itemType,
         number: index + 1,
         name: walkin.customer_name,
         staff: walkin.assigned_staff,
         service: `${serviceNames} • ${walkin.assigned_staff}`,
-        statusTop: 'Walk-in',
-        statusSub: 'Waiting',
+        statusTop: isCurrentType ? 'Now' : 'Walk-in',
+        statusSub: isCurrentType ? 'In Progress' : 'Waiting',
         details: {
           serviceSelected: serviceNames,
-          currentService: 'Pending',
+          currentService: isCurrentType ? 'In Progress' : 'Pending',
           startTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
           estimatedTime: '45 mins'
         },
@@ -498,8 +501,18 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     });
   };
 
-  const walkInItems = formatWalkInItems(walkInAppointments);
-  console.log('[LiveQueue] Formatted walk-in items:', walkInItems);
+  // Separate walk-ins by status
+  const currentWalkIns = walkInAppointments.filter(w => w.status === 'current') || [];
+  const pendingWalkIns = walkInAppointments.filter(w => w.status === 'pending') || [];
+  
+  const currentWalkInItems = formatWalkInItems(currentWalkIns, 'active');
+  const pendingWalkInItems = formatWalkInItems(pendingWalkIns, 'waiting');
+  
+  console.log('[LiveQueue] Current walk-ins:', currentWalkInItems.length);
+  console.log('[LiveQueue] Pending walk-ins:', pendingWalkInItems.length);
+  
+  // Merge walk-ins with appointments in each category
+  const allCurrentItems = [...currentItems, ...currentWalkInItems];
   
   // Filter pending items to only show today's appointments with actual bookings (not empty slots)
   const today = new Date().toISOString().split('T')[0];
@@ -508,15 +521,16 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   );
   const pendingItems = formatQueueItems(todayPendingAppointments, 'waiting');
 
-  // Combine pending appointments with walk-ins
-  const allUpNextItems = [...pendingItems, ...walkInItems];
+  // Combine pending appointments with pending walk-ins
+  const allUpNextItems = [...pendingItems, ...pendingWalkInItems];
   console.log('[LiveQueue] All up next items (appointments + walk-ins):', allUpNextItems.length);
+  console.log('[LiveQueue] All current items (appointments + current walk-ins):', allCurrentItems.length);
 
   // Create queue sections - only include sections with items
   const queueSections = [
     {
       label: "Current",
-      items: currentItems
+      items: allCurrentItems
     },
     {
       label: "Up Next",
@@ -524,7 +538,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     }
   ].filter(section => section.items.length > 0); // Only show sections with items
 
-  const QueueItem = ({ id, type, number, name, staff, service, statusTop, statusSub, details, onCompleteService, showProceedButton = false, onProceed, isProceedEnabled = true, onProceedClick }) => {
+  const QueueItem = ({ id, type, number, name, staff, service, statusTop, statusSub, details, onCompleteService, showProceedButton = false, onProceed, isProceedEnabled = true, onProceedClick, actualId, isWalkIn }) => {
     const isActive = type === "active";
     const isCancelled = type === "cancelled";
     const rowClass = isActive ? "live-queue-row-active"
@@ -544,7 +558,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
     const handleProceed = () => {
       if (isProceedEnabled && onProceedClick) {
-        onProceedClick(id, name, service, staff);
+        onProceedClick(id, name, service, staff, actualId, isWalkIn);
       }
     };
 
@@ -1110,14 +1124,19 @@ export const AdminDashboard = ({ date }) => {
 
   const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
     try {
+      // For walk-ins, use actualId instead of prefixed id
+      const apiId = proceedConfirmData?.actualId || itemId;
+      const isWalkIn = proceedConfirmData?.isWalkIn || false;
+      
       console.log(`[AdminDashboard] Moving appointment ${itemId} to current for ${customerName}`);
-      console.log(`[AdminDashboard] Request payload:`, { id: itemId, status: 'current' });
+      console.log(`[AdminDashboard] isWalkIn:`, isWalkIn, 'actualId:', apiId);
+      console.log(`[AdminDashboard] Request payload:`, { id: apiId, status: 'current' });
       
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: itemId,
+          id: apiId,
           status: 'current'
         })
       });
@@ -1209,9 +1228,9 @@ export const AdminDashboard = ({ date }) => {
           <div className="dash-content-grid">
             <LiveQueue 
               onOpenWalkInModal={() => setShowWalkInModal(true)}
-              onProceedClick={(id, name, service, staff) => {
+              onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
                 setProceedConfirmId(id);
-                setProceedConfirmData({ name, service, staff });
+                setProceedConfirmData({ name, service, staff, actualId, isWalkIn });
               }}
             />
 
