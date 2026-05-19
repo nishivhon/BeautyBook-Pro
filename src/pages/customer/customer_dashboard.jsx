@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomerShell } from "./customer_shell";
 import { useCustomerCouponsData, useCustomerHistoryData, useCustomerProfileData, useCustomerAppointmentsData } from "./customer_store";
+import { couponService } from "../../services/couponService";
 
 const StarIcon = ({ filled = false }) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? "#dd901d" : "none"} xmlns="http://www.w3.org/2000/svg">
@@ -163,8 +164,23 @@ export default function CustomerDashboard() {
 		}
 	};
 
-	const handleClaimCoupon = (id) => {
-		setCoupons((prev) => prev.map((coupon) => (coupon.id === id ? { ...coupon, claimed: true } : coupon)));
+	const handleClaimCoupon = async (id, code) => {
+		if (!profile?.id) {
+			alert('Please log in to claim coupons');
+			return;
+		}
+
+		try {
+			await couponService.claimCoupon(profile.id, code);
+			
+			// Update local state to show claimed badge
+			setCoupons((prev) => prev.map((coupon) => (coupon.id === id ? { ...coupon, claimed: true } : coupon)));
+			
+			alert(`✓ Coupon ${code} claimed successfully!`);
+		} catch (err) {
+			console.error('[CustomerDashboard] Error claiming coupon:', err);
+			alert('Failed to claim coupon: ' + err.message);
+		}
 	};
 
 	// Helper function to determine if appointment can be cancelled (not within 2 hours)
@@ -429,7 +445,7 @@ export default function CustomerDashboard() {
 									) : coupon.claimed ? (
 										<span className="cdb-status-badge claimed">claimed</span>
 									) : (
-										<button className="cdb-btn cdb-btn-primary" onClick={() => handleClaimCoupon(coupon.id)}>Claim Coupon</button>
+										<button className="cdb-btn cdb-btn-primary" onClick={() => handleClaimCoupon(coupon.id, coupon.code)}>Claim Coupon</button>
 									)}
 								</div>
 							</div>
