@@ -65,7 +65,6 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
     value_type: 'percentage',
     value: '',
     description: '',
-    applicable_services: [],
     start_date: '',
     end_date: '',
     number_of_uses: 0,
@@ -77,7 +76,7 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
   const [form, setForm] = useState(JSON.parse(JSON.stringify(emptyForm)));
   const [initialForm, setInitialForm] = useState(null);
   const [coupons, setCoupons] = useState([]);
-  const [view, setView] = useState('form'); // 'form' or 'list'
+  const [view, setView] = useState('list'); // 'form' or 'list'
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [errors, setErrors] = useState({});
@@ -107,7 +106,7 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
       newForm.code = genCode();
       setForm(newForm);
       setInitialForm(JSON.parse(JSON.stringify(newForm)));
-      setView('form');
+      setView('list');
       setErrors({});
     }
   }, [isOpen]);
@@ -146,7 +145,6 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
         value_type: form.value_type,
         value: Number(form.value),
         description: form.description,
-        applicable_services: form.applicable_services,
         start_date: form.start_date,
         end_date: form.end_date,
         max_uses: form.max_uses ? Number(form.max_uses) : null,
@@ -231,12 +229,8 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
   };
 
   const handleClose = () => {
-    if (hasUnsaved()) {
-      setShowConfirm(true);
-      setPendingDeleteId(null);
-    } else {
-      onClose();
-    }
+    setShowConfirm(true);
+    setPendingDeleteId(null);
   };
 
   const confirmClose = () => {
@@ -253,11 +247,12 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
       
       <ConfirmationDialog
         isOpen={showConfirm}
-        title={pendingDeleteId ? "Delete Coupon" : "Close Modal?"}
-        message={pendingDeleteId ? "This will soft-delete the coupon (kept for reporting). Continue?" : "Are you sure you want to close this modal?"}
+        title={pendingDeleteId ? "Delete Coupon" : "Exit Modal?"}
+        message={pendingDeleteId ? "This will soft-delete the coupon (kept for reporting). Continue?" : "Are you sure you want to exit? Any unsaved information will be lost."}
         onConfirm={pendingDeleteId ? confirmDelete : confirmClose}
         onCancel={() => { setShowConfirm(false); setPendingDeleteId(null); }}
-        confirmText={pendingDeleteId ? "Delete" : "Close"}
+        confirmText={pendingDeleteId ? "Delete" : "Leave"}
+        cancelText={pendingDeleteId ? "Cancel" : "Stay"}
       />
 
       <div style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,fontFamily:'Inter, sans-serif'}} onClick={handleClose}>
@@ -269,7 +264,12 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
             <div style={{display:'flex',gap:12,alignItems:'center'}}>
               {view === 'form' && (
                 <button onClick={() => setView('list')} style={{padding:'8px 16px',background:'rgba(221,144,29,0.1)',border:'1px solid rgba(221,144,29,0.3)',borderRadius:8,color:'#dd901d',fontSize:13,fontWeight:600,cursor:'pointer'}}>
-                  View List
+                  ← Back
+                </button>
+              )}
+              {view === 'list' && (
+                <button onClick={() => { const newForm = JSON.parse(JSON.stringify(emptyForm)); newForm.code = genCode(); setForm(newForm); setInitialForm(JSON.parse(JSON.stringify(newForm))); setErrors({}); setView('form'); }} style={{padding:'8px 16px',background:'rgba(221,144,29,0.1)',border:'1px solid rgba(221,144,29,0.3)',borderRadius:8,color:'#dd901d',fontSize:13,fontWeight:600,cursor:'pointer'}}>
+                  Create New Coupon
                 </button>
               )}
               <button onClick={handleClose} style={{background:'none',border:'none',cursor:'pointer',color:'#988f81'}}>
@@ -317,37 +317,6 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                     <label style={{color:'#dd901d',fontWeight:600,fontSize:13}}>Description</label>
                     <textarea value={form.description} onChange={(e)=>setForm(prev=>({...prev,description:e.target.value}))} placeholder="Optional details" style={{width:'100%',minHeight:140,padding:12,background:'rgba(26,15,0,0.5)',border:'1px solid rgba(221,144,29,0.3)',borderRadius:8,color:'#f5f5f5',fontFamily:'Inter,sans-serif'}} />
                   </div>
-                  <div style={{width:220}}>
-                    <label style={{color:'#dd901d',fontWeight:600,fontSize:13,display:'block',marginBottom:8}}>Applicable Services</label>
-                    <div style={{maxHeight:140,overflow:'auto',padding:8,background:'rgba(0,0,0,0.15)',borderRadius:8}}>
-                      {services.length === 0 && <p style={{color:'#9a9a9a',fontSize:13,margin:0}}>No services available</p>}
-                      {services && services.length > 0 && services.map((s, idx) => {
-                        const serviceId = String(s.id);
-                        const isSelected = form.applicable_services && form.applicable_services.map(String).includes(serviceId);
-                        return (
-                          <label key={idx} style={{display:'flex',alignItems:'center',marginBottom:10,gap:10,padding:'6px 0',cursor:'pointer'}}>
-                            <input 
-                              type="checkbox" 
-                              id={`service-${s.id}`}
-                              checked={isSelected || false} 
-                              onChange={(e)=>{
-                                const serviceId = String(s.id);
-                                const selectedServices = form.applicable_services.map(String);
-                                const next = e.target.checked 
-                                  ? [...selectedServices, serviceId]
-                                  : selectedServices.filter(id => id !== serviceId);
-                                setForm(prev=>({...prev,applicable_services:next}));
-                              }} 
-                              style={{width:18,height:18,margin:'0 4px 0 0',cursor:'pointer',accentColor:'#dd901d',flexShrink:0,borderRadius:3,border:'2px solid rgba(221,144,29,0.5)',backgroundColor:'rgba(0,0,0,0.3)',appearance:'auto'}} 
-                            />
-                            <span style={{fontSize:13,color:'#f5f5f5',userSelect:'none',flex:1}}>
-                              {s.name}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </div>
 
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 160px 140px',gap:12,marginBottom:18}}>
@@ -384,9 +353,6 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                 {/* List View */}
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
                   <h3 style={{color:'#f5f5f5',margin:0}}>Existing Coupons</h3>
-                  <button onClick={() => setView('form')} style={{padding:'8px 16px',background:'rgba(221,144,29,0.1)',border:'1px solid rgba(221,144,29,0.3)',borderRadius:8,color:'#dd901d',fontSize:13,fontWeight:600,cursor:'pointer'}}>
-                    ← Back
-                  </button>
                 </div>
                 {coupons.length === 0 && <p style={{color:'#9a9a9a'}}>No coupons yet.</p>}
                 <div style={{display:'grid',gridTemplateColumns:'1fr',gap:12}}>
@@ -400,7 +366,6 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                           {!c.is_deleted && c.status === 'inactive' && <span style={{color:'#f59e0b',fontSize:11,fontWeight:600,marginLeft:8}}>INACTIVE</span>}
                         </div>
                         <div style={{color:'#9a9a9a',fontSize:13}}>{c.description || '—'}</div>
-                        <div style={{color:'#6b7280',fontSize:12,marginTop:6}}>Services: {c.applicable_services?.length > 0 ? `${c.applicable_services.length} selected` : 'All'}</div>
                         <div style={{color:'#6b7280',fontSize:12,marginTop:6}}>Uses: {c.number_of_uses}/{c.max_uses ? c.max_uses : '∞'}</div>
                       </div>
                       <div style={{display:'flex',gap:8,alignItems:'center'}}>
