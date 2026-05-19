@@ -42,13 +42,13 @@ const CloseIcon = ({ size = 20, color = "currentColor" }) => (
 const ConfirmationDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Delete", cancelText = "Cancel" }) => {
   if (!isOpen) return null;
   return (
-    <div style={{position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', display:'flex',alignItems:'center',justifyContent:'center',zIndex:1001}}>
-      <div style={{backgroundColor:'#1a1a1a',padding:24,borderRadius:12,width:'90%',maxWidth:420,border:'1px solid rgba(221,144,29,0.15)'}}>
-        <h3 style={{margin:0,color:'#f5f5f5'}}> {title} </h3>
-        <p style={{color:'#b0ada5'}}>{message}</p>
-        <div style={{display:'flex',gap:12,justifyContent:'flex-end'}}>
-          <button onClick={onCancel} style={{padding:'8px 14px',background:'transparent',border:'1px solid rgba(221,144,29,0.4)',color:'#dd901d',borderRadius:6}}> {cancelText} </button>
-          <button onClick={onConfirm} style={{padding:'8px 14px',background:'#ef4444',color:'#fff',border:'none',borderRadius:6}}> {confirmText} </button>
+    <div style={{position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1001, backdropFilter: 'blur(2px)'}}>
+      <div style={{backgroundColor:'#ffffff', padding:'32px 24px', borderRadius:16, width:'90%', maxWidth:360, boxShadow:'0 20px 60px rgba(0,0,0,0.3)', animation:'fade-up 0.3s ease forwards'}}>
+        <h2 style={{margin:0, color:'#1a0f00', fontSize:18, fontWeight:700, textAlign:'center', marginBottom:12, fontFamily:'Inter, sans-serif'}}>{title}</h2>
+        <p style={{color:'#665544', fontSize:14, textAlign:'center', lineHeight:1.5, marginBottom:24, fontFamily:'Inter, sans-serif'}}>{message}</p>
+        <div style={{display:'flex', gap:12, flexDirection:'column'}}>
+          <button onClick={onCancel} style={{padding:'12px 16px', background:'#dd901d', color:'white', border:'none', borderRadius:8, fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'Inter, sans-serif', transition:'all 0.2s ease'}} onMouseEnter={(e)=>{e.target.style.background='#c17a14'; e.target.style.transform='translateY(-2px)';}} onMouseLeave={(e)=>{e.target.style.background='#dd901d'; e.target.style.transform='translateY(0)';}}>{cancelText}</button>
+          <button onClick={onConfirm} style={{padding:'12px 16px', background:'transparent', color:'#dd901d', border:'1.5px solid #dd901d', borderRadius:8, fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'Inter, sans-serif', transition:'all 0.2s ease'}} onMouseEnter={(e)=>{e.target.style.background='rgba(221, 144, 29, 0.1)';}} onMouseLeave={(e)=>{e.target.style.background='transparent';}}>{confirmText}</button>
         </div>
       </div>
     </div>
