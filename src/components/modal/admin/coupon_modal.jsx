@@ -190,6 +190,24 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
     setErrors({});
   };
 
+  const handleStatusChange = async (couponId, newStatus) => {
+    setLoading(true);
+    try {
+      await couponService.updateCoupon(couponId, { status: newStatus });
+      
+      // Refresh coupons list
+      const updatedCoupons = await couponService.getCoupons();
+      setCoupons(updatedCoupons);
+      
+      setToast({ message: 'Coupon status updated successfully!', type: 'success' });
+    } catch (err) {
+      console.error('Error updating coupon status:', err);
+      setToast({ message: err.message, type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const requestDelete = (id) => { setPendingDeleteId(id); setShowConfirm(true); };
 
   const confirmDelete = async () => {
@@ -351,7 +369,7 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                     <label style={{color:'#dd901d',fontWeight:600,fontSize:13}}>Status</label>
                     <label style={{display:'flex',alignItems:'center',height:44,padding:'0 8px',background:'rgba(26,15,0,0.5)',border:'1px solid rgba(221,144,29,0.3)',borderRadius:8,cursor:'pointer'}}>
                       <input type="checkbox" checked={form.status === 'active'} onChange={(e)=>setForm(prev=>({...prev,status:e.target.checked ? 'active' : 'inactive'}))} style={{marginRight:8,cursor:'pointer',width:16,height:16,accentColor:'#dd901d'}} />
-                      <span style={{color:'#f5f5f5',fontSize:13}}>{form.active ? 'Active' : 'Inactive'}</span>
+                      <span style={{color:'#f5f5f5',fontSize:13}}>{form.status === 'active' ? 'Active' : 'Inactive'}</span>
                     </label>
                   </div>
                 </div>
@@ -380,16 +398,19 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                           <span style={{color:'#9a9a9a',fontSize:12}}>{c.value_type === 'percentage' ? `${c.value}%` : `₱${c.value}`}</span>
                           {c.is_deleted && <span style={{color:'#ef4444',fontSize:11,fontWeight:600,marginLeft:8}}>DELETED</span>}
                           {!c.is_deleted && c.status === 'inactive' && <span style={{color:'#f59e0b',fontSize:11,fontWeight:600,marginLeft:8}}>INACTIVE</span>}
-                          {!c.is_deleted && c.status === 'expired' && <span style={{color:'#9a9a9a',fontSize:11,fontWeight:600,marginLeft:8}}>EXPIRED</span>}
                         </div>
                         <div style={{color:'#9a9a9a',fontSize:13}}>{c.description || '—'}</div>
                         <div style={{color:'#6b7280',fontSize:12,marginTop:6}}>Services: {c.applicable_services?.length > 0 ? `${c.applicable_services.length} selected` : 'All'}</div>
+                        <div style={{color:'#6b7280',fontSize:12,marginTop:6}}>Uses: {c.number_of_uses}/{c.max_uses ? c.max_uses : '∞'}</div>
                       </div>
                       <div style={{display:'flex',gap:8,alignItems:'center'}}>
                         {!c.is_deleted ? (
                           <>
                             <button onClick={()=>handleEdit(c)} disabled={loading} style={{padding:'6px 12px',borderRadius:6,background:'rgba(221,144,29,0.2)',border:'1px solid rgba(221,144,29,0.4)',color:'#dd901d',cursor:'pointer',fontSize:12,fontWeight:600,opacity:loading ? 0.5 : 1}}>Edit</button>
-                            <button onClick={()=>requestDelete(c.id)} disabled={loading} style={{padding:'6px 12px',borderRadius:6,color:'#fff',background:'#ef4444',border:'none',cursor:'pointer',fontSize:12,fontWeight:600,opacity:loading ? 0.5 : 1}}>Delete</button>
+                            <select value={c.status} onChange={(e)=>handleStatusChange(c.id, e.target.value)} disabled={loading} style={{padding:'6px 8px',borderRadius:6,background:'rgba(221,144,29,0.2)',border:'1px solid rgba(221,144,29,0.4)',color:'#dd901d',cursor:'pointer',fontSize:12,fontWeight:600,opacity:loading ? 0.5 : 1,appearance:'none',paddingRight:20,backgroundImage:`url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dd901d' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,backgroundRepeat:'no-repeat',backgroundPosition:'right 4px center',backgroundSize:'14px'}}>
+                              <option value="active">Active</option>
+                              <option value="inactive">Inactive</option>
+                            </select>
                           </>
                         ) : null}
                       </div>
