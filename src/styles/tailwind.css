@@ -8999,7 +8999,7 @@ html[data-theme="light"] .dash-page-title,
   /* ── Stats cards for services page ── */
   .svc-stats-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 16px;
     width: 100%;
   }

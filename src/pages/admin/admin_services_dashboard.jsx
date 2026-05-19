@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { couponService } from "../../services/couponService";
 import { EditServiceModal } from "../../components/modal/admin/edit_service";
 import CouponModal from "../../components/modal/admin/coupon_modal";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
@@ -47,16 +48,6 @@ const SettingsIcon = ({ size = 15, color = "#fff" }) => (
   </svg>
 );
 
-const CalendarIcon = ({ size = 20, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="4" width="18" height="18" rx="3" stroke={color} strokeWidth="1.8" />
-    <path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    <circle cx="8" cy="15" r="1" fill={color} />
-    <circle cx="12" cy="15" r="1" fill={color} />
-    <circle cx="16" cy="15" r="1" fill={color} />
-  </svg>
-);
-
 const RevenueIcon = ({ size = 20, color = "#dd901d" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <line x1="12" y1="1" x2="12" y2="23" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
@@ -64,19 +55,19 @@ const RevenueIcon = ({ size = 20, color = "#dd901d" }) => (
   </svg>
 );
 
+const GiftIcon = ({ size = 20, color = "#dd901d" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M10 1v7M10 1H6a1 1 0 0 0-1 1v4h10V2a1 1 0 0 0-1-1h-4z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10 1h4a1 1 0 0 1 1 1v4H6V2a1 1 0 0 1 1-1h3z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M2 6h16v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10 8v9" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
 const PromoIcon = ({ size = 20, color = "#dd901d" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     <circle cx="7" cy="7" r="1.5" fill={color} />
-  </svg>
-);
-
-const LoyaltyIcon = ({ size = 20, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <rect x="2" y="5" width="20" height="14" rx="3" stroke={color} strokeWidth="1.8" />
-    <path d="M2 10h20" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    <circle cx="7" cy="15" r="1" fill={color} />
-    <path d="M11 15h6" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
   </svg>
 );
 
@@ -583,10 +574,8 @@ export const AdminDashboardServices = ({ date }) => {
   const [isManagingCoupons, setIsManagingCoupons] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [stats, setStats] = useState([
-    { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: "0",       label: "Today's Appointments" },
-    { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱0.00",   label: "Revenue Today"        },
-    { Icon: ScissorsIcon, badge: null,    badgeType: null,    value: "0",       label: "Promo Bookings Today" },
-    { Icon: LoyaltyIcon,  badge: "+5",    badgeType: "green", value: "0",       label: "Loyalty Cards Activated" },
+    { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱0.00", label: "Revenue Today" },
+    { Icon: GiftIcon,     badge: "+8%",   badgeType: "green", value: "0",       label: "Coupons Used"   },
   ]);
   const [appointmentData, setAppointmentData] = useState({
     current: [],
@@ -610,7 +599,6 @@ export const AdminDashboardServices = ({ date }) => {
     return () => clearTimeout(t);
   }, []);
 
-  // Fetch appointments data
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -639,26 +627,24 @@ export const AdminDashboardServices = ({ date }) => {
     fetchAppointments();
   }, []);
 
-  // Calculate stats dynamically
+  // Fetch coupon metrics for the admin services dashboard
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Total appointments for today
-    const todayAppointments = [
-      ...appointmentData.current.filter(apt => apt.date === today),
-      ...appointmentData.pending.filter(apt => apt.date === today),
-      ...appointmentData.done.filter(apt => apt.date === today)
-    ];
-    
-    const totalToday = todayAppointments.length;
+    const fetchCouponMetrics = async () => {
+      try {
+        const coupons = await couponService.getCoupons();
+        const usedCoupons = coupons.reduce((sum, coupon) => sum + (Number(coupon.number_of_uses) || 0), 0);
 
-    setStats([
-      { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: totalToday.toString(), label: "Today's Appointments" },
-      { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱12,450",   label: "Revenue Today"        },
-      { Icon: ScissorsIcon, badge: null,    badgeType: null,    value: "0",       label: "Promo Bookings Today" },
-      { Icon: LoyaltyIcon,  badge: "+5",    badgeType: "green", value: "0",       label: "Loyalty Cards Activated" },
-    ]);
-  }, [appointmentData]);
+        setStats([
+          { Icon: RevenueIcon, badge: "+15%", badgeType: "green", value: "₱12,450", label: "Revenue Today" },
+          { Icon: GiftIcon,    badge: "+8%",  badgeType: "green", value: usedCoupons.toString(), label: "Coupons Used"   },
+        ]);
+      } catch (err) {
+        console.error('Error loading coupon metrics:', err);
+      }
+    };
+
+    fetchCouponMetrics();
+  }, []);
 
   // Fetch services from API on component mount
   useEffect(() => {

@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import CustomerHistoryModal from "../../components/modal/admin/customer_history";
-import CalendarAppointmentsModal from "../../components/modal/admin/calendar_appointments";
 import { StatusUpdateModal } from "../../components/modal/admin/status_update";
 import { ManageServiceModal } from "../../components/modal/admin/manage_service";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
@@ -103,16 +102,6 @@ const CustomerHistoryIcon = ({ size = 17, color = "currentColor" }) => (
     <path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
     <path d="M12 6v6l3 3" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     <path d="M18 16l-2 2 2 2M22 16l-2 2 2 2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const CalendarIcon = ({ size = 17, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="4" width="18" height="18" rx="3" stroke={color} strokeWidth="1.8" />
-    <path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    <circle cx="8" cy="15" r="1" fill={color} />
-    <circle cx="12" cy="15" r="1" fill={color} />
-    <circle cx="16" cy="15" r="1" fill={color} />
   </svg>
 );
 
@@ -1158,7 +1147,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
 };
 
 /* ── Quick Actions panel ── */
-const QuickActionsPanel = ({ onCustomerHistory, onCalendar }) => (
+const QuickActionsPanel = ({ onCustomerHistory }) => (
   <div className="staff-quick-panel">
     <h3 className="staff-quick-title">Quick Actions</h3>
     <button 
@@ -1167,13 +1156,6 @@ const QuickActionsPanel = ({ onCustomerHistory, onCalendar }) => (
     >
       <CustomerHistoryIcon size={17} color="#000" />
       Customer History
-    </button>
-    <button 
-      className="staff-action-btn-secondary"
-      onClick={onCalendar}
-    >
-      <CalendarIcon size={17} color="currentColor" />
-      Calendar
     </button>
   </div>
 );
@@ -1207,7 +1189,6 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [statusUpdateModal, setStatusUpdateModal] = useState({ isOpen: false, staff: null });
   const [manageServiceModal, setManageServiceModal] = useState({ isOpen: false, staff: null });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -1648,7 +1629,6 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           <div className="staff-sidebar">
             <QuickActionsPanel 
               onCustomerHistory={() => setIsCustomerHistoryOpen(true)}
-              onCalendar={() => setIsCalendarOpen(true)}
             />
             <AnalyticsPanel />
           </div>
@@ -1662,11 +1642,6 @@ export const AdminDashboardStaffStatus = ({ date }) => {
         onClose={() => setIsCustomerHistoryOpen(false)} 
       />
 
-      {/* Calendar Appointments Modal */}
-      <CalendarAppointmentsModal 
-        isOpen={isCalendarOpen} 
-        onClose={() => setIsCalendarOpen(false)} 
-      />
 
       {/* Status Update Modal */}
       <StatusUpdateModal
