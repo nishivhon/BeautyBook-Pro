@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Toast } from "../../../toast";
 import { DynamicServiceModal } from "./services/dynamic_service";
 import { ConfirmationDialog } from "../confirmation_dialog";
 
@@ -91,7 +92,7 @@ const STEPS = [
 ];
 
 /* ── Header ── */
-const BookingHeader = ({ onBack }) => (
+const BookingHeader = ({ onBack, title = "Book Appointment" }) => (
   <header className="appt-header">
     <button className="appt-back-btn" onClick={onBack}>
       <svg viewBox="0 0 16 16" fill="none" width={16} height={16}>
@@ -99,16 +100,16 @@ const BookingHeader = ({ onBack }) => (
       </svg>
       Back
     </button>
-    <h1 className="appt-header-title">Book Appointment</h1>
+    <h1 className="appt-header-title">{title}</h1>
     <div className="appt-back-btn" aria-hidden style={{ visibility: "hidden" }}>Back</div>
   </header>
 );
 
 /* ── Progress bar — phase 2 state ── */
-const ProgressIndicator = ({ currentStep = 2 }) => (
+const ProgressIndicator = ({ currentStep = 2, steps = STEPS }) => (
   <div className="appt-progress">
     <div className="appt-progress-track">
-      {STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const isCompleted = step.number < currentStep;
         const isActive    = step.number === currentStep;
         return (
@@ -121,7 +122,7 @@ const ProgressIndicator = ({ currentStep = 2 }) => (
                 : step.number
               }
             </div>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <div className={`appt-step-line${isCompleted ? " done" : ""}`} />
             )}
           </div>
@@ -129,7 +130,7 @@ const ProgressIndicator = ({ currentStep = 2 }) => (
       })}
     </div>
     <div className="appt-progress-labels">
-      {STEPS.map((step) => {
+      {steps.map((step) => {
         const isCompleted = step.number < currentStep;
         const isActive    = step.number === currentStep;
         return (
@@ -193,7 +194,7 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenServiceModal, select
   </button>
 );
 
-export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialData }) => {
+export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showPromoCode = true }) => {
   const [selectedServices, setSelectedServices] = useState([]);
   
   // Dynamic modal state
@@ -328,12 +329,13 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
     }));
     
     // Update overall selected services
+    const cardIdNum = Number(serviceCardId);
     if (data.services.length > 0) {
-      if (!selectedServices.includes(serviceCardId)) {
-        setSelectedServices([...selectedServices, serviceCardId]);
+      if (!selectedServices.includes(cardIdNum)) {
+        setSelectedServices([...selectedServices, cardIdNum]);
       }
     } else {
-      setSelectedServices(selectedServices.filter(id => id !== serviceCardId));
+      setSelectedServices(selectedServices.filter(id => id !== cardIdNum));
     }
     
     setShowServiceModal(false);
@@ -357,13 +359,18 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
     });
 
     console.log('[Phase2] handleContinue - collected services:', allSelectedServices);
-    
+    // Show confirmation toast
+    setToastState({ message: `${allSelectedServices.length} service(s) selected`, type: 'success', isVisible: true });
+
     onContinue?.({ 
       services: allSelectedServices, 
       selectedServicesByCard, 
       promoCode
     });
   };
+
+  // Toast state
+  const [toastState, setToastState] = useState({ message: '', type: 'info', isVisible: false, duration: 3000 });
 
   // No need for separate modal handlers anymore - just render the dynamic modal
 
@@ -387,6 +394,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
 
   return (
     <>
+      <Toast message={toastState.message} type={toastState.type} isVisible={toastState.isVisible} duration={toastState.duration} />
       <div 
         className="appt-backdrop"
         onClick={(e) => {
@@ -406,8 +414,8 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
         }}
       >
         <div className="appt-root">
-          <BookingHeader onBack={onBack} />
-          <ProgressIndicator currentStep={2} />
+          <BookingHeader onBack={onBack} title={headerTitle} />
+          <ProgressIndicator currentStep={2} steps={stepLabels} />
 
       {/* ── Scrollable body ── */}
       <div className="appt-body">
@@ -430,96 +438,100 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
           ))}
         </div>
 
-        {/* Promo Code Section */}
-        <div ref={promoCodeRef} style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #e5e5e5" }}>
-          <label style={{
-            display: "block",
-            fontSize: "0.9rem",
-            fontWeight: "600",
-            color: "#1a1a1a",
-            marginBottom: "8px",
-            fontFamily: "Inter, sans-serif",
-          }}>
-            Promo/Discount Code <span style={{ color: "#999", fontWeight: "400" }}>(Optional)</span>
-          </label>
-          <input
-            type="text"
-            placeholder="Enter promo code"
-            value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-            style={{
-              width: "100%",
-              padding: "12px 14px",
-              border: "1.5px solid #e5e5e5",
-              borderRadius: "8px",
-              fontSize: "0.95rem",
+        {showPromoCode && (
+          <div ref={promoCodeRef} style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #e5e5e5" }}>
+            <label style={{
+              display: "block",
+              fontSize: "0.9rem",
+              fontWeight: "600",
+              color: "#1a1a1a",
+              marginBottom: "8px",
               fontFamily: "Inter, sans-serif",
-              boxSizing: "border-box",
-              transition: "all 0.2s ease",
-              outline: "none",
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = "#dd901d";
-              e.target.style.boxShadow = "0 0 0 3px rgba(221, 144, 29, 0.1)";
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = "#e5e5e5";
-              e.target.style.boxShadow = "none";
-            }}
-          />
-        </div>
+            }}>
+              Promo/Discount Code <span style={{ color: "#999", fontWeight: "400" }}>(Optional)</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Enter promo code"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+              style={{
+                width: "100%",
+                padding: "12px 14px",
+                border: "1.5px solid #e5e5e5",
+                borderRadius: "8px",
+                fontSize: "0.95rem",
+                fontFamily: "Inter, sans-serif",
+                boxSizing: "border-box",
+                transition: "all 0.2s ease",
+                outline: "none",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#dd901d";
+                e.target.style.boxShadow = "0 0 0 3px rgba(221, 144, 29, 0.1)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#e5e5e5";
+                e.target.style.boxShadow = "none";
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Footer CTA ── */}
       <div className="appt-footer">
-        {selectedServices.length < 1 && (
-          <p style={{
-            color: "#ff6b6b",
-            fontSize: "0.85rem",
-            marginBottom: "10px",
-            textAlign: "center",
-            fontWeight: "500",
-          }}>
-            Please select a service
-          </p>
-        )}
-        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
-          <button
-            onClick={() => setShowCancelConfirm(true)}
-            style={{
-              flex: 1,
-              padding: "12px 16px",
-              background: "transparent",
-              color: "#dd901d",
-              border: "1.5px solid #dd901d",
-              borderRadius: "12px",
-              fontSize: "0.95rem",
-              fontWeight: "600",
-              cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = "rgba(221,144,29,0.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = "transparent";
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            className="appt-continue-btn"
-            onClick={handleContinue}
-            disabled={selectedServices.length < 1}
-            style={{
-              flex: 1,
-              opacity: selectedServices.length >= 1 ? 1 : 0.5,
-              cursor: selectedServices.length >= 1 ? "pointer" : "not-allowed",
-            }}
-          >
-            Continue →
-          </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+          {selectedServices.length < 1 && (
+            <p style={{
+              color: "#ff6b6b",
+              fontSize: "0.85rem",
+              margin: 0,
+              textAlign: "center",
+              fontWeight: "500",
+            }}>
+              Please select a service
+            </p>
+          )}
+
+          <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+            <button
+              onClick={() => setShowCancelConfirm(true)}
+              style={{
+                flex: 1,
+                padding: "12px 16px",
+                background: "transparent",
+                color: "#dd901d",
+                border: "1.5px solid #dd901d",
+                borderRadius: "12px",
+                fontSize: "0.95rem",
+                fontWeight: "600",
+                cursor: "pointer",
+                fontFamily: "Inter, sans-serif",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = "rgba(221,144,29,0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = "transparent";
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className="appt-continue-btn"
+              onClick={handleContinue}
+              disabled={selectedServices.length < 1}
+              style={{
+                flex: 1,
+                opacity: selectedServices.length >= 1 ? 1 : 0.5,
+                cursor: selectedServices.length >= 1 ? "pointer" : "not-allowed",
+              }}
+            >
+              Continue →
+            </button>
+          </div>
         </div>
       </div>
     </div>

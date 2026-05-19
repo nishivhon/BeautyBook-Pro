@@ -244,12 +244,12 @@ export const DynamicServiceModal = ({
           </div>
 
           {/* ── Buttons footer ── */}
-          <div className="appt-button-container">
-            <button className="appt-btn appt-btn-secondary" onClick={handleBack}>
+          <div className="appt-footer">
+            <button className="appt-cancel-btn" onClick={handleBack}>
               Back
             </button>
             <button 
-              className="appt-btn appt-btn-primary" 
+              className="appt-continue-btn" 
               onClick={handleContinue}
               disabled={selected.length === 0 && !isUpdating}
             >

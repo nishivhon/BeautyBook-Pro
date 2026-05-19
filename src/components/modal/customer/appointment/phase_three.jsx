@@ -54,13 +54,13 @@ const STEPS = [
 ══════════════════════════════════════════ */
 
 /* ── Header ── */
-const BookingHeader = ({ onBack }) => (
+const BookingHeader = ({ onBack, title = "Book Appointment" }) => (
   <header className="appt-header">
     <button className="appt-back-btn" onClick={onBack} aria-label="Go back">
       <BackArrowIcon />
       Back
     </button>
-    <h1 className="appt-header-title">Book Appointment</h1>
+    <h1 className="appt-header-title">{title}</h1>
     <div className="appt-back-btn" aria-hidden style={{ visibility: "hidden" }}>Back</div>
   </header>
 );
@@ -68,10 +68,10 @@ const BookingHeader = ({ onBack }) => (
 /* ── Progress bar — Phase 3 state ── */
 /* Steps 1+2 done (✓), step 3 active, step 4 inactive */
 /* Connectors 1→2 and 2→3 are amber; connector 3→4 is gray */
-const ProgressIndicator = ({ currentStep = 3 }) => (
+const ProgressIndicator = ({ currentStep = 3, steps = STEPS }) => (
   <div className="appt-progress">
     <div className="appt-progress-track">
-      {STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const isDone   = step.number < currentStep;
         const isActive = step.number === currentStep;
         /* connector after this step is amber if this step is done */
@@ -86,7 +86,7 @@ const ProgressIndicator = ({ currentStep = 3 }) => (
                 : step.number
               }
             </div>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <div className={`appt-step-line${lineAmber ? " done" : ""}`} />
             )}
           </div>
@@ -94,7 +94,7 @@ const ProgressIndicator = ({ currentStep = 3 }) => (
       })}
     </div>
     <div className="appt-progress-labels">
-      {STEPS.map((step) => (
+      {steps.map((step) => (
         <span
           key={step.number}
           className={`appt-step-label${
@@ -158,7 +158,7 @@ const StylistRow = ({ stylist, isSelected, onSelect }) => {
 /* ══════════════════════════════════════════
    MAIN COMPONENT — Phase 3
 ══════════════════════════════════════════ */
-export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialData }) => {
+export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS }) => {
   const [selected, setSelected] = useState(null);
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
@@ -253,8 +253,8 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
         }}
       >
         <div className="appt-root">
-          <BookingHeader onBack={handleBack} />
-          <ProgressIndicator currentStep={3} />
+          <BookingHeader onBack={handleBack} title={headerTitle} />
+          <ProgressIndicator currentStep={3} steps={stepLabels} />
 
           {/* ── Scrollable body ── */}
           <div className="appt-body">

@@ -165,10 +165,10 @@ const ModalHeader = ({ onBack }) => (
 );
 
 /* ── Progress Indicator ── */
-const ProgressIndicator = ({ currentStep }) => (
+const ProgressIndicator = ({ currentStep, steps = STEPS }) => (
   <div className="appt-progress">
     <div className="appt-progress-track">
-      {STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const isDone = step.number < currentStep;
         const isActive = step.number === currentStep;
         return (
@@ -181,7 +181,7 @@ const ProgressIndicator = ({ currentStep }) => (
                 : step.number
               }
             </div>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <div className={`appt-step-line${isDone ? " done" : ""}`} />
             )}
           </div>
@@ -189,7 +189,7 @@ const ProgressIndicator = ({ currentStep }) => (
       })}
     </div>
     <div className="appt-progress-labels">
-      {STEPS.map((step) => (
+      {steps.map((step) => (
         <span
           key={step.number}
           className={`appt-step-label${step.number === currentStep ? " active" : step.number < currentStep ? " done" : ""}`}
@@ -220,6 +220,46 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showReceiptReminder, setShowReceiptReminder] = useState(false);
   const [showConfirmationToast, setShowConfirmationToast] = useState(false);
+
+  const WALK_IN_STEPS = [
+    { number: 1, label: "Name" },
+    { number: 2, label: "Service" },
+    { number: 3, label: "Stylist" },
+    { number: 4, label: "Receipt" },
+  ];
+
+  const formatCurrency = (value) => {
+    const amount = Number(value) || 0;
+    return `₱${amount.toFixed(2)}`;
+  };
+
+  const getSelectedServices = () => phase2Data?.services || [];
+
+  const buildWalkInReceipt = (stylistData) => {
+    const services = getSelectedServices();
+    const subtotal = services.reduce((acc, service) => {
+      const rawPrice = typeof service.price === "string"
+        ? parseFloat(service.price.replace(/[^0-9.]/g, ""))
+        : Number(service.price);
+      return acc + (Number.isFinite(rawPrice) ? rawPrice : 0);
+    }, 0);
+
+    const totalDuration = services.reduce((acc, service) => {
+      const mins = parseInt(service.estTime, 10) || parseInt(service.est_time, 10) || 0;
+      return acc + mins;
+    }, 0);
+
+    return {
+      id: Math.random().toString(36).substr(2, 9).toUpperCase(),
+      name: walkInName,
+      services,
+      subtotal,
+      totalAmount: subtotal,
+      totalDuration,
+      stylist: stylistData?.stylist?.name || "Any available",
+      timestamp: new Date().toLocaleString(),
+    };
+  };
 
   // Auto-hide toast after 2 seconds
   useEffect(() => {
@@ -268,7 +308,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
   const handlePhase2Continue = (data) => {
     console.log('[AddWalkIn] Phase 2 data:', data);
-    setPhase2Data(data.services);  // Extract only the services array
+    setPhase2Data(data);
     setStep(3);
   };
 
@@ -276,25 +316,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
     console.log('[AddWalkIn] Phase 3 data:', data);
     setPhase3Data(data);
     
-    // Generate receipt first to get receipt data
     if (!phase2Data || !data) return;
-    const services = phase2Data.services || [];
-    const stylist = data.stylist || null;
-    
-    const totalDuration = services.reduce((acc, s) => {
-      const mins = parseInt(s.estTime) || parseInt(s.est_time) || 0;
-      return acc + mins;
-    }, 0);
-
-    const receipt = {
-      id: Math.random().toString(36).substr(2, 9).toUpperCase(),
-      name: walkInName,
-      services: services,
-      totalDuration: totalDuration,
-      price: "₱00.00",
-      stylist: stylist?.name || "Any available",
-      timestamp: new Date().toLocaleString(),
-    };
+    const receipt = buildWalkInReceipt(data);
+    receipt.price = formatCurrency(receipt.totalAmount);
 
     setReceiptData(receipt);
     setStep(4);
@@ -303,7 +327,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
     await logWalkInToDatabase(receipt);
     
     // Submit the walk-in to admin dashboard
-    onSubmit({ ...receipt, services: phase2Data });
+    onSubmit({ ...receipt, services: receipt.services });
   };
 
   const handleContinue = () => {
@@ -337,7 +361,13 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
   const handleBack = () => {
     if (step > 1) {
-      if (step === 3) {
+      if (step === 4) {
+        // Going back from Phase 4 (Receipt) to Phase 3 (Stylist)
+        // Keep phase2Data intact so Phase 3 can render
+        setReceiptData(null);
+        setIsConfirmed(false);
+        setStep(3);
+      } else if (step === 3) {
         // Going back from Phase 3 to Phase 2
         setPhase3Data(null);
         setStep(2);
@@ -355,24 +385,8 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
   const generateReceipt = () => {
     if (!phase2Data || !phase3Data) return;
 
-    const services = phase2Data.services || [];
-    const stylist = phase3Data.stylist || null;
-    
-    const totalDuration = services.reduce((acc, s) => {
-      // Handle both numeric and string est times
-      const mins = parseInt(s.estTime) || parseInt(s.est_time) || 0;
-      return acc + mins;
-    }, 0);
-
-    const receipt = {
-      id: Math.random().toString(36).substr(2, 9).toUpperCase(),
-      name: walkInName,
-      services: services,
-      totalDuration: totalDuration,
-      price: "₱00.00",
-      stylist: stylist?.name || "Any available",
-      timestamp: new Date().toLocaleString(),
-    };
+    const receipt = buildWalkInReceipt(phase3Data);
+    receipt.price = formatCurrency(receipt.totalAmount);
 
     setReceiptData(receipt);
     setStep(4);
@@ -383,8 +397,8 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
       
-      // Format services - phase2Data is already an array of service objects
-      const formattedServices = (phase2Data || []).map(s => ({
+      // Format services from the structured phase-two payload
+      const formattedServices = (phase2Data?.services || []).map(s => ({
         id: s.id,
         title: s.title || s.service_name,
         price: typeof s.price === 'string' ? parseFloat(s.price.replace('₱', '')) : s.price,
@@ -607,7 +621,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
             ${receiptData.services.map(svc => `
               <div class="service-item">
                 <span class="service-name">${svc.title || 'Service'}</span>
-                <span class="service-price">${svc.price || '₱0.00'}</span>
+                <span class="service-price">${typeof svc.price === 'number' ? formatCurrency(svc.price) : (svc.price || '₱0.00')}</span>
               </div>
             `).join('')}
           </div>
@@ -625,8 +639,22 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
               <span class="detail-value">${receiptData.stylist || 'N/A'}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Time</span>
+              <span class="detail-label">Date & Time</span>
               <span class="detail-value">${receiptData.timestamp || 'N/A'}</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="section">
+            <div class="section-title">Totals</div>
+            <div class="detail-row">
+              <span class="detail-label">Subtotal</span>
+              <span class="detail-value">${formatCurrency(receiptData.subtotal)}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Total Amount</span>
+              <span class="detail-value">${receiptData.price || formatCurrency(receiptData.totalAmount)}</span>
             </div>
           </div>
 
@@ -719,7 +747,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
       >
         <div className="appt-root">
           <ModalHeader onBack={handleBack} />
-          <ProgressIndicator currentStep={step} />
+          <ProgressIndicator currentStep={step} steps={WALK_IN_STEPS} />
 
           <div className="appt-body">
             {/* Step 1: Customer Name */}
@@ -762,6 +790,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                   onContinue={handlePhase2Continue}
                   onCancel={handleCancelClick}
                   initialData={null}
+                  headerTitle="Add Walk-in"
+                  stepLabels={WALK_IN_STEPS}
+                  showPromoCode={false}
                 />
               </div>
             )}
@@ -773,7 +804,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                   onBack={handleBack}
                   onContinue={handlePhase3Continue}
                   onCancel={handleCancelClick}
-                  initialData={{ services: phase2Data }}
+                  initialData={{ services: phase2Data?.services || [] }}
+                  headerTitle="Add Walk-in"
+                  stepLabels={WALK_IN_STEPS}
                 />
               </div>
             )}
@@ -785,7 +818,6 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                 <p className="appt-section-sub">Review appointment details</p>
                 
                 <div className="confirm-card">
-                  {/* Service Summary Section */}
                   {receiptData.services.length > 0 && (
                     <>
                       <div className="confirm-service-row">
@@ -806,7 +838,6 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                     </>
                   )}
 
-                  {/* Services List Section */}
                   {receiptData.services.length > 0 && (
                     <>
                       <div style={{ marginBottom: "16px", marginTop: "12px" }}>
@@ -814,19 +845,23 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                           Services Selected
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                          {receiptData.services.map((service, idx) => (
-                            <div key={idx} style={{ fontSize: "0.85rem", color: "var(--color-white)", paddingLeft: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <span>• {service.title}</span>
-                              <span style={{ color: "var(--color-tan)" }}>{service.price}</span>
-                            </div>
-                          ))}
+                          {receiptData.services.map((service, idx) => {
+                            const servicePrice = typeof service.price === "number"
+                              ? formatCurrency(service.price)
+                              : (service.price || "₱0.00");
+                            return (
+                              <div key={idx} style={{ fontSize: "0.85rem", color: "var(--color-white)", paddingLeft: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span>• {service.title}</span>
+                                <span style={{ color: "var(--color-tan)" }}>{servicePrice}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                       <Divider />
                     </>
                   )}
 
-                  {/* Contact details */}
                   <div className="confirm-details">
                     <div className="confirm-detail-row">
                       <PersonIcon />
@@ -841,6 +876,33 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                         <span className="confirm-detail-label">Stylist</span>
                         <span className="confirm-detail-value">{receiptData.stylist}</span>
                       </div>
+                    </div>
+                    <div className="confirm-detail-row">
+                      <EnvelopeIcon />
+                      <div className="confirm-detail-text">
+                        <span className="confirm-detail-label">Date & Time</span>
+                        <span className="confirm-detail-value">{receiptData.timestamp}</span>
+                      </div>
+                    </div>
+                    <div className="confirm-detail-row">
+                      <DownloadIcon />
+                      <div className="confirm-detail-text">
+                        <span className="confirm-detail-label">Duration</span>
+                        <span className="confirm-detail-value">{receiptData.totalDuration} mins</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Divider />
+
+                  <div className="confirm-details">
+                    <div className="confirm-detail-row">
+                      <span className="confirm-detail-label">Subtotal</span>
+                      <span className="confirm-detail-value">{formatCurrency(receiptData.subtotal)}</span>
+                    </div>
+                    <div className="confirm-detail-row">
+                      <span className="confirm-detail-label">Total Amount</span>
+                      <span className="confirm-detail-value">{receiptData.price}</span>
                     </div>
                   </div>
 

@@ -40,7 +40,7 @@ export const Toast = ({ message = "", type = "info", duration = 5000, isVisible 
         top: '80px',
         left: '50%',
         transform: 'translateX(-50%)',
-        zIndex: 10000000,
+        zIndex: 2147483647,
         pointerEvents: 'auto',
         boxSizing: 'border-box',
         animation: 'toastFadeIn 0.25s ease-out'
