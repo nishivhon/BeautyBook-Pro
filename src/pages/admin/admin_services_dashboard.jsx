@@ -388,7 +388,7 @@ const PageMetrics = ({ stats }) => (
 );
 
 /* ── Single service item row ── */
-const ServiceItem = ({ id, name, category, meta, available, price, onEdit }) => {
+const ServiceItem = ({ id, name, category, meta, available, price, estimatedTime, onEdit }) => {
   const rowStyles = getThemeStyles(
     {
       backgroundColor: 'rgba(20, 17, 15, 0.35)',
@@ -431,7 +431,7 @@ const ServiceItem = ({ id, name, category, meta, available, price, onEdit }) => 
         <button 
           className="svc-item-edit-btn" 
           aria-label="Edit service"
-          onClick={() => onEdit({ id, name, category, meta, available, price })}
+          onClick={() => onEdit({ id, name, category, meta, available, price, estimatedTime })}
         >
           <EditIcon size={14} color="currentColor" />
         </button>
@@ -594,6 +594,46 @@ export const AdminDashboardServices = ({ date }) => {
     localStorage.setItem('adminSidebarExpanded', JSON.stringify(sidebarExpanded));
   }, [sidebarExpanded]);
 
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const res = await fetch('/api/services');
+      if (!res.ok) {
+        throw new Error(`Failed to fetch services: ${res.status}`);
+      }
+
+      const servicesData = await res.json();
+
+      // Transform services data to include formatted price and availability
+      const transformedServices = servicesData.map(s => {
+        // Try both 'name' and 'service_name' columns (handle both DB schemas)
+        const serviceName = s.name || s.service_name || 'Unknown';
+
+        console.log('Service data:', { id: s.id, name: s.name, service_name: s.service_name, serviceName });
+
+        return {
+          id: s.id,
+          name: serviceName,
+          category: s.category || 'Other',
+          description: s.description || s.meta || '',
+          price: s.price ? `₱${parseFloat(s.price).toFixed(2)}` : '₱0.00',
+          estimatedTime: s.estimated_time || s.est_time || '30 mins',
+          available: s.availability !== false,
+          meta: s.description || s.meta || ''
+        };
+      });
+
+      setServices(transformedServices);
+    } catch (err) {
+      console.error('Error fetching services:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
@@ -648,49 +688,7 @@ export const AdminDashboardServices = ({ date }) => {
 
   // Fetch services from API on component mount
   useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const res = await fetch('/api/services');
-        if (!res.ok) {
-          throw new Error(`Failed to fetch services: ${res.status}`);
-        }
-
-        const servicesData = await res.json();
-        
-        // Transform services data to include formatted price and availability
-        const transformedServices = servicesData.map(s => {
-          // Try both 'name' and 'service_name' columns (handle both DB schemas)
-          const serviceName = s.name || s.service_name || 'Unknown';
-          
-          console.log('Service data:', { id: s.id, name: s.name, service_name: s.service_name, serviceName });
-          
-          return {
-            id: s.id,
-            name: serviceName,
-            category: s.category || 'Other',
-            description: s.description || s.meta || '',
-            price: s.price ? `₱${parseFloat(s.price).toFixed(2)}` : '₱0.00',
-            estimatedTime: s.estimated_time || s.est_time || '30 mins',
-            available: s.availability !== false,
-            meta: s.description || s.meta || ''
-          };
-        });
-
-        setServices(transformedServices);
-      } catch (err) {
-        console.error('Error fetching services:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchServices();
-    
-    return () => {};
   }, []);
 
   // Group services by category
@@ -789,17 +787,8 @@ export const AdminDashboardServices = ({ date }) => {
 
         const newService = await res.json();
         console.log("Service created successfully:", newService);
-        
-        // Add new service to list
-        setServices(prev => [...prev, {
-          id: newService.id,
-          name: newService.name,
-          category: newService.category,
-          description: newService.description,
-          price: `₱${parseFloat(newService.price).toFixed(2)}`,
-          available: newService.availability !== false,
-          meta: newService.description
-        }]);
+
+        await fetchServices();
 
       } else {
         // Update existing service via PUT to /api/services/update
@@ -814,44 +803,39 @@ export const AdminDashboardServices = ({ date }) => {
           ? parseFloat(serviceData.price.replace(/[₱\s]/g, '')) 
           : parseFloat(serviceData.price);
 
+        // Build request body with only fields that have values (not empty)
+        // This ensures unmodified fields retain their original values
+        const updateBody = {
+          name: serviceData.name,
+          category: serviceData.category,
+          description: serviceData.meta,
+          available: serviceData.available
+        };
+
+        // Only include price if it's a valid number
+        if (!isNaN(priceValue) && priceValue !== '') {
+          updateBody.price = priceValue;
+        }
+
+        // Only include estimated_time if it's provided and not empty
+        if (serviceData.estimated_time !== undefined && serviceData.estimated_time !== '') {
+          updateBody.estimated_time = parseInt(serviceData.estimated_time, 10);
+        }
+
+        console.log("Update request body:", updateBody);
+
         const res = await fetch(`/api/services/update?id=${serviceData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: serviceData.name,
-            category: serviceData.category,
-            description: serviceData.meta,
-            price: isNaN(priceValue) ? 0 : priceValue,
-            available: serviceData.available,
-            estimated_time: serviceData.estimated_time ? parseInt(serviceData.estimated_time, 10) : 0
-          })
+          body: JSON.stringify(updateBody)
         });
 
         if (!res.ok) {
-          const errorData = await res.json();
-          const errorMsg = errorData.error || 'Unknown error';
-          const details = errorData.details || errorData.received || '';
-          const insertData = errorData.insertData ? JSON.stringify(errorData.insertData) : '';
-          throw new Error(`Failed to update service: ${errorMsg}. Details: ${details}. Data sent: ${insertData}`);
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Failed to update service: ${res.status}`);
         }
 
-        const updatedService = await res.json();
-        console.log("Service updated successfully:", updatedService);
-        
-        // Update service in list
-        setServices(prev => prev.map(svc => 
-          svc.id === serviceData.id 
-            ? {
-                ...svc,
-                name: serviceData.name,
-                category: serviceData.category,
-                description: serviceData.meta,
-                price: `₱${parseFloat(serviceData.price).toFixed(2)}`,
-                available: serviceData.available,
-                meta: serviceData.meta
-              }
-            : svc
-        ));
+        await fetchServices();
       }
 
       setEditingService(null);
@@ -882,9 +866,8 @@ export const AdminDashboardServices = ({ date }) => {
       }
 
       console.log("Service deleted successfully");
-      
-      // Remove service from list
-      setServices(prev => prev.filter(svc => svc.id !== service.id));
+
+      await fetchServices();
       setEditingService(null);
     } catch (err) {
       console.error('Error deleting service:', err);
