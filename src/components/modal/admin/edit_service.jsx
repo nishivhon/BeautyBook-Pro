@@ -122,8 +122,17 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
   useEffect(() => {
     if (service) {
       const serviceData = JSON.parse(JSON.stringify(service));
-      setFormData(serviceData);
-      setInitialFormData(serviceData);
+      // Map estimatedTime to estimated_time and handle all fields
+      const mappedData = {
+        name: serviceData.name || "",
+        meta: serviceData.meta || serviceData.description || "",
+        available: serviceData.available !== false,
+        price: serviceData.price || "",
+        category: serviceData.category || "",
+        estimated_time: serviceData.estimated_time || serviceData.estimatedTime || ""
+      };
+      setFormData(mappedData);
+      setInitialFormData(mappedData);
     }
   }, [service, isOpen]);
 
@@ -143,7 +152,11 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
     if (!validateForm()) {
       return;
     }
-    onSave(formData);
+    onSave({
+      ...formData,
+      id: service?.id,
+      _isNew: service?._isNew === true
+    });
     setFormData({ name: "", meta: "", available: true, price: "", category: "", estimated_time: "" });
     setInitialFormData(null);
     setErrors({});
