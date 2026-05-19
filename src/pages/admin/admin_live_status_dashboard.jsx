@@ -862,10 +862,14 @@ const SchedulePanel = ({ date = "Dec 7, 2024", refreshTrigger = 0 }) => {
 
           const staffStatus = s.status; // 'off', 'avail', 'no slots'
           const inService = (s.in_service || '').toLowerCase(); // 'avail', 'in-service', etc.
+          const hasClockOut = s.clock_out && s.clock_out.trim() && s.clock_out !== '—';
 
           // Determine dot color based on in_service field
           let dotColor = 'live-sched-dot-amber'; // default
-          if (staffStatus === 'off') {
+          if (hasClockOut) {
+            // If clocked out, show grey
+            dotColor = 'live-sched-dot-grey';
+          } else if (staffStatus === 'off') {
             dotColor = 'live-sched-dot-grey';
           } else if (inService === 'avail') {
             dotColor = 'live-sched-dot-green';
