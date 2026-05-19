@@ -112,7 +112,7 @@ const ConfirmationDialog = ({ isOpen, title, message, onConfirm, onCancel, confi
 // ═══════════════════════════════════════════════════════════════════
 
 export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, categories = [] }) => {
-  const [formData, setFormData] = useState({ name: "", meta: "", available: true, price: "", category: "" });
+  const [formData, setFormData] = useState({ name: "", meta: "", available: true, price: "", category: "", estimated_time: "" });
   const [isNewCategory, setIsNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [initialFormData, setInitialFormData] = useState(null);
@@ -167,7 +167,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
       return;
     }
     onSave(formData);
-    setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+    setFormData({ name: "", meta: "", available: true, price: "", category: "", estimated_time: "" });
     setInitialFormData(null);
     setIsNewCategory(false);
     setNewCategoryName("");
@@ -193,7 +193,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
 
   const handleConfirmDiscard = () => {
     setShowConfirmation(false);
-    setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+    setFormData({ name: "", meta: "", available: true, price: "", category: "", estimated_time: "" });
     setInitialFormData(null);
     setIsNewCategory(false);
     setNewCategoryName("");
@@ -218,7 +218,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
   const handleRemove = () => {
     if (onRemove && service) {
       onRemove(service);
-      setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+      setFormData({ name: "", meta: "", available: true, price: "", category: "", estimated_time: "" });
       setInitialFormData(null);
       setIsNewCategory(false);
       setNewCategoryName("");
@@ -472,6 +472,37 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
               onBlur={(e) => e.target.style.borderColor = errors.price ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}
             />
             {errors.price && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0 0" }}>{errors.price}</p>}
+          </div>
+
+          {/* Estimated Time (in minutes) */}
+          <div>
+            <label style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: "600",
+              color: "#dd901d",
+              marginBottom: "8px"
+            }}>Estimated Time (minutes)</label>
+            <input
+              type="number"
+              value={formData.estimated_time}
+              onChange={(e) => handleFormChange("estimated_time", e.target.value)}
+              placeholder="e.g., 30"
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                backgroundColor: "rgba(26, 15, 0, 0.5)",
+                border: "1px solid rgba(221, 144, 29, 0.3)",
+                borderRadius: "8px",
+                color: "#f5f5f5",
+                fontSize: "14px",
+                fontFamily: "Inter, sans-serif",
+                boxSizing: "border-box",
+                transition: "border-color 0.2s ease"
+              }}
+              onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
+              onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
+            />
           </div>
 
           {/* Availability Toggle */}

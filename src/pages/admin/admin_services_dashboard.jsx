@@ -713,21 +713,34 @@ export const AdminDashboardServices = ({ date }) => {
           ? parseFloat(serviceData.price.replace(/[₱\s]/g, ''))
           : parseFloat(serviceData.price);
 
+        const requestBody = {
+          name: serviceData.name,
+          service_name: serviceData.name,
+          category: serviceData.category,
+          description: serviceData.meta,
+          price: isNaN(priceValue) ? 0 : priceValue,
+          availability: serviceData.available,
+          estimated_time: serviceData.estimated_time ? parseInt(serviceData.estimated_time, 10) : 0
+        };
+        
+        console.log("Request body being sent:", requestBody);
+
         const res = await fetch('/api/services/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: serviceData.name,
-            service_name: serviceData.name,
-            category: serviceData.category,
-            description: serviceData.meta,
-            price: isNaN(priceValue) ? 0 : priceValue,
-            availability: serviceData.available
-          })
+          body: JSON.stringify(requestBody)
         });
 
+        console.log("Response status:", res.status);
+        console.log("Response headers:", Object.fromEntries(res.headers));
+        
         if (!res.ok) {
-          throw new Error(`Failed to create service: ${res.status}`);
+          const errorData = await res.json();
+          console.error("Error response body:", errorData);
+          const errorMsg = errorData.error || 'Unknown error';
+          const details = errorData.details || '';
+          const insertData = errorData.insertData ? JSON.stringify(errorData.insertData) : '';
+          throw new Error(`Failed to create service: ${errorMsg}. Details: ${details}. Data sent: ${insertData}`);
         }
 
         const newService = await res.json();
@@ -765,12 +778,17 @@ export const AdminDashboardServices = ({ date }) => {
             category: serviceData.category,
             description: serviceData.meta,
             price: isNaN(priceValue) ? 0 : priceValue,
-            available: serviceData.available
+            available: serviceData.available,
+            estimated_time: serviceData.estimated_time ? parseInt(serviceData.estimated_time, 10) : 0
           })
         });
 
         if (!res.ok) {
-          throw new Error(`Failed to update service: ${res.status}`);
+          const errorData = await res.json();
+          const errorMsg = errorData.error || 'Unknown error';
+          const details = errorData.details || errorData.received || '';
+          const insertData = errorData.insertData ? JSON.stringify(errorData.insertData) : '';
+          throw new Error(`Failed to update service: ${errorMsg}. Details: ${details}. Data sent: ${insertData}`);
         }
 
         const updatedService = await res.json();
