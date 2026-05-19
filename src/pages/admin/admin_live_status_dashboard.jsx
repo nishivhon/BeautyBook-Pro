@@ -6,6 +6,19 @@ import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
 // ═══════════════════════════════════════════════════════════════════
+// DARK MODE HELPER
+// ═══════════════════════════════════════════════════════════════════
+const isDarkMode = () => {
+  if (typeof document === 'undefined') return true;
+  const theme = document.documentElement.getAttribute('data-theme');
+  return theme !== 'light';
+};
+
+const getThemeStyles = (darkStyles, lightStyles) => {
+  return isDarkMode() ? darkStyles : lightStyles;
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
 // ═══════════════════════════════════════════════════════════════════
 
@@ -419,13 +432,22 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
       </div>
 
       {isExpanded && (
-        <div style={{
-          padding: "12px 16px",
-          backgroundColor: "rgba(250, 190, 206, 0.4)",
-          borderLeft: "3px solid rgba(243, 139, 166, 0.5)",
-          marginBottom: "8px",
-          borderRadius: "0 8px 8px 0"
-        }}>
+        <div style={getThemeStyles(
+          {
+            padding: "12px 16px",
+            backgroundColor: "rgba(20, 17, 15, 0.4)",
+            borderLeft: "3px solid rgba(221, 144, 29, 0.3)",
+            marginBottom: "8px",
+            borderRadius: "0 8px 8px 0"
+          },
+          {
+            padding: "12px 16px",
+            backgroundColor: "rgba(250, 190, 206, 0.3)",
+            borderLeft: "3px solid rgba(213, 210, 211, 0.3)",
+            marginBottom: "8px",
+            borderRadius: "0 8px 8px 0"
+          }
+        )}>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <div>
               <span className="dash-detail-label">Service Selected</span>
@@ -712,14 +734,36 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
 
       {/* Loading State */}
       {loading && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          }
+        )}>
           Loading appointments...
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#f5f1eb'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#ef4444'
+          }
+        )}>
           Error loading appointments: {error}
         </div>
       )}
@@ -737,7 +781,18 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
                 <p className="live-section-label">{section.label}</p>
                 <div className="live-queue-group">
                   {section.items.length === 0 ? (
-                    <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
+                    <p style={getThemeStyles(
+                      {
+                        padding: '10px',
+                        color: '#999',
+                        fontSize: '14px'
+                      },
+                      {
+                        padding: '10px',
+                        color: '#999',
+                        fontSize: '14px'
+                      }
+                    )}>No appointments</p>
                   ) : (
                     section.items.map((item, ii) => {
                       const isUpNext = section.label === "Up Next";
@@ -780,10 +835,26 @@ const ScheduleRow = ({ stylist, time, client, service, status, dotClass, staffSt
   return (
     <div 
       className={`live-schedule-row ${isActive ? "live-schedule-row-active" : ""}`}
-      style={{
-        opacity: isOff ? 0.5 : 1,
-        position: 'relative'
-      }}
+      style={getThemeStyles(
+        {
+          opacity: isOff ? 0.5 : 1,
+          position: 'relative',
+          backgroundColor: isActive ? 'rgba(221, 144, 29, 0.1)' : 'rgba(20, 17, 15, 0.3)',
+          borderRadius: '8px',
+          padding: '12px',
+          marginBottom: '8px',
+          border: '1px solid rgba(221, 144, 29, 0.2)'
+        },
+        {
+          opacity: isOff ? 0.5 : 1,
+          position: 'relative',
+          backgroundColor: isActive ? 'rgba(221, 144, 29, 0.08)' : 'rgba(250, 190, 206, 0.15)',
+          borderRadius: '8px',
+          padding: '12px',
+          marginBottom: '8px',
+          border: '1px solid rgba(213, 210, 211, 0.2)'
+        }
+      )}
     >
       {isOff && (
         <div style={{
@@ -915,7 +986,18 @@ const SchedulePanel = ({ date = "Dec 7, 2024", refreshTrigger = 0 }) => {
 
       <div className="live-schedule-scroll-limited">
         {loading ? (
-          <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>Loading schedule...</div>
+          <div style={getThemeStyles(
+            {
+              padding: '20px',
+              textAlign: 'center',
+              color: '#999'
+            },
+            {
+              padding: '20px',
+              textAlign: 'center',
+              color: '#999'
+            }
+          )}>Loading schedule...</div>
         ) : (
           scheduleToDisplay.map((item, i) => (
             <ScheduleRow key={i} {...item} />

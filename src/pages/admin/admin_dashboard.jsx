@@ -7,6 +7,19 @@ import { ConfirmationDialog } from "../../components/modal/customer/confirmation
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 
 // ═══════════════════════════════════════════════════════════════════
+// DARK MODE HELPER
+// ═══════════════════════════════════════════════════════════════════
+const isDarkMode = () => {
+  if (typeof document === 'undefined') return true;
+  const theme = document.documentElement.getAttribute('data-theme');
+  return theme !== 'light';
+};
+
+const getThemeStyles = (darkStyles, lightStyles) => {
+  return isDarkMode() ? darkStyles : lightStyles;
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
 // ═══════════════════════════════════════════════════════════════════
 
@@ -598,13 +611,22 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         </div>
 
         {isItemExpanded && (
-          <div style={{
-            padding: "12px 16px",
-            backgroundColor: "rgba(250, 190, 206, 0.4)",
-            borderLeft: "3px solid rgba(243, 139, 166, 0.5)",
-            marginBottom: "8px",
-            borderRadius: "0 8px 8px 0"
-          }}>
+          <div style={getThemeStyles(
+            {
+              padding: "12px 16px",
+              backgroundColor: "rgba(20, 17, 15, 0.4)",
+              borderLeft: "3px solid rgba(221, 144, 29, 0.3)",
+              marginBottom: "8px",
+              borderRadius: "0 8px 8px 0"
+            },
+            {
+              padding: "12px 16px",
+              backgroundColor: "rgba(250, 190, 206, 0.3)",
+              borderLeft: "3px solid rgba(213, 210, 211, 0.3)",
+              marginBottom: "8px",
+              borderRadius: "0 8px 8px 0"
+            }
+          )}>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div>
                 <span className="dash-detail-label">Service Selected</span>
@@ -706,14 +728,36 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
       {/* Loading State */}
       {loading && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          }
+        )}>
           Loading appointments...
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#f5f1eb'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#ef4444'
+          }
+        )}>
           Error loading appointments: {error}
         </div>
       )}
@@ -731,7 +775,18 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
                 <p className="live-section-label">{section.label}</p>
                 <div className="live-queue-group">
                   {section.items.length === 0 ? (
-                    <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
+                    <p style={getThemeStyles(
+                      {
+                        padding: '10px',
+                        color: '#999',
+                        fontSize: '14px'
+                      },
+                      {
+                        padding: '10px',
+                        color: '#999',
+                        fontSize: '14px'
+                      }
+                    )}>No appointments</p>
                   ) : (
                     section.items.map((item, ii) => {
                       const isUpNext = section.label === "Up Next";
@@ -1039,42 +1094,63 @@ const CouponsPanel = () => {
         </div>
       ) : (
         <div className="dash-coupons-list live-queue-scroll-limited" style={{ maxHeight: "280px", padding: "12px 0", paddingRight: "12px" }}>
-          {coupons.map((coupon) => (
-            <div key={coupon.id} style={{
-              padding: '12px',
-              marginBottom: '8px',
-              background: '#f9f9f9',
-              borderRadius: 6,
-              border: '1px solid #e0e0e0',
-              fontSize: 13,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start'
-            }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, color: '#000', marginBottom: 4 }}>
-                  {formatDiscount(coupon)} OFF
+          {coupons.map((coupon) => {
+            const couponRowStyle = getThemeStyles(
+              {
+                padding: '12px',
+                marginBottom: '8px',
+                background: 'rgba(20, 17, 15, 0.5)',
+                borderRadius: 6,
+                border: '1px solid rgba(221, 144, 29, 0.2)',
+                fontSize: 13,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start'
+              },
+              {
+                padding: '12px',
+                marginBottom: '8px',
+                background: '#ffffff',
+                borderRadius: 6,
+                border: '1px solid rgba(213, 210, 211, 0.2)',
+                fontSize: 13,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start'
+              }
+            );
+            const textColor = isDarkMode() ? '#f5f1eb' : '#0c0a09';
+            const labelColor = isDarkMode() ? '#988f81' : '#666';
+            const tertiaryColor = isDarkMode() ? '#666' : '#999';
+            const bgBoxColor = isDarkMode() ? 'rgba(221, 144, 29, 0.15)' : 'rgba(221, 144, 29, 0.1)';
+            
+            return (
+              <div key={coupon.id} style={couponRowStyle}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: textColor, marginBottom: 4 }}>
+                    {formatDiscount(coupon)} OFF
+                  </div>
+                  <div style={{ color: labelColor, fontSize: 12, marginBottom: 2 }}>
+                    Code: <span style={{ fontFamily: 'monospace', fontWeight: 500, color: textColor }}>{coupon.code}</span>
+                  </div>
+                  <div style={{ color: tertiaryColor, fontSize: 11 }}>
+                    Claims: {coupon.number_of_uses}{coupon.max_uses ? ` / ${coupon.max_uses}` : ''}
+                  </div>
                 </div>
-                <div style={{ color: '#666', fontSize: 12, marginBottom: 2 }}>
-                  Code: <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>{coupon.code}</span>
-                </div>
-                <div style={{ color: '#999', fontSize: 11 }}>
-                  Claims: {coupon.number_of_uses}{coupon.max_uses ? ` / ${coupon.max_uses}` : ''}
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  width: 28,
+                  height: 28,
+                  background: bgBoxColor,
+                  borderRadius: 4
+                }}>
+                  <CouponIcon size={16} color="#dd901d" />
                 </div>
               </div>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                width: 28,
-                height: 28,
-                background: '#dd901d15',
-                borderRadius: 4
-              }}>
-                <CouponIcon size={16} color="#dd901d" />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -1336,18 +1412,20 @@ export const AdminDashboard = ({ date }) => {
             <PageMetrics stats={stats} />
           </div>
           <div className="dash-content-grid">
-            <LiveQueue 
-              onOpenWalkInModal={() => setShowWalkInModal(true)}
-              onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
-                setProceedConfirmId(id);
-                setProceedConfirmData({ name, service, staff, actualId, isWalkIn });
-              }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <LiveQueue 
+                onOpenWalkInModal={() => setShowWalkInModal(true)}
+                onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
+                  setProceedConfirmId(id);
+                  setProceedConfirmData({ name, service, staff, actualId, isWalkIn });
+                }}
+              />
+              <CouponsPanel />
+            </div>
 
             <div className="dash-sidebar">
               <StaffStatus />
               <SummaryPanel />
-              <CouponsPanel />
               <AnalyticsPanel />
             </div>
           </div>

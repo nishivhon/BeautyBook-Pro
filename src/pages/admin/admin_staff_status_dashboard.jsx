@@ -9,6 +9,19 @@ import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
 // ═══════════════════════════════════════════════════════════════════
+// DARK MODE HELPER
+// ═══════════════════════════════════════════════════════════════════
+const isDarkMode = () => {
+  if (typeof document === 'undefined') return true;
+  const theme = document.documentElement.getAttribute('data-theme');
+  return theme !== 'light';
+};
+
+const getThemeStyles = (darkStyles, lightStyles) => {
+  return isDarkMode() ? darkStyles : lightStyles;
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
 // ═══════════════════════════════════════════════════════════════════
 
@@ -588,14 +601,36 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
 
       {/* Loading State */}
       {loading && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          }
+        )}>
           Loading staff data...
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#f5f1eb'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#ef4444'
+          }
+        )}>
           Error loading staff: {error}
         </div>
       )}
@@ -627,19 +662,34 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                       {/* Dropdown Menu */}
                       {openDropdown === s.name && (
                         <div
-                          style={{
-                            position: "absolute",
-                            top: "100%",
-                            left: "0",
-                            marginTop: "4px",
-                            backgroundColor: "#1a1a1a",
-                            border: "1px solid rgba(221, 144, 29, 0.2)",
-                            borderRadius: "6px",
-                            minWidth: "180px",
-                            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-                            zIndex: 100,
-                            overflow: "hidden",
-                          }}
+                          style={getThemeStyles(
+                            {
+                              position: "absolute",
+                              top: "100%",
+                              left: "0",
+                              marginTop: "4px",
+                              backgroundColor: "rgba(20, 17, 15, 0.96)",
+                              border: "1px solid rgba(221, 144, 29, 0.2)",
+                              borderRadius: "6px",
+                              minWidth: "180px",
+                              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+                              zIndex: 100,
+                              overflow: "hidden",
+                            },
+                            {
+                              position: "absolute",
+                              top: "100%",
+                              left: "0",
+                              marginTop: "4px",
+                              backgroundColor: "#ffffff",
+                              border: "1px solid rgba(213, 210, 211, 0.7)",
+                              borderRadius: "6px",
+                              minWidth: "180px",
+                              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+                              zIndex: 100,
+                              overflow: "hidden",
+                            }
+                          )}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
@@ -653,18 +703,32 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                                 staffId: s.id
                               });
                             }}
-                            style={{
-                              width: "100%",
-                              padding: "10px 14px",
-                              backgroundColor: walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.1)" : "transparent",
-                              border: "none",
-                              textAlign: "left",
-                              color: "#f5f5f5",
-                              fontSize: "13px",
-                              fontFamily: "Inter, sans-serif",
-                              cursor: "pointer",
-                              transition: "all 0.2s ease",
-                            }}
+                            style={getThemeStyles(
+                              {
+                                width: "100%",
+                                padding: "10px 14px",
+                                backgroundColor: walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.1)" : "transparent",
+                                border: "none",
+                                textAlign: "left",
+                                color: "#f5f5f5",
+                                fontSize: "13px",
+                                fontFamily: "Inter, sans-serif",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                              },
+                              {
+                                width: "100%",
+                                padding: "10px 14px",
+                                backgroundColor: walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.08)" : "transparent",
+                                border: "none",
+                                textAlign: "left",
+                                color: "#0c0a09",
+                                fontSize: "13px",
+                                fontFamily: "Inter, sans-serif",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                              }
+                            )}
                             onMouseEnter={(e) => {
                               e.target.style.backgroundColor = "rgba(34, 197, 94, 0.15)";
                             }}
@@ -685,19 +749,34 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                                 staffId: s.id
                               });
                             }}
-                            style={{
-                              width: "100%",
-                              padding: "10px 14px",
-                              backgroundColor: walkInStatus[s.name] === "Not Accepting" ? "rgba(239, 68, 68, 0.1)" : "transparent",
-                              border: "none",
-                              borderTop: "1px solid rgba(221, 144, 29, 0.1)",
-                              textAlign: "left",
-                              color: "#f5f5f5",
-                              fontSize: "13px",
-                              fontFamily: "Inter, sans-serif",
-                              cursor: "pointer",
-                              transition: "all 0.2s ease",
-                            }}
+                            style={getThemeStyles(
+                              {
+                                width: "100%",
+                                padding: "10px 14px",
+                                backgroundColor: walkInStatus[s.name] === "Not Accepting" ? "rgba(239, 68, 68, 0.1)" : "transparent",
+                                border: "none",
+                                borderTop: "1px solid rgba(221, 144, 29, 0.1)",
+                                textAlign: "left",
+                                color: "#f5f5f5",
+                                fontSize: "13px",
+                                fontFamily: "Inter, sans-serif",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                              },
+                              {
+                                width: "100%",
+                                padding: "10px 14px",
+                                backgroundColor: walkInStatus[s.name] === "Not Accepting" ? "rgba(239, 68, 68, 0.08)" : "transparent",
+                                border: "none",
+                                borderTop: "1px solid rgba(221, 144, 29, 0.08)",
+                                textAlign: "left",
+                                color: "#0c0a09",
+                                fontSize: "13px",
+                                fontFamily: "Inter, sans-serif",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                              }
+                            )}
                             onMouseEnter={(e) => {
                               e.target.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
                             }}
@@ -732,16 +811,28 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
 
               {/* Expanded Staff Details */}
               {expandedStaff === s.name && (
-                <div style={{
-                  backgroundColor: "rgba(250, 190, 206, 0.4)",
-                  borderLeft: "3px solid rgba(243, 139, 166, 0.5)",
-                  padding: "16px",
-                  marginTop: "8px",
-                  borderRadius: "6px",
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "16px 24px"
-                }}>
+                <div style={getThemeStyles(
+                  {
+                    backgroundColor: "rgba(20, 17, 15, 0.5)",
+                    borderLeft: "3px solid rgba(221, 144, 29, 0.35)",
+                    padding: "16px",
+                    marginTop: "8px",
+                    borderRadius: "6px",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px 24px"
+                  },
+                  {
+                    backgroundColor: "rgba(250, 190, 206, 0.3)",
+                    borderLeft: "3px solid rgba(213, 210, 211, 0.35)",
+                    padding: "16px",
+                    marginTop: "8px",
+                    borderRadius: "6px",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px 24px"
+                  }
+                )}>
                   <div>
                     <p className="dash-detail-label">Current Client</p>
                     <p className="dash-detail-value">{s.details.currentClient}</p>
@@ -868,41 +959,93 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
           onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
         >
           <div
-            style={{
-              backgroundColor: "#1a1a1a",
-              borderRadius: "12px",
-              padding: "32px",
-              maxWidth: "400px",
-              width: "90%",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.9)",
-              border: "1px solid rgba(221, 144, 29, 0.2)",
-            }}
+            style={getThemeStyles(
+              {
+                backgroundColor: "rgba(10, 9, 8, 0.95)",
+                borderRadius: "12px",
+                padding: "32px",
+                maxWidth: "400px",
+                width: "90%",
+                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.9)",
+                border: "1px solid rgba(221, 144, 29, 0.2)",
+              },
+              {
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                padding: "32px",
+                maxWidth: "400px",
+                width: "90%",
+                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.12)",
+                border: "1px solid rgba(213, 210, 211, 0.6)",
+              }
+            )}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#f5f5f5", margin: "0 0 12px 0" }}>
+            <h3 style={getThemeStyles(
+              {
+                fontSize: "18px",
+                fontWeight: "700",
+                color: "#f5f5f5",
+                margin: "0 0 12px 0"
+              },
+              {
+                fontSize: "18px",
+                fontWeight: "700",
+                color: "#0c0a09",
+                margin: "0 0 12px 0"
+              }
+            )}>
               {confirmModal.title}
             </h3>
             
-            <p style={{ fontSize: "14px", color: "#988f81", margin: "0 0 24px 0", lineHeight: "1.5" }}>
+            <p style={getThemeStyles(
+              {
+                fontSize: "14px",
+                color: "#988f81",
+                margin: "0 0 24px 0",
+                lineHeight: "1.5"
+              },
+              {
+                fontSize: "14px",
+                color: "#666",
+                margin: "0 0 24px 0",
+                lineHeight: "1.5"
+              }
+            )}>
               {confirmModal.message}
             </p>
 
             <div style={{ display: "flex", gap: "12px" }}>
               <button
                 onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-                style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  backgroundColor: "transparent",
-                  border: "1px solid rgba(221, 144, 29, 0.3)",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#988f81",
-                  transition: "all 0.2s ease",
-                  fontFamily: "Inter, sans-serif",
-                }}
+                style={getThemeStyles(
+                  {
+                    flex: 1,
+                    padding: "12px 16px",
+                    backgroundColor: "transparent",
+                    border: "1px solid rgba(221, 144, 29, 0.3)",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#988f81",
+                    transition: "all 0.2s ease",
+                    fontFamily: "Inter, sans-serif",
+                  },
+                  {
+                    flex: 1,
+                    padding: "12px 16px",
+                    backgroundColor: "transparent",
+                    border: "1px solid rgba(213, 210, 211, 0.4)",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#666",
+                    transition: "all 0.2s ease",
+                    fontFamily: "Inter, sans-serif",
+                  }
+                )}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.6)";
                   e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.1)";

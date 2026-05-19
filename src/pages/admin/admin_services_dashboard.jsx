@@ -7,8 +7,21 @@ import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
 // ═══════════════════════════════════════════════════════════════════
-// SVG ICONS
+// DARK MODE HELPER
 // ═══════════════════════════════════════════════════════════════════
+const isDarkMode = () => {
+  if (typeof document === 'undefined') return true;
+  const theme = document.documentElement.getAttribute('data-theme');
+  return theme !== 'light';
+};
+
+const getThemeStyles = (darkStyles, lightStyles) => {
+  return isDarkMode() ? darkStyles : lightStyles;
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// SVG ICONS
+// ═══════════════════════════════════════════════════════════
 
 const ScissorsIcon = ({ size = 20, color = "#000" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -384,34 +397,57 @@ const PageMetrics = ({ stats }) => (
 );
 
 /* ── Single service item row ── */
-const ServiceItem = ({ id, name, category, meta, available, price, onEdit }) => (
-  <div className="svc-item-row">
-    <div className="svc-item-left">
-      <div className="svc-item-icon-box">
-        <ScissorsIcon size={18} color="#000" />
+const ServiceItem = ({ id, name, category, meta, available, price, onEdit }) => {
+  const rowStyles = getThemeStyles(
+    {
+      backgroundColor: 'rgba(20, 17, 15, 0.35)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '12px',
+      padding: '16px',
+      marginBottom: '12px'
+    },
+    {
+      backgroundColor: '#ffffff',
+      border: '1px solid rgba(213, 210, 211, 0.35)',
+      borderRadius: '12px',
+      padding: '16px',
+      marginBottom: '12px'
+    }
+  );
+
+  const titleColor = isDarkMode() ? '#f5f1eb' : '#0c0a09';
+  const metaColor = isDarkMode() ? '#988f81' : '#666';
+  const priceColor = isDarkMode() ? '#f5f1eb' : '#0c0a09';
+
+  return (
+    <div className="svc-item-row" style={rowStyles}>
+      <div className="svc-item-left">
+        <div className="svc-item-icon-box">
+          <ScissorsIcon size={18} color={titleColor} />
+        </div>
+        <div className="svc-item-info">
+          <span className="svc-item-name" style={{ color: titleColor }}>{name}</span>
+          <span className="svc-item-meta" style={{ color: metaColor }}>{meta}</span>
+        </div>
       </div>
-      <div className="svc-item-info">
-        <span className="svc-item-name">{name}</span>
-        <span className="svc-item-meta">{meta}</span>
+      <div className="svc-item-right">
+        <div className="svc-item-status-col">
+          <span className={available ? "svc-item-status-available" : "svc-item-status-unavailable"}>
+            {available ? "Available" : "Not Available"}
+          </span>
+          <span className="svc-item-price" style={{ color: priceColor }}>{price}</span>
+        </div>
+        <button 
+          className="svc-item-edit-btn" 
+          aria-label="Edit service"
+          onClick={() => onEdit({ id, name, category, meta, available, price })}
+        >
+          <EditIcon size={14} color="currentColor" />
+        </button>
       </div>
     </div>
-    <div className="svc-item-right">
-      <div className="svc-item-status-col">
-        <span className={available ? "svc-item-status-available" : "svc-item-status-unavailable"}>
-          {available ? "Available" : "Not Available"}
-        </span>
-        <span className="svc-item-price">{price}</span>
-      </div>
-      <button 
-        className="svc-item-edit-btn" 
-        aria-label="Edit service"
-        onClick={() => onEdit({ id, name, category, meta, available, price })}
-      >
-        <EditIcon size={14} color="currentColor" />
-      </button>
-    </div>
-  </div>
-);
+  );
+};
 
 /* ── Services list panel ── */
 const ServicesPanel = ({ serviceGroups, loading, error, onEditService }) => {
@@ -423,14 +459,36 @@ const ServicesPanel = ({ serviceGroups, loading, error, onEditService }) => {
 
       {/* Loading State */}
       {loading && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          }
+        )}>
           Loading services...
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#f5f1eb'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#ef4444'
+          }
+        )}>
           Error loading services: {error}
         </div>
       )}
