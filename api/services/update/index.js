@@ -56,8 +56,9 @@ export default async (req, res) => {
     if ('category' in existingService) updateData.category = category;
     if ('description' in existingService) updateData.description = description || meta || '';
     if ('price' in existingService) updateData.price = parseFloat(price) || 0;
-    if ('est_time' in existingService) updateData.est_time = serviceEstimatedTime !== undefined && serviceEstimatedTime !== '' ? parseInt(serviceEstimatedTime, 10) : null;
-    if ('estimated_time' in existingService) updateData.estimated_time = serviceEstimatedTime !== undefined && serviceEstimatedTime !== '' ? parseInt(serviceEstimatedTime, 10) : null;
+    // Use provided estimated_time, or default to 0
+    if ('est_time' in existingService) updateData.est_time = serviceEstimatedTime && serviceEstimatedTime !== '' ? parseInt(serviceEstimatedTime, 10) : 0;
+    if ('estimated_time' in existingService) updateData.estimated_time = serviceEstimatedTime && serviceEstimatedTime !== '' ? parseInt(serviceEstimatedTime, 10) : 0;
     if ('availability' in existingService) updateData.availability = serviceAvailability !== false;
     if ('available' in existingService) updateData.available = serviceAvailability !== false;
     if ('is_deleted' in existingService && is_deleted !== undefined) updateData.is_deleted = Boolean(is_deleted);

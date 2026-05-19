@@ -112,9 +112,7 @@ const ConfirmationDialog = ({ isOpen, title, message, onConfirm, onCancel, confi
 // ═══════════════════════════════════════════════════════════════════
 
 export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, categories = [] }) => {
-  const [formData, setFormData] = useState({ name: "", meta: "", available: true, price: "", category: "" });
-  const [isNewCategory, setIsNewCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
+  const [formData, setFormData] = useState({ name: "", meta: "", available: true, price: "", category: "", estimated_time: "" });
   const [initialFormData, setInitialFormData] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
@@ -126,40 +124,19 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
       const serviceData = JSON.parse(JSON.stringify(service));
       setFormData(serviceData);
       setInitialFormData(serviceData);
-      setIsNewCategory(false);
-      setNewCategoryName("");
     }
   }, [service, isOpen]);
 
   const hasUnsavedChanges = () => {
     if (!initialFormData) return false;
     // Check if main form data has changed
-    const hasFormChanges = Object.keys(formData).some(key => 
+    return Object.keys(formData).some(key => 
       JSON.stringify(formData[key]) !== JSON.stringify(initialFormData[key])
     );
-    // Check if new category is being created
-    const hasNewCategory = isNewCategory && newCategoryName.length > 0;
-    return hasFormChanges || hasNewCategory;
   };
 
   const handleFormChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleCategoryChange = (value) => {
-    if (value === "new") {
-      setIsNewCategory(true);
-      setFormData(prev => ({ ...prev, category: "" }));
-    } else {
-      setIsNewCategory(false);
-      setNewCategoryName("");
-      setFormData(prev => ({ ...prev, category: value }));
-    }
-  };
-
-  const handleNewCategoryChange = (value) => {
-    setNewCategoryName(value);
-    setFormData(prev => ({ ...prev, category: value }));
   };
 
   const handleSave = () => {
@@ -167,10 +144,8 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
       return;
     }
     onSave(formData);
-    setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+    setFormData({ name: "", meta: "", available: true, price: "", category: "", estimated_time: "" });
     setInitialFormData(null);
-    setIsNewCategory(false);
-    setNewCategoryName("");
     setErrors({});
   };
 
@@ -193,10 +168,8 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
 
   const handleConfirmDiscard = () => {
     setShowConfirmation(false);
-    setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+    setFormData({ name: "", meta: "", available: true, price: "", category: "", estimated_time: "" });
     setInitialFormData(null);
-    setIsNewCategory(false);
-    setNewCategoryName("");
     setErrors({});
     
     if (pendingAction === "close") {
@@ -218,10 +191,8 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
   const handleRemove = () => {
     if (onRemove && service) {
       onRemove(service);
-      setFormData({ name: "", meta: "", available: true, price: "", category: "" });
+      setFormData({ name: "", meta: "", available: true, price: "", category: "", estimated_time: "" });
       setInitialFormData(null);
-      setIsNewCategory(false);
-      setNewCategoryName("");
       setShowConfirmation(false);
       setPendingAction(null);
     }
@@ -346,9 +317,9 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
               marginBottom: "8px"
             }}>Category</label>
             <select
-              value={isNewCategory ? "new" : formData.category}
+              value={formData.category}
               onChange={(e) => {
-                handleCategoryChange(e.target.value);
+                handleFormChange("category", e.target.value);
                 if (errors.category) setErrors(prev => ({ ...prev, category: "" }));
               }}
               style={{
@@ -371,43 +342,9 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
               {categories.map((cat) => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
-              <option value="new">+ Create New Category</option>
             </select>
             {errors.category && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0 0" }}>{errors.category}</p>}
           </div>
-
-          {/* New Category Input (shown when creating new category) */}
-          {isNewCategory && (
-            <div>
-              <label style={{
-                display: "block",
-                fontSize: "13px",
-                fontWeight: "600",
-                color: "#dd901d",
-                marginBottom: "8px"
-              }}>New Category Name</label>
-              <input
-                type="text"
-                value={newCategoryName}
-                onChange={(e) => handleNewCategoryChange(e.target.value)}
-                placeholder="Enter new category name"
-                style={{
-                  width: "100%",
-                  padding: "12px 16px",
-                  backgroundColor: "rgba(26, 15, 0, 0.5)",
-                  border: "1px solid rgba(221, 144, 29, 0.3)",
-                  borderRadius: "8px",
-                  color: "#f5f5f5",
-                  fontSize: "14px",
-                  fontFamily: "Inter, sans-serif",
-                  boxSizing: "border-box",
-                  transition: "border-color 0.2s ease"
-                }}
-                onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
-                onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
-              />
-            </div>
-          )}
 
           {/* Description */}
           <div>
@@ -472,6 +409,37 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
               onBlur={(e) => e.target.style.borderColor = errors.price ? "#ef4444" : "rgba(221, 144, 29, 0.3)"}
             />
             {errors.price && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0 0" }}>{errors.price}</p>}
+          </div>
+
+          {/* Estimated Time (in minutes) */}
+          <div>
+            <label style={{
+              display: "block",
+              fontSize: "13px",
+              fontWeight: "600",
+              color: "#dd901d",
+              marginBottom: "8px"
+            }}>Estimated Time (minutes)</label>
+            <input
+              type="number"
+              value={formData.estimated_time}
+              onChange={(e) => handleFormChange("estimated_time", e.target.value)}
+              placeholder="e.g., 30"
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                backgroundColor: "rgba(26, 15, 0, 0.5)",
+                border: "1px solid rgba(221, 144, 29, 0.3)",
+                borderRadius: "8px",
+                color: "#f5f5f5",
+                fontSize: "14px",
+                fontFamily: "Inter, sans-serif",
+                boxSizing: "border-box",
+                transition: "border-color 0.2s ease"
+              }}
+              onFocus={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.6)"}
+              onBlur={(e) => e.target.style.borderColor = "rgba(221, 144, 29, 0.3)"}
+            />
           </div>
 
           {/* Availability Toggle */}
