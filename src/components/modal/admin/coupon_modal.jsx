@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-
-// Reusable small ID generator (no external deps)
-const genId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`;
+import { couponService } from "../../../services/couponService";
 
 // Generate random coupon code
 const genCode = () => {
@@ -60,35 +58,20 @@ const ConfirmationDialog = ({ isOpen, title, message, onConfirm, onCancel, confi
 // Local storage key for quick persistence (front-end only)
 const STORAGE_KEY = 'bbp_coupons_v1';
 
-const loadCoupons = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
-};
-
-const saveCoupons = (list) => {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
-};
-
 export const CouponModal = ({ isOpen, onClose, services = [] }) => {
   const emptyForm = {
     id: null,
     code: '',
-    type: 'discount',
-    valueType: 'percentage',
+    value_type: 'percentage',
     value: '',
     description: '',
-    applicableServices: [],
-    startDate: '',
-    endDate: '',
-    maxUses: '',
-    active: true,
-    deleted: false,
-    usesCount: 0,
-    createdAt: null
+    applicable_services: [],
+    start_date: '',
+    end_date: '',
+    number_of_uses: 0,
+    max_uses: '',
+    status: 'active',
+    is_deleted: false,
   };
 
   const [form, setForm] = useState(JSON.parse(JSON.stringify(emptyForm)));
@@ -99,9 +82,23 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState(null);
+  const [loading, setLoading] = useState(false);
 
+  // Load coupons from API on mount
   useEffect(() => {
-    setCoupons(loadCoupons());
+    const fetchCoupons = async () => {
+      setLoading(true);
+      try {
+        const data = await couponService.getCoupons();
+        setCoupons(data);
+      } catch (err) {
+        console.error('Error loading coupons:', err);
+        setToast({ message: 'Failed to load coupons', type: 'error' });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCoupons();
   }, []);
 
   useEffect(() => {
@@ -130,36 +127,60 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
   const validate = () => {
     const err = {};
     if (!form.code?.trim()) err.code = 'Code is required';
-    const exists = coupons.find(c => c.code?.toLowerCase() === form.code?.toLowerCase() && c.id !== form.id && !c.deleted);
+    const exists = coupons.find(c => c.code?.toLowerCase() === form.code?.toLowerCase() && c.id !== form.id && !c.is_deleted);
     if (exists) err.code = 'Code already exists';
-    if (form.type !== 'free' && (form.value === '' || isNaN(Number(form.value)))) err.value = 'Value is required';
-    if (!form.startDate) err.startDate = 'Start date is required';
-    if (!form.endDate) err.endDate = 'End date is required';
+    if (form.value === '' || isNaN(Number(form.value))) err.value = 'Value is required';
+    if (!form.start_date) err.start_date = 'Start date is required';
+    if (!form.end_date) err.end_date = 'End date is required';
     setErrors(err);
     return Object.keys(err).length === 0;
   };
 
-  const persist = (next) => { setCoupons(next); saveCoupons(next); };
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return;
-    const now = new Date().toISOString();
-    const isNew = !form.id;
+    setLoading(true);
     
-    if (form.id) {
-      const updated = coupons.map(c => c.id === form.id ? { ...c, ...form } : c);
-      persist(updated);
-    } else {
-      const newCoupon = { ...form, id: genId(), createdAt: now, usesCount: 0, deleted: false };
-      persist([newCoupon, ...coupons]);
+    try {
+      const payload = {
+        code: form.code,
+        value_type: form.value_type,
+        value: Number(form.value),
+        description: form.description,
+        applicable_services: form.applicable_services,
+        start_date: form.start_date,
+        end_date: form.end_date,
+        max_uses: form.max_uses ? Number(form.max_uses) : null,
+        status: form.status,
+      };
+
+      console.log('[CouponModal] Sending payload:', payload);
+
+      if (form.id) {
+        // Update existing coupon
+        await couponService.updateCoupon(form.id, payload);
+      } else {
+        // Create new coupon
+        await couponService.createCoupon(payload);
+      }
+
+      // Refresh coupons list
+      const updatedCoupons = await couponService.getCoupons();
+      setCoupons(updatedCoupons);
+
+      const isNew = !form.id;
+      setToast({ message: isNew ? 'Coupon created successfully!' : 'Coupon updated successfully!', type: 'success' });
+      
+      const newForm = JSON.parse(JSON.stringify(emptyForm));
+      newForm.code = genCode();
+      setForm(newForm);
+      setInitialForm(JSON.parse(JSON.stringify(newForm)));
+      setErrors({});
+    } catch (err) {
+      console.error('Error saving coupon:', err);
+      setToast({ message: err.message, type: 'error' });
+    } finally {
+      setLoading(false);
     }
-    
-    setToast({ message: isNew ? 'Coupon created successfully!' : 'Coupon updated successfully!', type: 'success' });
-    const newForm = JSON.parse(JSON.stringify(emptyForm));
-    newForm.code = genCode();
-    setForm(newForm);
-    setInitialForm(JSON.parse(JSON.stringify(newForm)));
-    setErrors({});
   };
 
   const handleEdit = (coupon) => {
@@ -171,23 +192,33 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
 
   const requestDelete = (id) => { setPendingDeleteId(id); setShowConfirm(true); };
 
-  const confirmDelete = () => {
-    const updated = coupons.map(c => c.id === pendingDeleteId ? { ...c, deleted: true } : c);
-    persist(updated);
-    setToast({ message: 'Coupon deleted successfully!', type: 'success' });
-    setShowConfirm(false);
-    setPendingDeleteId(null);
-  };
+  const confirmDelete = async () => {
+    setLoading(true);
+    try {
+      await couponService.deleteCoupon(pendingDeleteId);
 
-  const restore = (id) => {
-    const updated = coupons.map(c => c.id === id ? { ...c, deleted: false } : c);
-    persist(updated);
-    setToast({ message: 'Coupon restored successfully!', type: 'success' });
+      // Refresh coupons list
+      const updatedCoupons = await couponService.getCoupons();
+      setCoupons(updatedCoupons);
+
+      setToast({ message: 'Coupon deleted successfully!', type: 'success' });
+      setShowConfirm(false);
+      setPendingDeleteId(null);
+    } catch (err) {
+      console.error('Error deleting coupon:', err);
+      setToast({ message: err.message, type: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
-    setShowConfirm(true);
-    setPendingDeleteId(null);
+    if (hasUnsaved()) {
+      setShowConfirm(true);
+      setPendingDeleteId(null);
+    } else {
+      onClose();
+    }
   };
 
   const confirmClose = () => {
@@ -250,22 +281,15 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                     </div>
                   </div>
                   <div style={{width:160}}>
-                    <label style={{color:'#dd901d',fontWeight:600,fontSize:13}}>Type</label>
-                    <select value={form.type} onChange={(e)=>setForm(prev=>({...prev,type:e.target.value}))} style={{width:'100%',padding:12,background:'rgba(26,15,0,0.5)',border:'1px solid rgba(221,144,29,0.3)',borderRadius:8,color:'#f5f5f5',fontFamily:'Inter,sans-serif',cursor:'pointer',appearance:'none',paddingRight:28,backgroundImage:`url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dd901d' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,backgroundRepeat:'no-repeat',backgroundPosition:'right 8px center',backgroundSize:'20px'}}>
-                      <option value="discount">Discount</option>
-                      <option value="promo">Promo</option>
-                    </select>
-                  </div>
-                  <div style={{width:160}}>
                     <label style={{color:'#dd901d',fontWeight:600,fontSize:13}}>Value Type</label>
-                    <select value={form.valueType} onChange={(e)=>setForm(prev=>({...prev,valueType:e.target.value}))} style={{width:'100%',padding:12,background:'rgba(26,15,0,0.5)',border:'1px solid rgba(221,144,29,0.3)',borderRadius:8,color:'#f5f5f5',fontFamily:'Inter,sans-serif',cursor:'pointer',appearance:'none',paddingRight:28,backgroundImage:`url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dd901d' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,backgroundRepeat:'no-repeat',backgroundPosition:'right 8px center',backgroundSize:'20px'}}>
+                    <select value={form.value_type} onChange={(e)=>setForm(prev=>({...prev,value_type:e.target.value}))} style={{width:'100%',padding:12,background:'rgba(26,15,0,0.5)',border:'1px solid rgba(221,144,29,0.3)',borderRadius:8,color:'#f5f5f5',fontFamily:'Inter,sans-serif',cursor:'pointer',appearance:'none',paddingRight:28,backgroundImage:`url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dd901d' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,backgroundRepeat:'no-repeat',backgroundPosition:'right 8px center',backgroundSize:'20px'}}>
                       <option value="percentage">Percentage (%)</option>
                       <option value="fixed">Fixed (₱)</option>
                     </select>
                   </div>
                   <div style={{width:140}}>
                     <label style={{color:'#dd901d',fontWeight:600,fontSize:13}}>Value</label>
-                    <input value={form.value} onChange={(e)=>{ setForm(prev=>({...prev,value:e.target.value})); if (errors.value) setErrors(prev=>({...prev,value:undefined})); }} placeholder={form.valueType==='percentage' ? 'e.g., 20' : 'e.g., 500'} style={{width:'100%',padding:12,background:'rgba(26,15,0,0.5)',border:`1px solid ${errors.value? '#ef4444':'rgba(221,144,29,0.3)'}`,borderRadius:8,color:'#f5f5f5'}} />
+                    <input value={form.value} onChange={(e)=>{ setForm(prev=>({...prev,value:e.target.value})); if (errors.value) setErrors(prev=>({...prev,value:undefined})); }} placeholder={form.value_type==='percentage' ? 'e.g., 20' : 'e.g., 500'} style={{width:'100%',padding:12,background:'rgba(26,15,0,0.5)',border:`1px solid ${errors.value? '#ef4444':'rgba(221,144,29,0.3)'}`,borderRadius:8,color:'#f5f5f5'}} />
                     {errors.value && <p style={{color:'#ef4444',margin:'6px 0 0',fontSize:12}}>{errors.value}</p>}
                   </div>
                 </div>
@@ -281,7 +305,7 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                       {services.length === 0 && <p style={{color:'#9a9a9a',fontSize:13,margin:0}}>No services available</p>}
                       {services && services.length > 0 && services.map((s, idx) => {
                         const serviceId = String(s.id);
-                        const isSelected = form.applicableServices && form.applicableServices.map(String).includes(serviceId);
+                        const isSelected = form.applicable_services && form.applicable_services.map(String).includes(serviceId);
                         return (
                           <label key={idx} style={{display:'flex',alignItems:'center',marginBottom:10,gap:10,padding:'6px 0',cursor:'pointer'}}>
                             <input 
@@ -289,11 +313,12 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                               id={`service-${s.id}`}
                               checked={isSelected || false} 
                               onChange={(e)=>{
-                                const selectedServices = form.applicableServices.map(String);
+                                const serviceId = String(s.id);
+                                const selectedServices = form.applicable_services.map(String);
                                 const next = e.target.checked 
                                   ? [...selectedServices, serviceId]
                                   : selectedServices.filter(id => id !== serviceId);
-                                setForm(prev=>({...prev,applicableServices:next}));
+                                setForm(prev=>({...prev,applicable_services:next}));
                               }} 
                               style={{width:18,height:18,margin:'0 4px 0 0',cursor:'pointer',accentColor:'#dd901d',flexShrink:0,borderRadius:3,border:'2px solid rgba(221,144,29,0.5)',backgroundColor:'rgba(0,0,0,0.3)',appearance:'auto'}} 
                             />
@@ -310,30 +335,30 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 160px 140px',gap:12,marginBottom:18}}>
                   <div>
                     <label style={{color:'#dd901d',fontWeight:600,fontSize:13}}>Start Date</label>
-                    <input type="date" value={form.startDate} onChange={(e)=>{ setForm(prev=>({...prev,startDate:e.target.value})); if (errors.startDate) setErrors(prev=>({...prev,startDate:undefined})); }} style={{width:'100%',padding:12,background:'rgba(26,15,0,0.5)',border:`1px solid ${errors.startDate? '#ef4444':'rgba(221,144,29,0.3)'}`,borderRadius:8,color:'#f5f5f5'}} />
-                    {errors.startDate && <p style={{color:'#ef4444',margin:'6px 0 0',fontSize:12}}>{errors.startDate}</p>}
+                    <input type="date" value={form.start_date} onChange={(e)=>{ setForm(prev=>({...prev,start_date:e.target.value})); if (errors.start_date) setErrors(prev=>({...prev,start_date:undefined})); }} style={{width:'100%',padding:12,background:'rgba(26,15,0,0.5)',border:`1px solid ${errors.start_date? '#ef4444':'rgba(221,144,29,0.3)'}`,borderRadius:8,color:'#f5f5f5'}} />
+                    {errors.start_date && <p style={{color:'#ef4444',margin:'6px 0 0',fontSize:12}}>{errors.start_date}</p>}
                   </div>
                   <div>
                     <label style={{color:'#dd901d',fontWeight:600,fontSize:13}}>End Date</label>
-                    <input type="date" value={form.endDate} onChange={(e)=>{ setForm(prev=>({...prev,endDate:e.target.value})); if (errors.endDate) setErrors(prev=>({...prev,endDate:undefined})); }} style={{width:'100%',padding:12,background:'rgba(26,15,0,0.5)',border:`1px solid ${errors.endDate? '#ef4444':'rgba(221,144,29,0.3)'}`,borderRadius:8,color:'#f5f5f5'}} />
-                    {errors.endDate && <p style={{color:'#ef4444',margin:'6px 0 0',fontSize:12}}>{errors.endDate}</p>}
+                    <input type="date" value={form.end_date} onChange={(e)=>{ setForm(prev=>({...prev,end_date:e.target.value})); if (errors.end_date) setErrors(prev=>({...prev,end_date:undefined})); }} style={{width:'100%',padding:12,background:'rgba(26,15,0,0.5)',border:`1px solid ${errors.end_date? '#ef4444':'rgba(221,144,29,0.3)'}`,borderRadius:8,color:'#f5f5f5'}} />
+                    {errors.end_date && <p style={{color:'#ef4444',margin:'6px 0 0',fontSize:12}}>{errors.end_date}</p>}
                   </div>
                   <div>
                     <label style={{color:'#dd901d',fontWeight:600,fontSize:13}}>Max Uses</label>
-                    <input value={form.maxUses} onChange={(e)=>setForm(prev=>({...prev,maxUses:e.target.value}))} placeholder="optional" style={{width:'100%',padding:12,background:'rgba(26,15,0,0.5)',border:'1px solid rgba(221,144,29,0.3)',borderRadius:8,color:'#f5f5f5'}} />
+                    <input value={form.max_uses} onChange={(e)=>setForm(prev=>({...prev,max_uses:e.target.value}))} placeholder="optional" style={{width:'100%',padding:12,background:'rgba(26,15,0,0.5)',border:'1px solid rgba(221,144,29,0.3)',borderRadius:8,color:'#f5f5f5'}} />
                   </div>
                   <div>
                     <label style={{color:'#dd901d',fontWeight:600,fontSize:13}}>Status</label>
                     <label style={{display:'flex',alignItems:'center',height:44,padding:'0 8px',background:'rgba(26,15,0,0.5)',border:'1px solid rgba(221,144,29,0.3)',borderRadius:8,cursor:'pointer'}}>
-                      <input type="checkbox" checked={form.active} onChange={(e)=>setForm(prev=>({...prev,active:e.target.checked}))} style={{marginRight:8,cursor:'pointer',width:16,height:16,accentColor:'#dd901d'}} />
+                      <input type="checkbox" checked={form.status === 'active'} onChange={(e)=>setForm(prev=>({...prev,status:e.target.checked ? 'active' : 'inactive'}))} style={{marginRight:8,cursor:'pointer',width:16,height:16,accentColor:'#dd901d'}} />
                       <span style={{color:'#f5f5f5',fontSize:13}}>{form.active ? 'Active' : 'Inactive'}</span>
                     </label>
                   </div>
                 </div>
 
                 <div style={{display:'flex',gap:12,justifyContent:'flex-end',marginTop:24}}>
-                  <button onClick={() => { const newForm = JSON.parse(JSON.stringify(emptyForm)); newForm.code = genCode(); setForm(newForm); setInitialForm(JSON.parse(JSON.stringify(newForm))); setErrors({}); }} style={{padding:'10px 18px',background:'transparent',border:'1px solid rgba(221,144,29,0.4)',color:'#dd901d',borderRadius:8,cursor:'pointer',fontWeight:600}}>Reset</button>
-                  <button onClick={handleSave} style={{padding:'10px 18px',background:'#dd901d',border:'none',borderRadius:8,color:'#1a1a1a',fontWeight:600,cursor:'pointer'}}>Save Coupon</button>
+                  <button onClick={() => { const newForm = JSON.parse(JSON.stringify(emptyForm)); newForm.code = genCode(); setForm(newForm); setInitialForm(JSON.parse(JSON.stringify(newForm))); setErrors({}); }} disabled={loading} style={{padding:'10px 18px',background:'transparent',border:'1px solid rgba(221,144,29,0.4)',color:'#dd901d',borderRadius:8,cursor:'pointer',fontWeight:600,opacity:loading ? 0.5 : 1}}>Reset</button>
+                  <button onClick={handleSave} disabled={loading} style={{padding:'10px 18px',background:'#dd901d',border:'none',borderRadius:8,color:'#1a1a1a',fontWeight:600,cursor:'pointer',opacity:loading ? 0.7 : 1}}>{loading ? 'Saving...' : 'Save Coupon'}</button>
                 </div>
               </div>
             ) : (
@@ -352,22 +377,21 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                       <div style={{flex:1}}>
                         <div style={{display:'flex',gap:10,alignItems:'baseline',marginBottom:6}}>
                           <strong style={{color:'#f5f5f5',fontSize:14}}>{c.code}</strong>
-                          <span style={{color:'#9a9a9a',fontSize:12}}>{c.type} • {c.valueType === 'percentage' ? `${c.value}%` : `₱${c.value}`}</span>
-                          {c.deleted && <span style={{color:'#ef4444',fontSize:11,fontWeight:600,marginLeft:8}}>DELETED</span>}
-                          {!c.deleted && !c.active && <span style={{color:'#f59e0b',fontSize:11,fontWeight:600,marginLeft:8}}>INACTIVE</span>}
+                          <span style={{color:'#9a9a9a',fontSize:12}}>{c.value_type === 'percentage' ? `${c.value}%` : `₱${c.value}`}</span>
+                          {c.is_deleted && <span style={{color:'#ef4444',fontSize:11,fontWeight:600,marginLeft:8}}>DELETED</span>}
+                          {!c.is_deleted && c.status === 'inactive' && <span style={{color:'#f59e0b',fontSize:11,fontWeight:600,marginLeft:8}}>INACTIVE</span>}
+                          {!c.is_deleted && c.status === 'expired' && <span style={{color:'#9a9a9a',fontSize:11,fontWeight:600,marginLeft:8}}>EXPIRED</span>}
                         </div>
                         <div style={{color:'#9a9a9a',fontSize:13}}>{c.description || '—'}</div>
-                        <div style={{color:'#6b7280',fontSize:12,marginTop:6}}>Services: {c.applicableServices?.length > 0 ? `${c.applicableServices.length} selected` : 'All'}</div>
+                        <div style={{color:'#6b7280',fontSize:12,marginTop:6}}>Services: {c.applicable_services?.length > 0 ? `${c.applicable_services.length} selected` : 'All'}</div>
                       </div>
                       <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                        {c.deleted ? (
-                          <button onClick={()=>restore(c.id)} style={{padding:'6px 12px',borderRadius:6,background:'rgba(16,185,129,0.2)',border:'1px solid rgba(16,185,129,0.4)',color:'#10b981',cursor:'pointer',fontSize:12,fontWeight:600}}>Restore</button>
-                        ) : (
+                        {!c.is_deleted ? (
                           <>
-                            <button onClick={()=>handleEdit(c)} style={{padding:'6px 12px',borderRadius:6,background:'rgba(221,144,29,0.2)',border:'1px solid rgba(221,144,29,0.4)',color:'#dd901d',cursor:'pointer',fontSize:12,fontWeight:600}}>Edit</button>
-                            <button onClick={()=>requestDelete(c.id)} style={{padding:'6px 12px',borderRadius:6,color:'#fff',background:'#ef4444',border:'none',cursor:'pointer',fontSize:12,fontWeight:600}}>Delete</button>
+                            <button onClick={()=>handleEdit(c)} disabled={loading} style={{padding:'6px 12px',borderRadius:6,background:'rgba(221,144,29,0.2)',border:'1px solid rgba(221,144,29,0.4)',color:'#dd901d',cursor:'pointer',fontSize:12,fontWeight:600,opacity:loading ? 0.5 : 1}}>Edit</button>
+                            <button onClick={()=>requestDelete(c.id)} disabled={loading} style={{padding:'6px 12px',borderRadius:6,color:'#fff',background:'#ef4444',border:'none',cursor:'pointer',fontSize:12,fontWeight:600,opacity:loading ? 0.5 : 1}}>Delete</button>
                           </>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   ))}
