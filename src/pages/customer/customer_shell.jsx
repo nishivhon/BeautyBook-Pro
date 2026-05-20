@@ -124,6 +124,9 @@ export function CustomerShell({ activeNav, profile, children }) {
     []
   );
 
+  const sidebarDisplayName = profile?.name || "Customer";
+  const sidebarDisplayInitial = sidebarDisplayName.trim().charAt(0).toUpperCase() || "C";
+
   // Helper function to convert 12-hour format to Date object
   const parseAppointmentDateTime = (dateStr, timeStr) => {
     try {
@@ -350,8 +353,8 @@ export function CustomerShell({ activeNav, profile, children }) {
       <DashboardShell
         navItems={NAV_ITEMS}
         activeNav={activeNav}
-        roleLabel="Customer"
-        roleInitial="C"
+        roleLabel={sidebarDisplayName}
+        roleInitial={sidebarDisplayInitial}
         showSidebarHeader={false}
         title={PAGE_META[activeNav].title}
         subtitle={`BeautyBook Pro · ${todayDate} · ${PAGE_META[activeNav].subtitle}`}
