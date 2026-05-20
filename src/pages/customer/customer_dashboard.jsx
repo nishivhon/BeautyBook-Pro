@@ -276,11 +276,11 @@ export default function CustomerDashboard() {
 											</div>
 											<div>
 												<label className="cdb-field-label">Email</label>
-												<p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : ""}</p>
-											</div>
-											<div>
-												<label className="cdb-field-label">Phone</label>
-												<p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : ""}</p>
+											<p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span style={{ color: "#a3a398" }}>No email added</span>}</p>
+										</div>
+										<div>
+											<label className="cdb-field-label">Phone</label>
+											<p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span style={{ color: "#a3a398" }}>No phone added</span>}</p>
 											</div>
 											<div>
 												<label className="cdb-field-label">Notification Preference</label>
