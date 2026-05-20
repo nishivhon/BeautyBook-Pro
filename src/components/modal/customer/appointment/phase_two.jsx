@@ -304,52 +304,121 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
     return `${code} - ${desc} (${discountText}) - Expires ${exp}`;
   };
 
-  const CouponDropdown = ({ value, onChange }) => (
-    <div style={{ position: 'relative' }}>
-      <select
-        value={value || ''}
-        onChange={(e) => {
-          const selectedValue = e.target.value || null;
-          const couponObj = findCouponByValue(selectedValue);
-          onChange?.(selectedValue || '', couponObj);
-        }}
-        style={{
-          width: '100%',
-          padding: '12px 14px',
-          border: '1.5px solid #dd901d',
-          borderRadius: 10,
-          fontSize: '0.95rem',
-          fontWeight: 600,
-          color: '#f5f1eb',
-          backgroundColor: '#14110e',
-          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.04), 0 6px 18px rgba(0,0,0,0.18)',
-          outline: 'none',
-          appearance: 'none',
-          WebkitAppearance: 'none',
-          MozAppearance: 'none',
-          cursor: 'pointer',
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(221, 144, 29, 0.18), inset 0 0 0 1px rgba(255,255,255,0.04)';
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.boxShadow = 'inset 0 0 0 1px rgba(255,255,255,0.04), 0 6px 18px rgba(0,0,0,0.18)';
-        }}
-      >
-        <option value="" style={{ backgroundColor: '#14110e', color: '#f5f1eb' }}>No coupon</option>
-        {couponsLoading && <option value="loading" style={{ backgroundColor: '#14110e', color: '#f5f1eb' }}>Loading...</option>}
-        {coupons.map((c) => (
-          <option
-            key={c.id}
-            value={getCouponValue(c)}
-            style={{ backgroundColor: '#14110e', color: '#f5f1eb' }}
+  const CouponDropdown = ({ value, onChange }) => {
+    const [open, setOpen] = useState(false);
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+      const onDocClick = (e) => {
+        if (!containerRef.current) return;
+        if (!containerRef.current.contains(e.target)) {
+          setOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', onDocClick);
+      return () => document.removeEventListener('mousedown', onDocClick);
+    }, []);
+
+    const restorePromoPadding = () => {
+      try {
+        if (promoCodeRef?.current) {
+          promoCodeRef.current.style.paddingBottom = '8px';
+        }
+      } catch (e) { /* ignore */ }
+    };
+
+    const handleSelect = (val, couponObj) => {
+      onChange?.(val || '', couponObj || null);
+      setOpen(false);
+      restorePromoPadding();
+    };
+
+    const selectedObj = findCouponByValue(value);
+    const displayLabel = selectedObj ? formatCouponDisplay(selectedObj) : (value || 'No coupon');
+
+    return (
+      <div style={{ position: 'relative' }} ref={containerRef}>
+        <button
+          type="button"
+          onClick={() => {
+            const next = !open;
+            setOpen(next);
+            try {
+              if (promoCodeRef?.current) {
+                // When opening, add extra bottom padding so dropdown has room above footer
+                promoCodeRef.current.style.paddingBottom = next ? '200px' : '8px';
+                if (next) {
+                  setTimeout(() => {
+                    try {
+                      promoCodeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    } catch (e) {}
+                  }, 80);
+                }
+              }
+            } catch (e) {}
+          }}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          style={{
+            width: '100%',
+            textAlign: 'left',
+            padding: '12px 14px',
+            border: '1.5px solid #dd901d',
+            borderRadius: 10,
+            fontSize: '0.95rem',
+            fontWeight: 600,
+            color: '#f5f1eb',
+            backgroundColor: '#14110e',
+            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.04), 0 6px 18px rgba(0,0,0,0.18)',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '85%' }}>{displayLabel}</span>
+          <span style={{ float: 'right', opacity: 0.9 }}>{open ? '▴' : '▾'}</span>
+        </button>
+
+        {open && (
+          <div
+            role="listbox"
+            tabIndex={-1}
+            style={{
+              position: 'absolute',
+              zIndex: 10002,
+              marginTop: 8,
+              width: '100%',
+              maxHeight: 160,
+              overflowY: 'auto',
+              background: '#14110e',
+              border: '1.5px solid #dd901d',
+              borderRadius: 10,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+            }}
           >
-            {formatCouponDisplay(c)}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
+            <div
+              role="option"
+              onClick={() => handleSelect('', null)}
+              style={{ padding: '10px 12px', cursor: 'pointer', color: '#f5f1eb', borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+            >
+              No coupon
+            </div>
+            {couponsLoading && (
+              <div style={{ padding: '10px 12px', color: '#cfcfcf' }}>Loading...</div>
+            )}
+            {coupons.map((c) => (
+              <div
+                key={c.id}
+                role="option"
+                onClick={() => handleSelect(getCouponValue(c), c)}
+                style={{ padding: '10px 12px', cursor: 'pointer', color: '#f5f1eb', borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+              >
+                {formatCouponDisplay(c)}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Fetch categories dynamically and generate service cards
   useEffect(() => {
@@ -601,7 +670,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
         </div>
 
         {showPromoCode && (
-          <div ref={promoCodeRef} style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #e5e5e5" }}>
+          <div ref={promoCodeRef} style={{ marginTop: "24px", paddingTop: "20px", paddingBottom: "18px", borderTop: "1px solid #e5e5e5" }}>
             <label style={{
               display: "block",
               fontSize: "0.9rem",
