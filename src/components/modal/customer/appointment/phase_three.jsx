@@ -42,6 +42,24 @@ const transformStaffToStylist = (staff) => ({
   unavailable: staff.unavailable, // API already calculates this
 });
 
+const normalizeSpecialties = (specialties) => {
+  if (Array.isArray(specialties)) {
+    return specialties
+      .flatMap(item => typeof item === 'string' ? item.split(',') : [item])
+      .map(item => String(item).trim())
+      .filter(Boolean);
+  }
+
+  if (typeof specialties === 'string') {
+    return specialties
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 const STEPS = [
   { number: 1, label: "Schedule" },
   { number: 2, label: "Service"  },
@@ -184,20 +202,34 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
         const filteredStaff = response.staff || [];
         
         console.log('[Phase3] Selected categories:', selectedCategories);
-        console.log('[Phase3] All staff specialties:', filteredStaff.map(s => ({ name: s.names, specialty: s.category_specialty })));
+        console.log('[Phase3] All staff specialties:', filteredStaff.map(s => ({ 
+          name: s.names, 
+          specialty: s.category_specialty,
+          type: typeof s.category_specialty
+        })));
         
         // Filter staff: if categories selected, show only staff matching ANY of those categories
         // If no categories selected, show all staff
         const staffToShow = selectedCategories.length > 0
           ? filteredStaff.filter(staff => {
-              // staff.category_specialty is a JSONB array like ['Hair Cut', 'Styling']
-              const staffCategories = staff.category_specialty || [];
-              // Check if any selected category is in the staff's categories
-              return selectedCategories.some(category => staffCategories.includes(category));
+              const staffCategories = normalizeSpecialties(staff.category_specialty);
+              
+              // Check if any selected category is in the staff's categories (case-insensitive)
+              const matches = selectedCategories.some(category => 
+                staffCategories.some(staffCat => 
+                  String(staffCat).toLowerCase() === String(category).toLowerCase()
+                )
+              );
+              
+              if (matches) {
+                console.log(`[Phase3] ✓ ${staff.names} matches categories:`, staffCategories);
+              }
+              
+              return matches;
             })
           : filteredStaff;
         
-        console.log('[Phase3] Filtered staff count:', staffToShow.length);
+        console.log('[Phase3] Filtered staff count:', staffToShow.length, '/ total:', filteredStaff.length);
         console.log('[Phase3] Staff to show:', staffToShow.map(s => s.names));
         
         // Build stylists array with "Any available" option first
