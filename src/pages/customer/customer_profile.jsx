@@ -333,58 +333,59 @@ export default function CustomerProfilePage() {
         <div style={{
           position: "fixed",
           inset: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          backgroundColor: "rgba(0, 0, 0, 0.45)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           zIndex: 9999
         }}>
           <div style={{
-            backgroundColor: "#0c0b09",
-            border: "1px solid rgba(221, 144, 29, 0.2)",
-            borderRadius: "12px",
-            padding: "24px",
-            maxWidth: "400px",
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
+            backgroundColor: "#ffffff",
+            border: "1px solid rgba(221, 144, 29, 0.18)",
+            borderRadius: "18px",
+            padding: "30px 24px",
+            maxWidth: "360px",
+            width: "90%",
+            boxShadow: "0 24px 60px rgba(0, 0, 0, 0.22)"
           }}>
-            <h3 style={{ margin: "0 0 16px", fontSize: "18px", fontWeight: "600", color: "#dd901d" }}>
+            <h3 style={{ margin: "0 0 14px", fontSize: "20px", fontWeight: "700", color: "#1a0f00", textAlign: "center" }}>
               Confirm {confirmationAction === "save" ? "Save" : "Cancel"}
             </h3>
-            <p style={{ margin: "0 0 24px", fontSize: "14px", color: "#f5f1eb" }}>
+            <p style={{ margin: "0 0 24px", fontSize: "14px", color: "#665544", textAlign: "center", lineHeight: "1.5" }}>
               {confirmationMessage}
             </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
               <button
                 onClick={() => setShowConfirmation(false)}
                 style={{
-                  padding: "10px 20px",
+                  padding: "12px 16px",
                   borderRadius: "8px",
-                  border: "1px solid rgba(221, 144, 29, 0.3)",
-                  background: "rgba(221, 144, 29, 0.15)",
-                  color: "#dd901d",
+                  border: "none",
+                  background: "#dd901d",
+                  color: "#ffffff",
                   fontSize: "14px",
-                  fontWeight: "600",
+                  fontWeight: "700",
                   cursor: "pointer",
                   transition: "all 0.2s ease"
                 }}
               >
-                No
+                Keep Changes
               </button>
               <button
                 onClick={confirmationAction === "save" ? handleConfirmSave : handleConfirmCancel}
                 style={{
-                  padding: "10px 20px",
+                  padding: "12px 16px",
                   borderRadius: "8px",
-                  border: "none",
-                  background: confirmationAction === "save" ? "#22c55e" : "#ef4444",
-                  color: "#fff",
+                  border: "1.5px solid #dd901d",
+                  background: "transparent",
+                  color: "#dd901d",
                   fontSize: "14px",
-                  fontWeight: "600",
+                  fontWeight: "700",
                   cursor: "pointer",
                   transition: "all 0.2s ease"
                 }}
               >
-                Yes
+                {confirmationAction === "save" ? "Yes, Save Changes" : "Yes, Cancel Changes"}
               </button>
             </div>
           </div>
