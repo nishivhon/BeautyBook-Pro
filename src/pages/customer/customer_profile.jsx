@@ -22,6 +22,16 @@ const CancelIcon = ({ color = "#ef4343" }) => (
   </svg>
 );
 
+const TrashIcon = ({ color = "#ef4343" }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 6h18" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M8 6v14a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10 11v6" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M14 11v6" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const SMSIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="#dd901d" strokeWidth="1.5" />
@@ -62,12 +72,19 @@ export default function CustomerProfilePage() {
       errors.name = "Name is required";
     }
     
-    if (!tempProfile.emails || tempProfile.emails.length === 0 || tempProfile.emails.some(email => !email.trim())) {
-      errors.emails = "At least one valid email is required";
+    const validEmails = tempProfile.emails ? tempProfile.emails.filter(email => email.trim()) : [];
+    const validPhones = tempProfile.phones ? tempProfile.phones.filter(phone => phone.trim()) : [];
+    
+    if (validEmails.length === 0 && validPhones.length === 0) {
+      errors.contact = "At least one valid email or phone number is required";
     }
     
-    if (!tempProfile.phones || tempProfile.phones.length === 0 || tempProfile.phones.some(phone => !phone.trim())) {
-      errors.phones = "At least one valid phone number is required";
+    if (tempProfile.notificationPreference === "sms" && validPhones.length === 0) {
+      errors.notificationPreference = "Phone number is required for SMS notifications";
+    }
+    
+    if (tempProfile.notificationPreference === "email" && validEmails.length === 0) {
+      errors.notificationPreference = "Email is required for email notifications";
     }
     
     return errors;
@@ -132,6 +149,20 @@ export default function CustomerProfilePage() {
     }));
   };
 
+  const handleRemoveEmail = (index) => {
+    setTempProfile((prev) => ({
+      ...prev,
+      emails: prev.emails.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleRemovePhone = (index) => {
+    setTempProfile((prev) => ({
+      ...prev,
+      phones: prev.phones.filter((_, i) => i !== index),
+    }));
+  };
+
   return (
     <CustomerShell activeNav="profile" profile={profile}>
       <section className="cdb-section cdb-mounted">
@@ -153,11 +184,11 @@ export default function CustomerProfilePage() {
                     </div>
                     <div>
                       <label className="cdb-field-label">Email</label>
-                      <p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : ""}</p>
+                      <p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span style={{ color: "#a3a398" }}>No email added</span>}</p>
                     </div>
                     <div>
                       <label className="cdb-field-label">Phone</label>
-                      <p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : ""}</p>
+                      <p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span style={{ color: "#a3a398" }}>No phone added</span>}</p>
                     </div>
                     <div className="cdb-action-row">
                       <button className="cdb-btn cdb-btn-edit" onClick={handleEditProfile}><EditIcon /> Edit Profile</button>
@@ -166,15 +197,23 @@ export default function CustomerProfilePage() {
                   <div className="cdb-profile-info-right">
                     <div>
                       <label className="cdb-field-label">All Emails</label>
-                      {profile.emails.map((email, i) => (
-                        <p key={i} className="cdb-field-value">{email}</p>
-                      ))}
+                      {profile.emails && profile.emails.length > 0 ? (
+                        profile.emails.map((email, i) => (
+                          <p key={i} className="cdb-field-value">{email}</p>
+                        ))
+                      ) : (
+                        <p className="cdb-field-value" style={{ color: "#a3a398" }}>No emails added</p>
+                      )}
                     </div>
                     <div>
                       <label className="cdb-field-label">All Phone Numbers</label>
-                      {profile.phones.map((phone, i) => (
-                        <p key={i} className="cdb-field-value">{phone}</p>
-                      ))}
+                      {profile.phones && profile.phones.length > 0 ? (
+                        profile.phones.map((phone, i) => (
+                          <p key={i} className="cdb-field-value">{phone}</p>
+                        ))
+                      ) : (
+                        <p className="cdb-field-value" style={{ color: "#a3a398" }}>No phone numbers added</p>
+                      )}
                     </div>
                     <div>
                       <label className="cdb-field-label">Notification Preference</label>
@@ -194,7 +233,7 @@ export default function CustomerProfilePage() {
                     </div>
                   </div>
                 </div>
-                <div className="cdb-profile-edit-col">
+                <div className="cdb-profile-edit-col" style={{ height: "500px", overflowY: "auto" }}>
                   <div className="cdb-profile-edit-left">
                     <div className="cdb-form-section">
                       <label className="cdb-field-label">Name</label>
@@ -205,7 +244,30 @@ export default function CustomerProfilePage() {
                     <div className="cdb-form-section">
                       <label className="cdb-field-label">Emails</label>
                       {tempProfile.emails.map((email, i) => (
-                        <input key={i} className="cdb-input cdb-spacing-bottom" value={email} onChange={(e) => handleEditEmail(i, e.target.value)} />
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                          <input className="cdb-input" value={email} onChange={(e) => handleEditEmail(i, e.target.value)} />
+                          <button
+                            type="button"
+                            className="cdb-btn cdb-btn-icon"
+                            onClick={() => handleRemoveEmail(i)}
+                            aria-label="Remove email"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: 34,
+                              height: 34,
+                              borderRadius: 8,
+                              border: "1px solid rgba(239,68,68,0.12)",
+                              background: "#ef4444",
+                              color: "#fff",
+                              padding: 0,
+                              cursor: "pointer"
+                            }}
+                          >
+                            <CancelIcon color="#fff" />
+                          </button>
+                        </div>
                       ))}
                       {validationErrors.emails && <p style={{ color: "#ef4444", fontSize: "12px", marginBottom: "8px" }}>{validationErrors.emails}</p>}
                       <button className="cdb-btn cdb-btn-secondary" onClick={handleAddEmail}>Add Email</button>
@@ -214,7 +276,30 @@ export default function CustomerProfilePage() {
                     <div className="cdb-form-section">
                       <label className="cdb-field-label">Phone Numbers</label>
                       {tempProfile.phones.map((phone, i) => (
-                        <input key={i} className="cdb-input cdb-spacing-bottom" value={phone} onChange={(e) => handleEditPhone(i, e.target.value)} />
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                          <input className="cdb-input" maxLength="11" value={phone} onChange={(e) => handleEditPhone(i, e.target.value)} />
+                          <button
+                            type="button"
+                            className="cdb-btn cdb-btn-icon"
+                            onClick={() => handleRemovePhone(i)}
+                            aria-label="Remove phone"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: 34,
+                              height: 34,
+                              borderRadius: 8,
+                              border: "1px solid rgba(239,68,68,0.12)",
+                              background: "#ef4444",
+                              color: "#fff",
+                              padding: 0,
+                              cursor: "pointer"
+                            }}
+                          >
+                            <CancelIcon color="#fff" />
+                          </button>
+                        </div>
                       ))}
                       {validationErrors.phones && <p style={{ color: "#ef4444", fontSize: "12px", marginBottom: "8px" }}>{validationErrors.phones}</p>}
                       <button className="cdb-btn cdb-btn-secondary" onClick={handleAddPhone}>Add Phone</button>
@@ -228,6 +313,7 @@ export default function CustomerProfilePage() {
                         <button className={`cdb-pref-option ${tempProfile.notificationPreference === "email" ? "active" : ""}`} onClick={() => setTempProfile({ ...tempProfile, notificationPreference: "email" })}><EmailIcon /> Email</button>
                         <button className={`cdb-pref-option ${tempProfile.notificationPreference === "sms" ? "active" : ""}`} onClick={() => setTempProfile({ ...tempProfile, notificationPreference: "sms" })}><SMSIcon /> SMS</button>
                       </div>
+                      {validationErrors.notificationPreference && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px" }}>{validationErrors.notificationPreference}</p>}
                     </div>
 
                     <div className="cdb-action-row">
