@@ -1316,14 +1316,15 @@ export const AdminDashboard = ({ date }) => {
       
       console.log(`[AdminDashboard] Moving appointment ${itemId} to current for ${customerName}`);
       console.log(`[AdminDashboard] isWalkIn:`, isWalkIn, 'actualId:', apiId);
-      console.log(`[AdminDashboard] Request payload:`, { id: apiId, status: 'current' });
+      console.log(`[AdminDashboard] Request payload:`, { id: apiId, status: 'current', staffName: proceedConfirmData?.staff });
       
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: apiId,
-          status: 'current'
+          status: 'current',
+          staffName: proceedConfirmData?.staff
         })
       });
 
@@ -1460,7 +1461,7 @@ export const AdminDashboard = ({ date }) => {
           message={`Confirm that a stylist is available and ready to serve ${proceedConfirmData?.name} for ${proceedConfirmData?.service}.`}
           confirmText="Yes, Proceed"
           cancelText="Cancel"
-          onConfirm={() => handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData.name, proceedConfirmData.service)}
+          onConfirm={() => handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData.name, proceedConfirmData.service, proceedConfirmData.staff)}
           onCancel={() => setProceedConfirmId(null)}
         />
       )}

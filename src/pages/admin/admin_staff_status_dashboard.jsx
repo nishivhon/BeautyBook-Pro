@@ -511,7 +511,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
     // Initialize walk-in status for each staff member (default to "Accepting")
     const initialWalkInStatus = {};
     staffList.forEach(member => {
-      initialWalkInStatus[member.name] = "Accepting";
+      initialWalkInStatus[member.name] = member.details?.availableForWalkIn ? "Accepting" : "Not Accepting";
     });
     setWalkInStatus(initialWalkInStatus);
   }, [staffList]);
@@ -532,6 +532,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
   };
 
   const handleStatusUpdate = (staffName, newStatus) => {
+    const walkInEnabled = newStatus === "Available";
     const updatedStaff = staff.map(s => 
       s.name === staffName 
         ? { 
@@ -545,6 +546,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
         : s
     );
     setStaff(updatedStaff);
+      setWalkInStatus(prev => ({ ...prev, [staffName]: walkInEnabled ? "Accepting" : "Not Accepting" }));
     onCloseStatusModal();
     onStaffStatusUpdate?.(staffName, newStatus);
   };
@@ -1100,6 +1102,12 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                       
                       onStaffStatusUpdate?.(confirmModal.staffName, isClockIn ? "Available" : "Absent");
                     } else if (isWalkInAccept || isWalkInReject) {
+                      const currentStaff = staff.find(member => member.name === confirmModal.staffName);
+                      if (isWalkInAccept && currentStaff?.details?.availableForWalkIn === false) {
+                        alert(`${confirmModal.staffName} cannot accept walk-ins while currently in service.`);
+                        return;
+                      }
+
                       setWalkInStatus({ ...walkInStatus, [confirmModal.staffName]: isWalkInAccept ? "Accepting" : "Not Accepting" });
                       setOpenDropdown(null);
                       
@@ -1423,8 +1431,12 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       const updateData = {
         id: staffMember.id,
         status: newStatus === "Available" || newStatus === "Open Slots" ? "avail" : newStatus,
-        in_service: newStatus === "Available" || newStatus === "Open Slots" ? "avail" : newStatus.toLowerCase(),
+        in_service: newStatus === "Available" || newStatus === "Open Slots" ? "avail" : newStatus.toLowerCase().replace(/\s+/g, '-'),
       };
+
+      if (updateData.in_service === 'in-service') {
+        updateData.walk_in = false;
+      }
 
       // Add clock_in if provided (means staff is clocking in)
       if (attendanceData?.clockIn) {

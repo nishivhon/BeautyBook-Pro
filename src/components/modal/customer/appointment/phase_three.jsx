@@ -60,6 +60,19 @@ const normalizeSpecialties = (specialties) => {
   return [];
 };
 
+const formatTimeTo12Hour = (timeValue) => {
+  if (!timeValue) return "";
+
+  const [hours, minutes] = String(timeValue).split(":");
+  const hourNumber = Number.parseInt(hours, 10);
+
+  if (!Number.isFinite(hourNumber)) return String(timeValue);
+
+  const period = hourNumber >= 12 ? "PM" : "AM";
+  const hour12 = hourNumber % 12 || 12;
+  return `${hour12}:${minutes || "00"} ${period}`;
+};
+
 const STEPS = [
   { number: 1, label: "Schedule" },
   { number: 2, label: "Service"  },
@@ -150,6 +163,7 @@ const AnyRow = ({ isSelected, onSelect }) => (
 /* ── Named stylist row ── */
 const StylistRow = ({ stylist, isSelected, onSelect }) => {
   const statusLabel = stylist.status === "no slots" ? "No Slots" : "Unavailable";
+  const hasNextAppointment = Boolean(stylist.nextAppointmentTime);
   
   return (
     <button
@@ -166,6 +180,11 @@ const StylistRow = ({ stylist, isSelected, onSelect }) => {
         </div>
         <div className="stylist-text">
           <span className={`stylist-name${stylist.unavailable ? " muted" : ""}`}>{stylist.name}</span>
+          <span className="stylist-unavailable-tag" style={{ marginTop: 4, display: "inline-flex", gap: 8, flexWrap: "wrap" }}>
+            <span>{stylist.totalSelectedTime || 0} min total</span>
+            <span>•</span>
+            <span>{hasNextAppointment ? `Next: ${formatTimeTo12Hour(stylist.nextAppointmentTime)}` : "No next appointment"}</span>
+          </span>
           {stylist.unavailable && <span className="stylist-unavailable-tag">{statusLabel}</span>}
         </div>
       </div>
@@ -191,6 +210,19 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
     return [...new Set(categories)];
   }, [initialData?.services]);
 
+  const totalSelectedTime = useMemo(() => {
+    const services = initialData?.services || [];
+
+    return services.reduce((total, service) => {
+      const rawValue = service.est_time ?? service.estTime ?? service.duration ?? 0;
+      const parsedValue = typeof rawValue === 'string'
+        ? Number.parseInt(rawValue, 10)
+        : Number(rawValue);
+
+      return total + (Number.isFinite(parsedValue) ? parsedValue : 0);
+    }, 0);
+  }, [initialData?.services]);
+
   // Fetch staff from API on component mount and filter by category
   useEffect(() => {
     const fetchStylists = async () => {
@@ -198,8 +230,19 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
         setLoading(true);
         setError(null);
         
-        const response = await fetchStaffWithAnyOption();
+        const [staffResponse, appointmentsResponse] = await Promise.all([
+          fetchStaffWithAnyOption(),
+          fetch('/api/appointments/read/by-status?status=pending')
+        ]);
+
+        const response = staffResponse;
         const filteredStaff = response.staff || [];
+        let pendingAppointments = [];
+
+        if (appointmentsResponse.ok) {
+          const appointmentsData = await appointmentsResponse.json();
+          pendingAppointments = appointmentsData.appointments || [];
+        }
         
         console.log('[Phase3] Selected categories:', selectedCategories);
         console.log('[Phase3] All staff specialties:', filteredStaff.map(s => ({ 
@@ -228,14 +271,42 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
               return matches;
             })
           : filteredStaff;
+
+        const nextAppointmentByStaff = pendingAppointments.reduce((map, appointment) => {
+          if (!appointment?.staff || !appointment?.time) {
+            return map;
+          }
+
+          const key = String(appointment.staff).toLowerCase();
+          const existing = map.get(key);
+          const currentMinutes = appointment.time ? Number.parseInt(String(appointment.time).split(':')[0], 10) * 60 + Number.parseInt(String(appointment.time).split(':')[1] || '0', 10) : Number.MAX_SAFE_INTEGER;
+          const existingMinutes = existing?.time ? Number.parseInt(String(existing.time).split(':')[0], 10) * 60 + Number.parseInt(String(existing.time).split(':')[1] || '0', 10) : Number.MAX_SAFE_INTEGER;
+
+          if (!existing || currentMinutes < existingMinutes) {
+            map.set(key, appointment);
+          }
+
+          return map;
+        }, new Map());
         
         console.log('[Phase3] Filtered staff count:', staffToShow.length, '/ total:', filteredStaff.length);
         console.log('[Phase3] Staff to show:', staffToShow.map(s => s.names));
+        console.log('[Phase3] Pending appointments for stylist timing:', pendingAppointments.length);
         
         // Build stylists array with "Any available" option first
         const transformedStylists = [
           response.any,
-          ...staffToShow.map(transformStaffToStylist)
+          ...staffToShow.map((staff) => {
+            const stylist = transformStaffToStylist(staff);
+            const nextAppointment = nextAppointmentByStaff.get(String(staff.names).toLowerCase());
+
+            return {
+              ...stylist,
+              nextAppointmentTime: nextAppointment?.time || null,
+              nextAppointmentName: nextAppointment?.name || null,
+              totalSelectedTime,
+            };
+          })
         ];
         
         setStylists(transformedStylists);
@@ -250,7 +321,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
     };
 
     fetchStylists();
-  }, [selectedCategories]);
+  }, [selectedCategories, totalSelectedTime]);
 
   const handleContinue = () => {
     onContinue?.({ stylist: stylists.find((s) => s.id === selected) });

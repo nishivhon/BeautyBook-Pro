@@ -28,6 +28,9 @@ export default async (req, res) => {
     const normalizedSpecialties = category_specialty !== undefined
       ? normalizeCategorySpecialty(category_specialty)
       : undefined;
+    const normalizedInService = typeof in_service === 'string' ? in_service.trim().toLowerCase() : in_service;
+    const normalizedStatus = typeof status === 'string' ? status.trim().toLowerCase() : status;
+    const shouldDisableWalkIn = normalizedInService === 'in-service' || normalizedStatus === 'in service';
 
     if (!id) {
       return res.status(400).json({ error: 'Staff ID is required' });
@@ -42,7 +45,7 @@ export default async (req, res) => {
       auth: { persistSession: false }
     });
 
-    console.log(`[Staffs:Update] Updating staff ID: ${id}`, { names, category_specialty: normalizedSpecialties, employment, clock_in, clock_out, walk_in, status, in_service, total_clients, done_clients });
+    console.log(`[Staffs:Update] Updating staff ID: ${id}`, { names, category_specialty: normalizedSpecialties, employment, clock_in, clock_out, walk_in, status, in_service, total_clients, done_clients, shouldDisableWalkIn });
 
     // Build update object with only provided fields
     const updateData = {};
@@ -51,9 +54,10 @@ export default async (req, res) => {
     if (employment !== undefined) updateData.employment = employment;
     if (clock_in !== undefined) updateData.clock_in = clock_in;
     if (clock_out !== undefined) updateData.clock_out = clock_out;
-    if (walk_in !== undefined) updateData.walk_in = walk_in;
+    if (walk_in !== undefined) updateData.walk_in = shouldDisableWalkIn ? false : walk_in;
     if (status !== undefined) updateData.status = status;
     if (in_service !== undefined) updateData.in_service = in_service;
+    if (shouldDisableWalkIn) updateData.walk_in = false;
     if (total_clients !== undefined) updateData.total_clients = total_clients;
     if (done_clients !== undefined) updateData.done_clients = done_clients;
 

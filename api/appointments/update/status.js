@@ -346,9 +346,9 @@ export default async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { id, status, staffName } = req.body;
+  const { id, status, staffName: incomingStaffName } = req.body;
 
-  console.log('[UpdateStatus] Extracted from body - id:', id, 'status:', status, 'staffName:', staffName);
+  console.log('[UpdateStatus] Extracted from body - id:', id, 'status:', status, 'staffName:', incomingStaffName);
 
   if (!id || !status) {
     console.error('[UpdateStatus] VALIDATION FAILED - Missing id or status');
@@ -460,24 +460,33 @@ export default async (req, res) => {
     }
 
     // Update staff in_service based on status
-    if (staffName) {
-      console.log(`[UpdateStatus] Processing staff update for: ${staffName}`);
+    const resolvedStaffName = incomingStaffName || actualSlotData?.assigned_staff || null;
+
+    if (resolvedStaffName) {
+      console.log(`[UpdateStatus] Processing staff update for: ${resolvedStaffName}`);
       let staffInServiceValue = 'avail'; // default for 'done'
+      let walkInValue = null;
       
       if (status === 'current') {
         staffInServiceValue = 'in-service';
-        console.log(`[UpdateStatus] Setting staff ${staffName} in_service to 'in-service'`);
+        walkInValue = false;
+        console.log(`[UpdateStatus] Setting staff ${resolvedStaffName} in_service to 'in-service'`);
       } else if (status === 'done') {
         staffInServiceValue = 'avail';
-        console.log(`[UpdateStatus] Setting staff ${staffName} in_service to 'avail'`);
+        console.log(`[UpdateStatus] Setting staff ${resolvedStaffName} in_service to 'avail'`);
       }
       
       if (status === 'current' || status === 'done') {
-        console.log(`[UpdateStatus] Querying staff table for name = '${staffName}'`);
+        console.log(`[UpdateStatus] Querying staff table for name = '${resolvedStaffName}'`);
+        const staffUpdateData = { in_service: staffInServiceValue };
+        if (walkInValue !== null) {
+          staffUpdateData.walk_in = walkInValue;
+        }
+
         const { data: staffData, error: staffError } = await supabase
           .from('staffs')
-          .update({ in_service: staffInServiceValue })
-          .eq('names', staffName)
+          .update(staffUpdateData)
+          .eq('names', resolvedStaffName)
           .select();
 
         if (staffError) {
@@ -486,9 +495,9 @@ export default async (req, res) => {
         } else {
           console.log(`[UpdateStatus] Staff update response:`, staffData);
           if (staffData && staffData.length > 0) {
-            console.log(`[UpdateStatus] Successfully updated staff ${staffName} in_service to ${staffInServiceValue}`);
+            console.log(`[UpdateStatus] Successfully updated staff ${resolvedStaffName} in_service to ${staffInServiceValue}`);
           } else {
-            console.warn(`[UpdateStatus] No staff found with name: ${staffName}`);
+            console.warn(`[UpdateStatus] No staff found with name: ${resolvedStaffName}`);
           }
         }
       }
