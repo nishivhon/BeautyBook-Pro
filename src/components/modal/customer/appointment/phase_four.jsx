@@ -2,6 +2,7 @@
    IMPORTS
 ══════════════════════════════════════════ */
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../confirmation_dialog";
 import { Toast } from "../../../toast";
 
@@ -164,6 +165,18 @@ const Divider = () => (
 /* ══════════════════════════════════════════
    MAIN COMPONENT — Phase 4
 ══════════════════════════════════════════ */
+const DARK_MODAL_VARS = {
+  "--bg-card": "#070605",
+  "--bg-dark": "#070605",
+  "--color-white": "#f5f1eb",
+  "--color-light": "#f5f1eb",
+  "--color-tan": "#988f81",
+  "--color-amber": "#dd901d",
+  "--color-amber-dark": "#b97918",
+  "--color-black": "#1a0f00",
+  colorScheme: "dark",
+};
+
 export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = BOOKING }) => {
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -184,6 +197,19 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
   // Debug render logging
   // eslint-disable-next-line no-console
   console.log('[Phase4] render - showConfirmationToast:', showConfirmationToast, 'showReceiptReminder:', showReceiptReminder, 'isConfirmed:', isConfirmed);
+
+  const handleExitRequest = () => {
+    if (!isConfirmed) {
+      setShowBackdropConfirm(true);
+    } else if (!showReceiptReminder) {
+      setShowReceiptReminder(true);
+    }
+  };
+
+  const handleBack = () => {
+    onBack?.();
+  };
+
   // Safety check: if booking is missing, return null
   if (!booking) {
     return <div style={{ padding: "20px", textAlign: "center", color: "#988f81" }}>Loading booking details...</div>;
@@ -207,6 +233,31 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
     const mins = parseInt(svc?.duration?.toString().match(/\d+/) || 0);
     return sum + mins;
   }, 0) : 0;
+
+  // Coupon / discount handling (if parent passed appliedCoupon)
+  const coupon = booking?.appliedCoupon || booking?.coupon || (booking?.promoCode ? { code: booking.promoCode } : null);
+  const subtotal = totalPrice;
+  const getCouponDiscountAmount = (couponData, baseAmount) => {
+    if (!couponData) return 0;
+
+    const rawValue = couponData.value ?? couponData.discount ?? couponData.discount_amount ?? couponData.amount;
+    if (rawValue === undefined || rawValue === null || rawValue === "") return 0;
+
+    const normalizedType = String(couponData.value_type || couponData.discount_type || "").toLowerCase();
+    const valueText = String(rawValue).trim();
+    const numericValue = Number.parseFloat(valueText.replace(/[^0-9.]/g, ""));
+
+    if (Number.isNaN(numericValue)) return 0;
+
+    if (normalizedType.includes("percent") || normalizedType.includes("percentage") || valueText.includes("%")) {
+      return baseAmount * (numericValue / 100);
+    }
+
+    return numericValue;
+  };
+
+  const discountAmount = Math.max(0, Math.min(subtotal, getCouponDiscountAmount(coupon, subtotal)));
+  const totalAfterDiscount = Math.max(0, subtotal - discountAmount);
 
   /* Handle final confirmation */
   const handleConfirmBooking = async () => {
@@ -243,7 +294,9 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
         date: booking.date,
         time: booking.time,
         service: serviceList,
-        staff_assigned: booking.stylist
+        staff_assigned: booking.stylist,
+        coupon: coupon || null,
+        total_amount: totalAfterDiscount
       };
       
       console.log('[Phase4] Booking data:', bookingData);
@@ -296,6 +349,12 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
   /* Generate the receipt HTML and open print dialog */
   const generateReceipt = () => {
+    // Build receipt with coupon/subtotal/total
+    const receiptSubtotal = subtotal.toFixed(2);
+    const receiptDiscount = discountAmount > 0 ? discountAmount.toFixed(2) : null;
+    const receiptCouponDescription = coupon?.description || coupon?.discount_description || coupon?.title || coupon?.name || booking?.promoCode || null;
+    const receiptTotal = totalAfterDiscount.toFixed(2);
+
     const receiptHTML = `
       <!DOCTYPE html>
       <html>
@@ -476,9 +535,17 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             </div>
           </div>
 
-          <div class="total">
-            <span>Total Amount</span>
-            <span>₱${totalPrice.toFixed(2)}</span>
+          <div class="section">
+            <div class="section-title">Totals</div>
+            <div class="detail-row">
+              <span class="detail-label">Subtotal</span>
+              <span class="detail-value">₱${receiptSubtotal}</span>
+            </div>
+            ${receiptDiscount ? `<div class="detail-row"><span class="detail-label">Coupon</span><span class="detail-value">- ₱${receiptDiscount}</span></div>` : ''}
+            <div class="total">
+              <span>Total Amount</span>
+              <span>₱${receiptTotal}</span>
+            </div>
           </div>
 
           <div class="ref-box">
@@ -488,7 +555,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
           <div class="footer">
             <p>Please keep this reference number for your records.</p>
-            <p>You will receive a confirmation via email and SMS 15 minutes before your appointment.</p>
+            <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">You will receive a confirmation via email and SMS 15 minutes before your appointment.</p>
             <p style="margin-top: 12px; color: #dd901d;">Thank you for choosing BeautyBook Pro!</p>
           </div>
         </div>
@@ -521,41 +588,45 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
         />
       </div>
 
-      <div 
-        className="appt-backdrop"
-        onClick={(e) => {
-          console.log('[Phase4] Backdrop click detected', { 
-            target: e.target.className, 
-            currentTarget: e.currentTarget.className,
-            isConfirmed 
-          });
-          // Only trigger if clicking directly on backdrop, not on children
-          if (e.target === e.currentTarget) {
-            if (!isConfirmed) {
-              console.log('[Phase4] Conditions met - showing cancel dialog');
-              setShowBackdropConfirm(true);
-            } else if (isConfirmed && !showReceiptReminder) {
-              console.log('[Phase4] Booking is confirmed and user clicked outside - showing receipt reminder');
-              setShowReceiptReminder(true);
+      {createPortal(
+        <div 
+          className="appt-backdrop"
+          onClick={(e) => {
+            console.log('[Phase4] Backdrop click detected', { 
+              target: e.target.className, 
+              currentTarget: e.currentTarget.className,
+              isConfirmed 
+            });
+            // Only trigger if clicking directly on backdrop, not on children
+            if (e.target === e.currentTarget) {
+              if (!isConfirmed) {
+                console.log('[Phase4] Conditions met - showing cancel dialog');
+                setShowBackdropConfirm(true);
+              } else if (isConfirmed && !showReceiptReminder) {
+                console.log('[Phase4] Booking is confirmed and user clicked outside - showing receipt reminder');
+                setShowReceiptReminder(true);
+              }
             }
-          }
-        }}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          cursor: !isConfirmed ? "pointer" : "default",
-          backgroundColor: "rgba(0, 0, 0, 0.7)"
-        }}
-      >
+          }}
+          style={{
+            ...DARK_MODAL_VARS,
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000010,
+            cursor: !isConfirmed ? "pointer" : "default",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backdropFilter: 'blur(2px)',
+            pointerEvents: 'auto'
+          }}
+        >
         <div className="appt-root" onClick={(e) => e.stopPropagation()}>
-          <BookingHeader onBack={onBack} isConfirmed={isConfirmed} />
+          <BookingHeader onBack={handleBack} isConfirmed={isConfirmed} />
           <ProgressIndicator currentStep={4} />
 
           {/* ── Scrollable body ── */}
@@ -567,7 +638,6 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
             {/* ── Confirmation summary card ── */}
             <div className="confirm-card">
-              {/* Service Summary Section - matches wireframe */}
               {services.length > 0 && (
                 <>
                   <div className="confirm-service-row">
@@ -576,21 +646,18 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
                         <ScissorsIcon />
                       </div>
                       <div className="confirm-svc-text">
-                        <span className="confirm-svc-name">{mainService.title || mainService.name || "Service"}</span>
+                        <span className="confirm-svc-name">{services[0].title || services[0].name || 'Service'}</span>
                         <span className="confirm-svc-duration">{totalDuration} mins</span>
                       </div>
                     </div>
                     <div className="confirm-svc-meta">
-                      <span className="confirm-svc-datetime">{bookingData?.dateTime || "Not Selected"}</span>
-                      <span className="confirm-svc-price">₱{totalPrice.toFixed(2)}</span>
+                      <span className="confirm-svc-price">{services[0].price || 'N/A'}</span>
                     </div>
                   </div>
-
                   <Divider />
                 </>
               )}
 
-              {/* Services List Section */}
               {services.length > 0 && (
                 <>
                   <div style={{ marginBottom: "16px", marginTop: "12px" }}>
@@ -599,9 +666,9 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                       {services.map((service, idx) => (
-                        <div key={idx} style={{ fontSize: "0.85rem", color: "var(--color-white)", paddingLeft: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span>• {service.title || service.name || "Service"}</span>
-                          <span style={{ color: "var(--color-tan)" }}>{service.price || "N/A"}</span>
+                        <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.95rem" }}>
+                          <div>{service.title || service.name || 'Service'}</div>
+                          <div style={{ color: "var(--color-tan)", fontWeight: 600 }}>{service.price || 'N/A'}</div>
                         </div>
                       ))}
                     </div>
@@ -610,57 +677,63 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
                 </>
               )}
 
-              {/* Contact details */}
               <div className="confirm-details">
                 <div className="confirm-detail-row">
                   <PersonIcon />
                   <div className="confirm-detail-text">
                     <span className="confirm-detail-label">Name</span>
-                    <span className="confirm-detail-value">{bookingData?.name || "N/A"}</span>
+                    <span className="confirm-detail-value">{bookingData?.name || 'N/A'}</span>
                   </div>
                 </div>
-                {bookingData?.verificationMethod === 'email' && (
-                  <div className="confirm-detail-row">
-                    <EnvelopeIcon />
-                    <div className="confirm-detail-text">
-                      <span className="confirm-detail-label">Email</span>
-                      <span className="confirm-detail-value">{bookingData?.email || "N/A"}</span>
-                    </div>
-                  </div>
-                )}
-                {bookingData?.verificationMethod === 'phone' && (
-                  <div className="confirm-detail-row">
-                    <PhoneIcon />
-                    <div className="confirm-detail-text">
-                      <span className="confirm-detail-label">Phone No.</span>
-                      <span className="confirm-detail-value">{bookingData?.phone || "N/A"}</span>
-                    </div>
-                  </div>
-                )}
                 <div className="confirm-detail-row">
                   <StylistIcon />
                   <div className="confirm-detail-text">
                     <span className="confirm-detail-label">Stylist</span>
-                    <span className="confirm-detail-value">{bookingData?.stylist || "N/A"}</span>
+                    <span className="confirm-detail-value">{bookingData?.stylist || 'N/A'}</span>
+                  </div>
+                </div>
+                <div className="confirm-detail-row">
+                  <EnvelopeIcon />
+                  <div className="confirm-detail-text">
+                    <span className="confirm-detail-label">Date &amp; Time</span>
+                    <span className="confirm-detail-value">{bookingData?.dateTime || 'Not Selected'}</span>
+                  </div>
+                </div>
+                <div className="confirm-detail-row">
+                  <DownloadIcon />
+                  <div className="confirm-detail-text">
+                    <span className="confirm-detail-label">Duration</span>
+                    <span className="confirm-detail-value">{totalDuration} mins</span>
                   </div>
                 </div>
               </div>
 
               <Divider />
 
-              {/* Bottom: ref no. + reminder */}
-              <div className="confirm-bottom-row">
-                {/* reference number pill */}
+              <div className="confirm-details">
+                <div className="confirm-detail-row">
+                  <span className="confirm-detail-label">Subtotal</span>
+                  <span className="confirm-detail-value">₱{subtotal.toFixed(2)}</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="confirm-detail-row">
+                    <span className="confirm-detail-label">Coupon</span>
+                    <span className="confirm-detail-value">- ₱{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="confirm-detail-row" style={{ paddingTop: 10, paddingBottom: 10, marginTop: 8 }}>
+                  <span className="confirm-detail-label" style={{ color: 'var(--color-white)', fontWeight: 700 }}>Total Amount</span>
+                  <span className="confirm-detail-value" style={{ color: 'var(--color-white)', fontWeight: 700 }}>₱{totalAfterDiscount.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <Divider />
+
+              <div className="confirm-bottom-row" style={{ flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
                 <div className="confirm-ref-pill">
-                  Ref. No.: {bookingData?.refNo || "N/A"}
+                  Ref. No.: {bookingData?.refNo || 'N/A'}
                 </div>
-                {/* reminder box */}
-                <div className="confirm-reminder-box">
-                  <p className="confirm-reminder-text">
-                    Reminder: You'll receive notifications<br/>
-                    15 minutes before your turn
-                  </p>
-                </div>
+                <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>You will receive notifications 15 minutes before your appointment</div>
               </div>
             </div>
           </div>
@@ -702,7 +775,9 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             )}
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
+      )}
 
       {/* Backdrop Click Confirmation Dialog - Only show if booking not confirmed */}
       {!isConfirmed && (

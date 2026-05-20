@@ -146,7 +146,12 @@ export function CustomerShell({ activeNav, profile, children }) {
   };
 
   const handlePhase2Continue = (details) => {
-    setAppointmentData((prev) => ({ ...(prev || {}), services: details.services }));
+    setAppointmentData((prev) => ({
+      ...(prev || {}),
+      services: details.services,
+      promoCode: details?.promoCode || prev?.promoCode || "",
+      appliedCoupon: details?.appliedCoupon || prev?.appliedCoupon || null,
+    }));
     setAppointmentPhase(3);
   };
 
@@ -192,6 +197,9 @@ export function CustomerShell({ activeNav, profile, children }) {
       stylist: stylistName,
       refNo: "18xxx-xxxx",
       verificationMethod: profile?.notificationPreference || "email",
+      promoCode: appointmentData?.promoCode || "",
+      appliedCoupon: appointmentData?.appliedCoupon || null,
+      coupon: appointmentData?.appliedCoupon || null,
     };
   };
 

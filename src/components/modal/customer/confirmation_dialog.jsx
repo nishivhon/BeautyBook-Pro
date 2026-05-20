@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export const ConfirmationDialog = ({ 
   title = "Cancel Booking?", 
@@ -43,7 +44,7 @@ export const ConfirmationDialog = ({
     onCancel?.();
   };
 
-  return (
+  const dialog = (
     <div
       onClick={(e) => {
         // clicking the overlay should behave like cancel (keep booking)
@@ -56,7 +57,7 @@ export const ConfirmationDialog = ({
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 10000001,
+        zIndex: 10000020,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -158,6 +159,12 @@ export const ConfirmationDialog = ({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") {
+    return dialog;
+  }
+
+  return createPortal(dialog, document.body);
 };
 
 export default ConfirmationDialog;

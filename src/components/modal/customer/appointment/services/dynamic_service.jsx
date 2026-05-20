@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../../confirmation_dialog";
 
 /* Back arrow */
@@ -120,6 +121,46 @@ export const DynamicServiceModal = ({
   const [error, setError] = useState(null);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
 
+  // Inject scoped scrollbar styling once
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById('dynamic-service-scrollbar-style')) return;
+    const style = document.createElement('style');
+    style.id = 'dynamic-service-scrollbar-style';
+    style.textContent = `
+      /* WebKit-based browsers (Chrome, Edge, Safari) */
+      .appt-backdrop .appt-body::-webkit-scrollbar,
+      .appt-backdrop .appt-root .appt-body::-webkit-scrollbar,
+      .appt-body::-webkit-scrollbar { width: 12px !important; height: 12px !important; }
+
+      .appt-backdrop .appt-body::-webkit-scrollbar-track,
+      .appt-backdrop .appt-root .appt-body::-webkit-scrollbar-track,
+      .appt-body::-webkit-scrollbar-track { background: rgba(19, 19, 19, 0.4) !important; border-radius: 10px !important; }
+
+      .appt-backdrop .appt-body::-webkit-scrollbar-thumb,
+      .appt-backdrop .appt-root .appt-body::-webkit-scrollbar-thumb,
+      .appt-body::-webkit-scrollbar-thumb {
+        background: rgba(221, 144, 29, 0.9) !important;
+        border-radius: 10px !important;
+        border: 2px solid transparent !important;
+        background-clip: padding-box !important;
+      }
+
+      .appt-backdrop .appt-body::-webkit-scrollbar-thumb:hover,
+      .appt-backdrop .appt-root .appt-body::-webkit-scrollbar-thumb:hover,
+      .appt-body::-webkit-scrollbar-thumb:hover { background: rgba(221, 144, 29, 1) !important; }
+
+      /* Firefox */
+      .appt-backdrop .appt-body,
+      .appt-backdrop .appt-root .appt-body,
+      .appt-body {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
   useEffect(() => {
     const fetchServices = async () => {
       try {
@@ -159,6 +200,15 @@ export const DynamicServiceModal = ({
     onBack?.();
   };
 
+  const handleExitRequest = () => {
+    setShowBackdropConfirm(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowBackdropConfirm(false);
+    onBack?.();
+  };
+
   const handleSelectService = (serviceId, isDeselect) => {
     if (isDeselect) {
       setSelected(selected.filter((id) => id !== serviceId));
@@ -176,88 +226,100 @@ export const DynamicServiceModal = ({
     onContinue?.({ services: selectedServices });
   };
 
-  return (
-    <>
-      <div
-        className="appt-backdrop"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setShowBackdropConfirm(true);
-          }
-        }}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div className="appt-root">
-          <ServiceHeader title={categoryName} onBack={handleBack} isSaving={isUpdating} />
-          <ProgressIndicator currentStep={2} />
+  const handleBackgroundClick = (e) => {
+    // Only block if clicking the backdrop itself, not content inside modal
+    if (e.target === e.currentTarget) {
+      e.stopPropagation();
+      handleExitRequest();
+    }
+  };
 
-          {/* ── Scrollable body ── */}
-          <div className="appt-body">
-            <div className="appt-section-heading">
-              <p className="appt-section-title">Choose {categoryName.toLowerCase()}</p>
-              <p className="appt-section-sub">Select one or more services you&apos;d like to book</p>
+  const modalContent = (
+    <div
+      className="appt-backdrop"
+      onClick={handleBackgroundClick}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 10000010,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        backdropFilter: "blur(2px)",
+        pointerEvents: 'auto'
+      }}
+    >
+      <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+        <ServiceHeader title={categoryName} onBack={handleBack} isSaving={isUpdating} />
+        <ProgressIndicator currentStep={2} />
+
+        {/* ── Scrollable body ── */}
+        <div className="appt-body">
+          <div className="appt-section-heading">
+            <p className="appt-section-title">Choose {categoryName.toLowerCase()}</p>
+            <p className="appt-section-sub">Select one or more services you&apos;d like to book</p>
+          </div>
+
+          {/* Loading state */}
+          {loading && (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+              Loading services...
             </div>
+          )}
 
-            {/* Loading state */}
-            {loading && (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                Loading services...
-              </div>
-            )}
+          {/* Error state */}
+          {error && (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#ff6b6b' }}>
+              Error loading services: {error}
+            </div>
+          )}
 
-            {/* Error state */}
-            {error && (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#ff6b6b' }}>
-                Error loading services: {error}
-              </div>
-            )}
+          {/* Empty state */}
+          {!loading && !error && services.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+              No services available in this category
+            </div>
+          )}
 
-            {/* Empty state */}
-            {!loading && !error && services.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
-                No services available in this category
-              </div>
-            )}
+          {/* service list */}
+          {!loading && !error && services.length > 0 && (
+            <div className="svc-list">
+              {services.map((svc) => (
+                <ServiceRow
+                  key={svc.id}
+                  service={svc}
+                  isSelected={selected.includes(svc.id)}
+                  onSelect={handleSelectService}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
-            {/* service list */}
-            {!loading && !error && services.length > 0 && (
-              <div className="svc-list">
-                {services.map((svc) => (
-                  <ServiceRow
-                    key={svc.id}
-                    service={svc}
-                    isSelected={selected.includes(svc.id)}
-                    onSelect={handleSelectService}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ── Buttons footer ── */}
-          <div className="appt-footer">
-            <button className="appt-cancel-btn" onClick={handleBack}>
-              Back
-            </button>
-            <button 
-              className="appt-continue-btn" 
-              onClick={handleContinue}
-              disabled={selected.length === 0 && !isUpdating}
-            >
-              Continue
-            </button>
-          </div>
+        {/* ── Buttons footer ── */}
+        <div className="appt-footer">
+          <button className="appt-cancel-btn" onClick={handleBack}>
+            Back
+          </button>
+          <button 
+            className="appt-continue-btn" 
+            onClick={handleContinue}
+            disabled={selected.length === 0 && !isUpdating}
+          >
+            Continue
+          </button>
         </div>
       </div>
+    </div>
+  );
+
+  return (
+    <>
+      {createPortal(modalContent, document.body)}
 
       {/* Backdrop confirmation */}
       <ConfirmationDialog
@@ -267,11 +329,10 @@ export const DynamicServiceModal = ({
         confirmText="Yes, Cancel"
         cancelText="Keep Selecting"
         onConfirm={() => {
-          setShowBackdropConfirm(false);
-          handleBack();
+          handleConfirmExit();
         }}
         onCancel={() => setShowBackdropConfirm(false)}
       />
     </>
   );
-};
+}

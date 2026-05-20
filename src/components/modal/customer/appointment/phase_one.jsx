@@ -234,42 +234,50 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
     return "";
   };
 
+  const handleBackdropClick = (e) => {
+    // Only block if clicking the backdrop itself, not content inside modal
+    if (e.target === e.currentTarget) {
+      e.stopPropagation();
+      setShowBackdropConfirm(true);
+    }
+  };
+
   return (
     <>
-      {/* Toast Notification - Rendered outside modal using Portal */}
+      {/* Modal rendered via portal at body level to bypass z-index stacking contexts */}
       {createPortal(
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, pointerEvents: "none", zIndex: 9999 }}>
-          <Toast 
-            message="This time slot is not available" 
-            type="error" 
-            duration={3000}
-            isVisible={toastVisible}
-          />
-        </div>,
-        document.body
-      )}
+        <>
+          {/* Toast Notification */}
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, pointerEvents: "none", zIndex: 9999 }}>
+            <Toast 
+              message="This time slot is not available" 
+              type="error" 
+              duration={3000}
+              isVisible={toastVisible}
+            />
+          </div>
 
-      <div 
-        className="appt-backdrop"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setShowBackdropConfirm(true);
-          }
-        }}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div className="appt-root">
-          <BookingHeader onBack={onBack} onBackClick={handleBackClick} />
-          <ProgressIndicator currentStep={1} />
+          <div 
+            className="appt-backdrop"
+            onClick={handleBackdropClick}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 10000010,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              backdropFilter: "blur(2px)",
+              pointerEvents: 'auto'
+            }}
+          >
+            <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+              <BookingHeader onBack={onBack} onBackClick={handleBackClick} />
+              <ProgressIndicator currentStep={1} />
 
           {/* ── Scrollable body ── */}
           <div className="appt-body">
@@ -498,12 +506,12 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
       </div>
 
       {/* ── Continue CTA ── */}
-      <div className="appt-footer">
+      <div className="appt-footer" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {!isFormValid && (
           <p style={{
             color: "#ff6b6b",
             fontSize: "0.85rem",
-            marginBottom: "10px",
+            margin: 0,
             textAlign: "center",
             fontWeight: "500",
           }}>
@@ -550,7 +558,10 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
         </div>
       </div>
     </div>
-    </div>
+        </div>
+        </>,
+        document.body
+      )}
 
       {/* Cancel Confirmation Dialogs */}
       <ConfirmationDialog

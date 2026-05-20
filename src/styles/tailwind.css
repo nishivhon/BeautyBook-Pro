@@ -4197,7 +4197,24 @@ html[data-theme="light"] .dash-page-title,
   .appt-body {
     flex: 1; overflow-y: auto; padding: 28px 40px 16px;
     display: flex; flex-direction: column; gap: 20px;
-    scrollbar-width: thin; scrollbar-color: rgba(152,143,129,0.2) transparent;
+    scrollbar-width: thin; scrollbar-color: rgba(221, 144, 29, 0.85) rgba(19, 19, 19, 0.4);
+  }
+  
+  .appt-body::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+  .appt-body::-webkit-scrollbar-track {
+    background: rgba(19, 19, 19, 0.4);
+  }
+  
+  .appt-body::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.85);
+    border-radius: 10px;
+  }
+  
+  .appt-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 1);
   }
   .appt-section-heading { display: flex; flex-direction: column; gap: 4px; }
   .appt-section-title { font-family: 'Georgia','Times New Roman',serif; font-weight: 700; font-size: 1.25rem; color: var(--color-white); }

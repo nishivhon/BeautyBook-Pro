@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../confirmation_dialog";
 import { fetchStaffWithAnyOption } from "../../../../services/staffApi";
 
@@ -119,6 +120,7 @@ const ProgressIndicator = ({ currentStep = 3, steps = STEPS }) => (
             </div>
             {i < steps.length - 1 && (
               <div className={`appt-step-line${lineAmber ? " done" : ""}`} />
+
             )}
           </div>
         );
@@ -335,27 +337,36 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
     setShowConfirmCancel(true);
   };
 
+  const handleExitRequest = () => {
+    setShowBackdropConfirm(true);
+  };
+
   return (
     <>
-      <div 
-        className="appt-backdrop"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setShowBackdropConfirm(true);
-          }
-        }}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div className="appt-root">
+      {createPortal(
+        <div 
+          className="appt-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              handleBack();
+            }
+          }}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000010,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(2px)",
+            pointerEvents: 'auto'
+          }}
+        >
+        <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
           <BookingHeader onBack={handleBack} title={headerTitle} />
           <ProgressIndicator currentStep={3} steps={stepLabels} />
 
@@ -442,7 +453,9 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
         </div>
       </div>
     </div>
-  </div>
+        </div>,
+        document.body
+      )}
 
       {/* Cancel Confirmation Dialogs */}
       <ConfirmationDialog

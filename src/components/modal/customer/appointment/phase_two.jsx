@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Toast } from "../../../toast";
 import { DynamicServiceModal } from "./services/dynamic_service";
 import { ConfirmationDialog } from "../confirmation_dialog";
+import { couponService } from "../../../../services/couponService";
 
 /* Hair Services — broom/brush icon */
 const HairIcon = () => (
@@ -219,6 +221,136 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   const [dynamicCategoryKeywordsMap, setDynamicCategoryKeywordsMap] = useState({});
   const promoCodeRef = useRef(null);
 
+  // Coupon state
+  const [coupons, setCoupons] = useState([]);
+  const [selectedCoupon, setSelectedCoupon] = useState(null);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+
+  const getCouponValue = (coupon) => String(coupon?.code || coupon?.id || '');
+  const findCouponByValue = (value) => {
+    if (!value) return null;
+    const normalizedValue = String(value);
+    return coupons.find((coupon) => {
+      const couponCode = String(coupon?.code || '');
+      const couponId = String(coupon?.id || '');
+      return couponCode === normalizedValue || couponId === normalizedValue;
+    }) || null;
+  };
+
+  // Inject scoped scrollbar styling once
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById('booking-scrollbar-style')) return;
+    const style = document.createElement('style');
+    style.id = 'booking-scrollbar-style';
+    style.textContent = `
+      .appt-backdrop .appt-body::-webkit-scrollbar { width: 10px !important; }
+      .appt-backdrop .appt-body::-webkit-scrollbar-thumb { background: rgba(221, 144, 29, 0.8) !important; border-radius: 10px !important; }
+      .appt-backdrop .appt-body::-webkit-scrollbar-thumb:hover { background: rgba(221, 144, 29, 1) !important; }
+      .appt-backdrop .appt-body::-webkit-scrollbar-track { background: rgba(19, 19, 19, 0.4) !important; }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
+  const getCustomerIdFromStorage = () => {
+    try {
+      const raw = localStorage.getItem('customerProfileData') || localStorage.getItem('operator_user') || localStorage.getItem('customer') || null;
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed?.id || parsed?.customerId || null;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  // Fetch claimed (customer) coupons
+  useEffect(() => {
+    if (!showPromoCode) return;
+    const fetchCoupons = async () => {
+      const customerId = getCustomerIdFromStorage();
+      if (!customerId) return;
+      setCouponsLoading(true);
+      try {
+        let data = await couponService.getAllCouponsWithStatus(customerId);
+        // If service returned empty, fallback to customer-scoped endpoint
+        if ((!data || data.length === 0)) {
+          try {
+            data = await couponService.getCustomerCoupons();
+          } catch (e) {
+            // ignore fallback error
+          }
+        }
+        const now = new Date();
+        const claimed = (data || []).filter(c => (c.claimed || c.isClaimed || c.is_claimed || c.status === 'claimed') && (!c.expiration || new Date(c.expiration) > now));
+        setCoupons(claimed);
+      } catch (err) {
+        console.error('Failed to load customer coupons', err);
+        setCoupons([]);
+      } finally {
+        setCouponsLoading(false);
+      }
+    };
+    fetchCoupons();
+  }, [showPromoCode]);
+
+  const formatCouponDisplay = (c) => {
+    if (!c) return '';
+    const code = c.code || c.id || '';
+    const desc = c.description || '';
+    let discountText = c.discount || '';
+    // normalize $ to ₱ if needed
+    discountText = discountText.replace('$', '₱');
+    const exp = c.expiration ? new Date(c.expiration).toLocaleDateString() : 'No expiry';
+    return `${code} - ${desc} (${discountText}) - Expires ${exp}`;
+  };
+
+  const CouponDropdown = ({ value, onChange }) => (
+    <div style={{ position: 'relative' }}>
+      <select
+        value={value || ''}
+        onChange={(e) => {
+          const selectedValue = e.target.value || null;
+          const couponObj = findCouponByValue(selectedValue);
+          onChange?.(selectedValue || '', couponObj);
+        }}
+        style={{
+          width: '100%',
+          padding: '12px 14px',
+          border: '1.5px solid #dd901d',
+          borderRadius: 10,
+          fontSize: '0.95rem',
+          fontWeight: 600,
+          color: '#f5f1eb',
+          backgroundColor: '#14110e',
+          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.04), 0 6px 18px rgba(0,0,0,0.18)',
+          outline: 'none',
+          appearance: 'none',
+          WebkitAppearance: 'none',
+          MozAppearance: 'none',
+          cursor: 'pointer',
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(221, 144, 29, 0.18), inset 0 0 0 1px rgba(255,255,255,0.04)';
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.boxShadow = 'inset 0 0 0 1px rgba(255,255,255,0.04), 0 6px 18px rgba(0,0,0,0.18)';
+        }}
+      >
+        <option value="" style={{ backgroundColor: '#14110e', color: '#f5f1eb' }}>No coupon</option>
+        {couponsLoading && <option value="loading" style={{ backgroundColor: '#14110e', color: '#f5f1eb' }}>Loading...</option>}
+        {coupons.map((c) => (
+          <option
+            key={c.id}
+            value={getCouponValue(c)}
+            style={{ backgroundColor: '#14110e', color: '#f5f1eb' }}
+          >
+            {formatCouponDisplay(c)}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+
   // Fetch categories dynamically and generate service cards
   useEffect(() => {
     const fetchAndGenerateServiceCards = async () => {
@@ -299,7 +431,23 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
     if (initialData?.promoCode) {
       setPromoCode(initialData.promoCode);
     }
+    if (initialData?.appliedCoupon) {
+      setSelectedCoupon(initialData.appliedCoupon);
+      setPromoCode(getCouponValue(initialData.appliedCoupon));
+    }
   }, [initialData]);
+
+  useEffect(() => {
+    if (!promoCode) {
+      setSelectedCoupon(null);
+      return;
+    }
+
+    const couponObj = findCouponByValue(promoCode);
+    if (couponObj) {
+      setSelectedCoupon(couponObj);
+    }
+  }, [promoCode, coupons]);
 
   // Scroll to promo code section when a service is selected
   useEffect(() => {
@@ -309,6 +457,14 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
       }, 300);
     }
   }, [selectedServices]);
+
+  const handleExitRequest = () => {
+    setShowBackdropConfirm(true);
+  };
+
+  const handleBack = () => {
+    onBack?.();
+  };
 
   const openServiceModal = (serviceCardId) => {
     const categoryInfo = dynamicCategoryKeywordsMap[serviceCardId];
@@ -365,7 +521,8 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
     onContinue?.({ 
       services: allSelectedServices, 
       selectedServicesByCard, 
-      promoCode
+      promoCode,
+      appliedCoupon: selectedCoupon || null,
     });
   };
 
@@ -395,26 +552,31 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   return (
     <>
       <Toast message={toastState.message} type={toastState.type} isVisible={toastState.isVisible} duration={toastState.duration} />
-      <div 
-        className="appt-backdrop"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setShowBackdropConfirm(true);
-          }
-        }}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div className="appt-root">
-          <BookingHeader onBack={onBack} title={headerTitle} />
+      {createPortal(
+        <div 
+          className="appt-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              handleBack();
+            }
+          }}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000010,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(2px)",
+            pointerEvents: 'auto'
+          }}
+        >
+        <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+          <BookingHeader onBack={handleBack} title={headerTitle} />
           <ProgressIndicator currentStep={2} steps={stepLabels} />
 
       {/* ── Scrollable body ── */}
@@ -448,31 +610,14 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
               marginBottom: "8px",
               fontFamily: "Inter, sans-serif",
             }}>
-              Promo/Discount Code <span style={{ color: "#999", fontWeight: "400" }}>(Optional)</span>
+              Coupon <span style={{ color: "#999", fontWeight: "400" }}>(Optional)</span>
             </label>
-            <input
-              type="text"
-              placeholder="Enter promo code"
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-              style={{
-                width: "100%",
-                padding: "12px 14px",
-                border: "1.5px solid #e5e5e5",
-                borderRadius: "8px",
-                fontSize: "0.95rem",
-                fontFamily: "Inter, sans-serif",
-                boxSizing: "border-box",
-                transition: "all 0.2s ease",
-                outline: "none",
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = "#dd901d";
-                e.target.style.boxShadow = "0 0 0 3px rgba(221, 144, 29, 0.1)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "#e5e5e5";
-                e.target.style.boxShadow = "none";
+            <CouponDropdown
+              value={selectedCoupon ? getCouponValue(selectedCoupon) : promoCode}
+              onChange={(id, couponObj) => {
+                setPromoCode(id || '');
+                // store selected coupon object for later phases
+                setSelectedCoupon(couponObj || null);
               }}
             />
           </div>
@@ -535,7 +680,9 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
         </div>
       </div>
     </div>
-  </div>
+      </div>,
+      document.body
+    )}
 
       {/* Cancel Confirmation Dialogs */}
       <ConfirmationDialog
