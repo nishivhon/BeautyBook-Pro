@@ -1339,10 +1339,25 @@ export const AdminDashboard = ({ date }) => {
       const result = await response.json();
       console.log(`[AdminDashboard] Appointment moved to current:`, result);
       console.log(`[AdminDashboard] History synced:`, result.historyUpdated, result.historyUpdateReason);
-      alert(`✓ Status updated! History sync: ${result.historyUpdated ? 'YES' : 'NO'}`);
+      
+      // Update local state instead of reloading page
+      if (isWalkIn) {
+        // Move walk-in from pending to current
+        setWalkInAppointments(prev => 
+          prev.map(w => w.id === apiId ? { ...w, status: 'current' } : w)
+        );
+      } else {
+        // Move appointment from pending to current
+        setCurrentAppointments(prev => [
+          ...prev,
+          ...pendingAppointments.filter(apt => apt.id === apiId)
+        ]);
+        setPendingAppointments(prev => prev.filter(apt => apt.id !== apiId));
+      }
 
-      // Refresh the page to see updates
-      window.location.reload();
+      // Close dialog and show success
+      setProceedConfirmId(null);
+      alert(`✓ Status updated! History sync: ${result.historyUpdated ? 'YES' : 'NO'}`);
     } catch (error) {
       console.error('[AdminDashboard] Error moving appointment:', error);
       console.error('[AdminDashboard] Full error:', error.toString());
