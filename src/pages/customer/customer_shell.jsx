@@ -8,6 +8,7 @@ import { AppointmentFormPhase4 } from "../../components/modal/customer/appointme
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 import { ToastViewport, useToast } from "../../components/toast";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
+import { useCustomerAppointmentsData } from "./customer_store";
 
 const LogoIcon = () => (
   <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -100,6 +101,7 @@ export function CustomerShell({ activeNav, profile, children }) {
   const [appointmentData, setAppointmentData] = useState(null);
   const [appointmentPhase, setAppointmentPhase] = useState(1);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
+  const [appointments] = useCustomerAppointmentsData();
   const { showToast, dismissToast } = useToast();
 
   useEffect(() => {
@@ -121,6 +123,65 @@ export function CustomerShell({ activeNav, profile, children }) {
       }),
     []
   );
+
+  // Helper function to convert 12-hour format to Date object
+  const parseAppointmentDateTime = (dateStr, timeStr) => {
+    try {
+      let timeToUse = timeStr || "";
+      
+      // If time is in 12-hour format (e.g., "10:00 AM"), convert to 24-hour
+      if (timeToUse.includes("AM") || timeToUse.includes("PM")) {
+        const [time, period] = timeToUse.split(" ");
+        const [hours, minutes] = time.split(":").map(Number);
+        let hours24 = hours;
+        
+        if (period === "PM" && hours !== 12) hours24 = hours + 12;
+        if (period === "AM" && hours === 12) hours24 = 0;
+        
+        timeToUse = `${hours24.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+      }
+      
+      // Create datetime string (YYYY-MM-DD HH:MM)
+      const dateTimeStr = `${dateStr}T${timeToUse || "00:00"}`;
+      return new Date(dateTimeStr);
+    } catch (err) {
+      console.error("[parseAppointmentDateTime] Error parsing:", err);
+      return null;
+    }
+  };
+
+  // Helper function to check if appointment is active (should block booking)
+  const isAppointmentActive = (appointment) => {
+    // Only block if status is pending or current
+    if (!appointment.status || !["pending", "current"].includes(appointment.status)) {
+      return false;
+    }
+    
+    // Check if appointment date/time is in the future
+    const appointmentDateTime = parseAppointmentDateTime(appointment.date, appointment.time);
+    if (!appointmentDateTime) return false;
+    
+    const now = new Date();
+    return appointmentDateTime > now;
+  };
+
+  // Helper function to handle Book Appointment button click
+  const handleBookAppointmentClick = () => {
+    // Filter for active appointments that should block booking
+    const activeAppointments = appointments.filter(isAppointmentActive);
+    
+    if (activeAppointments.length > 0) {
+      const appointmentWord = activeAppointments.length === 1 ? "appointment" : "appointments";
+      showToast({
+        message: `You already have an upcoming ${appointmentWord}. Please complete or cancel your current booking before scheduling a new one.`,
+        type: "warning",
+      });
+      return;
+    }
+    
+    // No active appointments, proceed with booking
+    setShowAppointment(true);
+  };
 
   const handleLogout = () => {
     logoutOperator();
@@ -298,7 +359,7 @@ export function CustomerShell({ activeNav, profile, children }) {
         notifications={[]}
         storageKey="customerSidebarExpanded"
         sidebarExtraAction={(
-          <button onClick={() => setShowAppointment(true)} className="nav-button cdb-book-nav-btn" title="Book Appointment" type="button">
+          <button onClick={handleBookAppointmentClick} className="nav-button cdb-book-nav-btn" title="Book Appointment" type="button">
             <BookingIcon color="currentColor" />
             {sidebarExpanded && <span>Book Appointment</span>}
           </button>
