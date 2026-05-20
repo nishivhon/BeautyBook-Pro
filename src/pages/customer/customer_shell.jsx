@@ -6,7 +6,7 @@ import { AppointmentFormPhase2 } from "../../components/modal/customer/appointme
 import { AppointmentFormPhase3 } from "../../components/modal/customer/appointment/phase_three";
 import { AppointmentFormPhase4 } from "../../components/modal/customer/appointment/phase_four";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
-import { Toast } from "../../components/toast";
+import { ToastViewport, useToast } from "../../components/toast";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 
 const LogoIcon = () => (
@@ -100,8 +100,7 @@ export function CustomerShell({ activeNav, profile, children }) {
   const [appointmentData, setAppointmentData] = useState(null);
   const [appointmentPhase, setAppointmentPhase] = useState(1);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
+  const { showToast, dismissToast } = useToast();
 
   useEffect(() => {
     localStorage.setItem("customerSidebarExpanded", JSON.stringify(sidebarExpanded));
@@ -122,11 +121,6 @@ export function CustomerShell({ activeNav, profile, children }) {
       }),
     []
   );
-
-  const displayToast = (message) => {
-    setToastMessage(message);
-    setShowToast(true);
-  };
 
   const handleLogout = () => {
     logoutOperator();
@@ -157,7 +151,7 @@ export function CustomerShell({ activeNav, profile, children }) {
 
   const handlePhase3Continue = (details) => {
     if (!details?.stylist) {
-      displayToast("Please select a stylist to continue");
+      showToast({ message: "Please select a stylist to continue", type: "warning" });
       return;
     }
     setAppointmentData((prev) => ({ ...(prev || {}), stylist: details.stylist }));
@@ -275,13 +269,12 @@ export function CustomerShell({ activeNav, profile, children }) {
         }
 
         handleCancelBooking();
-        displayToast("Appointment booked successfully");
-        console.error("[Phase4] Appointment creation failed:", data);
+        showToast({ message: "Appointment booked successfully", type: "success" });
       } else {
-        displayToast(data.error || "Failed to book appointment. Please try again.");
+        showToast({ message: data.error || "Failed to book appointment. Please try again.", type: "error" });
       }
     } catch (error) {
-      displayToast(`Error: ${error.message || "Unable to book appointment"}`);
+      showToast({ message: `Error: ${error.message || "Unable to book appointment"}`, type: "error" });
     }
   };
 
@@ -321,6 +314,8 @@ export function CustomerShell({ activeNav, profile, children }) {
         {children}
       </DashboardShell>
 
+      <ToastViewport onDismiss={dismissToast} />
+
       {showAppointment && (
         <div
           style={{
@@ -374,149 +369,6 @@ export function CustomerShell({ activeNav, profile, children }) {
         }}
         onCancel={() => setShowBackdropConfirm(false)}
       />
-
-      <Toast isVisible={showToast} message={toastMessage} type="info" duration={1200} />
     </>
-  );
-
-  return (
-    <div className="super-admin-container">
-      <aside
-        className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`}
-        style={{
-          opacity: mounted ? (showAppointment ? 0.5 : 1) : 0,
-          transform: mounted ? "translateX(0)" : "translateX(-16px)",
-          transition: "all 0.5s ease",
-          pointerEvents: showAppointment ? "none" : "auto",
-        }}
-      >
-        <div className="sidebar-logo-section">
-          <button onClick={() => setSidebarExpanded(!sidebarExpanded)} className="logo-toggle-btn" title="Toggle sidebar">
-            <div className="logo-badge">
-              <LogoIcon />
-            </div>
-          </button>
-          {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
-        </div>
-
-        {sidebarExpanded && (
-          <div className="admin-badge-pill">
-            <div className="admin-badge-circle">C</div>
-            <span className="admin-badge-text">Customer</span>
-          </div>
-        )}
-
-        <nav className="sidebar-nav">
-          {NAV_ITEMS.map((item) => {
-            const isActive = activeNav === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.path)}
-                className={`nav-button ${isActive ? "active" : ""}`}
-                title={item.label}
-              >
-                <item.icon color={isActive ? "#000" : "currentColor"} />
-                {sidebarExpanded && <span>{item.label}</span>}
-              </button>
-            );
-          })}
-
-          <button onClick={() => setShowAppointment(true)} className="nav-button cdb-book-nav-btn" title="Book Appointment">
-            <BookingIcon color="currentColor" />
-            {sidebarExpanded && <span>Book Appointment</span>}
-          </button>
-        </nav>
-
-        <div className="sidebar-logout-section">
-          <button onClick={handleLogout} className="logout-button" title="Log out">
-            <LogOutIcon />
-            {sidebarExpanded && <span>Log Out</span>}
-          </button>
-        </div>
-      </aside>
-
-      <div className="super-admin-main">
-        <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
-          <div className="dash-page-header">
-            <div className="dash-page-title-block">
-              <h1 className="dash-page-title">{PAGE_META[activeNav].title}</h1>
-              <p className="dash-page-subtitle">BeautyBook Pro · {todayDate} · {PAGE_META[activeNav].subtitle}</p>
-            </div>
-            <div className="dash-page-actions">
-              <button className="dash-action-btn" onClick={() => displayToast("No new notifications") }>
-                <BellIcon />
-                Notifications
-              </button>
-              <button className="dash-action-btn" onClick={() => displayToast("Settings panel coming soon") }>
-                <SettingsIcon />
-                Settings
-              </button>
-              <button className="cdb-filter-btn active" onClick={() => setShowAppointment(true)}>
-                Book Appointment
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <main className="dashboard-main">{children}</main>
-      </div>
-
-      {showAppointment && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 101,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backdropFilter: "blur(3px)",
-            backgroundColor: "rgba(0,0,0,0.72)",
-          }}
-          onClick={handleBackdropClick}
-        >
-          {appointmentPhase === 1 ? (
-            <AppointmentForm onBack={handleCancelBooking} onContinue={handleAppointmentContinue} />
-          ) : appointmentPhase === 2 ? (
-            <AppointmentFormPhase2
-              onBack={() => setAppointmentPhase(1)}
-              onContinue={handlePhase2Continue}
-              onCancel={handleCancelBooking}
-              initialData={appointmentData || {}}
-            />
-          ) : appointmentPhase === 3 ? (
-            <AppointmentFormPhase3
-              onBack={handleBackPhase3}
-              onContinue={handlePhase3Continue}
-              onCancel={handleCancelBooking}
-              initialData={{ services: appointmentData?.services || [] }}
-            />
-          ) : appointmentPhase === 4 ? (
-            <AppointmentFormPhase4
-              onBack={() => setAppointmentPhase(3)}
-              onConfirm={handlePhase4Confirm}
-              onCancel={handleCancelBooking}
-              booking={formatBooking()}
-            />
-          ) : null}
-        </div>
-      )}
-
-      <ConfirmationDialog
-        isOpen={showBackdropConfirm}
-        title="Cancel Booking?"
-        message="Are you sure you want to cancel? Your booking progress will be lost."
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
-        onConfirm={() => {
-          setShowBackdropConfirm(false);
-          handleCancelBooking();
-        }}
-        onCancel={() => setShowBackdropConfirm(false)}
-      />
-
-      <Toast isVisible={showToast} message={toastMessage} type="info" duration={1200} />
-    </div>
   );
 }

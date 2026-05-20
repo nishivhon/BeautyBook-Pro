@@ -2,12 +2,13 @@ import { CustomerShell } from "./customer_shell";
 import { useState, useEffect } from "react";
 import { useCustomerProfileData } from "./customer_store";
 import { couponService } from "../../services/couponService";
+import { useToast } from "../../components/toast";
 
 export default function CustomerCouponsPage() {
   const [profile] = useCustomerProfileData();
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState(null);
+  const { showToast } = useToast();
 
   // Load all coupons with claimed status on mount
   useEffect(() => {
@@ -20,7 +21,7 @@ export default function CustomerCouponsPage() {
         setCoupons(data);
       } catch (err) {
         console.error('Error loading coupons:', err);
-        setToast({ message: 'Failed to load coupons', type: 'error' });
+        showToast({ message: 'Failed to load coupons', type: 'error' });
       } finally {
         setLoading(false);
       }
@@ -28,22 +29,15 @@ export default function CustomerCouponsPage() {
     fetchCoupons();
   }, [profile?.id]);
 
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
-
   const handleClaimCoupon = async (coupon) => {
     if (!profile?.id) {
-      setToast({ message: 'Please log in to claim coupons', type: 'error' });
+      showToast({ message: 'Please log in to claim coupons', type: 'error' });
       return;
     }
 
     try {
       await couponService.claimCoupon(profile.id, coupon.code);
-      setToast({ message: `Coupon ${coupon.code} claimed successfully!`, type: 'success' });
+      showToast({ message: `Coupon ${coupon.code} claimed successfully!`, type: 'success' });
       
       // Update coupon to mark as claimed
       setCoupons(prev => prev.map(c => 
@@ -51,7 +45,7 @@ export default function CustomerCouponsPage() {
       ));
     } catch (err) {
       console.error('Error claiming coupon:', err);
-      setToast({ message: err.message, type: 'error' });
+      showToast({ message: err.message, type: 'error' });
     }
   };
 
@@ -69,29 +63,8 @@ export default function CustomerCouponsPage() {
     return `${start} - ${end}`;
   };
 
-  const Toast = ({ message, type = 'success' }) => (
-    <div style={{
-      position: 'fixed',
-      top: 24,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      padding: '12px 20px',
-      backgroundColor: type === 'success' ? '#10b981' : '#ef4444',
-      color: '#fff',
-      borderRadius: 8,
-      fontSize: 14,
-      fontWeight: 500,
-      zIndex: 2000,
-      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-    }}>
-      {message}
-    </div>
-  );
-
   return (
     <CustomerShell activeNav="coupons" profile={profile}>
-      {toast && <Toast message={toast.message} type={toast.type} />}
-      
       <section className="cdb-section cdb-mounted">
         <div className="cdb-card">
           <h2 className="cdb-section-title">Coupons</h2>

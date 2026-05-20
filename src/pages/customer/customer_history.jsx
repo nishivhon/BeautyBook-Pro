@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { CustomerShell } from "./customer_shell";
 import { useCustomerHistoryData, useCustomerProfileData } from "./customer_store";
+import { useToast } from "../../components/toast";
 
 const StarIcon = ({ filled = false }) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? "#dd901d" : "none"} xmlns="http://www.w3.org/2000/svg">
@@ -19,6 +20,7 @@ export default function CustomerHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [serviceCategories, setServiceCategories] = useState([{ id: "All", label: "All" }]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -104,10 +106,20 @@ export default function CustomerHistoryPage() {
   };
 
   const handleSubmitRating = () => {
-    if (ratingValue <= 0) return;
+    if (ratingValue <= 0) {
+      showToast({ message: "Please select a rating before submitting.", type: "warning" });
+      return;
+    }
+
+    if (!selectedForRating) {
+      showToast({ message: "Select a completed service before rating.", type: "error" });
+      return;
+    }
+
     setHistory((prev) =>
       prev.map((h) => (h.id === selectedForRating.id ? { ...h, rated: true, rating: ratingValue } : h))
     );
+    showToast({ message: "Rating submitted successfully.", type: "success" });
     setSelectedForRating(null);
   };
 

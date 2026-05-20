@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CustomerShell } from "./customer_shell";
 import { useCustomerCouponsData, useCustomerHistoryData, useCustomerProfileData, useCustomerAppointmentsData } from "./customer_store";
 import { couponService } from "../../services/couponService";
+import { useToast } from "../../components/toast";
 
 const StarIcon = ({ filled = false }) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? "#dd901d" : "none"} xmlns="http://www.w3.org/2000/svg">
@@ -16,6 +17,7 @@ export default function CustomerDashboard() {
 	const [history, setHistory] = useCustomerHistoryData();
 	const [coupons, setCoupons] = useCustomerCouponsData();
 	const [appointments, setAppointments] = useCustomerAppointmentsData();
+	const { showToast } = useToast();
 
 	
 	const [selectedForRating, setSelectedForRating] = useState(null);
@@ -156,17 +158,17 @@ export default function CustomerDashboard() {
 				prev.map((h) => (h.id === selectedForRating.id ? { ...h, rated: true, rating: ratingValue } : h))
 			);
 
-			alert('Rating submitted successfully!');
+			showToast({ message: "Rating submitted successfully!", type: "success" });
 			setSelectedForRating(null);
 		} catch (err) {
 			console.error('[CustomerDashboard] Error submitting rating:', err);
-			alert('Failed to submit rating: ' + err.message);
+			showToast({ message: 'Failed to submit rating: ' + err.message, type: 'error' });
 		}
 	};
 
 	const handleClaimCoupon = async (id, code) => {
 		if (!profile?.id) {
-			alert('Please log in to claim coupons');
+			showToast({ message: 'Please log in to claim coupons', type: 'error' });
 			return;
 		}
 
@@ -176,10 +178,10 @@ export default function CustomerDashboard() {
 			// Update local state to show claimed badge
 			setCoupons((prev) => prev.map((coupon) => (coupon.id === id ? { ...coupon, claimed: true } : coupon)));
 			
-			alert(`✓ Coupon ${code} claimed successfully!`);
+			showToast({ message: `Coupon ${code} claimed successfully!`, type: 'success' });
 		} catch (err) {
 			console.error('[CustomerDashboard] Error claiming coupon:', err);
-			alert('Failed to claim coupon: ' + err.message);
+			showToast({ message: 'Failed to claim coupon: ' + err.message, type: 'error' });
 		}
 	};
 
@@ -210,6 +212,7 @@ export default function CustomerDashboard() {
 	const handleInitiateCancelAppointment = (appointment) => {
 		const canCancel = canCancelAppointment(appointment.date, appointment.time);
 		if (!canCancel) {
+			showToast({ message: 'You are cancelling within 2 hours of your appointment.', type: 'warning' });
 			setSelectedAppointmentToCancel(appointment);
 			setCancelModalOpen(true);
 			return;
@@ -244,10 +247,10 @@ export default function CustomerDashboard() {
 				prev.filter((appt) => appt.id !== selectedAppointmentToCancel.id)
 			);
 
-			alert('Appointment cancelled successfully');
+			showToast({ message: 'Appointment cancelled successfully', type: 'success' });
 		} catch (err) {
 			console.error('[CustomerDashboard] Error cancelling appointment:', err);
-			alert('Failed to cancel appointment: ' + err.message);
+			showToast({ message: 'Failed to cancel appointment: ' + err.message, type: 'error' });
 		} finally {
 			setCancelModalOpen(false);
 			setSelectedAppointmentToCancel(null);
@@ -475,31 +478,111 @@ export default function CustomerDashboard() {
 			)}
 
 			{cancelModalOpen && selectedAppointmentToCancel && (
-				<div className="cdb-cancel-modal-overlay">
-					<div className="cdb-cancel-modal-card">
-						<h3 className="cdb-cancel-modal-title">Cancel Appointment?</h3>
-						<p className="cdb-cancel-modal-message">
-							Are you sure you want to cancel your {selectedAppointmentToCancel.service} appointment on {new Date(selectedAppointmentToCancel.date).toLocaleDateString()} at {selectedAppointmentToCancel.time}?
-						</p>
-						{!canCancelAppointment(selectedAppointmentToCancel.date, selectedAppointmentToCancel.time) && (
-							<div className="cdb-cancel-modal-warning">
-								⚠️ Warning: You are cancelling within 2 hours of your appointment. This may affect future booking privileges.
-							</div>
-						)}
-						<div className="cdb-cancel-modal-actions">
-							<button className="cdb-btn cdb-btn-primary" onClick={() => {
+			<div style={{
+				position: "fixed",
+				inset: 0,
+				zIndex: 10000020,
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				backdropFilter: "blur(2px)",
+				backgroundColor: "rgba(0,0,0,0.5)",
+				pointerEvents: 'auto'
+			}}>
+				<div style={{
+					background: "white",
+					borderRadius: "16px",
+					padding: "32px 24px",
+					maxWidth: "360px",
+					width: "90%",
+					boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+					animation: "fade-up 0.3s ease forwards",
+				}}>
+					<h2 style={{
+						fontSize: "18px",
+						fontWeight: "700",
+						color: "#1a0f00",
+						marginBottom: "12px",
+						textAlign: "center",
+						fontFamily: "Inter, sans-serif",
+					}}>
+						Cancel Appointment?
+					</h2>
+					<p style={{
+						fontSize: "14px",
+						color: "#665544",
+						marginBottom: "24px",
+						textAlign: "center",
+						lineHeight: "1.5",
+						fontFamily: "Inter, sans-serif",
+					}}>
+						Are you sure you want to cancel your {selectedAppointmentToCancel.service} appointment on {new Date(selectedAppointmentToCancel.date).toLocaleDateString()} at {selectedAppointmentToCancel.time}?
+					</p>
+					{!canCancelAppointment(selectedAppointmentToCancel.date, selectedAppointmentToCancel.time) && (
+						<div style={{ padding: '12px', marginBottom: '16px', backgroundColor: 'rgba(221, 144, 29, 0.1)', borderRadius: '4px', fontSize: '13px', color: '#dd901d', textAlign: 'center' }}>
+							⚠️ Warning: You are cancelling within 2 hours of your appointment.
+						</div>
+					)}
+					<div style={{
+						display: "flex",
+						gap: "12px",
+						flexDirection: "column",
+					}}>
+						<button
+							onClick={() => {
 								setCancelModalOpen(false);
 								setSelectedAppointmentToCancel(null);
-							}}>
-								Keep Appointment
-							</button>
-							<button className="cdb-btn cdb-btn-danger-outline" onClick={handleConfirmCancelAppointment}>
-								Confirm Cancellation
-							</button>
-						</div>
+							}}
+							style={{
+								padding: "12px 16px",
+								background: "#dd901d",
+								color: "white",
+								border: "none",
+								borderRadius: "8px",
+								fontSize: "14px",
+								fontWeight: "600",
+								cursor: "pointer",
+								fontFamily: "Inter, sans-serif",
+								transition: "all 0.2s ease",
+							}}
+							onMouseEnter={(e) => {
+								e.target.style.background = "#c17a14";
+								e.target.style.transform = "translateY(-2px)";
+							}}
+							onMouseLeave={(e) => {
+								e.target.style.background = "#dd901d";
+								e.target.style.transform = "translateY(0)";
+							}}
+						>
+							Keep Appointment
+						</button>
+						<button
+							onClick={handleConfirmCancelAppointment}
+							style={{
+								padding: "12px 16px",
+								background: "transparent",
+								color: "#dd901d",
+								border: "1.5px solid #dd901d",
+								borderRadius: "8px",
+								fontSize: "14px",
+								fontWeight: "600",
+								cursor: "pointer",
+								fontFamily: "Inter, sans-serif",
+								transition: "all 0.2s ease",
+							}}
+							onMouseEnter={(e) => {
+								e.target.style.background = "rgba(221, 144, 29, 0.1)";
+							}}
+							onMouseLeave={(e) => {
+								e.target.style.background = "transparent";
+							}}
+						>
+							Confirm Cancellation
+						</button>
 					</div>
 				</div>
-			)}
+			</div>
+		)}
 		</CustomerShell>
 	);
 }

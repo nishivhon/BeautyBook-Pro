@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CustomerShell } from "./customer_shell";
 import { useCustomerProfileData } from "./customer_store";
-import { Toast } from "../../components/toast";
+import { useToast } from "../../components/toast";
 
 const EditIcon = ({ color = "#dd901d" }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -39,16 +39,12 @@ export default function CustomerProfilePage() {
   const [profile, setProfile] = useCustomerProfileData();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [tempProfile, setTempProfile] = useState(profile);
+  const { showToast } = useToast();
   
   // Confirmation dialog state
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationAction, setConfirmationAction] = useState(null);
   const [confirmationMessage, setConfirmationMessage] = useState("");
-  
-  // Toast state
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastType, setToastType] = useState("info");
-  const [showToast, setShowToast] = useState(false);
   
   // Validation errors state
   const [validationErrors, setValidationErrors] = useState({});
@@ -87,6 +83,7 @@ export default function CustomerProfilePage() {
     
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+      showToast({ message: Object.values(errors)[0] || "Please fix the highlighted fields.", type: "warning" });
       return;
     }
     
@@ -103,9 +100,7 @@ export default function CustomerProfilePage() {
     setShowConfirmation(false);
     
     if (changesWereMade) {
-      setToastMessage("Profile details saved successfully!");
-      setToastType("success");
-      setShowToast(true);
+      showToast({ message: "Profile details saved successfully!", type: "success" });
     }
   };
 
@@ -310,13 +305,6 @@ export default function CustomerProfilePage() {
         </div>
       )}
 
-      {/* Toast Notification */}
-      <Toast
-        message={toastMessage}
-        type={toastType}
-        isVisible={showToast}
-        duration={4000}
-      />
     </CustomerShell>
   );
 }
