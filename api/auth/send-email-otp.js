@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 import { saveOtp } from '../supabaseOtpClient.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -12,6 +13,14 @@ const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL;
 const BREVO_SENDER_NAME = 'BeautyBook';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+const supabase = SUPABASE_URL && SUPABASE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } })
+  : null;
+
+const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 
 export default async (req, res) => {
   // Only allow POST
@@ -19,9 +28,10 @@ export default async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, full_name, phone } = req.body;
+  const { email, full_name } = req.body;
+  const normalizedEmail = normalizeEmail(email);
 
-  if (!email || !full_name) {
+  if (!normalizedEmail || !full_name) {
     return res.status(400).json({ error: 'Email and Full Name are required' });
   }
 
@@ -37,6 +47,28 @@ export default async (req, res) => {
       return res.status(500).json({ error: 'Email service is not configured. Please contact support.' });
     }
 
+    if (!supabase) {
+      return res.status(500).json({ error: 'Server misconfigured' });
+    }
+
+    const { data: existingCustomer, error: lookupError } = await supabase
+      .from('customers_accounts')
+      .select('id, name, email, phone')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error('[EmailOTP] Duplicate lookup error:', lookupError);
+      return res.status(500).json({ error: 'Failed to check existing account', details: lookupError.message });
+    }
+
+    if (existingCustomer) {
+      return res.status(409).json({
+        error: 'Account already exists',
+        details: 'There is already an existing account with that email address'
+      });
+    }
+
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -44,16 +76,15 @@ export default async (req, res) => {
 
     // Save OTP to Supabase
     await saveOtp({
-      email,
-      phone,
+      email: normalizedEmail,
       otp,
       name: full_name
     });
 
-    console.log(`[EmailOTP] OTP saved to database for: ${email}`);
+    console.log(`[EmailOTP] OTP saved to database for: ${normalizedEmail}`);
 
     // Send email and wait for result
-    const emailSent = await sendEmailAsync(email, full_name, otp);
+    const emailSent = await sendEmailAsync(normalizedEmail, full_name, otp);
 
     if (!emailSent) {
       console.error('[EmailOTP] Failed to send email');
@@ -64,7 +95,7 @@ export default async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'OTP generated. Check your email.',
-      email: email
+      email: normalizedEmail
     });
 
   } catch (error) {

@@ -253,7 +253,7 @@ export const Register = () => {
       } else {
         // Email mode - use Email OTP
         endpoint = `${apiUrl}/auth/send-email-otp`;
-        requestData = { email, full_name: fullName, phone: phone || "" };
+        requestData = { email, full_name: fullName };
         successMessage = `OTP sent to ${email}. Check your inbox!`;
         console.log('Sending email OTP to:', email);
       }
@@ -291,7 +291,7 @@ export const Register = () => {
               setShowOtpModal(true);
             }
           } else {
-            const errorMsg = data.error || "Failed to send verification";
+            const errorMsg = data.details || data.error || "Failed to send verification";
             console.error('❌ Error:', errorMsg);
             setToastMessage(errorMsg);
             setShowToast(true);
@@ -832,6 +832,7 @@ export const Register = () => {
                   type="button"
                   onClick={() => {
                     setVerificationMode("phone");
+                    setEmail("");
                     setErrors({});
                   }}
                   onMouseEnter={() => setToggleHover(true)}
@@ -872,6 +873,7 @@ export const Register = () => {
                   type="button"
                   onClick={() => {
                     setVerificationMode("email");
+                    setPhone("");
                     setErrors({});
                   }}
                   onMouseEnter={() => setToggleHover(true)}
@@ -1043,8 +1045,8 @@ export const Register = () => {
             setPendingEmail("");
             setPendingName("");
           }}
-          selectedPhone={pendingPhone}
-          selectedEmail={pendingEmail}
+          selectedPhone={otpType === "phone" ? pendingPhone : ""}
+          selectedEmail={otpType === "email" ? pendingEmail : ""}
           name={pendingName}
           otpType={otpType}
         />

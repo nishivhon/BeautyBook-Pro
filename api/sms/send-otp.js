@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 import { saveOtp } from '../supabaseOtpClient.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -9,6 +10,14 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const UNISMS_API_URL = 'https://unismsapi.com/api/sms';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+const supabase = SUPABASE_URL && SUPABASE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } })
+  : null;
+
+const normalizePhone = (value) => (typeof value === 'string' ? value.replace(/\D/g, '') : '');
 
 export default async (req, res) => {
   if (req.method !== 'POST') {
@@ -16,8 +25,9 @@ export default async (req, res) => {
   }
 
   const { phone, name } = req.body;
+  const normalizedPhone = normalizePhone(phone);
 
-  if (!phone) {
+  if (!normalizedPhone) {
     return res.status(400).json({ error: 'Phone number is required' });
   }
 
@@ -32,8 +42,30 @@ export default async (req, res) => {
       return res.status(500).json({ error: 'SMS service is not configured. Please contact support.' });
     }
 
+    if (!supabase) {
+      return res.status(500).json({ error: 'Server misconfigured' });
+    }
+
+    const { data: existingCustomers, error: lookupError } = await supabase
+      .from('customers_accounts')
+      .select('id, name, email, phone')
+      .eq('phone', normalizedPhone)
+      .limit(1);
+
+    if (lookupError) {
+      console.error('[SMSOTP] Duplicate lookup error:', lookupError);
+      return res.status(500).json({ error: 'Failed to check existing account', details: lookupError.message });
+    }
+
+    if (existingCustomers && existingCustomers.length > 0) {
+      return res.status(409).json({
+        error: 'Account already exists',
+        details: 'There is already an existing account with that phone number'
+      });
+    }
+
     // Format phone number
-    let formattedPhone = phone;
+    let formattedPhone = normalizedPhone;
     if (!formattedPhone.startsWith('+')) {
       if (formattedPhone.startsWith('0')) {
         formattedPhone = '+63' + formattedPhone.substring(1);
@@ -53,7 +85,7 @@ export default async (req, res) => {
       name
     });
 
-    console.log(`[SMSOTP] OTP saved to database for: ${phone}`);
+    console.log(`[SMSOTP] OTP saved to database for: ${normalizedPhone}`);
 
     // Send SMS and wait for result
     const smsSent = await sendSmsAsync(formattedPhone, name, otp);
@@ -67,7 +99,7 @@ export default async (req, res) => {
     res.status(200).json({
       success: true,
       message: `OTP generated. Check your SMS.`,
-      phone: phone
+      phone: normalizedPhone
     });
 
   } catch (error) {

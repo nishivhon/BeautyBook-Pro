@@ -82,7 +82,7 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
 
       if (verificationMode === "email" && email) {
         endpoint = `${apiUrl}/auth/send-email-otp`;
-        sendData = { email: email, full_name: name, phone: "" };
+        sendData = { email: email, full_name: name };
         successMessage = `OTP sent to ${email}`;
       } else if (verificationMode === "phone" && phone) {
         endpoint = `${apiUrl}/sms/send-otp`;
@@ -102,7 +102,10 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
         setShowToast(true);
         setTimeout(() => setShowToast(false), 2800);
       } else {
-        setErrors({ form: "Failed to send OTP. Please try again." });
+        const errorBody = await response.json().catch(() => ({}));
+        setErrors({
+          form: errorBody.details || errorBody.error || "Failed to send OTP. Please try again."
+        });
       }
     } catch (error) {
       setErrors({ form: "An error occurred. Please try again." });
@@ -121,9 +124,8 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
       const payload = {
         name,
         password,
-        // send email or phone based on verification mode
-        ...(verificationMode === 'email' ? { email } : {}),
-        ...(verificationMode === 'phone' ? { phone } : {}),
+        email: email.trim(),
+        phone: phone.replace(/\D/g, ''),
       };
 
       const resp = await fetch(endpoint, {
@@ -135,7 +137,7 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
       if (!resp.ok) {
         const errBody = await resp.json().catch(() => ({}));
         console.error('[CreateAccount] API error', resp.status, errBody);
-        setErrors({ form: errBody.error || 'Failed to create account. Please try again.' });
+        setErrors({ form: errBody.error || errBody.details || 'Failed to create account. Please try again.' });
         return;
       }
 
@@ -168,6 +170,17 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
     setErrors({});
     setToastMessage("");
     onClose();
+  };
+
+  const handleModeChange = (mode) => {
+    setVerificationMode(mode);
+    setErrors({});
+
+    if (mode === 'email') {
+      setPhone('');
+    } else {
+      setEmail('');
+    }
   };
 
   return (
@@ -435,7 +448,7 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
                 <div style={{ display: 'flex', backgroundColor: '#231d1a', border: '1px solid rgba(152, 143, 129, 0.3)', borderRadius: '10px', padding: '4px', gap: '4px' }}>
                   <button
                     type="button"
-                    onClick={() => setVerificationMode('email')}
+                    onClick={() => handleModeChange('email')}
                     style={{
                       flex: 1,
                       padding: '10px 12px',
@@ -463,7 +476,7 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setVerificationMode('phone')}
+                    onClick={() => handleModeChange('phone')}
                     style={{
                       flex: 1,
                       padding: '10px 12px',
@@ -569,8 +582,8 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
         ) : (
           // Step 2: OTP Verification
           <Otp
-            selectedPhone={phone}
-            selectedEmail={email}
+            selectedPhone={verificationMode === 'phone' ? phone : ''}
+            selectedEmail={verificationMode === 'email' ? email : ''}
             name={name}
             otpType={verificationMode}
             onClose={handleClose}
