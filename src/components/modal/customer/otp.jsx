@@ -83,7 +83,7 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
       let endpoint, resendData;
       if (otpType === "email") {
         endpoint = `${apiUrl}/auth/send-email-otp`;
-        resendData = { email: selectedEmail, full_name: name, phone: "" };
+        resendData = { email: selectedEmail, full_name: name };
       } else {
         endpoint = `${apiUrl}/sms/resend-otp`;
         resendData = { phone: selectedPhone, name };

@@ -6,6 +6,9 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 );
 
+const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+const normalizePhone = (value) => (typeof value === 'string' ? value.replace(/\D/g, '') : '');
+
 export default async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -14,6 +17,8 @@ export default async (req, res) => {
   try {
     const { email, phone, password } = req.body;
     const loginValue = email || phone;
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPhone = normalizePhone(phone || email);
 
     if (!loginValue || !password) {
       return res.status(400).json({ error: 'Email or phone and password required' });
@@ -26,7 +31,7 @@ export default async (req, res) => {
       .from('customers_accounts')
       .select('id, name, email, phone, password, histories, created_at');
 
-    query = isEmail ? query.eq('email', loginValue) : query.eq('phone', loginValue);
+    query = isEmail ? query.eq('email', normalizedEmail) : query.eq('phone', normalizedPhone);
 
     const { data: customers, error } = await query.limit(1);
 
