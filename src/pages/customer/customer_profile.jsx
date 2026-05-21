@@ -27,14 +27,14 @@ const TrashIcon = ({ color = "#ef4343" }) => (
 
 const SMSIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="#dd901d" strokeWidth="1.5" />
+    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.5" />
   </svg>
 );
 
 const EmailIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="2" y="4" width="20" height="16" rx="2" stroke="#dd901d" strokeWidth="1.5" />
-    <path d="M2 6l10 8 10-8" stroke="#dd901d" strokeWidth="1.5" strokeLinecap="round" />
+    <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M2 6l10 8 10-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 );
 

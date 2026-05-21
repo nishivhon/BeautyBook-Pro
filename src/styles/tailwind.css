@@ -2232,6 +2232,25 @@ html[data-theme="light"] .dash-page-title,
     cursor: pointer;
   }
 
+  html[data-theme="light"] .cdb-pref-pill,
+  html[data-theme="light"] .cdb-pref-option {
+    background: #fabece;
+    border-color: rgba(243, 139, 166, 0.35);
+    color: #000000;
+  }
+
+  html[data-theme="light"] .cdb-pref-pill svg,
+  html[data-theme="light"] .cdb-pref-option svg {
+    color: #000000;
+  }
+
+  html[data-theme="light"] .cdb-pref-pill.active,
+  html[data-theme="light"] .cdb-pref-option.active {
+    background: #f38ba6;
+    border-color: #f38ba6;
+    color: #000000;
+  }
+
   .cdb-pref-edit-row .cdb-pref-option {
     flex: 1;
     padding: 12px 16px;

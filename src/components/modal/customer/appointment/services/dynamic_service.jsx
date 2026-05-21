@@ -2,6 +2,183 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../../confirmation_dialog";
 
+const BOOKING_MODAL_THEME_CLASS = "booking-modal-theme";
+
+const BOOKING_MODAL_THEME_VARS = {
+  "--bg-dark": "#070605",
+  "--bg-darker": "#0b0907",
+  "--bg-card": "#070605",
+  "--bg-footer": "#070605",
+  "--bg-secondary": "#14110e",
+  "--color-amber": "#dd901d",
+  "--color-amber-dark": "#b97918",
+  "--color-tan": "#988f81",
+  "--color-white": "#f5f1eb",
+  "--color-black": "#1a0f00",
+  "--color-light": "#f5f1eb",
+  "--border-tan": "rgba(152, 143, 129, 0.3)",
+  "--border-tan-light": "rgba(152, 143, 129, 0.35)",
+  colorScheme: "dark",
+};
+
+const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-dynamic-service";
+
+const BOOKING_MODAL_THEME_CSS = `
+  .booking-modal-theme,
+  .booking-modal-theme * {
+    color-scheme: dark;
+  }
+
+  .booking-modal-theme .appt-root {
+    background: #070605 !important;
+    border: 1px solid rgba(221, 144, 29, 0.15) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-header,
+  .booking-modal-theme .appt-footer {
+    background: #070605 !important;
+  }
+
+  .booking-modal-theme .appt-header {
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-footer {
+    border-top: 1px solid rgba(152, 143, 129, 0.18) !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+
+  .booking-modal-theme .appt-root .appt-footer > button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+
+  .booking-modal-theme .appt-root .appt-footer .appt-cancel-btn,
+  .booking-modal-theme .appt-root .appt-footer .appt-continue-btn {
+    width: auto !important;
+  }
+
+  .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    background: #070605 !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-back-btn,
+  .booking-modal-theme .appt-header-title,
+  .booking-modal-theme .appt-section-title,
+  .booking-modal-theme .appt-step-label,
+  .booking-modal-theme .svc-list-title,
+  .booking-modal-theme .svc-list-desc,
+  .booking-modal-theme .svc-list-price,
+  .booking-modal-theme .svc-list-est {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-section-sub,
+  .booking-modal-theme .svc-list-desc,
+  .booking-modal-theme .svc-list-est {
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-step-circle {
+    background: #231d1a !important;
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-step-circle.active,
+  .booking-modal-theme .appt-step-circle.done {
+    background: #dd901d !important;
+    color: #1a0f00 !important;
+  }
+
+  .booking-modal-theme .appt-step-line {
+    background: rgba(152, 143, 129, 0.25) !important;
+  }
+
+  .booking-modal-theme .appt-step-line.done {
+    background: #dd901d !important;
+  }
+
+  .booking-modal-theme .svc-list-row {
+    background: #11100d !important;
+    border: 1px solid rgba(221, 144, 29, 0.12) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .svc-list-row.selected {
+    background: rgba(221, 144, 29, 0.12) !important;
+    border-color: rgba(221, 144, 29, 0.55) !important;
+    box-shadow: 0 0 0 1px rgba(221, 144, 29, 0.15) inset !important;
+  }
+
+  .booking-modal-theme .appt-cancel-btn {
+    color: #988f81 !important;
+    border-color: #988f81 !important;
+    background: transparent !important;
+  }
+
+  .booking-modal-theme .appt-cancel-btn:hover {
+    background: rgba(152, 143, 129, 0.1) !important;
+    color: #f5f1eb !important;
+    border-color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn {
+    background: #dd901d !important;
+    color: #1a0f00 !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn:hover:not(:disabled) {
+    background: #b97918 !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn:disabled {
+    background: rgba(221, 144, 29, 0.4) !important;
+    color: rgba(26, 15, 0, 0.55) !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar,
+  .booking-modal-theme .svc-list::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-track,
+  .booking-modal-theme .svc-list::-webkit-scrollbar-track {
+    background: rgba(19, 19, 19, 0.4) !important;
+    border-radius: 10px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb,
+  .booking-modal-theme .svc-list::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.9) !important;
+    border-radius: 10px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb:hover,
+  .booking-modal-theme .svc-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 1) !important;
+  }
+
+  .booking-modal-theme .appt-body,
+  .booking-modal-theme .svc-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
+  }
+`;
+
 /* Back arrow */
 const BackArrowIcon = () => (
   <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width={16} height={16}>
@@ -121,6 +298,15 @@ export const DynamicServiceModal = ({
   const [error, setError] = useState(null);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById(BOOKING_MODAL_THEME_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = BOOKING_MODAL_THEME_STYLE_ID;
+    style.textContent = BOOKING_MODAL_THEME_CSS;
+    document.head.appendChild(style);
+  }, []);
+
   // Inject scoped scrollbar styling once
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -236,9 +422,11 @@ export const DynamicServiceModal = ({
 
   const modalContent = (
     <div
-      className="appt-backdrop"
+      className={`appt-backdrop ${BOOKING_MODAL_THEME_CLASS}`}
+      data-theme="dark"
       onClick={handleBackgroundClick}
       style={{
+        ...BOOKING_MODAL_THEME_VARS,
         position: "fixed",
         top: 0,
         left: 0,
@@ -253,7 +441,7 @@ export const DynamicServiceModal = ({
         pointerEvents: 'auto'
       }}
     >
-      <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+      <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ ...BOOKING_MODAL_THEME_VARS, pointerEvents: 'auto' }}>
         <ServiceHeader title={categoryName} onBack={handleBack} isSaving={isUpdating} />
         <ProgressIndicator currentStep={2} />
 
@@ -301,17 +489,27 @@ export const DynamicServiceModal = ({
         </div>
 
         {/* ── Buttons footer ── */}
-        <div className="appt-footer">
-          <button className="appt-cancel-btn" onClick={handleBack}>
-            Back
-          </button>
-          <button 
-            className="appt-continue-btn" 
-            onClick={handleContinue}
-            disabled={selected.length === 0 && !isUpdating}
+          <div
+            className="appt-footer"
+            style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 10, width: "100%" }}
           >
-            Continue
-          </button>
+            <div style={{ width: "100%" }} aria-hidden="true" />
+            <div
+              className="booking-phase-footer-actions"
+              style={{ display: "flex", flexDirection: "row", gap: 12, width: "100%" }}
+            >
+              <button className="appt-cancel-btn" onClick={handleBack} style={{ flex: 1, minWidth: 0 }}>
+                Back
+              </button>
+              <button 
+                className="appt-continue-btn" 
+                onClick={handleContinue}
+                disabled={selected.length === 0 && !isUpdating}
+                style={{ flex: 1, minWidth: 0 }}
+              >
+                Continue
+              </button>
+            </div>
         </div>
       </div>
     </div>

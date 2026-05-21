@@ -5,6 +5,183 @@ import { DynamicServiceModal } from "./services/dynamic_service";
 import { ConfirmationDialog } from "../confirmation_dialog";
 import { couponService } from "../../../../services/couponService";
 
+const BOOKING_MODAL_THEME_CLASS = "booking-modal-theme";
+
+const BOOKING_MODAL_THEME_VARS = {
+  "--bg-dark": "#070605",
+  "--bg-darker": "#0b0907",
+  "--bg-card": "#070605",
+  "--bg-footer": "#070605",
+  "--bg-secondary": "#14110e",
+  "--color-amber": "#dd901d",
+  "--color-amber-dark": "#b97918",
+  "--color-tan": "#988f81",
+  "--color-white": "#f5f1eb",
+  "--color-black": "#1a0f00",
+  "--color-light": "#f5f1eb",
+  "--border-tan": "rgba(152, 143, 129, 0.3)",
+  "--border-tan-light": "rgba(152, 143, 129, 0.35)",
+  colorScheme: "dark",
+};
+
+const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-phase-two";
+
+const BOOKING_MODAL_THEME_CSS = `
+  .booking-modal-theme,
+  .booking-modal-theme * {
+    color-scheme: dark;
+  }
+
+  .booking-modal-theme .appt-root {
+    background: #070605 !important;
+    border: 1px solid rgba(221, 144, 29, 0.15) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-header,
+  .booking-modal-theme .appt-footer {
+    background: #070605 !important;
+  }
+
+  .booking-modal-theme .appt-header {
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-footer {
+    border-top: 1px solid rgba(152, 143, 129, 0.18) !important;
+  }
+
+  .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    background: #070605 !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-back-btn,
+  .booking-modal-theme .appt-header-title,
+  .booking-modal-theme .appt-section-title,
+  .booking-modal-theme .appt-section-sub,
+  .booking-modal-theme .appt-step-label,
+  .booking-modal-theme .appt-svc-title,
+  .booking-modal-theme .appt-svc-desc,
+  .booking-modal-theme .appt-svc-card,
+  .booking-modal-theme .cdb-label,
+  .booking-modal-theme label {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-section-sub,
+  .booking-modal-theme .appt-svc-desc {
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-step-circle {
+    background: #231d1a !important;
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-step-circle.active,
+  .booking-modal-theme .appt-step-circle.done {
+    background: #dd901d !important;
+    color: #1a0f00 !important;
+  }
+
+  .booking-modal-theme .appt-step-line {
+    background: rgba(152, 143, 129, 0.25) !important;
+  }
+
+  .booking-modal-theme .appt-step-line.done {
+    background: #dd901d !important;
+  }
+
+  .booking-modal-theme .appt-svc-card {
+    background: #11100d !important;
+    border: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-svc-card.selected {
+    background: rgba(221, 144, 29, 0.14) !important;
+    border-color: rgba(221, 144, 29, 0.55) !important;
+    box-shadow: 0 0 0 1px rgba(221, 144, 29, 0.15) inset !important;
+  }
+
+  .booking-modal-theme .appt-svc-card:hover:not(.selected) {
+    border-color: rgba(221, 144, 29, 0.35) !important;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24) !important;
+  }
+
+  .booking-modal-theme .appt-cancel-btn {
+    color: #988f81 !important;
+    border-color: #988f81 !important;
+    background: transparent !important;
+  }
+
+  .booking-modal-theme .appt-cancel-btn:hover {
+    background: rgba(152, 143, 129, 0.1) !important;
+    color: #f5f1eb !important;
+    border-color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn {
+    background: #dd901d !important;
+    color: #1a0f00 !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn:hover:not(:disabled) {
+    background: #b97918 !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn:disabled {
+    background: rgba(221, 144, 29, 0.4) !important;
+    color: rgba(26, 15, 0, 0.55) !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-track {
+    background: rgba(19, 19, 19, 0.4) !important;
+    border-radius: 10px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.9) !important;
+    border-radius: 10px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 1) !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
+  }
+
+  .booking-modal-theme [role="listbox"] {
+    background: #14110e !important;
+    border-color: rgba(221, 144, 29, 0.6) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme [role="option"] {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme [role="option"]:hover {
+    background: rgba(221, 144, 29, 0.12) !important;
+  }
+`;
+
 /* Hair Services — broom/brush icon */
 const HairIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={22} height={22}>
@@ -220,6 +397,15 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [dynamicCategoryKeywordsMap, setDynamicCategoryKeywordsMap] = useState({});
   const promoCodeRef = useRef(null);
+  
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById(BOOKING_MODAL_THEME_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = BOOKING_MODAL_THEME_STYLE_ID;
+    style.textContent = BOOKING_MODAL_THEME_CSS;
+    document.head.appendChild(style);
+  }, []);
 
   // Coupon state
   const [coupons, setCoupons] = useState([]);
@@ -623,13 +809,15 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
       <Toast message={toastState.message} type={toastState.type} isVisible={toastState.isVisible} duration={toastState.duration} />
       {createPortal(
         <div 
-          className="appt-backdrop"
+          className={`appt-backdrop ${BOOKING_MODAL_THEME_CLASS}`}
+          data-theme="dark"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               handleBack();
             }
           }}
           style={{
+            ...BOOKING_MODAL_THEME_VARS,
             position: "fixed",
             top: 0,
             left: 0,
@@ -644,7 +832,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
             pointerEvents: 'auto'
           }}
         >
-        <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+        <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ ...BOOKING_MODAL_THEME_VARS, pointerEvents: 'auto' }}>
           <BookingHeader onBack={handleBack} title={headerTitle} />
           <ProgressIndicator currentStep={2} steps={stepLabels} />
 

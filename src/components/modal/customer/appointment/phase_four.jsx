@@ -6,6 +6,233 @@ import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../confirmation_dialog";
 import { Toast } from "../../../toast";
 
+const BOOKING_MODAL_THEME_CLASS = "booking-modal-theme";
+
+const BOOKING_MODAL_THEME_VARS = {
+  "--bg-dark": "#070605",
+  "--bg-darker": "#0b0907",
+  "--bg-card": "#070605",
+  "--bg-footer": "#070605",
+  "--bg-secondary": "#14110e",
+  "--color-amber": "#dd901d",
+  "--color-amber-dark": "#b97918",
+  "--color-tan": "#988f81",
+  "--color-white": "#f5f1eb",
+  "--color-black": "#1a0f00",
+  "--color-light": "#f5f1eb",
+  "--border-tan": "rgba(152, 143, 129, 0.3)",
+  "--border-tan-light": "rgba(152, 143, 129, 0.35)",
+  colorScheme: "dark",
+};
+
+const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-phase-four-v2";
+
+const BOOKING_MODAL_THEME_CSS = `
+  .booking-modal-theme,
+  .booking-modal-theme * {
+    color-scheme: dark;
+  }
+
+  .booking-modal-theme .appt-root {
+    background: #070605 !important;
+    border: 1px solid rgba(221, 144, 29, 0.15) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-header,
+  .booking-modal-theme .appt-footer {
+    background: #070605 !important;
+  }
+
+  .booking-modal-theme .appt-header {
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-footer {
+    border-top: 1px solid rgba(152, 143, 129, 0.18) !important;
+  }
+
+  .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    background: #070605 !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-back-btn,
+  .booking-modal-theme .appt-header-title,
+  .booking-modal-theme .appt-section-title,
+  .booking-modal-theme .appt-section-sub,
+  .booking-modal-theme .appt-step-label,
+  .booking-modal-theme .confirm-detail-label,
+  .booking-modal-theme .confirm-detail-value,
+  .booking-modal-theme .confirm-svc-name,
+  .booking-modal-theme .confirm-svc-duration,
+  .booking-modal-theme .confirm-svc-price,
+  .booking-modal-theme .confirm-ref-pill {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-section-sub,
+  .booking-modal-theme .confirm-detail-label,
+  .booking-modal-theme .confirm-svc-duration,
+  .booking-modal-theme .confirm-ref-pill {
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-step-circle {
+    background: #231d1a !important;
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-step-circle.active,
+  .booking-modal-theme .appt-step-circle.done {
+    background: #dd901d !important;
+    color: #1a0f00 !important;
+  }
+
+  .booking-modal-theme .appt-step-line {
+    background: rgba(152, 143, 129, 0.25) !important;
+  }
+
+  .booking-modal-theme .appt-step-line.done {
+    background: #dd901d !important;
+  }
+
+  .booking-modal-theme .appt-root .confirm-card {
+    background: #11100d !important;
+    border: 1px solid rgba(221, 144, 29, 0.12) !important;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .confirm-service-row,
+  .booking-modal-theme .confirm-detail-row {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-root .confirm-svc-icon {
+    background: #dd901d !important;
+    border: 1px solid rgba(221, 144, 29, 0.42) !important;
+    box-shadow: 0 10px 20px rgba(221, 144, 29, 0.2) !important;
+  }
+
+  .booking-modal-theme .appt-root .confirm-svc-icon svg,
+  .booking-modal-theme .appt-root .confirm-svc-icon svg * {
+    stroke: #1a0f00 !important;
+    fill: transparent;
+  }
+
+  .booking-modal-theme .appt-root .confirm-services-selected {
+    margin: 12px 0 16px !important;
+  }
+
+  .booking-modal-theme .appt-root .confirm-services-title {
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    color: #988f81 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em !important;
+    margin-bottom: 12px !important;
+  }
+
+  .booking-modal-theme .appt-root .confirm-services-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .booking-modal-theme .appt-root .confirm-services-item {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 16px !important;
+    font-size: 0.95rem !important;
+  }
+
+  .booking-modal-theme .appt-root .confirm-services-name {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-root .confirm-services-price {
+    color: #988f81 !important;
+    font-weight: 600 !important;
+  }
+
+  .booking-modal-theme .confirm-bottom-row > div:last-child {
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-root .confirm-ref-pill {
+    background: rgba(221, 144, 29, 0.14) !important;
+    border: 1px solid rgba(221, 144, 29, 0.45) !important;
+    color: #f5f1eb !important;
+    box-shadow: 0 0 0 1px rgba(221, 144, 29, 0.08) inset !important;
+  }
+
+  .booking-modal-theme .appt-root .confirm-bottom-row > div:last-child {
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-cancel-btn {
+    color: #988f81 !important;
+    border-color: #988f81 !important;
+    background: transparent !important;
+  }
+
+  .booking-modal-theme .appt-cancel-btn:hover {
+    background: rgba(152, 143, 129, 0.1) !important;
+    color: #f5f1eb !important;
+    border-color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn,
+  .booking-modal-theme .appt-download-receipt-btn {
+    background: #dd901d !important;
+    color: #1a0f00 !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn:hover:not(:disabled),
+  .booking-modal-theme .appt-download-receipt-btn:hover {
+    background: #b97918 !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn:disabled {
+    background: rgba(221, 144, 29, 0.4) !important;
+    color: rgba(26, 15, 0, 0.55) !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-track {
+    background: rgba(19, 19, 19, 0.4) !important;
+    border-radius: 10px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.9) !important;
+    border-radius: 10px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 1) !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
+  }
+`;
+
 /* ══════════════════════════════════════════
    INLINE SVG ICONS
 ══════════════════════════════════════════ */
@@ -183,6 +410,20 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
   const [showReceiptReminder, setShowReceiptReminder] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showConfirmationToast, setShowConfirmationToast] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const existingStyle = document.getElementById(BOOKING_MODAL_THEME_STYLE_ID);
+    if (existingStyle) {
+      existingStyle.textContent = BOOKING_MODAL_THEME_CSS;
+      return;
+    }
+
+    const style = document.createElement('style');
+    style.id = BOOKING_MODAL_THEME_STYLE_ID;
+    style.textContent = BOOKING_MODAL_THEME_CSS;
+    document.head.appendChild(style);
+  }, []);
 
   // Auto-hide toast after 2 seconds
   useEffect(() => {
@@ -590,7 +831,8 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
       {createPortal(
         <div 
-          className="appt-backdrop"
+          className={`appt-backdrop ${BOOKING_MODAL_THEME_CLASS}`}
+          data-theme="dark"
           onClick={(e) => {
             console.log('[Phase4] Backdrop click detected', { 
               target: e.target.className, 
@@ -609,6 +851,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             }
           }}
           style={{
+            ...BOOKING_MODAL_THEME_VARS,
             ...DARK_MODAL_VARS,
             position: "fixed",
             top: 0,
@@ -625,7 +868,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             pointerEvents: 'auto'
           }}
         >
-        <div className="appt-root" onClick={(e) => e.stopPropagation()}>
+          <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ ...BOOKING_MODAL_THEME_VARS }}>
           <BookingHeader onBack={handleBack} isConfirmed={isConfirmed} />
           <ProgressIndicator currentStep={4} />
 
@@ -660,15 +903,15 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
               {services.length > 0 && (
                 <>
-                  <div style={{ marginBottom: "16px", marginTop: "12px" }}>
-                    <div style={{ fontSize: "0.72rem", fontWeight: "600", color: "var(--color-tan)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: "12px" }}>
+                  <div className="confirm-services-selected">
+                    <div className="confirm-services-title">
                       Services Selected
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div className="confirm-services-list">
                       {services.map((service, idx) => (
-                        <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.95rem" }}>
-                          <div>{service.title || service.name || 'Service'}</div>
-                          <div style={{ color: "var(--color-tan)", fontWeight: 600 }}>{service.price || 'N/A'}</div>
+                        <div key={idx} className="confirm-services-item">
+                          <div className="confirm-services-name">{service.title || service.name || 'Service'}</div>
+                          <div className="confirm-services-price">{service.price || 'N/A'}</div>
                         </div>
                       ))}
                     </div>
@@ -730,10 +973,10 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
               <Divider />
 
               <div className="confirm-bottom-row" style={{ flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
-                <div className="confirm-ref-pill">
+                    <div className="confirm-ref-pill" style={{ background: 'rgba(221, 144, 29, 0.14)', border: '1px solid rgba(221, 144, 29, 0.45)', color: '#f5f1eb', boxShadow: '0 0 0 1px rgba(221, 144, 29, 0.08) inset' }}>
                   Ref. No.: {bookingData?.refNo || 'N/A'}
                 </div>
-                <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>You will receive notifications 15 minutes before your appointment</div>
+                    <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>You will receive notifications 15 minutes before your appointment</div>
               </div>
             </div>
           </div>
@@ -755,7 +998,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
               <button 
                 className="appt-continue-btn" 
                 onClick={handleConfirmBooking} 
-                style={{flex: 1, cursor: "pointer"}}
+                style={{ flex: 1, cursor: "pointer", minWidth: 0, padding: "12px 16px", height: "52px", fontSize: "1.05rem", fontWeight: 700, borderRadius: "12px" }}
               >
                 Confirm
               </button>
@@ -767,7 +1010,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
                   console.log('[Phase4] Download Receipt button clicked', e);
                   handleDownloadReceipt();
                 }}
-                style={{flex: 1, cursor: "pointer", padding: "12px", fontSize: "16px", fontWeight: "600"}}
+                style={{ flex: 1, cursor: "pointer", minWidth: 0, padding: "12px 16px", height: "52px", fontSize: "1.05rem", fontWeight: 700, borderRadius: "12px" }}
               >
                 <DownloadIcon />
                 Download Receipt

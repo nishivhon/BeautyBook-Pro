@@ -3,6 +3,192 @@ import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../confirmation_dialog";
 import Toast from "../../../toast";
 
+const BOOKING_MODAL_THEME_CLASS = "booking-modal-theme";
+
+const BOOKING_MODAL_THEME_VARS = {
+  "--bg-dark": "#070605",
+  "--bg-darker": "#0b0907",
+  "--bg-card": "#070605",
+  "--bg-footer": "#070605",
+  "--bg-secondary": "#14110e",
+  "--color-amber": "#dd901d",
+  "--color-amber-dark": "#b97918",
+  "--color-tan": "#988f81",
+  "--color-white": "#f5f1eb",
+  "--color-black": "#1a0f00",
+  "--color-light": "#f5f1eb",
+  "--border-tan": "rgba(152, 143, 129, 0.3)",
+  "--border-tan-light": "rgba(152, 143, 129, 0.35)",
+  colorScheme: "dark",
+};
+
+const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-phase-one";
+
+const BOOKING_MODAL_THEME_CSS = `
+  .booking-modal-theme,
+  .booking-modal-theme * {
+    color-scheme: dark;
+  }
+
+  .booking-modal-theme .appt-root {
+    background: #070605 !important;
+    border: 1px solid rgba(221, 144, 29, 0.15) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-header,
+  .booking-modal-theme .appt-root .appt-footer {
+    background: #070605 !important;
+  }
+
+  .booking-modal-theme .appt-header {
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-root .appt-footer {
+    border-top: 1px solid rgba(152, 143, 129, 0.18) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-warning {
+    width: 100% !important;
+    text-align: center !important;
+    color: #ff6b6b !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-footer-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-footer-top {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-section-sub,
+  .booking-modal-theme .appt-step-label,
+  .booking-modal-theme .appt-date-day,
+  .booking-modal-theme .appt-date-num {
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-step-circle {
+    background: #231d1a !important;
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-step-circle.active {
+    background: #dd901d !important;
+    color: #1a0f00 !important;
+  }
+
+  .booking-modal-theme .appt-step-line {
+    background: rgba(152, 143, 129, 0.25) !important;
+  }
+
+  .booking-modal-theme .appt-step-line.done {
+    background: #dd901d !important;
+  }
+
+  .booking-modal-theme .appt-picker-label {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-date-card,
+  .booking-modal-theme .appt-time-chip {
+    background: #11100d !important;
+    border: 1px solid rgba(221, 144, 29, 0.12) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-date-card.selected,
+  .booking-modal-theme .appt-time-chip.selected {
+    background: rgba(221, 144, 29, 0.16) !important;
+    border-color: rgba(221, 144, 29, 0.6) !important;
+    color: #f5f1eb !important;
+    box-shadow: 0 0 0 1px rgba(221, 144, 29, 0.12) inset !important;
+  }
+
+  .booking-modal-theme .appt-time-chip.disabled {
+    background: rgba(17, 16, 13, 0.75) !important;
+    color: rgba(152, 143, 129, 0.55) !important;
+  }
+
+  .booking-modal-theme .appt-cancel-btn {
+    color: #988f81 !important;
+    border-color: #988f81 !important;
+    background: transparent !important;
+  }
+
+  .booking-modal-theme .appt-cancel-btn:hover {
+    background: rgba(152, 143, 129, 0.1) !important;
+    color: #f5f1eb !important;
+    border-color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn {
+    background: #dd901d !important;
+    color: #1a0f00 !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn:hover:not(:disabled) {
+    background: #b97918 !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn:disabled {
+    background: rgba(221, 144, 29, 0.4) !important;
+    color: rgba(26, 15, 0, 0.55) !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-track {
+    background: rgba(19, 19, 19, 0.4) !important;
+    border-radius: 10px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.9) !important;
+    border-radius: 10px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 1) !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
+  }
+`;
+
 const CalendarSmIcon = () => (
   <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" width={18} height={18}>
     <rect x="1" y="2.5" width="16" height="14" rx="2" stroke="white" strokeWidth="1.4" fill="none"/>
@@ -116,6 +302,15 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
   const [dateOptions, setDateOptions] = useState([]);
   const [unavailableTimes, setUnavailableTimes] = useState([]);
   const [loadingTimes, setLoadingTimes] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById(BOOKING_MODAL_THEME_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = BOOKING_MODAL_THEME_STYLE_ID;
+    style.textContent = BOOKING_MODAL_THEME_CSS;
+    document.head.appendChild(style);
+  }, []);
 
   // Auto-hide toast after it becomes visible
   useEffect(() => {
@@ -258,9 +453,11 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
           </div>
 
           <div 
-            className="appt-backdrop"
+            className={`appt-backdrop ${BOOKING_MODAL_THEME_CLASS}`}
+            data-theme="dark"
             onClick={handleBackdropClick}
             style={{
+              ...BOOKING_MODAL_THEME_VARS,
               position: "fixed",
               top: 0,
               left: 0,
@@ -275,7 +472,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
               pointerEvents: 'auto'
             }}
           >
-            <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+            <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ ...BOOKING_MODAL_THEME_VARS, pointerEvents: 'auto' }}>
               <BookingHeader onBack={onBack} onBackClick={handleBackClick} />
               <ProgressIndicator currentStep={1} />
 
@@ -506,23 +703,21 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
       </div>
 
       {/* ── Continue CTA ── */}
-      <div className="appt-footer" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {!isFormValid && (
-          <p style={{
-            color: "#ff6b6b",
-            fontSize: "0.85rem",
-            margin: 0,
-            textAlign: "center",
-            fontWeight: "500",
-          }}>
-            {getValidationMessage()}
-          </p>
-        )}
-        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+      <div className="appt-footer">
+        <div className="booking-phase-footer-top">
+          {!isFormValid && (
+            <p className="booking-phase-warning" style={{ textAlign: "center", width: "100%" }}>
+              {getValidationMessage()}
+            </p>
+          )}
+        </div>
+
+        <div className="booking-phase-footer-actions">
           <button
             onClick={() => setShowCancelConfirm(true)}
             style={{
               flex: 1,
+              minWidth: 0,
               padding: "12px 16px",
               background: "transparent",
               color: "#dd901d",
@@ -549,6 +744,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
             disabled={!isFormValid}
             style={{
               flex: 1,
+              minWidth: 0,
               opacity: isFormValid ? 1 : 0.5,
               cursor: isFormValid ? "pointer" : "not-allowed",
             }}
