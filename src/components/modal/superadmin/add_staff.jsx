@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { databaseAPI } from "../../../services/databaseApi";
 
 const CloseIcon = ({ color = "currentColor" }) => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -6,46 +7,222 @@ const CloseIcon = ({ color = "currentColor" }) => (
   </svg>
 );
 
+const ConfirmationDialog = ({ 
+  isOpen = false,
+  title = "Leave without saving?",
+  message = "Are you sure you want to exit? Any unsaved information will be lost.",
+  confirmText = "Leave",
+  cancelText = "Stay",
+  onConfirm,
+  onCancel
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      backdropFilter: 'blur(2px)',
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '16px',
+        padding: '32px 24px',
+        maxWidth: '360px',
+        width: '90%',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        animation: 'fade-up 0.3s ease forwards'
+      }}>
+        <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1a0f00', marginBottom: '12px', textAlign: 'center', fontFamily: 'Inter, sans-serif', marginTop: 0 }}>
+          {title}
+        </h2>
+        <p style={{ fontSize: '14px', color: '#665544', marginBottom: '24px', textAlign: 'center', lineHeight: '1.5', fontFamily: 'Inter, sans-serif', marginTop: 0 }}>
+          {message}
+        </p>
+        <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '12px 16px',
+              background: '#dd901d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = '#c17a14';
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = '#dd901d';
+              e.target.style.transform = 'translateY(0)';
+            }}
+          >
+            {cancelText}
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: '12px 16px',
+              background: 'transparent',
+              color: '#dd901d',
+              border: '1.5px solid #dd901d',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(221, 144, 29, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'transparent';
+            }}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     names: '',
-    category_specialty: ''
+    category_specialty: []
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || showConfirmation) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setShowConfirmation(true);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, showConfirmation]);
+
+  useEffect(() => {
+    if (isOpen && categories.length === 0) {
+      fetchCategories();
+    }
+  }, [isOpen]);
+
+  const fetchCategories = async () => {
+    setCategoriesLoading(true);
+    try {
+      const tablesInfo = await databaseAPI.getTablesInfo(['services']);
+      if (tablesInfo && Array.isArray(tablesInfo) && tablesInfo.length > 0) {
+        const dataResult = await databaseAPI.getTableData('services', 1000, 0);
+        const data = dataResult.data || [];
+        
+        const uniqueCategories = [...new Set(
+          data
+            .map(s => s.category || s.service_category)
+            .filter(c => c && c.trim())
+        )].sort();
+        
+        setCategories(uniqueCategories.length > 0 ? uniqueCategories : ['General']);
+      }
+    } catch (err) {
+      console.error('[AddStaffModal] Error fetching categories:', err);
+      setCategories(['General']);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    setError(null);
+  };
+
+  const handleSpecialtyToggle = (specialty) => {
+    setFormData(prev => {
+      const selected = Array.isArray(prev.category_specialty) ? prev.category_specialty : [];
+      const nextSelected = selected.includes(specialty)
+        ? selected.filter(item => item !== specialty)
+        : [...selected, specialty];
+
+      return {
+        ...prev,
+        category_specialty: nextSelected,
+      };
+    });
+    setError(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.names.trim()) {
+      setError('Staff name is required');
+      return;
+    }
+
+    if (!Array.isArray(formData.category_specialty) || formData.category_specialty.length === 0) {
+      setError('Select at least one specialty');
+      return;
+    }
+
+    await handleConfirmAdd();
+  };
+
+  const handleExitAttempt = () => {
+    if (isLoading || showConfirmation) return;
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmExit = () => {
+    setShowConfirmation(false);
+    setFormData({ names: '', category_specialty: [] });
+    setError(null);
+    onClose();
+  };
+
+  const selectedSpecialties = Array.isArray(formData.category_specialty) ? formData.category_specialty : [];
+
+  const handleConfirmAdd = async () => {
+    setShowConfirmation(false);
     setIsLoading(true);
     setError(null);
 
     try {
-      if (!formData.names.trim()) {
-        setError('Staff name is required');
-        setIsLoading(false);
-        return;
-      }
-
-      if (!formData.category_specialty.trim()) {
-        setError('Category/Specialty is required');
-        setIsLoading(false);
-        return;
-      }
-
       const response = await fetch('/api/staffs/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           names: formData.names,
-          category_specialty: formData.category_specialty
+          category_specialty: selectedSpecialties.join(', ')
         })
       });
 
@@ -58,7 +235,7 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
       console.log('[AddStaffModal] Staff created:', result);
       
       onSave(result.staff);
-      setFormData({ names: '', category_specialty: '' });
+      setFormData({ names: '', category_specialty: [] });
       onClose();
     } catch (err) {
       console.error('[AddStaffModal] Error:', err);
@@ -69,213 +246,214 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
   };
 
   const handleClose = () => {
-    setFormData({ names: '', category_specialty: '' });
+    setFormData({ names: '', category_specialty: [] });
     setError(null);
+    setShowConfirmation(false);
     onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 2000,
-      backdropFilter: 'blur(4px)'
-    }}>
+    <>
       <div style={{
-        backgroundColor: '#231D1A',
-        border: '1px solid rgba(221, 144, 29, 0.2)',
-        borderRadius: '12px',
-        padding: '32px',
-        maxWidth: '450px',
-        width: '90%',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
-        animation: 'fadeInScale 0.3s ease-out'
-      }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ margin: 0, color: '#D4C5B9', fontSize: '18px', fontWeight: '600' }}>
-            Add New Staff Member
-          </h2>
-          <button
-            onClick={handleClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#988f81',
-              cursor: 'pointer',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'color 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#D4C5B9'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#988f81'}
-          >
-            <CloseIcon />
-          </button>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div style={{
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '6px',
-            padding: '12px',
-            marginBottom: '16px',
-            color: '#EF4444',
-            fontSize: '13px'
-          }}>
-            {error}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Name Field */}
-          <div>
-            <label style={{ display: 'block', color: '#D4C5B9', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>
-              Staff Name
-            </label>
-            <input
-              type="text"
-              name="names"
-              value={formData.names}
-              onChange={handleChange}
-              placeholder="Enter staff name"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                backgroundColor: 'rgba(35, 29, 26, 0.8)',
-                border: '1px solid rgba(152, 143, 129, 0.3)',
-                borderRadius: '6px',
-                color: '#D4C5B9',
-                fontSize: '13px',
-                boxSizing: 'border-box',
-                transition: 'all 0.2s',
-                outline: 'none'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'rgba(221, 144, 29, 0.5)';
-                e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.95)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(152, 143, 129, 0.3)';
-                e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.8)';
-              }}
-            />
-          </div>
-
-          {/* Specialty Field */}
-          <div>
-            <label style={{ display: 'block', color: '#D4C5B9', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>
-              Specialty / Category
-            </label>
-            <input
-              type="text"
-              name="category_specialty"
-              value={formData.category_specialty}
-              onChange={handleChange}
-              placeholder="e.g., Hair Styling, Nail Art"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                backgroundColor: 'rgba(35, 29, 26, 0.8)',
-                border: '1px solid rgba(152, 143, 129, 0.3)',
-                borderRadius: '6px',
-                color: '#D4C5B9',
-                fontSize: '13px',
-                boxSizing: 'border-box',
-                transition: 'all 0.2s',
-                outline: 'none'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'rgba(221, 144, 29, 0.5)';
-                e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.95)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(152, 143, 129, 0.3)';
-                e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.8)';
-              }}
-            />
-          </div>
-
-          {/* Buttons */}
-          <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2000,
+        backdropFilter: 'blur(4px)'
+      }} onClick={handleExitAttempt}>
+        <div style={{
+          backgroundColor: '#231D1A',
+          border: '1px solid rgba(221, 144, 29, 0.2)',
+          borderRadius: '12px',
+          padding: '32px',
+          maxWidth: '450px',
+          width: '90%',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+          animation: 'fadeInScale 0.3s ease-out'
+        }} onClick={(event) => event.stopPropagation()}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <h2 style={{ margin: 0, color: '#D4C5B9', fontSize: '18px', fontWeight: '600' }}>
+              Add New Staff Member
+            </h2>
             <button
-              type="button"
-              onClick={handleClose}
+              onClick={handleExitAttempt}
               disabled={isLoading}
               style={{
-                flex: 1,
-                padding: '10px 16px',
-                backgroundColor: 'transparent',
-                border: '1px solid rgba(152, 143, 129, 0.3)',
-                borderRadius: '6px',
+                background: 'none',
+                border: 'none',
                 color: '#988f81',
-                fontSize: '13px',
-                fontWeight: '500',
-                cursor: isLoading ? 'default' : 'pointer',
-                transition: 'all 0.2s',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'color 0.2s',
                 opacity: isLoading ? 0.5 : 1
               }}
-              onMouseEnter={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
-                  e.currentTarget.style.color = '#D4C5B9';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
-                  e.currentTarget.style.color = '#988f81';
-                }
-              }}
+              onMouseEnter={(e) => !isLoading && (e.currentTarget.style.color = '#D4C5B9')}
+              onMouseLeave={(e) => !isLoading && (e.currentTarget.style.color = '#988f81')}
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              style={{
-                flex: 1,
-                padding: '10px 16px',
-                backgroundColor: isLoading ? '#b8700a' : '#dd901d',
-                border: 'none',
-                borderRadius: '6px',
-                color: '#1a1a1a',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: isLoading ? 'default' : 'pointer',
-                transition: 'all 0.2s',
-                opacity: isLoading ? 0.7 : 1
-              }}
-              onMouseEnter={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.backgroundColor = '#e6a326';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.backgroundColor = '#dd901d';
-                }
-              }}
-            >
-              {isLoading ? 'Creating...' : 'Create Staff'}
+              <CloseIcon />
             </button>
           </div>
-        </form>
+
+          {/* Error Message */}
+          {error && (
+            <div style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '6px',
+              padding: '12px',
+              marginBottom: '16px',
+              color: '#EF4444',
+              fontSize: '13px'
+            }}>
+              {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Name Field */}
+            <div>
+              <label style={{ display: 'block', color: '#D4C5B9', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>
+                Staff Name
+              </label>
+              <input
+                type="text"
+                name="names"
+                value={formData.names}
+                onChange={handleChange}
+                placeholder="Enter staff name"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  backgroundColor: 'rgba(35, 29, 26, 0.8)',
+                  border: '1px solid rgba(152, 143, 129, 0.3)',
+                  borderRadius: '6px',
+                  color: '#D4C5B9',
+                  fontSize: '13px',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.2s',
+                  outline: 'none',
+                  opacity: isLoading ? 0.6 : 1
+                }}
+                onFocus={(e) => !isLoading && (e.target.style.borderColor = 'rgba(221, 144, 29, 0.5)', e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.95)')}
+                onBlur={(e) => !isLoading && (e.target.style.borderColor = 'rgba(152, 143, 129, 0.3)', e.target.style.backgroundColor = 'rgba(35, 29, 26, 0.8)')}
+              />
+            </div>
+
+            {/* Specialty Field - Checkboxes */}
+            <div>
+              <label style={{ display: 'block', color: '#D4C5B9', fontSize: '13px', fontWeight: '500', marginBottom: '6px' }}>
+                Specialty / Category
+              </label>
+              <div style={{
+                width: '100%',
+                padding: '5px 5px',
+                backgroundColor: 'rgba(35, 29, 26, 0.8)',
+                border: '1px solid rgba(152, 143, 129, 0.3)',
+                borderRadius: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0',
+                boxSizing: 'border-box',
+                opacity: (isLoading || categoriesLoading) ? 0.6 : 1,
+                paddingRight: '5px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  maxHeight: '220px',
+                  overflowY: 'auto',
+                  boxSizing: 'border-box',
+                  padding: '5px 5px'
+                }} className="service-list-scroll-limited">
+                  {categoriesLoading ? (
+                    <div style={{ color: '#988f81', fontSize: '13px' }}>Loading categories...</div>
+                  ) : (
+                    categories.map((category) => {
+                      const checked = selectedSpecialties.includes(category);
+                      return (
+                        <label
+                          key={category}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            color: checked ? '#D4C5B9' : '#988f81',
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            cursor: isLoading ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            className="staff-specialty-checkbox"
+                            checked={checked}
+                            disabled={isLoading || categoriesLoading}
+                            onChange={() => handleSpecialtyToggle(category)}
+                          />
+                          <span>{category}</span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+              <div style={{ color: '#988f81', fontSize: '12px', marginTop: '6px' }}>
+                Select one or more specialties.
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <button
+              type="submit"
+              disabled={isLoading || categoriesLoading}
+              style={{
+                padding: '12px 16px',
+                marginTop: '8px',
+                background: '#dd901d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: (isLoading || categoriesLoading) ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+                opacity: (isLoading || categoriesLoading) ? 0.6 : 1
+              }}
+              onMouseEnter={(e) => !isLoading && !categoriesLoading && (e.target.style.background = '#c17a14', e.target.style.transform = 'translateY(-2px)')}
+              onMouseLeave={(e) => !isLoading && !categoriesLoading && (e.target.style.background = '#dd901d', e.target.style.transform = 'translateY(0)')}
+            >
+              {isLoading ? 'Adding...' : 'Add Staff Member'}
+            </button>
+          </form>
+        </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showConfirmation}
+        title="Leave without saving?"
+        message="Are you sure you want to exit? Any unsaved information will be lost."
+        confirmText="Leave"
+        cancelText="Stay"
+        onConfirm={handleConfirmExit}
+        onCancel={() => setShowConfirmation(false)}
+      />
 
       <style>{`
         @keyframes fadeInScale {
@@ -288,7 +466,44 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
             transform: scale(1);
           }
         }
+        select {
+          appearance: none;
+        }
+        .staff-specialty-checkbox {
+          appearance: none;
+          -webkit-appearance: none;
+          width: 18px;
+          height: 18px;
+          border: 1.5px solid rgba(152, 143, 129, 0.8);
+          border-radius: 5px;
+          background: rgba(35, 29, 26, 0.95);
+          display: inline-grid;
+          place-content: center;
+          flex: 0 0 auto;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+        .staff-specialty-checkbox::before {
+          content: '';
+          width: 10px;
+          height: 10px;
+          transform: scale(0);
+          transition: transform 0.15s ease-in-out;
+          box-shadow: inset 1em 1em #1a1a1a;
+          clip-path: polygon(14% 44%, 0 65%, 38% 100%, 100% 18%, 82% 0, 37% 56%);
+        }
+        .staff-specialty-checkbox:checked {
+          background: #dd901d;
+          border-color: #dd901d;
+        }
+        .staff-specialty-checkbox:checked::before {
+          transform: scale(1);
+        }
+        .staff-specialty-checkbox:disabled {
+          cursor: not-allowed;
+          opacity: 0.7;
+        }
       `}</style>
-    </div>
+    </>
   );
 };

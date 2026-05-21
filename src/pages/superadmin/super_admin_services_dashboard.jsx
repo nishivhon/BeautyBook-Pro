@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
+import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
 import { EditServiceModal } from "../../components/modal/superadmin/edit_service_modal";
 import { AddServiceModal } from "../../components/modal/superadmin/add_service_modal";
+import { Toast } from "../../components/toast";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -92,13 +94,12 @@ const SearchIcon = ({ color = "#988f81" }) => (
 // ─── Navigation Items ─────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
-  { id: "staff-management", label: "Staff Management", icon: UserIcon },
-  { id: "database", label: "Database", icon: DatabaseIcon },
-  { id: "services", label: "Services", icon: DatabaseIcon },
-  { id: "logs", label: "Logs", icon: DatabaseIcon },
-  { id: "security", label: "Security", icon: ShieldIcon },
-  { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
+  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
+  { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
+  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
+  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
+  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
+  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
 ];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -123,6 +124,7 @@ export default function SuperAdminServicesDashboard() {
   const [editingService, setEditingService] = useState(null);
   const [isEditServiceModalOpen, setIsEditServiceModalOpen] = useState(false);
   const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
+  const [toastType, setToastType] = useState("success");
 
   // Persist sidebar state
   useEffect(() => {
@@ -159,7 +161,7 @@ export default function SuperAdminServicesDashboard() {
           let rowData = [];
           try {
             const dataResult = await databaseAPI.getTableData('services', 10000, 0);
-            rowData = dataResult.data || [];
+            rowData = (dataResult.data || []).filter(service => !service.is_deleted);
             console.log(`[Services] Fetched ${rowData.length} rows`);
           } catch (dataError) {
             console.warn(`[Services] Error fetching data:`, dataError);
@@ -192,6 +194,7 @@ export default function SuperAdminServicesDashboard() {
 
   const displayToast = (message) => {
     setToastMessage(message);
+    setToastType(/^(failed|error|invalid)/i.test(message) ? "error" : "success");
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2800);
   };
@@ -254,11 +257,13 @@ export default function SuperAdminServicesDashboard() {
   const handleSaveService = (updatedService) => {
     setServicesData(prev => ({
       ...prev,
-      rows: prev.rows.map(service =>
-        service.id === updatedService.id ? { ...service, ...updatedService } : service
-      )
+      rows: updatedService.is_deleted
+        ? prev.rows.filter(service => service.id !== updatedService.id)
+        : prev.rows.map(service =>
+            service.id === updatedService.id ? { ...service, ...updatedService } : service
+          )
     }));
-    displayToast('Service updated successfully');
+            displayToast(updatedService.is_deleted ? 'Service removed successfully' : 'Service updated successfully');
   };
 
   // Handle opening add modal
@@ -281,100 +286,29 @@ export default function SuperAdminServicesDashboard() {
   };
 
   return (
-    <div className="super-admin-container">
-      {/* ─── SIDEBAR ─── */}
-      <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? "translateX(0)" : "translateX(-16px)",
-        transition: "all 0.5s ease"
-      }}>
-        <div className="sidebar-logo-section">
-          <button 
-            onClick={() => setSidebarExpanded(!sidebarExpanded)}
-            className="logo-toggle-btn"
-            title="Toggle sidebar"
-          >
-            <div className="logo-badge">
-              <LogoIcon />
-            </div>
-            {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
-          </button>
-        </div>
+    <DashboardShell
+      navItems={NAV_ITEMS}
+      activeNav={activeNav}
+      roleLabel="Super Administrator"
+      roleInitial="S"
+      showSidebarHeader={false}
+      title="Services Management"
+      subtitle="BeautyBook Pro • Manage services catalog"
+      profile={null}
+      notifications={[]}
+      useSuperAdminHeaderActions={true}
+      superAdminNoNotificationsMessage="No recent super admin system notifications for services monitoring."
+      storageKey="superadminSidebarExpanded"
+      onLogoutConfirm={handleLogout}
+      logoutTitle="Log Out?"
+      logoutMessage="Are you sure you want to log out?"
+      logoutConfirmText="Yes, Log Out"
+      logoutCancelText="Stay Logged In"
+    >
+        {/* ─── SIDEBAR & HEADER HANDLED BY DASHBOARDSHELL ─── */}
 
-        {sidebarExpanded && (
-          <div className="admin-badge-pill">
-            <div className="admin-badge-circle">S</div>
-            <span className="admin-badge-text">Super Administrator</span>
-          </div>
-        )}
-
-        <nav className="sidebar-nav">
-          {NAV_ITEMS.map((item) => {
-            const isActive = activeNav === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === "services") {
-                    navigate("/superadmin/services");
-                  } else if (item.id === "logs") {
-                    navigate("/superadmin/logs");
-                  } else if (item.id === "database") {
-                    navigate("/superadmin/database");
-                  } else if (item.id === "dashboard") {
-                    navigate("/superadmin/dashboard");
-                  } else if (item.id === "staff-management") {
-                    navigate("/superadmin/users");
-                  } else if (item.id === "security") {
-                    navigate("/superadmin/security");
-                  } else if (item.id === "landing-page") {
-                    navigate("/superadmin/landing-page");
-                  } else {
-                    setActiveNav(item.id);
-                    displayToast(`${item.label} section coming soon`);
-                  }
-                }}
-                className={`nav-button ${isActive ? "active" : ""}`}
-                title={item.label}
-              >
-                <item.icon color={isActive ? "#000" : "currentColor"} />
-                {sidebarExpanded && <span>{item.label}</span>}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="sidebar-logout-section">
-          <button className="logout-button" onClick={handleLogout} title="Log out">
-            <LogOutIcon color="#988f81" />
-            {sidebarExpanded && <span>Log Out</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* ─── MAIN CONTENT ─── */}
-      <div className="super-admin-main">
-        {/* Header */}
-        <header className="dashboard-header">
-          <div className="header-title-section">
-            <h1 className="header-main-title">Services</h1>
-            <p className="header-subtitle">BeautyBook Pro • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}</p>
-          </div>
-          <div className="header-actions">
-            <button className="header-action-btn" onClick={() => displayToast('No new notifications')}>
-              <BellIcon />
-              <span>Notifications</span>
-            </button>
-            <button className="header-action-btn" onClick={() => displayToast('Settings coming soon')}>
-              <SettingsIcon />
-              <span>Settings</span>
-            </button>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main className="dashboard-main">
-          <div className="dashboard-panel">
+        <div className="superadmin-page-content" style={{ paddingTop: '20px' }}>
+          <div className="dashboard-panel superadmin-fixed-panel">
             {/* Panel header with search and add button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div className="panel-title">
@@ -442,7 +376,7 @@ export default function SuperAdminServicesDashboard() {
 
             {/* Services Table View */}
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading services...</div>
+              <div className="container-empty-state">Loading services...</div>
             ) : (() => {
               const filteredServices = servicesData.rows ? servicesData.rows.filter(service =>
                 matchesServiceQuery(service, searchQuery)
@@ -450,8 +384,8 @@ export default function SuperAdminServicesDashboard() {
               
               return servicesData.rows && servicesData.rows.length > 0 ? (
                 filteredServices.length > 0 ? (
-                  <div style={{ marginTop: '0px', overflowX: 'auto' }}>
-                <table className="data-table" style={{ minWidth: '800px' }}>
+                  <div style={{ marginTop: '0px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
                       {servicesData.cols.map((col) => (
@@ -466,19 +400,31 @@ export default function SuperAdminServicesDashboard() {
                       const filteredServices = servicesData.rows.filter(service =>
                         matchesServiceQuery(service, searchQuery)
                       );
-                      const itemsPerPage = 10;
+                      const itemsPerPage = 6;
                       const startIdx = (currentServicePage - 1) * itemsPerPage;
                       const endIdx = startIdx + itemsPerPage;
                       return filteredServices.slice(startIdx, endIdx).map((service, idx) => (
-                      <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                        {servicesData.cols.map((col) => {
+                      <tr key={idx} className="db-row">
+                          {servicesData.cols.map((col) => {
                           const cellValue = service[col];
                           const displayValue = formatCellValue(cellValue, col);
                           return (
-                            <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
+                            <td
+                              key={col}
+                              style={{
+                                fontSize: '13px',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: 0,
+                              }}
+                              title={displayValue}
+                            >
+                              {displayValue}
+                            </td>
                           );
                         })}
-                        <td style={{ fontSize: '13px' }}>
+                        <td style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>
                           <button
                             onClick={() => handleEditService(service)}
                             title="Edit service"
@@ -519,12 +465,12 @@ export default function SuperAdminServicesDashboard() {
                   );
                   if (filteredServices.length === 0) return null;
                   
-                  const itemsPerPage = 10;
+                  const itemsPerPage = 6;
                   const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
                   const startIdx = (currentServicePage - 1) * itemsPerPage + 1;
                   const endIdx = Math.min(currentServicePage * itemsPerPage, filteredServices.length);
                   return (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
                         Showing {startIdx}–{endIdx} of {filteredServices.length} services
                       </div>
@@ -594,19 +540,18 @@ export default function SuperAdminServicesDashboard() {
                 })()}
               </div>
                 ) : (
-                  <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>
+                  <div className="container-empty-state">
                     No services match your search
                   </div>
                 )
               ) : (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No services found</div>
+                <div className="container-empty-state">No services found</div>
               );
             })()}
+            </div>
           </div>
-        </main>
-      </div>
 
-      {/* ─── MODAL ─── */}
+          {/* ─── MODAL ─── */}
       <DatabaseTableModal
         showModal={showModal}
         modalTable={modalTable}
@@ -631,11 +576,7 @@ export default function SuperAdminServicesDashboard() {
       />
 
       {/* ─── TOAST ─── */}
-      {showToast && (
-        <div className="toast show">
-          {toastMessage}
-        </div>
-      )}
-    </div>
+      <Toast isVisible={showToast} message={toastMessage} type={toastType} duration={2800} />
+    </DashboardShell>
   );
 }

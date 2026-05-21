@@ -39,6 +39,14 @@ export const loginOperator = (email, password, role = OPERATOR_ROLES.STAFF) => {
 
     // Store in localStorage
     localStorage.setItem('operator_user', JSON.stringify(operatorUser));
+    
+    // Set password change date on first login (for admin/super admin only)
+    if (['admin', 'super admin'].includes(role?.toLowerCase())) {
+      if (!localStorage.getItem('last_password_change_date')) {
+        setPasswordChangeDate();
+      }
+    }
+    
     return true;
   } catch (error) {
     console.error('Login error:', error);
@@ -124,6 +132,7 @@ export const validateOperatorCredentials = async (email, password) => {
       { email: 'admin@beautybook.pro', password: 'admin123', role: OPERATOR_ROLES.ADMIN },
       { email: 'staff@beautybook.pro', password: 'staff123', role: OPERATOR_ROLES.STAFF },
       { email: 'superadmin@beautybook.pro', password: 'superadmin123', role: OPERATOR_ROLES.SUPER_ADMIN },
+      { email: 'customer@beautybook.pro', password: 'customer123', role: 'customer' }, // Temporary customer account
     ];
 
     const operator = operators.find(op => op.email === email && op.password === password);
@@ -147,5 +156,77 @@ export const validateOperatorCredentials = async (email, password) => {
       success: false,
       error: error.message
     };
+  }
+};
+
+/**
+ * Check if password reminder is needed (15 days for admin/super admin)
+ * Returns true if password hasn't been changed in 15+ days
+ * 
+ * @returns {boolean} - True if reminder is needed
+ */
+export const isPasswordReminderNeeded = () => {
+  try {
+    const user = getOperatorSession();
+    
+    // Only for admin and super admin
+    if (!user || !['admin', 'super admin'].includes(user.role?.toLowerCase())) {
+      return false;
+    }
+
+    const lastPasswordChangeDate = localStorage.getItem('last_password_change_date');
+    
+    // If no last password change date stored, don't show reminder yet
+    if (!lastPasswordChangeDate) {
+      return false;
+    }
+
+    const lastChange = new Date(lastPasswordChangeDate);
+    const now = new Date();
+    const daysSinceChange = Math.floor((now - lastChange) / (1000 * 60 * 60 * 24));
+
+    // Show reminder after 15 days
+    return daysSinceChange >= 15;
+  } catch (error) {
+    console.error('Password reminder check error:', error);
+    return false;
+  }
+};
+
+/**
+ * Set password change date (call this when password is successfully changed)
+ */
+export const setPasswordChangeDate = () => {
+  try {
+    const now = new Date().toISOString();
+    localStorage.setItem('last_password_change_date', now);
+    return true;
+  } catch (error) {
+    console.error('Password change date setting error:', error);
+    return false;
+  }
+};
+
+/**
+ * Get days until password change is recommended (shows how many days until 15 days)
+ * 
+ * @returns {number|null} - Days remaining or null if no reminder
+ */
+export const getDaysSincePasswordChange = () => {
+  try {
+    const lastPasswordChangeDate = localStorage.getItem('last_password_change_date');
+    
+    if (!lastPasswordChangeDate) {
+      return null;
+    }
+
+    const lastChange = new Date(lastPasswordChangeDate);
+    const now = new Date();
+    const daysSinceChange = Math.floor((now - lastChange) / (1000 * 60 * 60 * 24));
+
+    return daysSinceChange;
+  } catch (error) {
+    console.error('Days since password change calculation error:', error);
+    return null;
   }
 };

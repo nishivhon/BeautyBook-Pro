@@ -3,6 +3,21 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
+const normalizeCategorySpecialty = (value) => {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean).map(item => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 export default async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -10,6 +25,7 @@ export default async (req, res) => {
 
   try {
     const { names, category_specialty } = req.body;
+    const normalizedSpecialties = normalizeCategorySpecialty(category_specialty);
 
     if (!SUPABASE_URL || !SUPABASE_KEY) {
       console.error('[Staffs:Create] Missing Supabase config');
@@ -20,7 +36,7 @@ export default async (req, res) => {
       return res.status(400).json({ error: 'Staff name is required' });
     }
 
-    if (!category_specialty || !category_specialty.trim()) {
+    if (normalizedSpecialties.length === 0) {
       return res.status(400).json({ error: 'Category/Specialty is required' });
     }
 
@@ -28,13 +44,13 @@ export default async (req, res) => {
       auth: { persistSession: false }
     });
 
-    console.log('[Staffs:Create] Creating new staff:', { names, category_specialty });
+    console.log('[Staffs:Create] Creating new staff:', { names, category_specialty: normalizedSpecialties });
 
     const { data, error } = await supabase
       .from('staffs')
       .insert([{
         names: names.trim(),
-        category_specialty: category_specialty.trim()
+        category_specialty: normalizedSpecialties
       }])
       .select();
 

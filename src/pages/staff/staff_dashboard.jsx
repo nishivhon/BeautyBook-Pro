@@ -538,8 +538,9 @@ function Toast({ toast }) {
   return (
     <div style={{
       position: "fixed",
-      bottom: "28px",
-      right: "28px",
+      top: "80px",
+      left: "50%",
+      transform: "translateX(-50%)",
       background: "#231d1a",
       border: "1px solid #dd901d",
       borderRadius: "12px",
@@ -550,7 +551,7 @@ function Toast({ toast }) {
       zIndex: 999,
       pointerEvents: "none",
       opacity: toast.show ? 1 : 0,
-      transform: toast.show ? "translateY(0)" : "translateY(10px)"
+      transform: toast.show ? "translateX(-50%)" : "translateX(-50%) translateY(-20px)"
     }}>
       {toast.msg}
     </div>

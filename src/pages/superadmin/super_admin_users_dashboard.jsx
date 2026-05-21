@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
+import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { EditStaffModal } from "../../components/modal/superadmin/edit_staff";
 import { AddStaffModal } from "../../components/modal/superadmin/add_staff";
 
@@ -114,11 +115,10 @@ const GlobeIcon = ({ color = "currentColor" }) => (
 // ─── Navigation Items ─────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
-  { id: "staff-management", label: "Staff Management", icon: NavUserIcon },
-  { id: "database", label: "Database", icon: DatabaseIcon },  { id: "services", label: "Services", icon: DatabaseIcon },
-  { id: "logs", label: "Logs", icon: DatabaseIcon },  { id: "security", label: "Security", icon: ShieldIcon },
-  { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
+  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
+  { id: "staff-management", label: "Staff Management", icon: NavUserIcon, path: "/superadmin/users" },
+  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
+  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
 ];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -322,100 +322,27 @@ export default function SuperAdminUsersDashboard() {
 
 
   return (
-    <div className="super-admin-container">
-      {/* ─── SIDEBAR ─── */}
-      <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? "translateX(0)" : "translateX(-16px)",
-        transition: "all 0.5s ease"
-      }}>
-        <div className="sidebar-logo-section">
-          <button 
-            onClick={() => setSidebarExpanded(!sidebarExpanded)}
-            className="logo-toggle-btn"
-            title="Toggle sidebar"
-          >
-            <div className="logo-badge">
-              <LogoIcon />
-            </div>
-            {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
-          </button>
-        </div>
-
-        {sidebarExpanded && (
-          <div className="admin-badge-pill">
-            <div className="admin-badge-circle">S</div>
-            <span className="admin-badge-text">Super Administrator</span>
-          </div>
-        )}
-
-        <nav className="sidebar-nav">
-          {NAV_ITEMS.map((item) => {
-            const isActive = activeNav === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === "staff-management") {
-                    setActiveNav(item.id);
-                  } else if (item.id === "dashboard") {
-                    navigate("/superadmin/dashboard");
-                  } else if (item.id === "database") {
-                    navigate("/superadmin/database");
-                  } else if (item.id === "services") {
-                    navigate("/superadmin/services");
-                  } else if (item.id === "logs") {
-                    navigate("/superadmin/logs");
-                  } else if (item.id === "security") {
-                    navigate("/superadmin/security");
-                  } else if (item.id === "landing-page") {
-                    navigate("/superadmin/landing-page");
-                  } else {
-                    setActiveNav(item.id);
-                    displayToast(`${item.label} section coming soon`);
-                  }
-                }}
-                className={`nav-button ${isActive ? "active" : ""}`}
-                title={item.label}
-              >
-                <item.icon color={isActive ? "#000" : "currentColor"} />
-                {sidebarExpanded && <span>{item.label}</span>}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="sidebar-logout-section">
-          <button className="logout-button" onClick={handleLogout} title="Log out">
-            <LogOutIcon color="#988f81" />
-            {sidebarExpanded && <span>Log Out</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* ─── MAIN CONTENT ─── */}
-      <div className="super-admin-main">
-        {/* Header */}
-        <header className="dashboard-header">
-          <div className="header-title-section">
-            <h1 className="header-main-title">Staff Management</h1>
-            <p className="header-subtitle">BeautyBook Pro • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}</p>
-          </div>
-          <div className="header-actions">
-            <button className="header-action-btn" onClick={() => displayToast('No new notifications')}>
-              <BellIcon />
-              <span>Notifications</span>
-            </button>
-            <button className="header-action-btn" onClick={() => displayToast('Settings coming soon')}>
-              <GearIcon />
-              <span>Settings</span>
-            </button>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main className="dashboard-main">
-          <div className="dashboard-panel">
+    <DashboardShell
+      navItems={NAV_ITEMS}
+      activeNav={activeNav}
+      roleLabel="Super Administrator"
+      roleInitial="S"
+      showSidebarHeader={false}
+      title={`Staff Management`}
+      subtitle={`BeautyBook Pro • Manage your team`}
+      profile={null}
+      notifications={[]}
+      useSuperAdminHeaderActions={true}
+      superAdminNoNotificationsMessage="No recent staff account creation or deletion notifications."
+      storageKey="superadminSidebarExpanded"
+      onLogoutConfirm={handleLogout}
+      logoutTitle="Log Out?"
+      logoutMessage="Are you sure you want to log out?"
+      logoutConfirmText="Yes, Log Out"
+      logoutCancelText="Stay Logged In"
+    >
+      <div className="superadmin-page-content" style={{ paddingTop: '20px' }}>
+          <div className="dashboard-panel superadmin-fixed-panel">
             {/* Panel header with search and add button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div className="panel-title">
@@ -483,7 +410,7 @@ export default function SuperAdminUsersDashboard() {
 
             {/* Staff Table View */}
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>Loading staff data...</div>
+              <div className="container-empty-state">Loading staff data...</div>
             ) : (() => {
               // Filter staff by search query
               const filteredStaff = staffsData.rows ? staffsData.rows.filter(staff =>
@@ -492,8 +419,8 @@ export default function SuperAdminUsersDashboard() {
               
               return staffsData.rows && staffsData.rows.length > 0 ? (
                 filteredStaff.length > 0 ? (
-                  <div style={{ marginTop: '0px', overflowX: 'auto' }}>
-                    <table className="data-table" style={{ minWidth: '800px' }}>
+                  <div style={{ marginTop: '0px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                    <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                       <thead>
                         <tr>
                           {staffsData.cols.map((col) => (
@@ -504,11 +431,11 @@ export default function SuperAdminUsersDashboard() {
                       </thead>
                       <tbody>
                         {(() => {
-                          const itemsPerPage = 12;
+                          const itemsPerPage = 6;
                           const startIdx = (currentStaffPage - 1) * itemsPerPage;
                           const endIdx = startIdx + itemsPerPage;
                           return filteredStaff.slice(startIdx, endIdx).map((staff, idx) => (
-                        <tr key={idx} style={{ cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(221, 144, 29, 0.1)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                        <tr key={idx} className="db-row">
                           {staffsData.cols.map((col) => {
                             const cellValue = staff[col];
                             const displayValue = formatCellValue(cellValue, col);
@@ -558,13 +485,13 @@ export default function SuperAdminUsersDashboard() {
                   );
                   if (filteredStaff.length === 0) return null;
                   
-                  const itemsPerPage = 12;
+                  const itemsPerPage = 6;
                   const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
                   const startIdx = (currentStaffPage - 1) * itemsPerPage + 1;
                   const endIdx = Math.min(currentStaffPage * itemsPerPage, filteredStaff.length);
                   
                   return (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
                         Showing {startIdx}–{endIdx} of {filteredStaff.length} staff
                       </div>
@@ -634,24 +561,24 @@ export default function SuperAdminUsersDashboard() {
                 })()}
               </div>
                 ) : (
-                  <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>
+                  <div className="container-empty-state">
                     No staff members match your search
                   </div>
                 )
               ) : (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#D4C5B9' }}>No staff members found</div>
+                <div className="container-empty-state">No staff members found</div>
               );
             })()}
           </div>
-        </main>
       </div>
 
       {/* ─── TOAST ─── */}
       {showToast && (
         <div style={{
           position: 'fixed',
-          bottom: '24px',
-          left: '24px',
+          top: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
           background: 'rgba(35, 29, 26, 0.95)',
           border: '1px solid rgba(221, 144, 29, 0.3)',
           color: '#D4C5B9',
@@ -679,6 +606,6 @@ export default function SuperAdminUsersDashboard() {
         onClose={handleCloseAddModal}
         onSave={handleAddNewStaff}
       />
-    </div>
+    </DashboardShell>
   );
 }

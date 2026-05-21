@@ -99,12 +99,15 @@ const NavBar = () => {
   const navigate = useNavigate();
 
   const handleBooking = () => {
-    navigate("/register");
+    navigate("/operators/login");
     setMenuOpen(false);
   };
 
   const handleNavClick = (item) => {
-    if (item.label === "Services" || item.label === "How It Works") {
+    if (item.label === "Services") {
+      navigate("/services");
+      setMenuOpen(false);
+    } else if (item.label === "How It Works") {
       // Navigate to home with hash to trigger scroll
       window.location.href = item.path;
     } else {
@@ -140,8 +143,8 @@ const NavBar = () => {
       <div className="flex-center-gap-1 nav-links-desktop">
         {[
           {label:"Home",         path:"/"},
-          {label:"Services",     path:"/#services"},
-          {label:"How It Works",  path:"/#howitworks"},
+          {label:"How It Works",  path:"/how-it-works"},
+          {label:"Services",     path:"/services"},
           {label:"About",         path:"/about"},
         ].map(item => (
           <button key={item.label} onClick={() => handleNavClick(item)} className="nav-link">
@@ -152,7 +155,7 @@ const NavBar = () => {
 
       {/* CTA - Desktop */}
       <button onClick={handleBooking} className="btn-primary btn-nav btn-nav-desktop">
-        Book Appointment
+        Login
       </button>
 
       {/* Mobile menu */}
@@ -161,8 +164,8 @@ const NavBar = () => {
           <div className="mobile-menu-content">
             {[
               {label:"Home",         path:"/"},
-              {label:"Services",     path:"/#services"},
-              {label:"How It Works",  path:"/#howitworks"},
+              {label:"How It Works",  path:"/how-it-works"},
+              {label:"Services",     path:"/services"},
               {label:"About",         path:"/about"},
             ].map(item => (
               <button 
@@ -175,7 +178,7 @@ const NavBar = () => {
             ))}
           </div>
           <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
-            Book Appointment
+            Login
           </button>
         </div>
       )}
@@ -184,30 +187,60 @@ const NavBar = () => {
 };
 
 const HeroSection = () => (
-  <section className="hero-section">
-    <div className="hero-badge">
-      <span>ABOUT BEAUTYBOOK PRO</span>
+  <section
+    className="hero-section"
+    style={{
+      backgroundImage: "url('/images/DarkmodeBG.png')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      position: 'relative',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 420,
+      padding: '4.5rem 1.25rem',
+    }}
+  >
+    <div style={{position:'absolute', inset:0, background:'rgba(6,6,6,0.6)', zIndex:0}} />
+
+    <div style={{position:'relative', zIndex:1, color:'#fff'}}>
+      <div className="hero-badge" style={{marginBottom:16}}>
+        <span>ABOUT BEAUTYBOOK PRO</span>
+      </div>
+
+      <h1 className="hero-title" style={{color:'#fff'}}>
+        Transforming Beauty<br/>
+        <span className="accent">Business Management</span>
+      </h1>
+
+      <p className="hero-text" style={{marginTop:8}}>
+        A modern digital solution built for salons, barbershops, and spas in Sta. Mesa, Manila to streamline appointments, enhance customer experience, and help businesses grow smarter.
+      </p>
     </div>
-    <h1 className="hero-title">
-      Transforming Beauty<br/>
-      <span className="accent">Business Management</span>
-    </h1>
-    <p className="hero-text">
-      A modern digital solution built for salons, barbershops, and spas to streamline appointments, enhance customer experience, and grow their business smarter.
-    </p>
   </section>
 );
 
-const OurStorySection = () => (
-  <section className="section">
+const PurposeSection = () => (
+  <section className="section" style={{padding:'4rem 1.5rem 0'}}>
     <div className="section-container">
-      <h2 className="section-title">Our Story</h2>
-      <div style={{maxWidth:"800px", margin:"0 auto"}}>
-        <p className="section-text" style={{fontSize:"1.05rem", lineHeight:"1.8", color:"#555", marginBottom:"1.5rem"}}>
-          BeautyBook Pro is a capstone project developed by talented students from the <strong>Polytechnic University of the Philippines Institute of Technology</strong>. We recognized a critical gap in how beauty businesses operate—they were still relying on outdated manual systems for managing appointments and customer relationships.
+      <h2 className="section-title">Project Purpose</h2>
+      <div style={{maxWidth:900, margin:'0 auto'}}>
+        <p className="section-text" style={{fontSize:'1.05rem', lineHeight:1.8, color:'#555', textAlign:'center'}}>
+          BeautyBook Pro is a web-based digital appointment and customer management system developed as a capstone project by students from the <strong>Polytechnic University of the Philippines Institute of Technology</strong>. It addresses outdated manual scheduling and customer tracking practices used by salons, barbershops, and spas.
         </p>
-        <p className="section-text" style={{fontSize:"1.05rem", lineHeight:"1.8", color:"#555"}}>
-          Our mission was simple: create a modern, intuitive digital solution that empowers salon owners, barbershops, and spas in Sta. Mesa, Manila to operate more efficiently and deliver exceptional customer experiences. BeautyBook Pro is the result of dedication, research, and a genuine passion for digital transformation in the beauty industry.
+      </div>
+    </div>
+  </section>
+);
+
+const MissionSection = () => (
+  <section className="section" style={{paddingBottom:'4rem'}}>
+    <div className="section-container">
+      <h2 className="section-title">Mission</h2>
+      <div style={{maxWidth:900, margin:'0 auto'}}>
+        <p className="section-text" style={{fontSize:'1.05rem', lineHeight:1.8, color:'#555', textAlign:'center'}}>
+          Our mission is to empower beauty businesses in Sta. Mesa, Manila with an intuitive platform that streamlines appointments, improves communication, and helps deliver exceptional customer experiences through automation and data.
         </p>
       </div>
     </div>
@@ -221,46 +254,47 @@ const ProblemSection = () => {
     {icon:<DataIcon/>, text:"Lack of customer data and service history tracking"},
     {icon:<CommunicationIcon/>, text:"Limited communication between businesses and clients"},
     {icon:<RetentionIcon/>, text:"Poor customer retention due to manual processes"},
+    {icon:<SolutionIcon/>, text:"Inefficient staff scheduling and reporting"},
   ];
 
   return (
-    <section className="section" style={{backgroundColor:"#14110f", padding:"4rem 1.5rem"}}>
+    <section className="section" style={{backgroundColor:'#0f0d0c', padding:'4rem 1.5rem'}}>
       <div className="section-container">
         <h2 className="section-title">The Problem We Solve</h2>
         <p className="section-subtitle">Beauty businesses face real challenges in the digital age</p>
-        
-        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))", gap:"2rem", maxWidth:"1000px", margin:"3rem auto 0"}}>
+
+        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'1.25rem', maxWidth:1100, margin:'2.5rem auto 0'}}>
           {problems.map((p, i) => (
-            <div key={i} style={{
-              padding:"16px",
-              backgroundColor:"#14110f",
-              border:"1px solid rgba(152, 143, 129, 0.35)",
-              borderRadius:"9px",
-              display:"flex",
-              flexDirection:"column",
-              alignItems:"center",
-              textAlign:"center",
-              gap:"1rem",
-              transition:"all 0.3s ease",
-              cursor:"pointer"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-8px) scale(1.02)";
-              e.currentTarget.style.boxShadow = "0 12px 24px rgba(221, 144, 29, 0.2)";
-              e.currentTarget.style.borderColor = "#dd901d";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0) scale(1)";
-              e.currentTarget.style.boxShadow = "none";
-              e.currentTarget.style.borderColor = "rgba(152, 143, 129, 0.35)";
-            }}
+            <div key={i}
+              style={{
+                padding:'18px',
+                backgroundColor:'#14110f',
+                border:'1px solid rgba(221,144,29,0.06)',
+                borderRadius:12,
+                display:'flex',
+                flexDirection:'column',
+                alignItems:'center',
+                textAlign:'center',
+                gap:12,
+                minHeight:120,
+                justifyContent:'center',
+                transition: 'all 0.25s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(221, 144, 29, 0.18)';
+                e.currentTarget.style.borderColor = 'rgba(221,144,29,0.6)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = 'rgba(221,144,29,0.06)';
+              }}
             >
-              <div style={{width:"60px", height:"60px"}}>
-                {p.icon}
+              <div style={{width:48, height:48, display:'flex', alignItems:'center', justifyContent:'center', background:'#0b0a09', borderRadius:10}}>
+                <div style={{width:28,height:28,color:'#dd901d'}}>{p.icon}</div>
               </div>
-              <p style={{fontSize:"1rem", color:"#988f81", fontWeight:"500", margin:0}}>
-                {p.text}
-              </p>
+              <p style={{fontSize:'0.9rem', color:'#cfc6b8', fontWeight:500, margin:0}}>{p.text}</p>
             </div>
           ))}
         </div>
@@ -271,39 +305,37 @@ const ProblemSection = () => {
 
 const SolutionSection = () => {
   const features = [
-    "Online booking system with real-time availability",
-    "Automated SMS reminders and notifications",
-    "Customer service history and profiles",
-    "Smart queue management for scheduled and walk-in clients",
-    "Data-driven insights for business growth",
-    "Seamless multi-role access (customers, staff, admins)",
+    'Online booking with real-time availability',
+    'Automated SMS reminders and notifications',
+    'Customer service histories and profiles',
+    'Smart queue for scheduled and walk-in clients',
+    'Data-driven insights for business growth',
+    'Multi-role access: customers, staff, admins',
   ];
 
   return (
-    <section className="section">
-      <div className="section-container">
+    <section className="section" style={{padding:'4rem 1.5rem'}}>
+      <div className="section-container" style={{maxWidth:1100}}>
         <h2 className="section-title">Our Solution</h2>
         <p className="section-subtitle">Comprehensive features designed for modern beauty businesses</p>
-        
-        <div style={{maxWidth:"900px", margin:"3rem auto"}}>
-          <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(300px, 1fr))", gap:"2rem"}}>
-            {/* Left column - Text */}
+
+        <div style={{maxWidth:1000, margin:'3rem auto', paddingLeft:'75px'}}>
+          <div style={{display:'grid', gridTemplateColumns:'repeat(2, minmax(0, 420px))', gap:'2rem', alignItems:'start', justifyContent:'center'}}>
             <div>
-              <p style={{fontSize:"1.05rem", lineHeight:"1.8", color:"#555", marginBottom:"1.5rem"}}>
-                BeautyBook Pro combines cutting-edge technology with industry best practices to create a unified platform that benefits everyone—business owners, staff, and customers.
+              <p style={{fontSize:'1.05rem', lineHeight:1.8, color:'#555', marginBottom:'1rem'}}>
+                BeautyBook Pro combines modern web technologies with established theories such as the Technology Acceptance Model (TAM) and Customer Relationship Management (CRM) principles to deliver a platform tailored to the beauty industry.
               </p>
-              <p style={{fontSize:"0.95rem", color:"#777", fontStyle:"italic"}}>
-                Our system is built on proven theories in appointment management and customer relationship management (CRM), adapted specifically for the beauty industry.
+              <p style={{fontSize:'0.95rem', color:'#777', fontStyle:'italic'}}>
+                The system focuses on usability and trust to encourage adoption by salon staff and clients while preserving rich customer histories and communication channels.
               </p>
             </div>
 
-            {/* Right column - Features */}
             <div>
-              <div style={{display:"flex", flexDirection:"column", gap:"1rem"}}>
+              <div style={{display:'flex', flexDirection:'column', gap:12}}>
                 {features.map((f, i) => (
-                  <div key={i} style={{display:"flex", gap:"0.75rem", alignItems:"flex-start"}}>
+                  <div key={i} style={{display:'flex', gap:'0.75rem', alignItems:'flex-start'}}>
                     <CheckItem/>
-                    <span style={{fontSize:"0.95rem", color:"#555"}}>{f}</span>
+                    <span style={{fontSize:'0.95rem', color:'#555'}}>{f}</span>
                   </div>
                 ))}
               </div>
@@ -317,73 +349,30 @@ const SolutionSection = () => {
 
 const TeamSection = () => {
   const team = [
-    {id:1, name:"Team Member 1", role:"Full Stack Developer"},
-    {id:2, name:"Team Member 2", role:"UI/UX Designer"},
-    {id:3, name:"Team Member 3", role:"Backend Developer"},
-    {id:4, name:"Team Member 4", role:"Project Manager"},
+    {id:1, name:'Dagodog, Vhon Inishi M.', role:'Project Leader'},
+    {id:2, name:'Arejola, Charlie R.', role:'Lead Programmer'},
+    {id:3, name:'Villon, Karl Lemuel R.', role:'Documentation'},
+    {id:4, name:'Zamora, Athlon Miguel C.', role:'QA'}
   ];
 
   return (
-    <section className="section" style={{backgroundColor:"#14110f", padding:"4rem 1.5rem"}}>
+    <section className="section" style={{backgroundColor:'#14110f', padding:'4rem 1.5rem'}}>
       <div className="section-container">
         <h2 className="section-title">Meet The Team</h2>
         <p className="section-subtitle">Passionate PUP IT students behind BeautyBook Pro</p>
-        
-        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(240px, 1fr))", gap:"2.5rem", maxWidth:"1000px", margin:"3rem auto"}}>
+
+        <div style={{display:'grid', gridTemplateColumns:'repeat(2, 220px)', gap:'60px', justifyContent:'center', maxWidth:760, margin:'3rem auto'}}>
           {team.map((member) => (
-            <div key={member.id} style={{
-              display:"flex",
-              flexDirection:"column",
-              alignItems:"center",
-              textAlign:"center",
-              gap:"1rem",
-              transition:"all 0.3s ease",
-              cursor:"pointer"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-8px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-            >
-              {/* Placeholder Image */}
-              <div style={{
-                width:"180px",
-                height:"180px",
-                borderRadius:"9px",
-                border:"1px solid rgba(152, 143, 129, 0.35)",
-                display:"flex",
-                alignItems:"center",
-                justifyContent:"center",
-                color:"#999",
-                fontSize:"0.9rem",
-                fontWeight:"500",
-                backgroundColor:"#14110f",
-                transition:"all 0.3s ease",
-                cursor:"pointer"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-6px) scale(1.02)";
-                e.currentTarget.style.boxShadow = "0 10px 20px rgba(221, 144, 29, 0.15)";
-                e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.6)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0) scale(1)";
-                e.currentTarget.style.boxShadow = "none";
-                e.currentTarget.style.borderColor = "rgba(152, 143, 129, 0.35)";
-              }}
-              >
-                Photo Placeholder
-              </div>
-              
-              <div>
-                <h3 style={{fontSize:"1.1rem", fontWeight:"600", color:"#333", margin:"0.5rem 0"}}>
-                  {member.name}
-                </h3>
-                <p style={{fontSize:"0.95rem", color:"#dd901d", fontWeight:"500", margin:0}}>
-                  {member.role}
-                </p>
+            <div key={member.id} style={{display:'flex', justifyContent:'center'}}>
+              <div style={{width:220, height:220, borderRadius:10, border:'1px solid rgba(152,143,129,0.15)', background:'#0f0d0c', position:'relative', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                <div style={{color:'#777'}}>
+                  Photo Placeholder
+                </div>
+
+                <div style={{position:'absolute', left:0, right:0, bottom:14, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', pointerEvents:'none'}}>
+                  <h3 style={{fontSize:'1.02rem', fontWeight:600, color:'#fff', margin:0}}>{member.name}</h3>
+                  <p style={{fontSize:'0.85rem', color:'#dd901d', fontWeight:600, margin:'6px 0 0'}}>{member.role}</p>
+                </div>
               </div>
             </div>
           ))}
@@ -444,18 +433,17 @@ export default function About() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 768);
-    };
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
-    <div className="app-wrapper" style={{ zoom: isDesktop ? "150%" : "100%" }}>
+    <div className="app-wrapper" style={{ zoom: isDesktop ? '150%' : '100%' }}>
       <NavBar/>
       <HeroSection/>
-      <OurStorySection/>
+      <PurposeSection/>
+      <MissionSection/>
       <ProblemSection/>
       <SolutionSection/>
       <TeamSection/>

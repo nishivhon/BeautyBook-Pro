@@ -253,7 +253,7 @@ export const Register = () => {
       } else {
         // Email mode - use Email OTP
         endpoint = `${apiUrl}/auth/send-email-otp`;
-        requestData = { email, full_name: fullName, phone: phone || "" };
+        requestData = { email, full_name: fullName };
         successMessage = `OTP sent to ${email}. Check your inbox!`;
         console.log('Sending email OTP to:', email);
       }
@@ -291,7 +291,7 @@ export const Register = () => {
               setShowOtpModal(true);
             }
           } else {
-            const errorMsg = data.error || "Failed to send verification";
+            const errorMsg = data.details || data.error || "Failed to send verification";
             console.error('❌ Error:', errorMsg);
             setToastMessage(errorMsg);
             setShowToast(true);
@@ -421,7 +421,7 @@ export const Register = () => {
 
   const handlePhase2Continue = (phase2Details) => {
     // Move to phase 3
-    setAppointmentData(appointmentData ? { ...appointmentData, services: phase2Details } : { services: phase2Details });
+    setAppointmentData(appointmentData ? { ...appointmentData, services: phase2Details.services } : { services: phase2Details.services });
     setAppointmentPhase(3);
   };
 
@@ -519,22 +519,14 @@ export const Register = () => {
 
       // Get all selected services and join them
       let allServices = [];
-      if (servicesData) {
-        const selectedArrays = [
-          servicesData.selectedHairServices,
-          servicesData.selectedNailServices,
-          servicesData.selectedSkincareServices,
-          servicesData.selectedMassageServices,
-          servicesData.selectedPremiumServices
-        ];
-
-        selectedArrays.forEach(arr => {
-          if (Array.isArray(arr) && arr.length > 0) {
-            allServices = allServices.concat(arr.map(s => s.title || s.name || s.service));
-          }
-        });
+      if (Array.isArray(servicesData)) {
+        // New Phase 2 format - direct array of services
+        allServices = servicesData.map(s => s.title || s.name || s.service);
       }
 
+      console.log('[Phase4] Services data:', servicesData);
+      console.log('[Phase4] Extracted services:', allServices);
+      
       const servicesList = allServices.length > 0 ? allServices.join(", ") : "General Service";
       const stylistName = stylistData?.name || "Any Available Stylist";
 
@@ -840,6 +832,7 @@ export const Register = () => {
                   type="button"
                   onClick={() => {
                     setVerificationMode("phone");
+                    setEmail("");
                     setErrors({});
                   }}
                   onMouseEnter={() => setToggleHover(true)}
@@ -880,6 +873,7 @@ export const Register = () => {
                   type="button"
                   onClick={() => {
                     setVerificationMode("email");
+                    setPhone("");
                     setErrors({});
                   }}
                   onMouseEnter={() => setToggleHover(true)}
@@ -1051,8 +1045,8 @@ export const Register = () => {
             setPendingEmail("");
             setPendingName("");
           }}
-          selectedPhone={pendingPhone}
-          selectedEmail={pendingEmail}
+          selectedPhone={otpType === "phone" ? pendingPhone : ""}
+          selectedEmail={otpType === "email" ? pendingEmail : ""}
           name={pendingName}
           otpType={otpType}
         />

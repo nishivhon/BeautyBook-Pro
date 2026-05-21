@@ -1,10 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import CustomerHistoryModal from "../../components/modal/admin/customer_history";
-import CalendarAppointmentsModal from "../../components/modal/admin/calendar_appointments";
 import { StatusUpdateModal } from "../../components/modal/admin/status_update";
 import { ManageServiceModal } from "../../components/modal/admin/manage_service";
+import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
+import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+
+// ═══════════════════════════════════════════════════════════════════
+// DARK MODE HELPER
+// ═══════════════════════════════════════════════════════════════════
+const isDarkMode = () => {
+  if (typeof document === 'undefined') return true;
+  const theme = document.documentElement.getAttribute('data-theme');
+  return theme !== 'light';
+};
+
+const getThemeStyles = (darkStyles, lightStyles) => {
+  return isDarkMode() ? darkStyles : lightStyles;
+};
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -88,16 +102,6 @@ const CustomerHistoryIcon = ({ size = 17, color = "currentColor" }) => (
     <path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
     <path d="M12 6v6l3 3" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     <path d="M18 16l-2 2 2 2M22 16l-2 2 2 2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const CalendarIcon = ({ size = 17, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="4" width="18" height="18" rx="3" stroke={color} strokeWidth="1.8" />
-    <path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    <circle cx="8" cy="15" r="1" fill={color} />
-    <circle cx="12" cy="15" r="1" fill={color} />
-    <circle cx="16" cy="15" r="1" fill={color} />
   </svg>
 );
 
@@ -285,13 +289,40 @@ const STAFF = [
 
 /* ── Navbar ── */
 /* ── Sidebar ── */
-const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpanded, onLogout }) => {
+const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, onLogout }) => {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
+  }, []);
+
+  const headerNotifications = useMemo(() => {
+    const statusFeed = STAFF.slice(0, 3).map((member, index) => ({
+      id: `staff-${member.name || index}`,
+      tone: member.statusClass === "staff-status-green" ? "green" : member.statusClass === "staff-status-blue" ? "blue" : member.statusClass === "staff-status-amber" ? "amber" : "tan",
+      category: "Staff status",
+      title: `${member.name || "Staff member"} is ${member.status || "Available"}`,
+      description: member.subStatus || "Status updated.",
+      time: member.details?.timeOfClockIn || "Today",
+      unread: index === 0,
+    }));
+
+    const serviceFeed = STAFF
+      .filter((member) => member.details?.availableForWalkIn)
+      .slice(0, 1)
+      .map((member, index) => ({
+        id: `staff-walkin-${member.name || index}`,
+        tone: "amber",
+        category: "Walk-in ready",
+        title: `${member.name || "Staff member"} can accept walk-ins`,
+        description: "This stylist is currently available for a walk-in customer.",
+        time: "Now",
+        unread: true,
+      }));
+
+    return [...statusFeed, ...serviceFeed].slice(0, 5);
   }, []);
 
   const handleNavClick = (itemId) => {
@@ -308,8 +339,7 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
   };
 
   const handleLogout = () => {
-    logoutOperator();
-    navigate("/");
+    onLogout?.();
   };
 
   return (
@@ -318,27 +348,11 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
       transform: mounted ? "translateX(0)" : "translateX(-16px)",
       transition: "all 0.5s ease"
     }}>
-      {/* Logo + Toggle */}
-      <div className="sidebar-logo-section">
-        <button 
-          onClick={() => setSidebarExpanded(!sidebarExpanded)}
-          className="logo-toggle-btn"
-          title="Toggle sidebar"
-        >
-          <div className="logo-badge">
-            <LogoIcon />
-          </div>
-        </button>
-        {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
-      </div>
-
       {/* Admin pill */}
-      {sidebarExpanded && (
-        <div className="admin-badge-pill">
-          <div className="admin-badge-circle">A</div>
-          <span className="admin-badge-text">Administrator</span>
-        </div>
-      )}
+      <div className="admin-badge-pill">
+        <div className="admin-badge-circle">A</div>
+        <span className="admin-badge-text">Administrator</span>
+      </div>
 
       {/* Nav items */}
       <nav className="sidebar-nav">
@@ -433,16 +447,7 @@ const PageTitle = () => {
         <h1 className="dash-page-title">Staff Status</h1>
         <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
       </div>
-      <div className="dash-page-actions">
-        <button className="dash-action-btn">
-          <BellIcon size={14} color="#fff" />
-          Notifications
-        </button>
-        <button className="dash-action-btn">
-          <SettingsIcon size={14} color="#fff" />
-          Settings
-        </button>
-      </div>
+      <AdminHeaderActions />
     </div>
   );
 };
@@ -485,15 +490,30 @@ const PageMetrics = ({ stats = { available: 0, inService: 0, onBreak: 0, offToda
 
 /* ── Staff List panel ── */
 const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate, statusUpdateModal, onOpenStatusModal, onCloseStatusModal, onOpenManageServiceModal }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [expandedStaff, setExpandedStaff] = useState(null);
   const [staff, setStaff] = useState(staffList);
+  const [walkInStatus, setWalkInStatus] = useState({});
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ 
+    isOpen: false, 
+    title: "", 
+    message: "", 
+    action: null, 
+    staffName: "",
+    staffId: null
+  });
 
   // Update staff when staffList changes
   useEffect(() => {
     setStaff(staffList);
+    // Initialize walk-in status from the actual walk_in column
+    const initialWalkInStatus = {};
+    staffList.forEach(member => {
+      initialWalkInStatus[member.name] = member.walk_in ? "Accepting" : "Not Accepting";
+    });
+    setWalkInStatus(initialWalkInStatus);
   }, [staffList]);
 
   const statuses = ["Available", "In Service", "On Break", "Off Today"];
@@ -512,6 +532,11 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
   };
 
   const handleStatusUpdate = (staffName, newStatus) => {
+    const currentStaff = staff.find(s => s.name === staffName);
+    const shouldAcceptWalkIns = newStatus === "Available" || newStatus === "Open Slots"
+      ? Boolean(currentStaff?.walk_in)
+      : false;
+
     const updatedStaff = staff.map(s => 
       s.name === staffName 
         ? { 
@@ -525,6 +550,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
         : s
     );
     setStaff(updatedStaff);
+    setWalkInStatus(prev => ({ ...prev, [staffName]: shouldAcceptWalkIns ? "Accepting" : "Not Accepting" }));
     onCloseStatusModal();
     onStaffStatusUpdate?.(staffName, newStatus);
   };
@@ -564,44 +590,205 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
               </div>
             )}
           </div>
-          <button 
-            className="staff-see-less-btn"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? "See less" : "See more"}
-          </button>
+          {/* removed See more/See less toggle - fixed height handled by CSS */}
         </div>
       </div>
 
       {/* Loading State */}
       {loading && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          }
+        )}>
           Loading staff data...
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#f5f1eb'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#ef4444'
+          }
+        )}>
           Error loading staff: {error}
         </div>
       )}
 
       {/* Staff List */}
       {!loading && !error && (
-        <div className={isExpanded ? "staff-member-scroll" : "staff-member-scroll-limited"}>
-          {filteredStaff.length > 0 ? (
+        <div className="staff-member-scroll-limited">
+          {staff.length === 0 ? (
+            <div className="container-empty-state">
+              No staff available
+            </div>
+          ) : filteredStaff.length > 0 ? (
             filteredStaff.map((s, i) => (
             <div key={i}>
               <div className="staff-member-row">
                 <div className="staff-member-left">
                   <div className="staff-member-avatar">{s.initial}</div>
                   <span className="staff-member-name">{s.name}</span>
+                  {/* Walk-In Status Dropdown */}
+                  {s.status === "Available" && (
+                    <div style={{ position: "relative", marginLeft: "12px" }}>
+                      <button
+                        onClick={() => setOpenDropdown(openDropdown === s.name ? null : s.name)}
+                        className={`walkin-chip ${walkInStatus[s.name] === "Accepting" ? 'walkin-accept' : 'walkin-reject'}`}
+                      >
+                        {walkInStatus[s.name] === "Accepting" ? "Accepting Walk-In" : "Not Accepting"}
+                      </button>
+                      
+                      {/* Dropdown Menu */}
+                      {openDropdown === s.name && (
+                        <div
+                          style={getThemeStyles(
+                            {
+                              position: "absolute",
+                              top: "100%",
+                              left: "0",
+                              marginTop: "4px",
+                              backgroundColor: "rgba(20, 17, 15, 0.96)",
+                              border: "1px solid rgba(221, 144, 29, 0.2)",
+                              borderRadius: "6px",
+                              minWidth: "180px",
+                              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+                              zIndex: 100,
+                              overflow: "hidden",
+                            },
+                            {
+                              position: "absolute",
+                              top: "100%",
+                              left: "0",
+                              marginTop: "4px",
+                              backgroundColor: "#ffffff",
+                              border: "1px solid rgba(213, 210, 211, 0.7)",
+                              borderRadius: "6px",
+                              minWidth: "180px",
+                              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+                              zIndex: 100,
+                              overflow: "hidden",
+                            }
+                          )}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            onClick={() => {
+                              setConfirmModal({
+                                isOpen: true,
+                                title: "Confirm Walk-In Status",
+                                message: `Allow ${s.name} to accept walk-ins?`,
+                                action: "walk_in_accept",
+                                staffName: s.name,
+                                staffId: s.id
+                              });
+                            }}
+                            style={getThemeStyles(
+                              {
+                                width: "100%",
+                                padding: "10px 14px",
+                                backgroundColor: walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.1)" : "transparent",
+                                border: "none",
+                                textAlign: "left",
+                                color: "#f5f5f5",
+                                fontSize: "13px",
+                                fontFamily: "Inter, sans-serif",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                              },
+                              {
+                                width: "100%",
+                                padding: "10px 14px",
+                                backgroundColor: walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.08)" : "transparent",
+                                border: "none",
+                                textAlign: "left",
+                                color: "#0c0a09",
+                                fontSize: "13px",
+                                fontFamily: "Inter, sans-serif",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                              }
+                            )}
+                            onMouseEnter={(e) => {
+                              e.target.style.backgroundColor = "rgba(34, 197, 94, 0.15)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.backgroundColor = walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.1)" : "transparent";
+                            }}
+                          >
+                            Accepting Walk-In
+                          </button>
+                          <button
+                            onClick={() => {
+                              setConfirmModal({
+                                isOpen: true,
+                                title: "Confirm Walk-In Status",
+                                message: `Prevent ${s.name} from accepting walk-ins?`,
+                                action: "walk_in_reject",
+                                staffName: s.name,
+                                staffId: s.id
+                              });
+                            }}
+                            style={getThemeStyles(
+                              {
+                                width: "100%",
+                                padding: "10px 14px",
+                                backgroundColor: walkInStatus[s.name] === "Not Accepting" ? "rgba(239, 68, 68, 0.1)" : "transparent",
+                                border: "none",
+                                borderTop: "1px solid rgba(221, 144, 29, 0.1)",
+                                textAlign: "left",
+                                color: "#f5f5f5",
+                                fontSize: "13px",
+                                fontFamily: "Inter, sans-serif",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                              },
+                              {
+                                width: "100%",
+                                padding: "10px 14px",
+                                backgroundColor: walkInStatus[s.name] === "Not Accepting" ? "rgba(239, 68, 68, 0.08)" : "transparent",
+                                border: "none",
+                                borderTop: "1px solid rgba(221, 144, 29, 0.08)",
+                                textAlign: "left",
+                                color: "#0c0a09",
+                                fontSize: "13px",
+                                fontFamily: "Inter, sans-serif",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                              }
+                            )}
+                            onMouseEnter={(e) => {
+                              e.target.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.backgroundColor = walkInStatus[s.name] === "Not Accepting" ? "rgba(239, 68, 68, 0.1)" : "transparent";
+                            }}
+                          >
+                            Not Accepting Walk-In
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="staff-member-right">
                   <div className="staff-member-status-col">
                     <span className={s.statusClass}>{s.status}</span>
-                    <span className="staff-member-sub">{s.subStatus}</span>
                   </div>
                   <button 
                     className="staff-member-chevron"
@@ -619,39 +806,31 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
 
               {/* Expanded Staff Details */}
               {expandedStaff === s.name && (
-                <div style={{
-                  backgroundColor: "rgba(221, 144, 29, 0.05)",
-                  borderLeft: "3px solid #dd901d",
-                  padding: "16px",
-                  marginTop: "8px",
-                  borderRadius: "6px",
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "16px 24px"
-                }}>
+                <div style={getThemeStyles(
+                  {
+                    backgroundColor: "rgba(20, 17, 15, 0.5)",
+                    borderLeft: "3px solid rgba(221, 144, 29, 0.35)",
+                    padding: "16px",
+                    marginTop: "8px",
+                    borderRadius: "6px",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px 24px"
+                  },
+                  {
+                    backgroundColor: "rgba(250, 190, 206, 0.3)",
+                    borderLeft: "3px solid rgba(213, 210, 211, 0.35)",
+                    padding: "16px",
+                    marginTop: "8px",
+                    borderRadius: "6px",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px 24px"
+                  }
+                )}>
                   <div>
                     <p className="dash-detail-label">Current Client</p>
                     <p className="dash-detail-value">{s.details.currentClient}</p>
-                  </div>
-
-                  <div>
-                    <p className="dash-detail-label">Start of Service</p>
-                    <p className="dash-detail-value">{s.details.startOfService}</p>
-                  </div>
-
-                  <div>
-                    <p className="dash-detail-label">Service Done</p>
-                    <p className="dash-detail-value">{s.details.serviceDone}</p>
-                  </div>
-
-                  <div>
-                    <p className="dash-detail-label">Time of Break</p>
-                    <p className="dash-detail-value">{s.details.timeOfBreak}</p>
-                  </div>
-
-                  <div>
-                    <p className="dash-detail-label">Time of Clock In</p>
-                    <p className="dash-detail-value">{s.details.timeOfClockIn}</p>
                   </div>
 
                   <div>
@@ -660,24 +839,42 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                   </div>
 
                   <div>
-                    <p className="dash-detail-label">No. of Client Today</p>
-                    <p className="dash-detail-value">{s.details.noOfClientToday}</p>
+                    <p className="dash-detail-label">Total Clients Today</p>
+                    <p className="dash-detail-value">{s.details.totalClients}</p>
                   </div>
 
                   <div>
-                    <p className="dash-detail-label">Available for Walk-In</p>
-                    <p className={s.details.availableForWalkIn ? "dash-detail-value-green" : "dash-detail-value-red"}>
-                      {s.details.availableForWalkIn ? "Yes" : "No"}
-                    </p>
+                    <p className="dash-detail-label">Done Clients Today</p>
+                    <p className="dash-detail-value">{s.details.doneClients}</p>
                   </div>
 
-                  {/* Update Status & Manage Service Buttons */}
+                  <div>
+                    <p className="dash-detail-label">Clock In</p>
+                    <p className="dash-detail-value">{s.clock_in}</p>
+                  </div>
+
+                  <div>
+                    <p className="dash-detail-label">Clock Out</p>
+                    <p className="dash-detail-value">{s.clock_out}</p>
+                  </div>
+
+                  {/* Clock-In & Manage Service Buttons */}
                   <div style={{ gridColumn: "1 / -1", marginTop: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                     <button
-                      onClick={() => onOpenStatusModal(s)}
+                      onClick={() => {
+                        const isClockIn = s.status === "Absent";
+                        setConfirmModal({
+                          isOpen: true,
+                          title: isClockIn ? "Confirm Clock In" : "Confirm Clock Out",
+                          message: `Are you sure you want to ${isClockIn ? 'clock in' : 'clock out'} ${s.name}?`,
+                          action: isClockIn ? "clock_in" : "clock_out",
+                          staffName: s.name,
+                          staffId: s.id
+                        });
+                      }}
                       style={{
                         padding: "10px 16px",
-                        backgroundColor: "#dd901d",
+                        backgroundColor: s.status === "Absent" ? "#22c55e" : "#ef4444",
                         border: "none",
                         borderRadius: "8px",
                         color: "#fff",
@@ -691,13 +888,13 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                         gap: "6px",
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = "#c97a15";
+                        e.target.style.backgroundColor = s.status === "Absent" ? "#16a34a" : "#dc2626";
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = "#dd901d";
+                        e.target.style.backgroundColor = s.status === "Absent" ? "#22c55e" : "#ef4444";
                       }}
                     >
-                      Update Status
+                      {s.status === "Absent" ? "Clock In" : "Clock Out"}
                     </button>
                     <button
                       onClick={() => onOpenManageServiceModal(s)}
@@ -723,8 +920,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                         e.target.style.backgroundColor = "#4387ef";
                       }}
                     >
-                      <ServiceIcon size={13} color="currentColor" />
-                      Manage Service
+                      Manage Specialty
                     </button>
                   </div>
                 </div>
@@ -738,12 +934,232 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
           )}
         </div>
       )}
+      
+      {/* Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div 
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+            fontFamily: "Inter, sans-serif",
+          }}
+          onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        >
+          <div
+            style={getThemeStyles(
+              {
+                backgroundColor: "rgba(10, 9, 8, 0.95)",
+                borderRadius: "12px",
+                padding: "32px",
+                maxWidth: "400px",
+                width: "90%",
+                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.9)",
+                border: "1px solid rgba(221, 144, 29, 0.2)",
+              },
+              {
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                padding: "32px",
+                maxWidth: "400px",
+                width: "90%",
+                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.12)",
+                border: "1px solid rgba(213, 210, 211, 0.6)",
+              }
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={getThemeStyles(
+              {
+                fontSize: "18px",
+                fontWeight: "700",
+                color: "#f5f5f5",
+                margin: "0 0 12px 0"
+              },
+              {
+                fontSize: "18px",
+                fontWeight: "700",
+                color: "#0c0a09",
+                margin: "0 0 12px 0"
+              }
+            )}>
+              {confirmModal.title}
+            </h3>
+            
+            <p style={getThemeStyles(
+              {
+                fontSize: "14px",
+                color: "#988f81",
+                margin: "0 0 24px 0",
+                lineHeight: "1.5"
+              },
+              {
+                fontSize: "14px",
+                color: "#666",
+                margin: "0 0 24px 0",
+                lineHeight: "1.5"
+              }
+            )}>
+              {confirmModal.message}
+            </p>
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                style={getThemeStyles(
+                  {
+                    flex: 1,
+                    padding: "12px 16px",
+                    backgroundColor: "transparent",
+                    border: "1px solid rgba(221, 144, 29, 0.3)",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#988f81",
+                    transition: "all 0.2s ease",
+                    fontFamily: "Inter, sans-serif",
+                  },
+                  {
+                    flex: 1,
+                    padding: "12px 16px",
+                    backgroundColor: "transparent",
+                    border: "1px solid rgba(213, 210, 211, 0.4)",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#666",
+                    transition: "all 0.2s ease",
+                    fontFamily: "Inter, sans-serif",
+                  }
+                )}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.6)";
+                  e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.3)";
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setConfirmModal({ ...confirmModal, isOpen: false });
+                  
+                  const isClockIn = confirmModal.action === "clock_in";
+                  const isClockOut = confirmModal.action === "clock_out";
+                  const isWalkInAccept = confirmModal.action === "walk_in_accept";
+                  const isWalkInReject = confirmModal.action === "walk_in_reject";
+                  
+                  try {
+                    if (isClockIn || isClockOut) {
+                      // Format time as HH:MM:SS in 24-hour format
+                      const now = new Date();
+                      const timeString = now.toLocaleTimeString('en-GB', { 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit',
+                        hour12: false 
+                      });
+                      
+                      // Update local state
+                      const updatedStaff = staff.map(staffMember => 
+                        staffMember.name === confirmModal.staffName 
+                          ? { 
+                              ...staffMember, 
+                              status: isClockIn ? "Available" : "Absent",
+                              statusClass: isClockIn ? "staff-status-green" : "staff-status-tan",
+                              subStatus: isClockIn ? "Available" : "Not clocked in",
+                              clock_in: isClockIn ? timeString : staffMember.clock_in,
+                              clock_out: isClockOut ? timeString : staffMember.clock_out
+                            }
+                          : staffMember
+                      );
+                      setStaff(updatedStaff);
+                      
+                      // Update database
+                      const updatePayload = {
+                        id: confirmModal.staffId,
+                      };
+                      
+                      if (isClockIn) {
+                        updatePayload.clock_in = timeString;
+                      } else if (isClockOut) {
+                        updatePayload.clock_out = timeString;
+                      }
+                      
+                      await fetch('/api/staffs/update', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updatePayload)
+                      });
+                      
+                      onStaffStatusUpdate?.(confirmModal.staffName, isClockIn ? "Available" : "Absent");
+                    } else if (isWalkInAccept || isWalkInReject) {
+                      const currentStaff = staff.find(member => member.name === confirmModal.staffName);
+                      if (isWalkInAccept && currentStaff?.details?.availableForWalkIn === false) {
+                        alert(`${confirmModal.staffName} cannot accept walk-ins while currently in service.`);
+                        return;
+                      }
+
+                      setWalkInStatus({ ...walkInStatus, [confirmModal.staffName]: isWalkInAccept ? "Accepting" : "Not Accepting" });
+                      setOpenDropdown(null);
+                      
+                      await fetch('/api/staffs/update', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          id: confirmModal.staffId,
+                          walk_in: isWalkInAccept ? true : false
+                        })
+                      });
+                    }
+                  } catch (error) {
+                    console.error('Error updating staff:', error);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: "12px 16px",
+                  backgroundColor: "#dd901d",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#fff",
+                  transition: "all 0.2s ease",
+                  fontFamily: "Inter, sans-serif",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#e89f2d";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#dd901d";
+                }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 /* ── Quick Actions panel ── */
-const QuickActionsPanel = ({ onCustomerHistory, onCalendar }) => (
+const QuickActionsPanel = ({ onCustomerHistory }) => (
   <div className="staff-quick-panel">
     <h3 className="staff-quick-title">Quick Actions</h3>
     <button 
@@ -752,13 +1168,6 @@ const QuickActionsPanel = ({ onCustomerHistory, onCalendar }) => (
     >
       <CustomerHistoryIcon size={17} color="#000" />
       Customer History
-    </button>
-    <button 
-      className="staff-action-btn-secondary"
-      onClick={onCalendar}
-    >
-      <CalendarIcon size={17} color="currentColor" />
-      Calendar
     </button>
   </div>
 );
@@ -792,11 +1201,13 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [statusUpdateModal, setStatusUpdateModal] = useState({ isOpen: false, staff: null });
   const [manageServiceModal, setManageServiceModal] = useState({ isOpen: false, staff: null });
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [activeNav, setActiveNav] = useState("staff-status");
   const [mounted, setMounted] = useState(false);
+  const [serviceCategories, setServiceCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -812,129 +1223,178 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     return () => clearTimeout(t);
   }, []);
 
-  // Sample service categories and services data
-  // TODO: Replace with actual API call to fetch categories and services
-  const serviceCategories = [
-    {
-      id: 'hair',
-      name: 'Hair Services',
-      services: [
-        { id: 'haircut', name: 'Haircut' },
-        { id: 'hair-color', name: 'Hair Color' },
-        { id: 'hair-treatment', name: 'Hair Treatment' },
-        { id: 'styling', name: 'Styling' }
-      ]
-    },
-    {
-      id: 'nails',
-      name: 'Nail Services',
-      services: [
-        { id: 'manicure', name: 'Manicure' },
-        { id: 'pedicure', name: 'Pedicure' },
-        { id: 'nail-art', name: 'Nail Art' }
-      ]
-    },
-    {
-      id: 'massage',
-      name: 'Massage Services',
-      services: [
-        { id: 'body-massage', name: 'Body Massage' },
-        { id: 'foot-massage', name: 'Foot Massage' },
-        { id: 'facial-massage', name: 'Facial Massage' }
-      ]
-    },
-    {
-      id: 'skincare',
-      name: 'Skincare',
-      services: [
-        { id: 'facial', name: 'Facial' },
-        { id: 'skin-treatment', name: 'Skin Treatment' },
-        { id: 'waxing', name: 'Waxing' }
-      ]
-    }
-  ];
-
-  // Fetch staff data on component mount
+  // Fetch service categories from API dynamically
   useEffect(() => {
-    const fetchStaff = async () => {
+    const fetchServiceCategories = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        console.log('[AdminStaff] Fetching service categories from API');
+        setCategoriesLoading(true);
         
-        const res = await fetch('/api/staffs');
-        if (!res.ok) {
-          throw new Error(`Failed to fetch staff: ${res.status}`);
+        const response = await fetch('/api/services/categories');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch categories: ${response.status}`);
         }
         
-        const staffData = await res.json();
+        const data = await response.json();
+        console.log('[AdminStaff] Service categories fetched:', data.categories);
         
-        // Transform staff data to match the dashboard format
-        const transformedStaff = staffData.map((s, index) => {
-          // Determine status based on in_service column
-          // Priority: check in_service first, then fallback to status
-          let status = 'Available';
-          let statusClass = 'staff-status-green';
-          let subStatus = 'Available';
-
-          // Normalize the in_service value (trim whitespace)
-          const inServiceValue = (s.in_service || '').trim().toLowerCase();
-          const statusValue = (s.status || '').trim().toLowerCase();
-          
-          // Get the name - handle both 'name' and 'names' column variants
-          const staffName = s.names || s.name || 'Unknown';
-
-          console.log(`Processing staff: ${staffName} | status: ${statusValue} | in_service: ${inServiceValue}`);
-
-          // Check in_service column first for specific statuses
-          if (inServiceValue === 'in-service') {
-            status = 'In Service';
-            statusClass = 'staff-status-blue';
-            subStatus = 'Serving: ' + (s.current_client || 'Client');
-          } else if (inServiceValue === 'on-break') {
-            status = 'On Break';
-            statusClass = 'staff-status-amber';
-            subStatus = 'On Break';
-          } else if (inServiceValue === 'off') {
-            status = 'Off Today';
-            statusClass = 'staff-status-tan';
-            subStatus = 'Off Today';
-          } else if (statusValue === 'avail' || inServiceValue === 'avail') {
-            // If no specific in_service status, check status column for 'avail'
-            status = 'Available';
-            statusClass = 'staff-status-green';
-            subStatus = 'Available';
-          }
-
-          return {
-            initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
-            name: staffName,
-            status: status,
-            statusClass: statusClass,
-            subStatus: subStatus,
-            details: {
-              currentClient: s.current_client || 'None',
-              startOfService: s.start_time || '—',
-              serviceDone: s.current_service || '—',
-              timeOfBreak: s.break_time || '—',
-              timeOfClockIn: s.clock_in_time || '—',
-              upNextClient: s.next_client || 'None',
-              noOfClientToday: s.clients_today || 0,
-              availableForWalkIn: statusValue === 'avail' || inServiceValue === 'avail'
-            }
-          };
-        });
-
-        setStaff(transformedStaff);
+        // Separate "Other" category and sort the rest
+        const otherCategory = data.categories.find(cat => cat.name === 'Other');
+        const otherCategories = data.categories.filter(cat => cat.name !== 'Other');
+        
+        // Build sorted categories with "Other" at the end
+        const sortedCategories = [
+          ...otherCategories,
+          ...(otherCategory ? [otherCategory] : [])
+        ];
+        
+        setServiceCategories(sortedCategories);
       } catch (err) {
-        console.error('Error fetching staff:', err);
-        setError(err.message);
+        console.error('[AdminStaff] Error fetching service categories:', err);
+        setServiceCategories([]);
       } finally {
-        setLoading(false);
+        setCategoriesLoading(false);
       }
     };
 
+    fetchServiceCategories();
+  }, []);
+
+  // Define fetchStaff outside useEffect so it can be called from multiple handlers
+  const fetchStaff = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch staff data and appointments in parallel
+      const [resStaff, resCurrentAppts, resPendingAppts] = await Promise.all([
+        fetch('/api/staffs'),
+        fetch('/api/appointments/read/by-status?status=current'),
+        fetch('/api/appointments/read/by-status?status=pending')
+      ]);
+      
+      if (!resStaff.ok) {
+        throw new Error(`Failed to fetch staff: ${resStaff.status}`);
+      }
+      
+      const staffData = await resStaff.json();
+      const currentAppts = resCurrentAppts.ok ? await resCurrentAppts.json() : { appointments: [] };
+      const pendingAppts = resPendingAppts.ok ? await resPendingAppts.json() : { appointments: [] };
+      
+      // Create maps for quick lookup by staff name
+      const currentApptMap = {};
+      const pendingApptMap = {};
+      
+      (currentAppts.appointments || []).forEach(appt => {
+        const staffName = appt.staff || '';
+        if (staffName && !currentApptMap[staffName]) {
+          currentApptMap[staffName] = appt;
+        }
+      });
+      
+      (pendingAppts.appointments || []).forEach(appt => {
+        const staffName = appt.staff || '';
+        if (staffName && !pendingApptMap[staffName]) {
+          pendingApptMap[staffName] = appt;
+        }
+      });
+      
+      // Transform staff data to match the dashboard format
+      const transformedStaff = staffData.map((s, index) => {
+        // Determine status based on clock in/out first, then fallback to in_service
+        let status = 'Absent';
+        let statusClass = 'staff-status-tan';
+        let subStatus = 'Not clocked in';
+
+        // Normalize the in_service value (trim whitespace)
+        const inServiceValue = (s.in_service || '').trim().toLowerCase();
+        const statusValue = (s.status || '').trim().toLowerCase();
+        
+        // Get the name - handle both 'name' and 'names' column variants
+        const staffName = s.names || s.name || 'Unknown';
+
+        // Get clock in/out values
+        const hasClockIn = s.clock_in && s.clock_in.trim() && s.clock_in !== '—';
+        const hasClockOut = s.clock_out && s.clock_out.trim() && s.clock_out !== '—';
+
+        console.log(`Processing staff: ${staffName} | clock_in: ${s.clock_in} | clock_out: ${s.clock_out} | in_service: ${inServiceValue}`);
+
+        // Priority 1: Check clock in/out status
+        if (hasClockIn && !hasClockOut) {
+          // Clocked in and not clocked out → Available
+          status = 'Available';
+          statusClass = 'staff-status-green';
+          subStatus = 'Available';
+        } else if (hasClockOut) {
+          // Clocked out → Not available
+          status = 'Clocked out';
+          statusClass = 'staff-status-tan';
+          subStatus = 'Clocked out';
+        } 
+        // Priority 2: Check in_service column for specific statuses
+        else if (inServiceValue === 'in-service') {
+          status = 'In Service';
+          statusClass = 'staff-status-blue';
+          subStatus = 'Serving: ' + (s.current_client || 'Client');
+        } else if (inServiceValue === 'on-break') {
+          status = 'On Break';
+          statusClass = 'staff-status-amber';
+          subStatus = 'On Break';
+        } else if (inServiceValue === 'off') {
+          status = 'Off Today';
+          statusClass = 'staff-status-tan';
+          subStatus = 'Off Today';
+        } else if (statusValue === 'avail' || inServiceValue === 'avail') {
+          // If no specific in_service status, check status column for 'avail'
+          status = 'Available';
+          statusClass = 'staff-status-green';
+          subStatus = 'Available';
+        }
+
+        // Get current and next client from appointment data
+        const currentAppt = currentApptMap[staffName];
+        const pendingAppt = pendingApptMap[staffName];
+        
+        const currentClient = currentAppt ? currentAppt.name : 'None';
+        const upNextClient = pendingAppt ? pendingAppt.name : 'None';
+
+        return {
+          id: s.id,
+          initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
+          name: staffName,
+          walk_in: Boolean(s.walk_in),
+          status: status,
+          statusClass: statusClass,
+          subStatus: subStatus,
+          clock_in: s.clock_in || '—',
+          clock_out: s.clock_out || '—',
+          details: {
+            currentClient: currentClient,
+            startOfService: s.start_time || '—',
+            serviceDone: s.current_service || '—',
+            timeOfBreak: s.break_time || '—',
+            timeOfClockIn: s.clock_in_time || '—',
+            upNextClient: upNextClient,
+            noOfClientToday: s.clients_today || 0,
+            totalClients: s.total_clients || 0,
+            doneClients: s.done_clients || 0,
+            availableForWalkIn: Boolean(s.walk_in)
+          }
+        };
+      });
+
+      setStaff(transformedStaff);
+    } catch (err) {
+      console.error('Error fetching staff:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch staff data on component mount
+  useEffect(() => {
     fetchStaff();
-    
     return () => {};
   }, []);
 
@@ -947,14 +1407,77 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   };
 
   const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
     logoutOperator();
+    setShowLogoutConfirm(false);
     navigate("/");
   };
 
-  const handleStaffStatusUpdate = (staffName, newStatus) => {
-    console.log(`Updated ${staffName} status to ${newStatus}`);
-    // Here you would typically make an API call to update the staff status in your backend
-    // Example: await updateStaffStatus(staffName, newStatus);
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+
+  const handleStaffStatusUpdate = async (staffName, newStatus, attendanceData) => {
+    console.log(`Updated ${staffName} status to ${newStatus}`, attendanceData);
+    
+    try {
+      // Find staff member from the fetched staff data
+      const staffMember = staff.find(s => s.name === staffName);
+      if (!staffMember || !staffMember.id) {
+        console.error(`Staff member ${staffName} not found or has no id`);
+        return;
+      }
+
+      // When clocking in or setting available status
+      // Set both status and in_service to "avail"
+      const updateData = {
+        id: staffMember.id,
+        status: newStatus === "Available" || newStatus === "Open Slots" ? "avail" : newStatus,
+        in_service: newStatus === "Available" || newStatus === "Open Slots" ? "avail" : newStatus.toLowerCase().replace(/\s+/g, '-'),
+      };
+
+      if (updateData.in_service === 'in-service') {
+        updateData.walk_in = false;
+      }
+
+      // Add clock_in if provided (means staff is clocking in)
+      if (attendanceData?.clockIn) {
+        updateData.clock_in = attendanceData.clockIn;
+      }
+
+      // Add clock_out if provided
+      if (attendanceData?.clockOut) {
+        updateData.clock_out = attendanceData.clockOut;
+      }
+
+      console.log('[Admin:StaffStatus] Sending update to API:', updateData);
+
+      // Make API call to update staff in database
+      const response = await fetch('/api/staffs/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error(`[Admin:StaffStatus] Failed to update staff: ${error.error}`, error.details);
+        return;
+      }
+
+      const result = await response.json();
+      console.log(`[Admin:StaffStatus] Successfully updated staff ${staffName}:`, result.staff);
+      
+      // Optionally refresh staff data to reflect changes
+      // fetchStaff();
+    } catch (error) {
+      console.error(`[Admin:StaffStatus] Error updating staff status:`, error);
+    }
   };
 
   const openStatusModal = (staffMember) => {
@@ -973,20 +1496,108 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     setManageServiceModal({ isOpen: false, staff: null });
   };
 
-  const handleManageServiceSave = (staffName, categoryServicePairs) => {
-    console.log(`Updated ${staffName} services:`, categoryServicePairs);
-    // Here you would typically make an API call to update the staff services in your backend
-    // Example: await updateStaffServices(staffName, categoryServicePairs);
+  const handleManageServiceSave = async (staffName, selectedCategories) => {
+    console.log(`Saving specialties for ${staffName}:`, selectedCategories);
+    
+    try {
+      // Find staff member from the fetched staff data
+      const staffMember = staff.find(s => s.name === staffName);
+      if (!staffMember || !staffMember.id) {
+        console.error(`Staff member ${staffName} not found or has no id`);
+        alert(`Error: Staff member ${staffName} not found`);
+        return;
+      }
+
+      // Validate at least one category is selected
+      if (!selectedCategories || selectedCategories.length === 0) {
+        console.warn('[Admin:ManageService] No categories selected');
+        alert('Please select at least one specialty');
+        return;
+      }
+
+      // Get category names from IDs
+      const selectedCategoryNames = serviceCategories
+        .filter(cat => selectedCategories.includes(cat.id))
+        .map(cat => cat.name);
+
+      console.log('[Admin:ManageService] Sending update to API:', {
+        id: staffMember.id,
+        category_specialty: selectedCategoryNames
+      });
+
+      // Make API call to update staff specialties in database
+      const response = await fetch('/api/staffs/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: staffMember.id,
+          category_specialty: selectedCategoryNames,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error(`[Admin:ManageService] Failed to update specialties: ${error.error}`, error.details);
+        alert(`Failed to update specialties: ${error.error}`);
+        return;
+      }
+
+      const result = await response.json();
+      console.log(`[Admin:ManageService] Successfully updated ${staffName} specialties:`, result.staff);
+      
+      // Close the modal
+      closeManageServiceModal();
+      
+      // Refresh staff data to reflect changes
+      fetchStaff();
+      
+      // Show success message
+      alert(`Successfully updated ${staffName}'s specialties to: ${selectedCategoryNames.join(', ')}`);
+    } catch (error) {
+      console.error(`[Admin:ManageService] Error updating specialties:`, error);
+      alert(`Error updating specialties: ${error.message}`);
+    }
   };
 
+  const headerNotifications = useMemo(() => {
+    const statusFeed = staff.slice(0, 3).map((member, index) => ({
+      id: `staff-${member.name || index}`,
+      tone: member.statusClass === "staff-status-green" ? "green" : member.statusClass === "staff-status-blue" ? "blue" : member.statusClass === "staff-status-amber" ? "amber" : "tan",
+      category: "Staff status",
+      title: `${member.name || "Staff member"} is ${member.status || "Available"}`,
+      description: member.subStatus || "Status updated.",
+      time: member.details?.timeOfClockIn || "Today",
+      unread: index === 0,
+    }));
+
+    const serviceFeed = staff
+      .filter((member) => member.details?.availableForWalkIn)
+      .slice(0, 1)
+      .map((member, index) => ({
+        id: `staff-walkin-${member.name || index}`,
+        tone: "amber",
+        category: "Walk-in ready",
+        title: `${member.name || "Staff member"} can accept walk-ins`,
+        description: "This stylist is currently available for a walk-in customer.",
+        time: "Now",
+        unread: true,
+      }));
+
+    return [...statusFeed, ...serviceFeed].slice(0, 5);
+  }, [staff]);
+
   return (
-    <div className="super-admin-container">
+    <div
+      className="super-admin-container admin-dashboard-page"
+      style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
+    >
       {/* Sidebar */}
       <AdminSidebar 
         activeNav={activeNav}
         setActiveNav={setActiveNav}
         sidebarExpanded={sidebarExpanded}
-        setSidebarExpanded={setSidebarExpanded}
         onLogout={handleLogout}
       />
 
@@ -994,20 +1605,23 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       <div className="super-admin-main">
         {/* Dashboard Header - Fixed Title and Actions */}
         <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
-          <div>
-            <h1 className="dash-page-title">Staff Status</h1>
-            <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
-          </div>
-          <div className="dash-page-actions">
-            <button className="dash-action-btn">
-              <BellIcon size={14} color="#fff" />
-              Notifications
+          <div className="dashboard-header-main">
+            <button
+              onClick={() => setSidebarExpanded((prev) => !prev)}
+              className="logo-toggle-btn dashboard-header-logo-btn"
+              title="Toggle sidebar"
+            >
+              <div className="logo-badge">
+                <LogoIcon />
+              </div>
             </button>
-            <button className="dash-action-btn">
-              <SettingsIcon size={14} color="#fff" />
-              Settings
-            </button>
+            <span className="dashboard-system-title">BeautyBook Pro</span>
+            <div className="dashboard-page-title-wrap">
+              <h1 className="dash-page-title">Staff Status</h1>
+              <p className="dash-page-subtitle">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+            </div>
           </div>
+          <AdminHeaderActions notifications={headerNotifications} />
         </header>
 
         <main className="dashboard-main">
@@ -1032,7 +1646,6 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           <div className="staff-sidebar">
             <QuickActionsPanel 
               onCustomerHistory={() => setIsCustomerHistoryOpen(true)}
-              onCalendar={() => setIsCalendarOpen(true)}
             />
             <AnalyticsPanel />
           </div>
@@ -1046,18 +1659,13 @@ export const AdminDashboardStaffStatus = ({ date }) => {
         onClose={() => setIsCustomerHistoryOpen(false)} 
       />
 
-      {/* Calendar Appointments Modal */}
-      <CalendarAppointmentsModal 
-        isOpen={isCalendarOpen} 
-        onClose={() => setIsCalendarOpen(false)} 
-      />
 
       {/* Status Update Modal */}
       <StatusUpdateModal
         isOpen={statusUpdateModal.isOpen}
         staff={statusUpdateModal.staff}
         onClose={closeStatusModal}
-        onSave={(staffName, newStatus) => {
+        onSave={(staffName, newStatus, attendanceData) => {
           const updatedStaff = STAFF.map(s => 
             s.name === staffName 
               ? { 
@@ -1070,7 +1678,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
                 }
               : s
           );
-          handleStaffStatusUpdate(staffName, newStatus);
+          handleStaffStatusUpdate(staffName, newStatus, attendanceData);
           closeStatusModal();
         }}
       />
@@ -1086,6 +1694,16 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           acc[cat.id] = cat.services;
           return acc;
         }, {})}
+      />
+
+      <ConfirmationDialog
+        isOpen={showLogoutConfirm}
+        title="Log Out?"
+        message="Are you sure you want to log out of the admin dashboard?"
+        confirmText="Yes, Log Out"
+        cancelText="Stay Logged In"
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
       />
     </div>
   );

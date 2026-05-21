@@ -1,8 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
-import { AddWalkInModal } from "../../components/modal/admin/add_walkin";
+import PasswordReminderBanner from "../../components/PasswordReminderBanner";
+import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
+
+// ═══════════════════════════════════════════════════════════════════
+// DARK MODE HELPER
+// ═══════════════════════════════════════════════════════════════════
+const isDarkMode = () => {
+  if (typeof document === 'undefined') return true;
+  const theme = document.documentElement.getAttribute('data-theme');
+  return theme !== 'light';
+};
+
+const getThemeStyles = (darkStyles, lightStyles) => {
+  return isDarkMode() ? darkStyles : lightStyles;
+};
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -218,7 +233,7 @@ const SUMMARY = [
 // SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpanded, onLogout }) => {
+const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, onLogout }) => {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
 
@@ -241,8 +256,7 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
   };
 
   const handleLogout = () => {
-    logoutOperator();
-    navigate("/");
+    onLogout?.();
   };
 
   return (
@@ -251,27 +265,11 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
       transform: mounted ? "translateX(0)" : "translateX(-16px)",
       transition: "all 0.5s ease"
     }}>
-      {/* Logo + Toggle */}
-      <div className="sidebar-logo-section">
-        <button 
-          onClick={() => setSidebarExpanded(!sidebarExpanded)}
-          className="logo-toggle-btn"
-          title="Toggle sidebar"
-        >
-          <div className="logo-badge">
-            <LogoIcon />
-          </div>
-        </button>
-        {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
-      </div>
-
       {/* Admin pill */}
-      {sidebarExpanded && (
-        <div className="admin-badge-pill">
-          <div className="admin-badge-circle">A</div>
-          <span className="admin-badge-text">Administrator</span>
-        </div>
-      )}
+      <div className="admin-badge-pill">
+        <div className="admin-badge-circle">A</div>
+        <span className="admin-badge-text">Administrator</span>
+      </div>
 
       {/* Nav items */}
       <nav className="sidebar-nav">
@@ -317,16 +315,7 @@ const PageTitle = () => {
         <h1 className="dash-page-title">Admin Dashboard</h1>
         <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
       </div>
-      <div className="dash-page-actions">
-        <button className="dash-action-btn">
-          <BellIcon size={14} color="#fff" />
-          Notifications
-        </button>
-        <button className="dash-action-btn">
-          <SettingsIcon size={14} color="#fff" />
-          Settings
-        </button>
-      </div>
+      <AdminHeaderActions />
     </div>
   );
 };
@@ -356,10 +345,10 @@ const PageMetrics = ({ stats }) => (
 );
 
 const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [walkInAppointments, setWalkInAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -369,6 +358,10 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
       try {
         setLoading(true);
         setError(null);
+
+        // Get today's date
+        const today = new Date().toISOString().split('T')[0];
+        console.log('[LiveQueue] Fetching for date:', today);
 
         // Fetch current appointments
         const currentRes = await fetch('/api/appointments/read/by-status?status=current');
@@ -384,11 +377,30 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         }
         const pendingData = await pendingRes.json();
 
+        // Fetch walk-in logs for today
+        console.log('[LiveQueue] Fetching walk-ins from:', `/api/appointments/walk-in-logs?date=${today}`);
+        const walkInRes = await fetch(`/api/appointments/walk-in-logs?date=${today}`);
+        console.log('[LiveQueue] Walk-in response status:', walkInRes.status);
+        
+        if (!walkInRes.ok) {
+          console.error('[LiveQueue] Walk-in API error:', walkInRes.status, walkInRes.statusText);
+        }
+        
+        const walkInData = await walkInRes.json();
+        console.log('[LiveQueue] Walk-in data received:', Array.isArray(walkInData) ? walkInData.length : 'not array', walkInData);
+
         if (currentData.success) {
           setCurrentAppointments(currentData.appointments || []);
         }
         if (pendingData.success) {
           setPendingAppointments(pendingData.appointments || []);
+        }
+        if (walkInRes.ok && Array.isArray(walkInData)) {
+          setWalkInAppointments(walkInData);
+          console.log('[LiveQueue] Set walk-ins:', walkInData.length, 'items');
+        } else {
+          console.log('[LiveQueue] Walk-in data not valid array or not ok response');
+          setWalkInAppointments([]);
         }
       } catch (err) {
         console.error('Error fetching appointments:', err);
@@ -403,11 +415,36 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     return () => {};
   }, []);
 
-  const handleCompleteService = (itemId, customerName, service) => {
-    console.log(`Service completed for ${customerName}: ${service}`);
-    // Here you can integrate with your API to mark the service as complete
-    // For now, just logging the data
-    // You could also remove the item from the queue or update its status
+  const handleCompleteService = async (itemId, customerName, service) => {
+    try {
+      console.log(`Service completed for ${customerName}: ${service}`);
+      console.log(`Updating appointment ${itemId} status to 'done'`);
+      
+      const response = await fetch('/api/appointments/update/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: itemId,
+          status: 'done'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to complete service: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`Service completion result:`, result);
+      
+      // Remove from current appointments silently
+      setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
+      
+      alert(`✓ Service marked as done!`);
+    } catch (error) {
+      console.error(`Error completing service:`, error);
+      alert('Failed to complete service: ' + error.message);
+    }
   };
 
   // Transform appointments to queue item format
@@ -446,6 +483,50 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
   const currentItems = formatQueueItems(currentAppointments, 'active');
   
+  // Format walk-in items with status consideration
+  const formatWalkInItems = (walkIns, itemType) => {
+    return walkIns.map((walkin, index) => {
+      // Extract service names from the services JSONB array
+      const serviceNames = Array.isArray(walkin.services) 
+        ? walkin.services.map(s => s.title || s.name).join(', ')
+        : 'Walk-in Service';
+      
+      const isCurrentType = itemType === 'active';
+      
+      return {
+        id: `walkin-${walkin.id}`,
+        actualId: walkin.id,  // Store actual UUID for API calls
+        type: itemType,
+        number: index + 1,
+        name: walkin.customer_name,
+        staff: walkin.assigned_staff,
+        service: `${serviceNames} • ${walkin.assigned_staff}`,
+        statusTop: isCurrentType ? 'Now' : 'Walk-in',
+        statusSub: isCurrentType ? 'In Progress' : 'Waiting',
+        details: {
+          serviceSelected: serviceNames,
+          currentService: isCurrentType ? 'In Progress' : 'Pending',
+          startTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          estimatedTime: '45 mins'
+        },
+        isWalkIn: true
+      };
+    });
+  };
+
+  // Separate walk-ins by status
+  const currentWalkIns = walkInAppointments.filter(w => w.status === 'current') || [];
+  const pendingWalkIns = walkInAppointments.filter(w => w.status === 'pending') || [];
+  
+  const currentWalkInItems = formatWalkInItems(currentWalkIns, 'active');
+  const pendingWalkInItems = formatWalkInItems(pendingWalkIns, 'waiting');
+  
+  console.log('[LiveQueue] Current walk-ins:', currentWalkInItems.length);
+  console.log('[LiveQueue] Pending walk-ins:', pendingWalkInItems.length);
+  
+  // Merge walk-ins with appointments in each category
+  const allCurrentItems = [...currentItems, ...currentWalkInItems];
+  
   // Filter pending items to only show today's appointments with actual bookings (not empty slots)
   const today = new Date().toISOString().split('T')[0];
   const todayPendingAppointments = pendingAppointments.filter(apt => 
@@ -453,19 +534,24 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   );
   const pendingItems = formatQueueItems(todayPendingAppointments, 'waiting');
 
+  // Combine pending appointments with pending walk-ins
+  const allUpNextItems = [...pendingItems, ...pendingWalkInItems];
+  console.log('[LiveQueue] All up next items (appointments + walk-ins):', allUpNextItems.length);
+  console.log('[LiveQueue] All current items (appointments + current walk-ins):', allCurrentItems.length);
+
   // Create queue sections - only include sections with items
   const queueSections = [
     {
       label: "Current",
-      items: currentItems
+      items: allCurrentItems
     },
     {
       label: "Up Next",
-      items: pendingItems
+      items: allUpNextItems
     }
   ].filter(section => section.items.length > 0); // Only show sections with items
 
-  const QueueItem = ({ id, type, number, name, staff, service, statusTop, statusSub, details, onCompleteService, showProceedButton = false, onProceed, isProceedEnabled = true, onProceedClick }) => {
+  const QueueItem = ({ id, type, number, name, staff, service, statusTop, statusSub, details, onCompleteService, showProceedButton = false, onProceed, isProceedEnabled = true, onProceedClick, actualId, isWalkIn }) => {
     const isActive = type === "active";
     const isCancelled = type === "cancelled";
     const rowClass = isActive ? "live-queue-row-active"
@@ -485,7 +571,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
     const handleProceed = () => {
       if (isProceedEnabled && onProceedClick) {
-        onProceedClick(id, name, service, staff);
+        onProceedClick(id, name, service, staff, actualId, isWalkIn);
       }
     };
 
@@ -525,13 +611,22 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         </div>
 
         {isItemExpanded && (
-          <div style={{
-            padding: "12px 16px",
-            backgroundColor: "rgba(26, 15, 0, 0.15)",
-            borderLeft: "3px solid #dd901d",
-            marginBottom: "8px",
-            borderRadius: "0 8px 8px 0"
-          }}>
+          <div style={getThemeStyles(
+            {
+              padding: "12px 16px",
+              backgroundColor: "rgba(20, 17, 15, 0.4)",
+              borderLeft: "3px solid rgba(221, 144, 29, 0.3)",
+              marginBottom: "8px",
+              borderRadius: "0 8px 8px 0"
+            },
+            {
+              padding: "12px 16px",
+              backgroundColor: "rgba(250, 190, 206, 0.3)",
+              borderLeft: "3px solid rgba(213, 210, 211, 0.3)",
+              marginBottom: "8px",
+              borderRadius: "0 8px 8px 0"
+            }
+          )}>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div>
                 <span className="dash-detail-label">Service Selected</span>
@@ -628,56 +723,89 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
             <PlusIcon size={10} color="#000" />
             Add Walk-in
           </button>
-          <button 
-            className="dash-panel-manage-btn"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? "See less" : "See more"}
-          </button>
         </div>
       </div>
 
       {/* Loading State */}
       {loading && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          }
+        )}>
           Loading appointments...
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#f5f1eb'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#ef4444'
+          }
+        )}>
           Error loading appointments: {error}
         </div>
       )}
 
       {/* Sections */}
       {!loading && !error && (
-        <div className={isExpanded ? "live-queue-scroll" : "live-queue-scroll-limited"}>
-          {queueSections.map((section, si) => (
-            <div key={si}>
-              <p className="live-section-label">{section.label}</p>
-              <div className="live-queue-group">
-                {section.items.length === 0 ? (
-                  <p style={{ padding: '10px', color: '#999', fontSize: '14px' }}>No appointments</p>
-                ) : (
-                  section.items.map((item, ii) => {
-                    const isUpNext = section.label === "Up Next";
-                    return (
-                      <QueueItem 
-                        key={ii} 
-                        {...item} 
-                        onCompleteService={handleCompleteService}
-                        showProceedButton={isUpNext}
-                        isProceedEnabled={ii < 3}
-                        onProceedClick={onProceedClick}
-                      />
-                    );
-                  })
-                )}
-              </div>
+        <div className="live-queue-scroll-limited admin-dashboard-scrollable">
+          {queueSections.every(s => s.items.length === 0) ? (
+            <div className="container-empty-state">
+              No live queue at the moment
             </div>
-          ))}
+          ) : (
+            queueSections.map((section, si) => (
+              <div key={si}>
+                <p className="live-section-label">{section.label}</p>
+                <div className="live-queue-group">
+                  {section.items.length === 0 ? (
+                    <p style={getThemeStyles(
+                      {
+                        padding: '10px',
+                        color: '#999',
+                        fontSize: '14px'
+                      },
+                      {
+                        padding: '10px',
+                        color: '#999',
+                        fontSize: '14px'
+                      }
+                    )}>No appointments</p>
+                  ) : (
+                    section.items.map((item, ii) => {
+                      const isUpNext = section.label === "Up Next";
+                      return (
+                        <QueueItem 
+                          key={ii} 
+                          {...item} 
+                          onCompleteService={handleCompleteService}
+                          showProceedButton={isUpNext}
+                          isProceedEnabled={ii < 3}
+                          onProceedClick={onProceedClick}
+                        />
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>
@@ -689,7 +817,6 @@ const StaffStatus = () => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -727,21 +854,28 @@ const StaffStatus = () => {
           // Get the name - handle both 'name' and 'names' column variants
           const staffName = s.names || s.name || 'Unknown';
           
-          // Determine status based on in_service column
+          // Check if clocked out
+          const hasClockOut = s.clock_out && s.clock_out.trim() && s.clock_out !== '—';
+          
+          // Determine status based on clock out, status column, then in_service column
           let dotClass = 'dash-staff-status-dot-gray';
           let subStatus = 'Available';
           
+          const statusValue = (s.status || '').trim().toLowerCase();
           const inServiceValue = (s.in_service || '').trim().toLowerCase();
           
-          if (inServiceValue === 'in-service') {
+          // Priority 1: Check if clocked out or status is 'off'
+          if (hasClockOut || statusValue === 'off') {
+            dotClass = 'dash-staff-status-dot-gray';
+            subStatus = 'Off';
+          }
+          // Priority 2: Check in_service status
+          else if (inServiceValue === 'in-service') {
             dotClass = 'dash-staff-status-dot-green';
-            subStatus = `Serving: ${s.current_client || 'Client'}`;
+            subStatus = 'In Service';
           } else if (inServiceValue === 'on-break') {
             dotClass = 'dash-staff-status-dot-amber';
             subStatus = 'On Break';
-          } else if (inServiceValue === 'off') {
-            dotClass = 'dash-staff-status-dot-red';
-            subStatus = 'Off Today';
           } else {
             dotClass = 'dash-staff-status-dot-green';
             subStatus = 'Available';
@@ -780,12 +914,7 @@ const StaffStatus = () => {
     <div className="dash-sidebar-panel">
       <div className="dash-sidebar-header">
         <h3 className="dash-sidebar-title">Staff Status</h3>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button className="dash-panel-manage-btn" onClick={handleManageClick} style={{ color: "#fff" }}>Manage</button>
-          <button className="dash-panel-manage-btn" onClick={() => setIsExpanded(!isExpanded)}>
-            {isExpanded ? "See less" : "See more"}
-          </button>
-        </div>
+        <button className="dash-panel-manage-btn" onClick={handleManageClick} style={{ color: "#fff" }}>Manage</button>
       </div>
       
       {loading && (
@@ -801,7 +930,7 @@ const StaffStatus = () => {
       )}
       
       {!loading && !error && (
-        <div className="dash-staff-list" style={{ maxHeight: isExpanded ? "none" : "200px", overflow: "auto", scrollbarWidth: "thin", scrollbarColor: "rgba(221, 144, 29, 0.2) transparent", padding: "12px 0" }}>
+        <div className="dash-staff-list live-queue-scroll-limited admin-dashboard-scrollable" style={{ maxHeight: "200px", padding: "12px 0", paddingRight: "12px" }}>
           {staff.map((s, i) => (
             <div key={i} className="dash-staff-row">
               <div className="dash-staff-left">
@@ -904,6 +1033,130 @@ const AnalyticsPanel = () => (
   </div>
 );
 
+const CouponsPanel = () => {
+  const [coupons, setCoupons] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAvailableCoupons = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/coupons/available');
+        if (!response.ok) throw new Error('Failed to fetch coupons');
+        const result = await response.json();
+        setCoupons(result.data || []);
+      } catch (err) {
+        console.error('Error loading available coupons:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAvailableCoupons();
+  }, []);
+
+  const formatDiscount = (coupon) => {
+    if (coupon.value_type === 'percentage') {
+      return `${coupon.value}%`;
+    } else {
+      return `₱${coupon.value.toFixed(2)}`;
+    }
+  };
+
+  const CouponIcon = ({ size = 20, color = "#dd901d" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="5" width="9" height="14" rx="2" stroke={color} strokeWidth="1.8" />
+      <rect x="12" y="5" width="9" height="14" rx="2" stroke={color} strokeWidth="1.8" />
+      <line x1="12" y1="5" x2="12" y2="19" stroke={color} strokeWidth="1.8" strokeDasharray="2,2" />
+      <circle cx="7.5" cy="9" r="1.5" fill={color} />
+      <circle cx="16.5" cy="15" r="1.5" fill={color} />
+    </svg>
+  );
+
+  return (
+    <div className="dash-sidebar-panel">
+      <div className="dash-sidebar-header">
+        <h3 className="dash-sidebar-title">Available Coupons</h3>
+        {!loading && coupons.length > 0 && (
+          <span style={{ fontSize: '12px', color: '#dd901d', fontWeight: 600 }}>
+            {coupons.length}
+          </span>
+        )}
+      </div>
+      
+      {loading ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13 }}>
+          Loading coupons...
+        </div>
+      ) : coupons.length === 0 ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13 }}>
+          No available coupons
+        </div>
+      ) : (
+        <div className="dash-coupons-list live-queue-scroll-limited" style={{ maxHeight: "280px", padding: "12px 0", paddingRight: "12px" }}>
+          {coupons.map((coupon) => {
+            const couponRowStyle = getThemeStyles(
+              {
+                padding: '12px',
+                marginBottom: '8px',
+                background: 'rgba(20, 17, 15, 0.5)',
+                borderRadius: 6,
+                border: '1px solid rgba(221, 144, 29, 0.2)',
+                fontSize: 13,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start'
+              },
+              {
+                padding: '12px',
+                marginBottom: '8px',
+                background: '#ffffff',
+                borderRadius: 6,
+                border: '1px solid rgba(213, 210, 211, 0.2)',
+                fontSize: 13,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start'
+              }
+            );
+            const textColor = isDarkMode() ? '#f5f1eb' : '#0c0a09';
+            const labelColor = isDarkMode() ? '#988f81' : '#666';
+            const tertiaryColor = isDarkMode() ? '#666' : '#999';
+            const bgBoxColor = isDarkMode() ? 'rgba(221, 144, 29, 0.15)' : 'rgba(221, 144, 29, 0.1)';
+            
+            return (
+              <div key={coupon.id} style={couponRowStyle}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: textColor, marginBottom: 4 }}>
+                    {formatDiscount(coupon)} OFF
+                  </div>
+                  <div style={{ color: labelColor, fontSize: 12, marginBottom: 2 }}>
+                    Code: <span style={{ fontFamily: 'monospace', fontWeight: 500, color: textColor }}>{coupon.code}</span>
+                  </div>
+                  <div style={{ color: tertiaryColor, fontSize: 11 }}>
+                    Claims: {coupon.number_of_uses}{coupon.max_uses ? ` / ${coupon.max_uses}` : ''}
+                  </div>
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  width: 28,
+                  height: 28,
+                  background: bgBoxColor,
+                  borderRadius: 4
+                }}>
+                  <CouponIcon size={16} color="#dd901d" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ═══════════════════════════════════════════════════════════════════
 // MAIN EXPORT
 // ═══════════════════════════════════════════════════════════════════
@@ -911,6 +1164,7 @@ const AnalyticsPanel = () => (
 export const AdminDashboard = ({ date }) => {
   const navigate = useNavigate();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [proceedConfirmId, setProceedConfirmId] = useState(null);
   const [proceedConfirmData, setProceedConfirmData] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
@@ -1000,11 +1254,52 @@ export const AdminDashboard = ({ date }) => {
     ]);
   }, [currentAppointments, pendingAppointments, doneAppointments]);
 
+  const headerNotifications = useMemo(() => {
+    const recentPending = pendingAppointments.slice(0, 2).map((appointment, index) => ({
+      id: `pending-${appointment.id || index}`,
+      tone: "amber",
+      category: "New booking",
+      title: `${appointment.name || "Customer"} booked ${appointment.service || "a service"}`,
+      description: `${appointment.time || "TBA"} • ${appointment.staff || "Any available stylist"}`,
+      time: "Just now",
+      unread: true,
+    }));
+
+    const recentCurrent = currentAppointments.slice(0, 2).map((appointment, index) => ({
+      id: `current-${appointment.id || index}`,
+      tone: "blue",
+      category: "Live queue",
+      title: `${appointment.name || "Customer"} is now being served`,
+      description: `${appointment.service || "Service"} • ${appointment.staff || "Assigned staff"}`,
+      time: appointment.time || "Today",
+      unread: index === 0,
+    }));
+
+    const recentDone = doneAppointments.slice(0, 1).map((appointment, index) => ({
+      id: `done-${appointment.id || index}`,
+      tone: "green",
+      category: "Completed",
+      title: `${appointment.name || "Customer"} appointment completed`,
+      description: `${appointment.service || "Service"} finished successfully.`,
+      time: "Today",
+      unread: false,
+    }));
+
+    return [...recentPending, ...recentCurrent, ...recentDone].slice(0, 5);
+  }, [currentAppointments, pendingAppointments, doneAppointments]);
+
   const handleLogout = () => {
-    // Clear operator session
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
     logoutOperator();
-    // Redirect to home
+    setShowLogoutConfirm(false);
     navigate("/");
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   const handleAddWalkIn = (walkInData) => {
@@ -1015,43 +1310,58 @@ export const AdminDashboard = ({ date }) => {
 
   const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
     try {
-      console.log(`[Dashboard] Moving appointment ${itemId} to current for ${customerName}`);
-      console.log(`[Dashboard] Proceed data:`, proceedConfirmData);
+      // For walk-ins, use actualId instead of prefixed id
+      const apiId = proceedConfirmData?.actualId || itemId;
+      const isWalkIn = proceedConfirmData?.isWalkIn || false;
       
-      // Call API to update appointment status to 'current' and staff to 'in-service'
+      console.log(`[AdminDashboard] Moving appointment ${itemId} to current for ${customerName}`);
+      console.log(`[AdminDashboard] isWalkIn:`, isWalkIn, 'actualId:', apiId);
+      console.log(`[AdminDashboard] Request payload:`, { id: apiId, status: 'current', staffName: proceedConfirmData?.staff });
+      
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: itemId,
+          id: apiId,
           status: 'current',
           staffName: proceedConfirmData?.staff
         })
       });
 
+      console.log(`[AdminDashboard] Response status:`, response.status, response.ok);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[AdminDashboard] Error response:', errorData);
+        alert(`API Error: ${errorData.error || response.statusText}\n${errorData.details || ''}`);
         throw new Error(`Failed to move appointment to current: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
       const result = await response.json();
-      console.log(`[Dashboard] Appointment moved to current:`, result);
+      console.log(`[AdminDashboard] Appointment moved to current:`, result);
+      console.log(`[AdminDashboard] History synced:`, result.historyUpdated, result.historyUpdateReason);
       
-      // Update local state - move from pending to current with updated status
-      const appointmentToMove = pendingAppointments.find(apt => apt.id === itemId);
-      if (appointmentToMove) {
-        setPendingAppointments(prev => prev.filter(apt => apt.id !== itemId));
+      // Update local state instead of reloading page
+      if (isWalkIn) {
+        // Move walk-in from pending to current
+        setWalkInAppointments(prev => 
+          prev.map(w => w.id === apiId ? { ...w, status: 'current' } : w)
+        );
+      } else {
+        // Move appointment from pending to current
         setCurrentAppointments(prev => [
           ...prev,
-          { ...appointmentToMove, status: 'current' }
+          ...pendingAppointments.filter(apt => apt.id === apiId)
         ]);
+        setPendingAppointments(prev => prev.filter(apt => apt.id !== apiId));
       }
-      
-      // Close dialog
+
+      // Close dialog and show success
       setProceedConfirmId(null);
-      setProceedConfirmData(null);
+      alert(`✓ Status updated! History sync: ${result.historyUpdated ? 'YES' : 'NO'}`);
     } catch (error) {
-      console.error('[Dashboard] Error moving appointment:', error);
+      console.error('[AdminDashboard] Error moving appointment:', error);
+      console.error('[AdminDashboard] Full error:', error.toString());
       alert('Failed to move appointment. Please try again.');
     }
   };
@@ -1062,50 +1372,72 @@ export const AdminDashboard = ({ date }) => {
   }, []);
 
   return (
-    <div className="super-admin-container">
+    <div
+      className="super-admin-container admin-dashboard-page"
+      style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
+    >
       {/* Sidebar */}
-      <AdminSidebar 
-        activeNav={activeNav}
-        setActiveNav={setActiveNav}
-        sidebarExpanded={sidebarExpanded}
-        setSidebarExpanded={setSidebarExpanded}
-        onLogout={handleLogout}
-      />
+      <div
+        inert={showWalkInModal ? "" : undefined}
+        aria-hidden={showWalkInModal ? "true" : undefined}
+        style={{ pointerEvents: showWalkInModal ? "none" : "auto" }}
+      >
+        <AdminSidebar 
+          activeNav={activeNav}
+          setActiveNav={setActiveNav}
+          sidebarExpanded={sidebarExpanded}
+          onLogout={handleLogout}
+        />
+      </div>
 
       {/* Main Content */}
       <div className="super-admin-main">
         {/* Dashboard Header - Fixed Title and Actions */}
-        <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
-          <div>
-            <h1 className="dash-page-title">Admin Dashboard</h1>
-            <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
-          </div>
-          <div className="dash-page-actions">
-            <button className="dash-action-btn">
-              <BellIcon size={14} color="#fff" />
-              Notifications
+        <header 
+          className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
+          inert={showWalkInModal ? "" : undefined}
+          aria-hidden={showWalkInModal ? "true" : undefined}
+          style={{ pointerEvents: showWalkInModal ? "none" : "auto" }}
+        >
+          <div className="dashboard-header-main">
+            <button
+              onClick={() => setSidebarExpanded((prev) => !prev)}
+              className="logo-toggle-btn dashboard-header-logo-btn"
+              title="Toggle sidebar"
+            >
+              <div className="logo-badge">
+                <LogoIcon />
+              </div>
             </button>
-            <button className="dash-action-btn">
-              <SettingsIcon size={14} color="#fff" />
-              Settings
-            </button>
+            <span className="dashboard-system-title">BeautyBook Pro</span>
+            <div className="dashboard-page-title-wrap">
+              <h1 className="dash-page-title">Admin Dashboard</h1>
+              <p className="dash-page-subtitle">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+            </div>
           </div>
+          <AdminHeaderActions notifications={headerNotifications} />
         </header>
 
         {/* Main Content Area */}
         <main className="dashboard-main">
+          {/* Password Reminder Banner */}
+          <PasswordReminderBanner />
+          
           {/* Metrics Cards - Hero Section */}
           <div style={{ marginTop: '20px', marginBottom: '20px' }}>
             <PageMetrics stats={stats} />
           </div>
           <div className="dash-content-grid">
-            <LiveQueue 
-              onOpenWalkInModal={() => setShowWalkInModal(true)}
-              onProceedClick={(id, name, service, staff) => {
-                setProceedConfirmId(id);
-                setProceedConfirmData({ name, service, staff });
-              }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <LiveQueue 
+                onOpenWalkInModal={() => setShowWalkInModal(true)}
+                onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
+                  setProceedConfirmId(id);
+                  setProceedConfirmData({ name, service, staff, actualId, isWalkIn });
+                }}
+              />
+              <CouponsPanel />
+            </div>
 
             <div className="dash-sidebar">
               <StaffStatus />
@@ -1129,10 +1461,20 @@ export const AdminDashboard = ({ date }) => {
           message={`Confirm that a stylist is available and ready to serve ${proceedConfirmData?.name} for ${proceedConfirmData?.service}.`}
           confirmText="Yes, Proceed"
           cancelText="Cancel"
-          onConfirm={() => handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData.name, proceedConfirmData.service)}
+          onConfirm={() => handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData.name, proceedConfirmData.service, proceedConfirmData.staff)}
           onCancel={() => setProceedConfirmId(null)}
         />
       )}
+
+      <ConfirmationDialog
+        isOpen={showLogoutConfirm}
+        title="Log Out?"
+        message="Are you sure you want to log out of the admin dashboard?"
+        confirmText="Yes, Log Out"
+        cancelText="Stay Logged In"
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
+      />
     </div>
   );
 };

@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { DashboardShell } from "../../components/dashboard/DashboardShell";
+import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -126,6 +128,27 @@ const DownloadIcon = () => (
   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M7.5 1v9M4.5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M1 11v1a2 2 0 002 2h9a2 2 0 002-2v-1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+  </svg>
+);
+
+const ChevronLeftIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M9.5 3.5L5 8l4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const ChevronRightIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6.5 3.5L11 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const GiftIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 1v7M10 1H6a1 1 0 0 0-1 1v4h10V2a1 1 0 0 0-1-1h-4z" stroke="#DD901D" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 1h4a1 1 0 0 1 1 1v4H6V2a1 1 0 0 1 1-1h3z" stroke="#DD901D" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 6h16v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6z" stroke="#DD901D" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 8v9" stroke="#DD901D" strokeWidth="1.7" strokeLinecap="round"/>
   </svg>
 );
 
@@ -541,83 +564,7 @@ const WaitingTimeChart = () => {
   );
 };
 
-// ─── Promo Bookings Chart Component ────────────────────────────────────────
-
-const PromoBookingsChart = () => {
-  const data = [
-    { time: "9 AM", revenue: 450, color: "#DD901D" },
-    { time: "10 AM", revenue: 650, color: "#DD901D" },
-    { time: "11 AM", revenue: 380, color: "#DD901D" },
-    { time: "12 PM", revenue: 820, color: "#DD901D" },
-    { time: "1 PM", revenue: 720, color: "#DD901D" },
-  ];
-
-  const width = 520;
-  const height = 300;
-  const paddingLeft = 48;
-  const paddingRight = 20;
-  const paddingTop = 16;
-  const paddingBottom = 44;
-
-  const maxRevenue = Math.max(...data.map(d => d.revenue));
-  const chartW = width - paddingLeft - paddingRight;
-  const chartH = height - paddingTop - paddingBottom;
-
-  const toX = (i) => paddingLeft + (i / (data.length - 1)) * chartW;
-  const toY = (v) => paddingTop + chartH - ((v / maxRevenue) * chartH);
-
-  const yLines = [0, 200, 400, 600, 800, 1000];
-  const pointsStr = data.map((d, i) => `${toX(i)},${toY(d.revenue)}`).join(" ");
-
-  const areaPath = `M ${toX(0)},${toY(data[0].revenue)} ` +
-    data.slice(1).map((d, i) => `L ${toX(i + 1)},${toY(d.revenue)}`).join(" ") +
-    ` L ${toX(data.length - 1)},${paddingTop + chartH} L ${toX(0)},${paddingTop + chartH} Z`;
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: "visible" }}>
-      <defs>
-        <linearGradient id="promoGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#DD901D" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#DD901D" stopOpacity="0.03" />
-        </linearGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-          <feMerge>
-            <feMergeNode in="coloredBlur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
-      {yLines.map((v) => (
-        <g key={v}>
-          <line x1={paddingLeft} y1={toY(v)} x2={width - paddingRight} y2={toY(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-          <text x={paddingLeft - 8} y={toY(v) + 4} textAnchor="end" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
-            ₱{v}
-          </text>
-        </g>
-      ))}
-
-      <path d={areaPath} fill="url(#promoGrad)" />
-      <polyline points={pointsStr} fill="none" stroke="#DD901D" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" filter="url(#glow)" />
-
-      {data.map((d, i) => (
-        <g key={d.time}>
-          <circle cx={toX(i)} cy={toY(d.revenue)} r="5" fill="#0a0908" stroke="#DD901D" strokeWidth="2.5" />
-          <circle cx={toX(i)} cy={toY(d.revenue)} r="2" fill="#DD901D" />
-        </g>
-      ))}
-
-      {data.map((d, i) => (
-        <text key={d.time} x={toX(i)} y={paddingTop + chartH + 22} textAnchor="middle" fill="rgba(152,143,129,0.9)" fontSize="11" fontFamily="Inter, sans-serif">
-          {d.time}
-        </text>
-      ))}
-    </svg>
-  );
-};
-
-// ─── Loyalty Cards Chart Component ─────────────────────────────────────────
+// ─── Coupons Chart Component (Loyalty Cards) ───────────────────────────────────
 
 const LoyaltyCardsChart = () => {
   const data = [
@@ -973,16 +920,16 @@ const CancelledChart = () => {
 };
 
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
-  { id: "staff-management", label: "Staff Management", icon: UserIcon },
-  { id: "database", label: "Database", icon: DatabaseIcon },
-  { id: "services", label: "Services", icon: DatabaseIcon },
-  { id: "logs", label: "Logs", icon: DatabaseIcon },
-  { id: "security", label: "Security", icon: ShieldIcon },
+  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
+  { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
+  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
+  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
+  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
+  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
   // { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
 
-// ─── Metrics Carousel Data (9 cards, showing 4 at a time) ──────────────────
+// ─── Metrics Carousel Data (8 cards, showing 4 at a time) ───────────────────
 
 const METRICS_CARDS = [
   {
@@ -1010,18 +957,6 @@ const METRICS_CARDS = [
     badge: { text: "-5mins", type: "blue" },
   },
   {
-    icon: <ScissorsIcon />,
-    value: "14",
-    label: "Promo Bookings Today",
-    badge: null,
-  },
-  {
-    icon: <ScissorsIcon />,
-    value: "₱1,780",
-    label: "Discounts Applied Today",
-    badge: { text: "+12%", type: "green" },
-  },
-  {
     icon: <CalendarIcon />,
     value: "16",
     label: "Completed",
@@ -1034,6 +969,12 @@ const METRICS_CARDS = [
     badge: null,
   },
   {
+    icon: <GiftIcon />,
+    value: "₱2,340",
+    label: "Coupons Used",
+    badge: { text: "+8%", type: "green" },
+  },
+  {
     icon: <RevenueIcon />,
     value: "2",
     label: "Cancelled",
@@ -1041,8 +982,21 @@ const METRICS_CARDS = [
   },
 ];
 
-// ─── Analytics Carousel Data ──────────────────────────────────────────────
+const VISIBLE_METRICS_COUNT = 4;
 
+const getMetricChartKey = (label) => {
+  if (label === "In Queue Now") return "queue";
+  if (label === "Today's Appointments") return "appointments";
+  if (label === "Revenue Today") return "revenue";
+  if (label === "Avg. Waiting Time") return "waitingTime";
+  if (label === "Completed") return "completed";
+  if (label === "In Progress") return "inProgress";
+  if (label === "Coupons Used") return "coupons";
+  if (label === "Cancelled") return "cancelled";
+  return "appointments";
+};
+
+// ─── Analytics Carousel Data ──────────────────────────────────────────────
 const ANALYTICS_CARDS = [
   {
     id: "dashboard",
@@ -1077,9 +1031,25 @@ export default function SuperAdminDashboard() {
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
   });
-  const [metricsIndex, setMetricsIndex] = useState(0);
   const [analyticsIndex, setAnalyticsIndex] = useState(0);
   const [selectedChart, setSelectedChart] = useState("appointments");
+  const [metricsActiveIndex, setMetricsActiveIndex] = useState(0);
+  const [metricsHovered, setMetricsHovered] = useState(false);
+  const [metricsIsSliding, setMetricsIsSliding] = useState(false);
+  const metricsActiveIndexRef = useRef(0);
+  const metricsCarouselRef = useRef(null);
+  const metricsWheelCooldownRef = useRef(false);
+  const metricsSlideTimeoutRef = useRef(0);
+
+  useEffect(() => {
+    metricsActiveIndexRef.current = metricsActiveIndex;
+  }, [metricsActiveIndex]);
+
+  useEffect(() => () => {
+    if (metricsSlideTimeoutRef.current) {
+      window.clearTimeout(metricsSlideTimeoutRef.current);
+    }
+  }, []);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -1105,22 +1075,67 @@ export default function SuperAdminDashboard() {
     year: "numeric",
   });
 
-  // Metrics carousel handlers
-  const handlePrevMetrics = () => {
-    setMetricsIndex((prev) => (prev === 0 ? METRICS_CARDS.length - 1 : prev - 1));
+  const normalizeMetricIndex = (index) => ((index % METRICS_CARDS.length) + METRICS_CARDS.length) % METRICS_CARDS.length;
+
+  const rotateMetricsTo = (targetIndex) => {
+    const normalizedIndex = normalizeMetricIndex(targetIndex);
+    if (metricsIsSliding || normalizedIndex === metricsActiveIndexRef.current) return;
+
+    setMetricsIsSliding(true);
+    setMetricsActiveIndex(normalizedIndex);
+
+    if (metricsSlideTimeoutRef.current) {
+      window.clearTimeout(metricsSlideTimeoutRef.current);
+    }
+
+    metricsSlideTimeoutRef.current = window.setTimeout(() => {
+      setMetricsIsSliding(false);
+    }, 220);
   };
 
-  const handleNextMetrics = () => {
-    setMetricsIndex((prev) => (prev === METRICS_CARDS.length - 1 ? 0 : prev + 1));
+  useEffect(() => {
+    const container = metricsCarouselRef.current;
+    if (!container) return undefined;
+
+    const handleWheel = (event) => {
+      if (!metricsHovered) return;
+      if (event.deltaY === 0 && event.deltaX === 0) return;
+      event.preventDefault();
+
+      if (metricsWheelCooldownRef.current || metricsIsSliding) return;
+
+      const delta = event.deltaY !== 0 ? event.deltaY : event.deltaX;
+      const direction = delta > 0 ? 1 : -1;
+      rotateMetricsTo(metricsActiveIndexRef.current + direction);
+
+      metricsWheelCooldownRef.current = true;
+      window.setTimeout(() => {
+        metricsWheelCooldownRef.current = false;
+      }, 220);
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+    };
+  }, [metricsHovered, metricsIsSliding]);
+
+  const visibleMetrics = Array.from({ length: VISIBLE_METRICS_COUNT }, (_, offset) => {
+    const index = normalizeMetricIndex(metricsActiveIndex + offset);
+    return {
+      card: METRICS_CARDS[index],
+      index,
+      offset,
+    };
+  });
+
+  const handleMetricsPrev = () => {
+    rotateMetricsTo(metricsActiveIndexRef.current - 1);
   };
 
-  // Get 4 cards starting from metricsIndex, wrapping around if needed
-  const visibleMetrics = [
-    METRICS_CARDS[metricsIndex],
-    METRICS_CARDS[(metricsIndex + 1) % METRICS_CARDS.length],
-    METRICS_CARDS[(metricsIndex + 2) % METRICS_CARDS.length],
-    METRICS_CARDS[(metricsIndex + 3) % METRICS_CARDS.length],
-  ];
+  const handleMetricsNext = () => {
+    rotateMetricsTo(metricsActiveIndexRef.current + 1);
+  };
 
   // Analytics carousel handlers
   const handlePrevAnalytics = () => {
@@ -1133,205 +1148,107 @@ export default function SuperAdminDashboard() {
 
   const currentAnalytics = ANALYTICS_CARDS[analyticsIndex];
 
+  useEffect(() => {
+    const activeMetric = METRICS_CARDS[metricsActiveIndex];
+    if (!activeMetric) return;
+    setSelectedChart(getMetricChartKey(activeMetric.label));
+  }, [metricsActiveIndex]);
+
   return (
-    <div className="super-admin-container">
+    <DashboardShell
+      navItems={NAV_ITEMS}
+      activeNav={activeNav}
+      roleLabel="Super Administrator"
+      roleInitial="S"
+      showSidebarHeader={false}
+      title="Super Admin Dashboard"
+      subtitle={`BeautyBook Pro • ${dateStr}`}
+      profile={null}
+      notifications={[]}
+      useSuperAdminHeaderActions={true}
+      superAdminNoNotificationsMessage="No recent super admin activity across client, staff, security, or database events."
+      storageKey="superadminSidebarExpanded"
+      onLogoutConfirm={handleLogout}
+      logoutTitle="Log Out?"
+      logoutMessage="Are you sure you want to log out?"
+      logoutConfirmText="Yes, Log Out"
+      logoutCancelText="Stay Logged In"
+    >
+      {/* Password Reminder Banner */}
+      <PasswordReminderBanner />
 
-      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? "translateX(0)" : "translateX(-16px)",
-        transition: "all 0.5s ease"
-      }}>
-        {/* Logo + Toggle */}
-        <div className="sidebar-logo-section">
-          <button 
-            onClick={() => setSidebarExpanded(!sidebarExpanded)}
-            className="logo-toggle-btn"
-            title="Toggle sidebar"
-          >
-            <div className="logo-badge">
-              <LogoIcon />
-            </div>
-          </button>
-          {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
+      {/* ── Metrics Cards with Carousel ── */}
+      <div className="dash-stats-carousel-container">
+        {/* Carousel Header - Title Only */}
+        <div className="dash-stats-carousel-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+          <h3 className="dash-stats-set-title">Metrics</h3>
         </div>
 
-        {/* Admin pill */}
-        {sidebarExpanded && (
-          <div className="admin-badge-pill">
-            <div className="admin-badge-circle">S</div>
-            <span className="admin-badge-text">Super Administrator</span>
-          </div>
-        )}
-
-        {/* Nav items */}
-        <nav className="sidebar-nav">
-          {NAV_ITEMS.map((item, idx) => {
-            const isActive = activeNav === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === "staff-management") {
-                    navigate("/superadmin/users");
-                  } else if (item.id === "database") {
-                    navigate("/superadmin/database");
-                  } else if (item.id === "services") {
-                    navigate("/superadmin/services");
-                  } else if (item.id === "logs") {
-                    navigate("/superadmin/logs");
-                  } else if (item.id === "security") {
-                    navigate("/superadmin/security");
-                  } else if (item.id === "landing-page") {
-                    navigate("/superadmin/landing-page");
-                  } else {
-                    setActiveNav(item.id);
-                  }
-                }}
-                className={`nav-button ${isActive ? "active" : ""}`}
-                title={item.label}
-              >
-                <item.icon color={isActive ? "#000" : "currentColor"} />
-                {sidebarExpanded && <span>{item.label}</span>}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Log Out */}
-        <div className="sidebar-logout-section">
-          <button onClick={handleLogout} className="logout-button" title="Log out">
-            <LogOutIcon />
-            {sidebarExpanded && <span>Log Out</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* ── Main Content ─────────────────────────────────────────────────── */}
-      <div className="super-admin-main">
-
-        {/* Header */}
-        <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
-          {/* Title block */}
-          <div className="header-title-section">
-            <h1 className="header-main-title">Super Admin Dashboard</h1>
-            <p className="header-subtitle">BeautyBook Pro • {dateStr}</p>
-          </div>
-
-          {/* Actions */}
-          <div className="header-actions">
-            <button className="dash-action-btn">
-              <BellIcon />
-              Notifications
-            </button>
-            <button className="dash-action-btn">
-              <SettingsIcon />
-              Settings
-            </button>
-          </div>
-        </header>
-
-        {/* Scrollable body */}
-        <main className="dashboard-main">
-
-          {/* ── Metrics Cards with Carousel ── */}
-          <div className="dash-stats-carousel-container">
-            {/* Carousel Header - Title Only */}
-            <div className="dash-stats-carousel-header">
-              <h3 className="dash-stats-set-title">Metrics</h3>
-            </div>
-
-            {/* Metrics Cards - Display 4 at a time */}
-            <div className="dash-stats-row">
-              {visibleMetrics.map((m, idx) => (
-                <div
-                  key={`${metricsIndex}-${idx}`}
-                  className="dash-stat-card"
-                  style={{ animationDelay: `${0.08 + idx * 0.07}s`, cursor: "pointer" }}
-                  onClick={() => {
-                    const label = m.label;
-                    if (label === "In Queue Now") {
-                      setSelectedChart("queue");
-                    } else if (label === "Today's Appointments") {
-                      setSelectedChart("appointments");
-                    } else if (label === "Revenue Today") {
-                      setSelectedChart("revenue");
-                    } else if (label === "Avg. Waiting Time") {
-                      setSelectedChart("waitingTime");
-                    } else if (label === "Promo Bookings Today") {
-                      setSelectedChart("promoBookings");
-                    } else if (label === "Discounts Applied Today") {
-                      setSelectedChart("discounts");
-                    } else if (label === "Completed") {
-                      setSelectedChart("completed");
-                    } else if (label === "In Progress") {
-                      setSelectedChart("inProgress");
-                    } else if (label === "Cancelled") {
-                      setSelectedChart("cancelled");
-                    }
-                  }}
-                >
-                  <div className="dash-stat-top">
-                    <div className="dash-stat-icon-box">{m.icon}</div>
-                    {m.badge && (
-                      <span
-                        className={`dash-stat-badge ${
-                          m.badge.type === "green"
-                            ? "dash-stat-badge-green"
-                            : "dash-stat-badge-blue"
-                        }`}
-                      >
-                        {m.badge.text}
-                      </span>
-                    )}
-                  </div>
-                  <div className="dash-stat-bottom">
-                    <p className="dash-stat-value">{m.value}</p>
-                    <p className="dash-stat-label">{m.label}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Carousel Navigation - Bottom */}
-            <div className="dash-stats-carousel-bottom">
-              <div className="dash-stats-carousel-nav">
-                <button
-                  onClick={handlePrevMetrics}
-                  className="stats-carousel-btn"
-                  title="Previous metrics"
-                  aria-label="Previous"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-
-                {/* Carousel Dots - 9 dots for 9 cards */}
-                <div className="dash-stats-carousel-dots">
-                  {METRICS_CARDS.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setMetricsIndex(idx)}
-                      className={`stats-carousel-dot ${idx === metricsIndex ? "active" : ""}`}
-                      title={`View card ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-
-                <button
-                  onClick={handleNextMetrics}
-                  className="stats-carousel-btn"
-                  title="Next metrics"
-                  aria-label="Next"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
+        {/* Metrics Cards - Display 4 at a time */}
+        <div
+          ref={metricsCarouselRef}
+          className="dash-stats-carousel-row hide-scrollbar"
+          onMouseEnter={() => setMetricsHovered(true)}
+          onMouseLeave={() => setMetricsHovered(false)}
+          style={{
+            overflow: "hidden",
+            paddingBottom: "8px",
+            pointerEvents: metricsIsSliding ? "none" : "auto",
+          }}
+        >
+          {visibleMetrics.map(({ card: m, index, offset }) => (
+            <div
+              key={`${m.label}-${index}`}
+              className={`dash-stat-card ${index === metricsActiveIndex ? "is-active" : ""}`}
+              style={{
+                animationDelay: `${0.08 + offset * 0.07}s`,
+                cursor: "pointer",
+                flex: `0 0 calc((100% - ${16 * (VISIBLE_METRICS_COUNT - 1)}px) / ${VISIBLE_METRICS_COUNT})`,
+                minWidth: "0",
+                scrollSnapAlign: "start",
+              }}
+              onClick={() => {
+                rotateMetricsTo(index);
+              }}
+            >
+              <div className="dash-stat-top">
+                <div className="dash-stat-icon-box">{m.icon}</div>
+                {m.badge && (
+                  <span
+                    className={`dash-stat-badge ${
+                      m.badge.type === "green"
+                        ? "dash-stat-badge-green"
+                        : "dash-stat-badge-blue"
+                    }`}
+                  >
+                    {m.badge.text}
+                  </span>
+                )}
+              </div>
+              <div className="dash-stat-bottom">
+                <p className="dash-stat-value">{m.value}</p>
+                <p className="dash-stat-label">{m.label}</p>
               </div>
             </div>
+          ))}
+        </div>
+
+        <div className="dash-stats-carousel-bottom">
+          <div className="dash-stats-carousel-dots" aria-label="Metrics carousel navigation">
+            {METRICS_CARDS.map((m, index) => (
+              <button
+                key={`${m.label}-dot-${index}`}
+                type="button"
+                className={`stats-carousel-dot ${metricsActiveIndex === index ? "active" : ""}`}
+                aria-label={`Scroll to ${m.label}`}
+                aria-pressed={metricsActiveIndex === index}
+                onClick={() => rotateMetricsTo(index)}
+              />
+            ))}
           </div>
+        </div>
+
+      </div>
 
           {/* ── Chart + Analytics row ── */}
           <div className="flex gap-5 items-start w-full">
@@ -1345,13 +1262,11 @@ export default function SuperAdminDashboard() {
                   {selectedChart === "appointments" && "Today's Appointment Chart"}
                   {selectedChart === "revenue" && "Revenue by Service"}
                   {selectedChart === "waitingTime" && "Waiting Time Trends"}
-                  {selectedChart === "promoBookings" && "Promo Bookings by Type"}
-                  {selectedChart === "loyaltyCards" && "Loyalty Cards by Level"}
                   {selectedChart === "completed" && "Completed Appointments"}
                   {selectedChart === "inProgress" && "In Progress Appointments"}
-                  {selectedChart === "pending" && "Pending Appointments"}
+                  {selectedChart === "coupons" && "Coupons Used Today"}
                   {selectedChart === "cancelled" && "Cancelled Appointments"}
-                  {selectedChart === "discounts" && "Discounts Applied Today"}
+                  {selectedChart === "pending" && "Pending Appointments"}
                 </h2>
                 <div className="chart-divider" />
               </div>
@@ -1362,8 +1277,7 @@ export default function SuperAdminDashboard() {
                 {selectedChart === "appointments" && <AppointmentLineChart />}
                 {selectedChart === "revenue" && <RevenueChart />}
                 {selectedChart === "waitingTime" && <WaitingTimeChart />}
-                {selectedChart === "promoBookings" && <PromoBookingsChart />}
-                {selectedChart === "discounts" && <LoyaltyCardsChart />}
+                {selectedChart === "coupons" && <LoyaltyCardsChart />}
                 {selectedChart === "completed" && <CompletedChart />}
                 {selectedChart === "inProgress" && <InProgressChart />}
                 {selectedChart === "pending" && <PendingChart />}
@@ -1411,9 +1325,6 @@ export default function SuperAdminDashboard() {
 
           </div>
           {/* End chart row */}
-
-        </main>
-      </div>
-    </div>
+    </DashboardShell>
   );
 }

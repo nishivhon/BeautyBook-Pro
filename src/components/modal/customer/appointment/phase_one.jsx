@@ -3,6 +3,192 @@ import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../confirmation_dialog";
 import Toast from "../../../toast";
 
+const BOOKING_MODAL_THEME_CLASS = "booking-modal-theme";
+
+const BOOKING_MODAL_THEME_VARS = {
+  "--bg-dark": "#070605",
+  "--bg-darker": "#0b0907",
+  "--bg-card": "#070605",
+  "--bg-footer": "#070605",
+  "--bg-secondary": "#14110e",
+  "--color-amber": "#dd901d",
+  "--color-amber-dark": "#b97918",
+  "--color-tan": "#988f81",
+  "--color-white": "#f5f1eb",
+  "--color-black": "#1a0f00",
+  "--color-light": "#f5f1eb",
+  "--border-tan": "rgba(152, 143, 129, 0.3)",
+  "--border-tan-light": "rgba(152, 143, 129, 0.35)",
+  colorScheme: "dark",
+};
+
+const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-phase-one";
+
+const BOOKING_MODAL_THEME_CSS = `
+  .booking-modal-theme,
+  .booking-modal-theme * {
+    color-scheme: dark;
+  }
+
+  .booking-modal-theme .appt-root {
+    background: #070605 !important;
+    border: 1px solid rgba(221, 144, 29, 0.15) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-header,
+  .booking-modal-theme .appt-root .appt-footer {
+    background: #070605 !important;
+  }
+
+  .booking-modal-theme .appt-header {
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-root .appt-footer {
+    border-top: 1px solid rgba(152, 143, 129, 0.18) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-warning {
+    width: 100% !important;
+    text-align: center !important;
+    color: #ff6b6b !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-footer-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-footer-top {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-section-sub,
+  .booking-modal-theme .appt-step-label,
+  .booking-modal-theme .appt-date-day,
+  .booking-modal-theme .appt-date-num {
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-step-circle {
+    background: #231d1a !important;
+    color: #988f81 !important;
+  }
+
+  .booking-modal-theme .appt-step-circle.active {
+    background: #dd901d !important;
+    color: #1a0f00 !important;
+  }
+
+  .booking-modal-theme .appt-step-line {
+    background: rgba(152, 143, 129, 0.25) !important;
+  }
+
+  .booking-modal-theme .appt-step-line.done {
+    background: #dd901d !important;
+  }
+
+  .booking-modal-theme .appt-picker-label {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-date-card,
+  .booking-modal-theme .appt-time-chip {
+    background: #11100d !important;
+    border: 1px solid rgba(221, 144, 29, 0.12) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-date-card.selected,
+  .booking-modal-theme .appt-time-chip.selected {
+    background: rgba(221, 144, 29, 0.16) !important;
+    border-color: rgba(221, 144, 29, 0.6) !important;
+    color: #f5f1eb !important;
+    box-shadow: 0 0 0 1px rgba(221, 144, 29, 0.12) inset !important;
+  }
+
+  .booking-modal-theme .appt-time-chip.disabled {
+    background: rgba(17, 16, 13, 0.75) !important;
+    color: rgba(152, 143, 129, 0.55) !important;
+  }
+
+  .booking-modal-theme .appt-cancel-btn {
+    color: #988f81 !important;
+    border-color: #988f81 !important;
+    background: transparent !important;
+  }
+
+  .booking-modal-theme .appt-cancel-btn:hover {
+    background: rgba(152, 143, 129, 0.1) !important;
+    color: #f5f1eb !important;
+    border-color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn {
+    background: #dd901d !important;
+    color: #1a0f00 !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn:hover:not(:disabled) {
+    background: #b97918 !important;
+  }
+
+  .booking-modal-theme .appt-continue-btn:disabled {
+    background: rgba(221, 144, 29, 0.4) !important;
+    color: rgba(26, 15, 0, 0.55) !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-track {
+    background: rgba(19, 19, 19, 0.4) !important;
+    border-radius: 10px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.9) !important;
+    border-radius: 10px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 1) !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
+  }
+`;
+
 const CalendarSmIcon = () => (
   <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" width={18} height={18}>
     <rect x="1" y="2.5" width="16" height="14" rx="2" stroke="white" strokeWidth="1.4" fill="none"/>
@@ -106,9 +292,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
   const [showDateInput, setShowDateInput] = useState(false);
-  const [showTimeInput, setShowTimeInput] = useState(false);
   const [manualDate, setManualDate] = useState("");
-  const [manualTime, setManualTime] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [shakingTimeSlot, setShakingTimeSlot] = useState(null);
@@ -118,6 +302,15 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
   const [dateOptions, setDateOptions] = useState([]);
   const [unavailableTimes, setUnavailableTimes] = useState([]);
   const [loadingTimes, setLoadingTimes] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById(BOOKING_MODAL_THEME_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = BOOKING_MODAL_THEME_STYLE_ID;
+    style.textContent = BOOKING_MODAL_THEME_CSS;
+    document.head.appendChild(style);
+  }, []);
 
   // Auto-hide toast after it becomes visible
   useEffect(() => {
@@ -193,7 +386,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
 
   const handleContinue = () => {
     const dateObj = selectedDate !== null ? dateOptions[selectedDate] : null;
-    const time = selectedTime !== null ? ALL_TIME_SLOTS[selectedTime] : manualTime;
+    const time = selectedTime !== null ? ALL_TIME_SLOTS[selectedTime] : null;
 
     onContinue?.({
       date: dateObj ? dateObj.dateLabel : manualDate,
@@ -209,12 +402,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
     }
   };
 
-  const handleTimeInputConfirm = () => {
-    if (manualTime) {
-      setSelectedTime(null);
-      setShowTimeInput(false);
-    }
-  };
+
 
   // Validation helper functions
   const isDateInPast = (dateStr) => {
@@ -224,18 +412,11 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
     return selectedDate < today;
   };
 
-  const isTimeWithinHours = (timeStr) => {
-    // timeStr format: "HH:MM" (24-hour format from input)
-    const [hours] = timeStr.split(':').map(Number);
-    return hours >= 8 && hours < 20; // 8am to before 8pm
-  };
-
   // Validation checks
   const isDateSelected = selectedDate !== null || manualDate;
-  const isTimeSelected = selectedTime !== null || manualTime;
+  const isTimeSelected = selectedTime !== null;
   const isDateValid = !manualDate || !isDateInPast(manualDate);
-  const isTimeValid = !manualTime || isTimeWithinHours(manualTime);
-  const isFormValid = isDateSelected && isTimeSelected && isDateValid && isTimeValid;
+  const isFormValid = isDateSelected && isTimeSelected && isDateValid;
 
   // Generate validation message
   const getValidationMessage = () => {
@@ -245,46 +426,55 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
       return "Please select a time";
     }
     if (!isDateValid) return "Selected date has already passed";
-    if (!isTimeValid) return "Operating hours are 8:00 AM to 8:00 PM";
     return "";
+  };
+
+  const handleBackdropClick = (e) => {
+    // Only block if clicking the backdrop itself, not content inside modal
+    if (e.target === e.currentTarget) {
+      e.stopPropagation();
+      setShowBackdropConfirm(true);
+    }
   };
 
   return (
     <>
-      {/* Toast Notification - Rendered outside modal using Portal */}
+      {/* Modal rendered via portal at body level to bypass z-index stacking contexts */}
       {createPortal(
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, pointerEvents: "none", zIndex: 9999 }}>
-          <Toast 
-            message="This time slot is not available" 
-            type="error" 
-            duration={3000}
-            isVisible={toastVisible}
-          />
-        </div>,
-        document.body
-      )}
+        <>
+          {/* Toast Notification */}
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, pointerEvents: "none", zIndex: 9999 }}>
+            <Toast 
+              message="This time slot is not available" 
+              type="error" 
+              duration={3000}
+              isVisible={toastVisible}
+            />
+          </div>
 
-      <div 
-        className="appt-backdrop"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setShowBackdropConfirm(true);
-          }
-        }}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div className="appt-root">
-          <BookingHeader onBack={onBack} onBackClick={handleBackClick} />
-          <ProgressIndicator currentStep={1} />
+          <div 
+            className={`appt-backdrop ${BOOKING_MODAL_THEME_CLASS}`}
+            data-theme="dark"
+            onClick={handleBackdropClick}
+            style={{
+              ...BOOKING_MODAL_THEME_VARS,
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 10000010,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              backdropFilter: "blur(2px)",
+              pointerEvents: 'auto'
+            }}
+          >
+            <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ ...BOOKING_MODAL_THEME_VARS, pointerEvents: 'auto' }}>
+              <BookingHeader onBack={onBack} onBackClick={handleBackClick} />
+              <ProgressIndicator currentStep={1} />
 
           {/* ── Scrollable body ── */}
           <div className="appt-body">
@@ -461,207 +651,73 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
 
         {/* ── Time picker ── */}
         <div className="appt-picker-group">
-          <div 
-            className="appt-picker-label" 
-            style={{cursor: "pointer"}}
-            onClick={() => setShowTimeInput(!showTimeInput)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#dd901d";
-              const svgs = e.currentTarget.querySelectorAll('svg');
-              svgs.forEach(svg => svg.style.stroke = "#dd901d");
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "white";
-              const svgs = e.currentTarget.querySelectorAll('svg');
-              svgs.forEach(svg => svg.style.stroke = "white");
-            }}
-          >
+          <div className="appt-picker-label">
             <ClockSmIcon />
             <span>Select Time</span>
           </div>
-          {!showTimeInput ? (
-            manualTime ? (
-              <div style={{display: "flex", alignItems: "center", gap: 10}}>
-                <div style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  background: "rgba(221,144,29,0.15)",
-                  border: "1px solid rgba(221,144,29,0.4)",
-                  borderRadius: "10px",
-                  color: "white",
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: "0.95rem",
-                  fontWeight: "600",
-                  animation: "fade-up 0.3s ease forwards",
-                }}>
-                  {convertTo12HourFormat(manualTime)}
-                </div>
-                <button
-                  onClick={() => {
-                    setShowTimeInput(true);
-                  }}
-                  style={{
-                    padding: "10px 18px",
-                    background: "transparent",
-                    color: "#dd901d",
-                    border: "1px solid #dd901d",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontWeight: "600",
-                    fontSize: "0.85rem",
-                  }}
-                >
-                  Change
-                </button>
-              </div>
+          <div className="appt-time-grid">
+            {selectedDate === null ? (
+              <p style={{ color: "#988f81", textAlign: "center", padding: "20px", gridColumn: "1/-1" }}>
+                Select a date first
+              </p>
+            ) : loadingTimes ? (
+              <p style={{ color: "#988f81", textAlign: "center", padding: "20px", gridColumn: "1/-1" }}>
+                Loading availability...
+              </p>
             ) : (
-              <div className="appt-time-grid">
-                {selectedDate === null ? (
-                  <p style={{ color: "#988f81", textAlign: "center", padding: "20px", gridColumn: "1/-1" }}>
-                    Select a date first
-                  </p>
-                ) : loadingTimes ? (
-                  <p style={{ color: "#988f81", textAlign: "center", padding: "20px", gridColumn: "1/-1" }}>
-                    Loading availability...
-                  </p>
-                ) : (
-                  ALL_TIME_SLOTS.map((time, i) => {
-                    const isDisabled = unavailableTimes.includes(time);
-                    const handleTimeSelect = () => {
-                      if (isDisabled) {
-                        // Show shake animation and toast
-                        setShakingTimeSlot(i);
-                        setToastVisible(true);
-                        setTimeout(() => setShakingTimeSlot(null), 600);
-                      } else {
-                        setSelectedTime(selectedTime === i ? null : i);
-                      }
-                    };
-                    return (
-                      <button
-                        key={i}
-                        onClick={handleTimeSelect}
-                        onTouchEnd={(e) => {
-                          e.preventDefault();
-                          handleTimeSelect();
-                        }}
-                        className={`appt-time-chip${selectedTime === i ? " selected" : ""}${isDisabled ? " disabled" : ""}`}
-                        aria-pressed={selectedTime === i}
-                        style={{
-                          ...(isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "auto" } : { pointerEvents: "auto" }),
-                          ...(shakingTimeSlot === i ? { animation: "shake 0.6s ease-in-out" } : {}),
-                        }}
-                      >
-                        {convertTo12HourFormat(time)}
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            )
-          ) : (
-            <div style={{display: "flex", alignItems: "center", gap: 10}}>
-              <input
-                type="time"
-                value={manualTime}
-                onChange={(e) => setManualTime(e.target.value)}
-                style={{
-                  width: "180px",
-                  padding: "10px 14px",
-                  background: "#231d1a",
-                  border: "1px dashed rgba(152,143,129,0.5)",
-                  borderRadius: "10px",
-                  color: "white",
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: "0.95rem",
-                  boxSizing: "border-box",
-                }}
-              />
-              <button
-                onClick={handleTimeInputConfirm}
-                style={{
-                  padding: "10px 18px",
-                  background: "#dd901d",
-                  color: "black",
-                  border: "none",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  fontWeight: "700",
-                  fontSize: "0.85rem",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = "#c47f18";
-                  e.target.style.transform = "translateY(-1px)";
-                  e.target.style.boxShadow = "0 6px 20px rgba(221,144,29,0.35)";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = "#dd901d";
-                  e.target.style.transform = "translateY(0)";
-                  e.target.style.boxShadow = "none";
-                }}
-                onMouseDown={(e) => {
-                  e.target.style.transform = "scale(0.99)";
-                }}
-                onMouseUp={(e) => {
-                  e.target.style.transform = "translateY(-1px)";
-                }}
-              >
-                Set
-              </button>
-              <button
-                onClick={() => {
-                  setShowTimeInput(false);
-                  setManualTime("");
-                }}
-                style={{
-                  padding: "10px 18px",
-                  background: "transparent",
-                  color: "#988f81",
-                  border: "1px solid #988f81",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  fontWeight: "600",
-                  fontSize: "0.85rem",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = "rgba(152,143,129,0.1)";
-                  e.target.style.borderColor = "#b8aaa0";
-                  e.target.style.color = "#d4c7bb";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = "transparent";
-                  e.target.style.borderColor = "#988f81";
-                  e.target.style.color = "#988f81";
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
+              ALL_TIME_SLOTS.map((time, i) => {
+                const isDisabled = unavailableTimes.includes(time);
+                const handleTimeSelect = () => {
+                  if (isDisabled) {
+                    // Show shake animation and toast
+                    setShakingTimeSlot(i);
+                    setToastVisible(true);
+                    setTimeout(() => setShakingTimeSlot(null), 600);
+                  } else {
+                    setSelectedTime(selectedTime === i ? null : i);
+                  }
+                };
+                return (
+                  <button
+                    key={i}
+                    onClick={handleTimeSelect}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      handleTimeSelect();
+                    }}
+                    className={`appt-time-chip${selectedTime === i ? " selected" : ""}${isDisabled ? " disabled" : ""}`}
+                    aria-pressed={selectedTime === i}
+                    style={{
+                      ...(isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "auto" } : { pointerEvents: "auto" }),
+                      ...(shakingTimeSlot === i ? { animation: "shake 0.6s ease-in-out" } : {}),
+                    }}
+                  >
+                    {convertTo12HourFormat(time)}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
 
       </div>
 
       {/* ── Continue CTA ── */}
       <div className="appt-footer">
-        {!isFormValid && (
-          <p style={{
-            color: "#ff6b6b",
-            fontSize: "0.85rem",
-            marginBottom: "10px",
-            textAlign: "center",
-            fontWeight: "500",
-          }}>
-            {getValidationMessage()}
-          </p>
-        )}
-        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+        <div className="booking-phase-footer-top">
+          {!isFormValid && (
+            <p className="booking-phase-warning" style={{ textAlign: "center", width: "100%" }}>
+              {getValidationMessage()}
+            </p>
+          )}
+        </div>
+
+        <div className="booking-phase-footer-actions">
           <button
             onClick={() => setShowCancelConfirm(true)}
             style={{
               flex: 1,
+              minWidth: 0,
               padding: "12px 16px",
               background: "transparent",
               color: "#dd901d",
@@ -688,6 +744,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
             disabled={!isFormValid}
             style={{
               flex: 1,
+              minWidth: 0,
               opacity: isFormValid ? 1 : 0.5,
               cursor: isFormValid ? "pointer" : "not-allowed",
             }}
@@ -697,7 +754,10 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
         </div>
       </div>
     </div>
-    </div>
+        </div>
+        </>,
+        document.body
+      )}
 
       {/* Cancel Confirmation Dialogs */}
       <ConfirmationDialog

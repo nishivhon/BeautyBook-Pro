@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export const ConfirmationDialog = ({ 
   title = "Cancel Booking?", 
@@ -15,11 +16,27 @@ export const ConfirmationDialog = ({
     setIsVisible(isOpen);
   }, [isOpen]);
 
+  // Debug logging for visibility changes
+  // eslint-disable-next-line no-console
+  useEffect(() => {
+    console.log('[ConfirmationDialog] isOpen prop:', isOpen, 'internal isVisible:', isVisible, 'title:', title);
+  }, [isOpen, isVisible, title]);
+
   if (!isVisible) return null;
 
-  const handleConfirm = () => {
-    setIsVisible(false);
-    onConfirm?.();
+  const handleConfirm = async () => {
+    if (onConfirm) {
+      try {
+        await onConfirm();
+        // Close dialog after async operation completes
+        setIsVisible(false);
+      } catch (err) {
+        console.error('[ConfirmationDialog] Error in onConfirm:', err);
+        setIsVisible(false);
+      }
+    } else {
+      setIsVisible(false);
+    }
   };
 
   const handleCancel = () => {
@@ -27,17 +44,27 @@ export const ConfirmationDialog = ({
     onCancel?.();
   };
 
-  return (
-    <div style={{
-      position: "fixed",
-      inset: 0,
-      zIndex: 1200,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      backdropFilter: "blur(2px)",
-      backgroundColor: "rgba(0,0,0,0.5)",
-    }}>
+  const dialog = (
+    <div
+      onClick={(e) => {
+        // clicking the overlay should behave like cancel (keep booking)
+        if (e.target === e.currentTarget) {
+          // eslint-disable-next-line no-console
+          console.log('[ConfirmationDialog] overlay clicked - invoking onCancel');
+          handleCancel();
+        }
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 10000020,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backdropFilter: "blur(2px)",
+        backgroundColor: "rgba(0,0,0,0.5)",
+        pointerEvents: 'auto'
+      }}>
       <div style={{
         background: "white",
         borderRadius: "16px",
@@ -132,6 +159,12 @@ export const ConfirmationDialog = ({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") {
+    return dialog;
+  }
+
+  return createPortal(dialog, document.body);
 };
 
 export default ConfirmationDialog;

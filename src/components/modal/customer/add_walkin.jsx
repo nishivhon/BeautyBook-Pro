@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../customer/confirmation_dialog";
+import { Toast } from "../../toast";
+import { AppointmentFormPhase2 } from "./appointment/phase_two";
+import { AppointmentFormPhase3 } from "./appointment/phase_three";
 
 const BackArrowIcon = () => (
   <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width={16} height={16}>
@@ -129,24 +133,108 @@ const PremiumIcon = () => (
   </svg>
 );
 
-/* Icon mapping based on category ID */
-const getIconForCategory = (categoryId) => {
-  const iconMap = {
-    hair: HairIcon,
-    nail: NailIcon,
-    skincare: SkincareIcon,
-    massage: MassageIcon,
-    premium: PremiumIcon,
-  };
-  return iconMap[categoryId] || null;
-};
-
 const STEPS = [
   { number: 1, label: "Name" },
   { number: 2, label: "Service" },
   { number: 3, label: "Stylist" },
   { number: 4, label: "Receipt" },
 ];
+
+const DARK_MODAL_VARS = {
+  "--bg-card": "#070605",
+  "--bg-dark": "#070605",
+  "--color-white": "#f5f1eb",
+  "--color-light": "#f5f1eb",
+  "--color-tan": "#988f81",
+  "--color-amber": "#dd901d",
+  "--color-amber-dark": "#b97918",
+  "--color-black": "#1a0f00",
+  colorScheme: "dark",
+};
+
+const BOOKING_MODAL_THEME_CLASS = "booking-modal-theme";
+
+const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-walkin";
+
+const BOOKING_MODAL_THEME_CSS = `
+  .booking-modal-theme,
+  .booking-modal-theme * {
+    color-scheme: dark;
+  }
+
+  .booking-modal-theme .appt-root {
+    background: #070605 !important;
+    border: 1px solid rgba(221, 144, 29, 0.15) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-header,
+  .booking-modal-theme .appt-footer {
+    background: #070605 !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    background: #070605 !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .confirm-card {
+    background: #11100d !important;
+    border: 1px solid rgba(221, 144, 29, 0.12) !important;
+    color: #f5f1eb !important;
+  }
+  /* Override any residual light-theme pink glows for confirm elements */
+  .booking-modal-theme .confirm-ref-pill {
+    background: rgba(221,144,29,0.14) !important;
+    border: 1px solid rgba(221,144,29,0.45) !important;
+    color: #f5f1eb !important;
+    box-shadow: 0 2px 10px rgba(221,144,29,0.28) !important;
+  }
+
+  .booking-modal-theme .confirm-reminder-box {
+    background: rgba(221,144,29,0.12) !important;
+    border-left: 3px solid rgba(221,144,29,0.95) !important;
+    box-shadow: 0 2px 12px rgba(221,144,29,0.25) !important;
+  }
+
+  .booking-modal-theme .queue-current-row,
+  .booking-modal-theme .queue-row,
+  .booking-modal-theme .queue-stat-card,
+  .booking-modal-theme .queue-schedule-item,
+  .booking-modal-theme .service-card,
+  .booking-modal-theme .cdb-card {
+    box-shadow: 0 16px 36px rgba(221,144,29,0.14) !important;
+    background: #11100d !important;
+    border-color: rgba(221,144,29,0.08) !important;
+  }
+  /* Scrollbar overrides (WebKit + Firefox) */
+  .booking-modal-theme .appt-body::-webkit-scrollbar,
+  .booking-modal-theme .svc-list::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-track,
+  .booking-modal-theme .svc-list::-webkit-scrollbar-track {
+    background: rgba(19,19,19,0.4) !important;
+    border-radius: 10px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb,
+  .booking-modal-theme .svc-list::-webkit-scrollbar-thumb {
+    background: rgba(221,144,29,0.9) !important;
+    border-radius: 10px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  .booking-modal-theme .appt-body,
+  .booking-modal-theme .svc-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221,144,29,0.9) rgba(19,19,19,0.4);
+  }
+`;
 
 /* ── Header ── */
 const ModalHeader = ({ onBack }) => (
@@ -161,10 +249,10 @@ const ModalHeader = ({ onBack }) => (
 );
 
 /* ── Progress Indicator ── */
-const ProgressIndicator = ({ currentStep }) => (
+const ProgressIndicator = ({ currentStep, steps = STEPS }) => (
   <div className="appt-progress">
     <div className="appt-progress-track">
-      {STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const isDone = step.number < currentStep;
         const isActive = step.number === currentStep;
         return (
@@ -177,7 +265,7 @@ const ProgressIndicator = ({ currentStep }) => (
                 : step.number
               }
             </div>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <div className={`appt-step-line${isDone ? " done" : ""}`} />
             )}
           </div>
@@ -185,7 +273,7 @@ const ProgressIndicator = ({ currentStep }) => (
       })}
     </div>
     <div className="appt-progress-labels">
-      {STEPS.map((step) => (
+      {steps.map((step) => (
         <span
           key={step.number}
           className={`appt-step-label${step.number === currentStep ? " active" : step.number < currentStep ? " done" : ""}`}
@@ -197,349 +285,89 @@ const ProgressIndicator = ({ currentStep }) => (
   </div>
 );
 
-/* ── Category Card ── */
-const CategoryCard = ({ category, selectedCount = 0, onSelect }) => {
-  const IconComponent = getIconForCategory(category.id);
-  
-  return (
-    <button
-      className={`appt-svc-card${selectedCount > 0 ? " selected" : ""}`}
-      onClick={() => onSelect(category.id)}
-      aria-pressed={selectedCount > 0}
-      style={{
-        transition: "all 0.3s ease",
-        position: "relative",
-      }}
-      onMouseEnter={(e) => {
-        if (selectedCount === 0) {
-          e.currentTarget.style.transform = "translateY(-8px) scale(1.03)";
-          const iconCircle = e.currentTarget.querySelector('.appt-svc-icon-circle');
-          if (iconCircle) {
-            iconCircle.style.transform = "scale(1.1) rotate(5deg)";
-          }
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (selectedCount === 0) {
-          e.currentTarget.style.transform = "translateY(0) scale(1)";
-          const iconCircle = e.currentTarget.querySelector('.appt-svc-icon-circle');
-          if (iconCircle) {
-            iconCircle.style.transform = "scale(1) rotate(0deg)";
-          }
-        }
-      }}
-    >
-      {IconComponent && (
-        <div className="appt-svc-icon-circle" style={{transition: "all 0.3s ease"}}>
-          <IconComponent />
-        </div>
-      )}
-      <p className="appt-svc-title">{category.label}</p>
-      
-      {selectedCount > 0 && (
-        <div style={{
-          position: "absolute",
-          top: "8px",
-          right: "8px",
-          background: "var(--color-amber)",
-          color: "var(--color-black)",
-          borderRadius: "50%",
-          width: "28px",
-          height: "28px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "0.85rem",
-          fontWeight: "700",
-          fontFamily: "Inter, sans-serif",
-        }}>
-          {selectedCount}
-        </div>
-      )}
-    </button>
-  );
-};
-
-/* ── Service Selection Modal (nested) ── */
-const ServiceSelectionModal = ({ isOpen, categoryId, categoryLabel, services, selectedServices, onSelect, onClose, isUpdating = false, onCloseWholeModal }) => {
-  const [showConfirmCancel, setShowConfirmCancel] = useState(false);
-
-  if (!isOpen) return null;
-
-  const categoryServices = services.filter(s => s.category === categoryId);
-  const categoryServiceIds = categoryServices.map(s => s.id);
-  const selectedInCategory = selectedServices.filter(id => categoryServiceIds.includes(id));
-
-  const ServiceRow = ({ service, isSelected }) => (
-    <button
-      className={`svc-list-row${isSelected ? " selected" : ""}`}
-      onClick={() => onSelect(service.id)}
-      aria-pressed={isSelected}
-    >
-      <div className="svc-list-left">
-        <div className="svc-list-icon-box">
-          <ScissorsIcon />
-        </div>
-        <div className="svc-list-text">
-          <span className="svc-list-title">{service.title}</span>
-          <span className="svc-list-desc">{service.desc}</span>
-        </div>
-      </div>
-
-      <div className="svc-list-right">
-        <span className="svc-list-price">{service.price}</span>
-        <span className="svc-list-est">{service.estTime}</span>
-      </div>
-    </button>
-  );
-
-  const handleCancelClick = () => {
-    setShowConfirmCancel(true);
-  };
-
-  const handleConfirmCancel = () => {
-    setShowConfirmCancel(false);
-    onCloseWholeModal();
-  };
-
-  return (
-    <>
-      <div 
-        className="appt-overlay" 
-        style={{ zIndex: 1100 }}
-        onClick={(e) => {
-          // Only trigger if clicking directly on the overlay, not on child elements
-          if (e.target === e.currentTarget) {
-            handleCancelClick();
-          }
-        }}
-      >
-        <div className="appt-root" style={{ maxHeight: "80vh" }}>
-          <header className="appt-header">
-            <button className="appt-back-btn" onClick={onClose} aria-label="Go back">
-              <BackArrowIcon />
-              Back
-            </button>
-            <h1 className="appt-header-title">{categoryLabel}</h1>
-            <div className="appt-back-btn" aria-hidden style={{ visibility: "hidden" }}>Back</div>
-          </header>
-
-          <div className="appt-body">
-            <div className="appt-section-heading">
-              <h2 className="appt-section-title">Choose a service</h2>
-              <p className="appt-section-sub">Select a service you'd like to book</p>
-              <div className="svc-list">
-                {categoryServices.length > 0 ? (
-                  categoryServices.map((service) => (
-                    <ServiceRow
-                      key={service.id}
-                      service={service}
-                      isSelected={selectedServices.includes(service.id)}
-                    />
-                  ))
-                ) : (
-                  <p style={{ textAlign: "center", color: "var(--color-tan)", padding: "20px" }}>
-                    No services available
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="appt-footer">
-            <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "12px" }}>
-              {selectedInCategory.length === 0 && !isUpdating && (
-                <p className="service-error"> Please select at least one service</p>
-              )}
-              <div style={{ display: "flex", gap: "12px" }}>
-                <button className="appt-cancel-btn" onClick={handleCancelClick}>
-                  Cancel
-                </button>
-                <button 
-                  className="appt-continue-btn"
-                  onClick={onClose}
-                  disabled={selectedInCategory.length === 0 && !isUpdating}
-                  style={{
-                    opacity: selectedInCategory.length > 0 || isUpdating ? 1 : 0.5,
-                    cursor: selectedInCategory.length > 0 || isUpdating ? "pointer" : "not-allowed",
-                  }}
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Cancel Confirmation Dialog for Service Modal */}
-      <ConfirmationDialog
-        isOpen={showConfirmCancel}
-        title="Cancel Walk-in?"
-        message="Are you sure you want to cancel? Your progress will be lost."
-        confirmText="Yes, Cancel Walk-in"
-        cancelText="Keep Going"
-        onConfirm={handleConfirmCancel}
-        onCancel={() => setShowConfirmCancel(false)}
-      />
-    </>
-  );
-};
-
-/* ── "Any available" row ── */
-const AnyRow = ({ isSelected, onSelect }) => (
-  <button
-    className={`stylist-row${isSelected ? " selected" : ""}`}
-    onClick={() => onSelect(isSelected ? null : "any")}
-    aria-pressed={isSelected}
-  >
-    <div className="stylist-row-left">
-      {/* amber circle with person icon */}
-      <div className="stylist-avatar">
-        <PersonIcon />
-      </div>
-      <div className="stylist-text">
-        <span className="stylist-name">Any available stylist</span>
-        <span className="stylist-specialty">First available stylist will be assigned</span>
-      </div>
-    </div>
-    {/* no rating column for "any" row */}
-  </button>
-);
-
-/* ── Named stylist row ── */
-const StylistRow = ({ stylist, isSelected, onSelect }) => (
-  <button
-    className={`stylist-row${isSelected ? " selected" : ""}${stylist.unavailable ? " unavailable" : ""}`}
-    onClick={() => !stylist.unavailable && onSelect(isSelected ? null : stylist.id)}
-    disabled={stylist.unavailable}
-    aria-pressed={isSelected}
-    aria-disabled={stylist.unavailable}
-  >
-    <div className="stylist-row-left">
-      {/* initial avatar circle */}
-      <div className={`stylist-avatar${stylist.unavailable ? " muted" : ""}`}>
-        <span className="stylist-initial">{stylist.initial}</span>
-      </div>
-      <div className="stylist-text">
-        <span className={`stylist-name${stylist.unavailable ? " muted" : ""}`}>{stylist.name}</span>
-        <span className={`stylist-specialty${stylist.unavailable ? " muted" : ""}`}>{stylist.specialty}</span>
-      </div>
-    </div>
-
-    {/* right: rating + reviews + unavailable badge */}
-    <div className="stylist-rating-col">
-      <div className="stylist-rating-row">
-        <StarIcon muted={stylist.unavailable} />
-        <span className={`stylist-rating${stylist.unavailable ? " muted" : ""}`}>{stylist.rating}</span>
-      </div>
-      <span className={`stylist-reviews${stylist.unavailable ? " muted" : ""}`}>{stylist.reviews}</span>
-      {stylist.unavailable && <span className="stylist-unavailable-tag">Unavailable</span>}
-    </div>
-  </button>
-);
-
 /* ── Thin divider ── */
 const Divider = () => (
   <div style={{ width: "100%", height: 1, background: "rgba(152,143,129,0.25)", flexShrink: 0 }} />
 );
 
-export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsServicesList, serviceCategories: propsServiceCategories, stylistsList: propsStylistsList }) => {
-  // Default service data if not provided via props
-  const SERVICES_LIST = propsServicesList || [
-    // Hair Services (4)
-    { id: 1, title: "Hair cuts",      desc: "Classic Haircut with Styling", category: "hair", price: "₱00.00", estTime: "est time" },
-    { id: 2, title: "Hair color",     desc: "Full hair color service", category: "hair", price: "₱00.00", estTime: "est time" },
-    { id: 3, title: "Hair treatment", desc: "Full hair color service", category: "hair", price: "₱00.00", estTime: "est time" },
-    { id: 4, title: "Beard trimming", desc: "Trim and beard shaping", category: "hair", price: "₱00.00", estTime: "est time" },
-    // Nail Services (4)
-    { id: 5, title: "Manicure",          desc: "Care & beautification for fingernails", category: "nail", price: "₱00.00", estTime: "est time" },
-    { id: 6, title: "Pedicure",          desc: "Care & beautification for toenails",    category: "nail", price: "₱00.00", estTime: "est time" },
-    { id: 7, title: "Nail enhancement",  desc: "Artificial nail application",           category: "nail", price: "₱00.00", estTime: "est time" },
-    { id: 8, title: "Nail art & design", desc: "Arts & Design for nails",               category: "nail", price: "₱00.00", estTime: "est time" },
-    // Skincare Services (4)
-    { id: 9, title: "Facial treatment",   desc: "Care & beautification for face & skin", category: "skincare", price: "₱00.00", estTime: "est time" },
-    { id: 10, title: "Advance treatment",  desc: "High-tech solutions for skin concerns", category: "skincare", price: "₱00.00", estTime: "est time" },
-    { id: 11, title: "Specialized facials", desc: "Targeted care for specific skin needs", category: "skincare", price: "₱00.00", estTime: "est time" },
-    { id: 12, title: "Body treatment",     desc: "Full-body skincare services", category: "skincare", price: "₱00.00", estTime: "est time" },
-    // Massage Services (4)
-    { id: 13, title: "Swedish massage",      desc: "Gently stroke for relaxation", category: "massage", price: "₱00.00", estTime: "est time" },
-    { id: 14, title: "Deep tissue massage",  desc: "Intense pressure for muscle knots", category: "massage", price: "₱00.00", estTime: "est time" },
-    { id: 15, title: "Hot stone massage",    desc: "Heated stones to melt tension", category: "massage", price: "₱00.00", estTime: "est time" },
-    { id: 16, title: "Foot reflexology",     desc: "Pressure points for overall wellness", category: "massage", price: "₱00.00", estTime: "est time" },
-    // Premium Services (4)
-    { id: 17, title: "Bridal package",    desc: "Full wedding day beauty", category: "premium", price: "₱00.00", estTime: "est time" },
-    { id: 18, title: "Couple's Massage",  desc: "Relaxation for 2", category: "premium", price: "₱00.00", estTime: "est time" },
-    { id: 19, title: "Hair & glow combo", desc: "Scalp treatment + facial", category: "premium", price: "₱00.00", estTime: "est time" },
-    { id: 20, title: "VIP experience",    desc: "Private room + drinks", category: "premium", price: "₱00.00", estTime: "est time" },
-  ];
-
-  const SERVICE_CATEGORIES = propsServiceCategories || [
-    { id: "hair", label: "Hair Service", icon: "✂️" },
-    { id: "nail", label: "Nail Service", icon: "💅" },
-    { id: "skincare", label: "Skin Care Service", icon: "✨" },
-    { id: "massage", label: "Massage Service", icon: "🧘" },
-    { id: "premium", label: "Premium Service", icon: "👑" },
-  ];
-
-  const STYLISTS_LIST = propsStylistsList || [
-    {
-      id: "any",
-      isAny: true,
-      initial: null,
-      name: "Any available stylist",
-      specialty: "First available stylist will be assigned",
-      rating: null,
-      reviews: null,
-      unavailable: false,
-    },
-    {
-      id: "mike",
-      isAny: false,
-      initial: "M",
-      name: "Mike Santos",
-      specialty: "Fades & Modern cuts",
-      rating: "4.9",
-      reviews: "124 reviews",
-      unavailable: false,
-    },
-    {
-      id: "john",
-      isAny: false,
-      initial: "J",
-      name: "John Dela Cruz",
-      specialty: "Classic styles",
-      rating: "4.7",
-      reviews: "89 reviews",
-      unavailable: false,
-    },
-    {
-      id: "carlos",
-      isAny: false,
-      initial: "C",
-      name: "Carlos Reyes",
-      specialty: "Beard Expert",
-      rating: "4.8",
-      reviews: "156 reviews",
-      unavailable: true,
-    },
-  ];
+export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
+  // Phase data state
+  const [phase2Data, setPhase2Data] = useState(null);
+  const [phase3Data, setPhase3Data] = useState(null);
 
   const [step, setStep] = useState(1);
   const [walkInName, setWalkInName] = useState("");
   const [nameError, setNameError] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
-  const [selectedServices, setSelectedServices] = useState([]);
-  const [serviceError, setServiceError] = useState("");
-  const [serviceTouched, setServiceTouched] = useState(false);
-  const [selectedStylist, setSelectedStylist] = useState(null);
-  const [stylistError, setStylistError] = useState("");
-  const [stylistTouched, setStylistTouched] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
-  const [showServiceModal, setShowServiceModal] = useState(false);
-  const [activeCategory, setActiveCategory] = useState(null);
-  const [visitedCategories, setVisitedCategories] = useState(new Set());
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [showReceiptReminder, setShowReceiptReminder] = useState(false);
+  const [showConfirmationToast, setShowConfirmationToast] = useState(false);
+
+  const WALK_IN_STEPS = [
+    { number: 1, label: "Name" },
+    { number: 2, label: "Service" },
+    { number: 3, label: "Stylist" },
+    { number: 4, label: "Receipt" },
+  ];
+
+  const formatCurrency = (value) => {
+    const amount = Number(value) || 0;
+    return `₱${amount.toFixed(2)}`;
+  };
+
+  const getSelectedServices = () => phase2Data?.services || [];
+
+  const buildWalkInReceipt = (stylistData) => {
+    const services = getSelectedServices();
+    const subtotal = services.reduce((acc, service) => {
+      const rawPrice = typeof service.price === "string"
+        ? parseFloat(service.price.replace(/[^0-9.]/g, ""))
+        : Number(service.price);
+      return acc + (Number.isFinite(rawPrice) ? rawPrice : 0);
+    }, 0);
+
+    const totalDuration = services.reduce((acc, service) => {
+      const mins = parseInt(service.estTime, 10) || parseInt(service.est_time, 10) || 0;
+      return acc + mins;
+    }, 0);
+
+    return {
+      id: Math.random().toString(36).substr(2, 9).toUpperCase(),
+      name: walkInName,
+      services,
+      subtotal,
+      totalAmount: subtotal,
+      totalDuration,
+      stylist: stylistData?.stylist?.name || "Any available",
+      timestamp: new Date().toLocaleString(),
+    };
+  };
+
+  // Auto-hide toast after 2 seconds
+  useEffect(() => {
+    if (showConfirmationToast) {
+      const timer = setTimeout(() => {
+        setShowConfirmationToast(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showConfirmationToast]);
+
+  // Inject booking modal theme CSS for dark styling
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const existing = document.getElementById(BOOKING_MODAL_THEME_STYLE_ID);
+    if (existing) {
+      existing.textContent = BOOKING_MODAL_THEME_CSS;
+      return;
+    }
+    const style = document.createElement('style');
+    style.id = BOOKING_MODAL_THEME_STYLE_ID;
+    style.textContent = BOOKING_MODAL_THEME_CSS;
+    document.head.appendChild(style);
+  }, []);
 
   // Validation for customer name
   const validateName = (value) => {
@@ -576,77 +404,28 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
     validateName(walkInName);
   };
 
-  const validateServices = (services) => {
-    if (!services || services.length === 0) {
-      setServiceError("Please select at least one service");
-      return false;
-    }
-    setServiceError("");
-    return true;
+  const handlePhase2Continue = (data) => {
+    console.log('[AddWalkIn] Phase 2 data:', data);
+    setPhase2Data(data);
+    setStep(3);
   };
 
-  const validateStylist = (stylistId) => {
-    if (!stylistId) {
-      setStylistError("Please select a stylist");
-      return false;
-    }
-    setStylistError("");
-    return true;
-  };
+  const handlePhase3Continue = async (data) => {
+    console.log('[AddWalkIn] Phase 3 data:', data);
+    setPhase3Data(data);
+    
+    if (!phase2Data || !data) return;
+    const receipt = buildWalkInReceipt(data);
+    receipt.price = formatCurrency(receipt.totalAmount);
 
-  const handleServiceToggle = (serviceId) => {
-    setSelectedServices(prev => {
-      const updated = prev.includes(serviceId)
-        ? prev.filter(id => id !== serviceId)
-        : [...prev, serviceId];
-      if (serviceTouched) {
-        validateServices(updated);
-      }
-      return updated;
-    });
-  };
-
-  const handleOpenCategoryModal = (categoryId) => {
-    setActiveCategory(categoryId);
-    setShowServiceModal(true);
-  };
-
-  const handleServiceModalClose = (categoryId) => {
-    // Mark category as visited after closing the modal
-    setVisitedCategories(prev => new Set([...prev, categoryId]));
-    setShowServiceModal(false);
-  };
-
-  const handleClose = () => {
-    setStep(1);
-    setWalkInName("");
-    setNameError("");
-    setNameTouched(false);
-    setSelectedServices([]);
-    setServiceError("");
-    setServiceTouched(false);
-    setSelectedStylist(null);
-    setStylistError("");
-    setStylistTouched(false);
-    setReceiptData(null);
-    setShowServiceModal(false);
-    setActiveCategory(null);
-    setVisitedCategories(new Set());
-    setShowConfirmCancel(false);
-    onClose();
-  };
-
-  const handleCancelClick = () => {
-    setShowConfirmCancel(true);
-  };
-
-  const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
-    } else {
-      // Step 1, show confirmation dialog
-      setShowConfirmCancel(true);
-    }
+    setReceiptData(receipt);
+    setStep(4);
+    
+    // Log to database immediately
+    await logWalkInToDatabase(receipt);
+    
+    // Submit the walk-in to admin dashboard
+    onSubmit({ ...receipt, services: receipt.services });
   };
 
   const handleContinue = () => {
@@ -656,51 +435,120 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
         return;
       }
       setStep(2);
-    } else if (step === 2) {
-      setServiceTouched(true);
-      if (!validateServices(selectedServices)) {
-        return;
-      }
-      setStep(3);
-    } else if (step === 3) {
-      setStylistTouched(true);
-      if (!validateStylist(selectedStylist)) {
-        return;
-      }
-      generateReceipt();
     }
   };
 
-  // Calculate service count per category
-  const getServiceCountForCategory = (categoryId) => {
-    return SERVICES_LIST.filter(s => 
-      s.category === categoryId && selectedServices.includes(s.id)
-    ).length;
+  const handleClose = () => {
+    setStep(1);
+    setWalkInName("");
+    setNameError("");
+    setNameTouched(false);
+    setReceiptData(null);
+    setPhase2Data(null);
+    setPhase3Data(null);
+    setShowConfirmCancel(false);
+    setIsConfirmed(false);
+    setShowReceiptReminder(false);
+    setShowConfirmationToast(false);
+    onClose();
+  };
+
+  const handleCancelClick = () => {
+    setShowConfirmCancel(true);
+  };
+
+  const handleBack = () => {
+    if (step > 1) {
+      if (step === 4) {
+        // Going back from Phase 4 (Receipt) to Phase 3 (Stylist)
+        // Keep phase2Data intact so Phase 3 can render
+        setReceiptData(null);
+        setIsConfirmed(false);
+        setStep(3);
+      } else if (step === 3) {
+        // Going back from Phase 3 to Phase 2
+        setPhase3Data(null);
+        setStep(2);
+      } else {
+        // Going back from Phase 2 to step 1
+        setPhase2Data(null);
+        setStep(step - 1);
+      }
+    } else {
+      // Step 1, show confirmation dialog
+      setShowConfirmCancel(true);
+    }
   };
 
   const generateReceipt = () => {
-    const services = SERVICES_LIST.filter(s => selectedServices.includes(s.id));
-    const stylist = STYLISTS_LIST.find(s => s.id === selectedStylist);
-    const totalDuration = services.reduce((acc, s) => {
-      const mins = parseInt(s.estTime);
-      return acc + mins;
-    }, 0);
+    if (!phase2Data || !phase3Data) return;
 
-    const receipt = {
-      id: Math.random().toString(36).substr(2, 9).toUpperCase(),
-      name: walkInName,
-      services: services,
-      totalDuration: totalDuration,
-      price: "₱00.00",
-      stylist: stylist.name,
-      timestamp: new Date().toLocaleString(),
-    };
+    const receipt = buildWalkInReceipt(phase3Data);
+    receipt.price = formatCurrency(receipt.totalAmount);
 
     setReceiptData(receipt);
     setStep(4);
   };
 
+  /* Log walk-in to database */
+  const logWalkInToDatabase = async (receipt) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      
+      // Format services from the structured phase-two payload
+      const formattedServices = (phase2Data?.services || []).map(s => ({
+        id: s.id,
+        title: s.title || s.service_name,
+        price: typeof s.price === 'string' ? parseFloat(s.price.replace('₱', '')) : s.price,
+        duration: s.est_time || s.estTime,
+        category: s.category,
+      }));
+
+      const walkInPayload = {
+        name: receipt.name,
+        contact: null,
+        stylist: receipt.stylist,
+        services: formattedServices,
+        refNo: receipt.id,
+      };
+
+      console.log("[AddWalkIn] Logging walk-in to database:", walkInPayload);
+
+      const response = await fetch(`${apiUrl}/appointments/create-walk-in`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(walkInPayload),
+      });
+
+      const responseText = await response.text();
+      console.log("[AddWalkIn] DB response status:", response.status);
+
+      if (!response.ok) {
+        console.error("[AddWalkIn] Failed to log walk-in. Status:", response.status, "Details:", responseText);
+      } else {
+        console.log("[AddWalkIn] Walk-in successfully logged to database");
+      }
+    } catch (err) {
+      console.error("[AddWalkIn] Error logging walk-in:", err);
+    }
+  };
+
+  /* Handle final confirmation */
+  const handleConfirmWalkin = () => {
+    // Show confirmation toast immediately
+    setShowConfirmationToast(true);
+    setIsConfirmed(true);
+  };
+
+  /* Generate printable receipt */
   const handleDownloadReceipt = () => {
+    // Show receipt reminder dialog
+    setShowReceiptReminder(true);
+    generateReceiptHTML();
+  };
+
+  /* Generate the receipt HTML and open print dialog */
+  const generateReceiptHTML = () => {
     if (!receiptData) return;
     
     const receiptHTML = `
@@ -871,7 +719,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
             ${receiptData.services.map(svc => `
               <div class="service-item">
                 <span class="service-name">${svc.title || 'Service'}</span>
-                <span class="service-price">${svc.price || '₱0.00'}</span>
+                <span class="service-price">${typeof svc.price === 'number' ? formatCurrency(svc.price) : (svc.price || '₱0.00')}</span>
               </div>
             `).join('')}
           </div>
@@ -889,8 +737,22 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
               <span class="detail-value">${receiptData.stylist || 'N/A'}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Time</span>
+              <span class="detail-label">Date & Time</span>
               <span class="detail-value">${receiptData.timestamp || 'N/A'}</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="section">
+            <div class="section-title">Totals</div>
+            <div class="detail-row">
+              <span class="detail-label">Subtotal</span>
+              <span class="detail-value">${formatCurrency(receiptData.subtotal)}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Total Amount</span>
+              <span class="detail-value">${receiptData.price || formatCurrency(receiptData.totalAmount)}</span>
             </div>
           </div>
 
@@ -935,28 +797,55 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
   };
 
   const handleConfirm = () => {
-    onSubmit({ ...receiptData, selectedServices });
-    handleClose();
+    handleConfirmWalkin();
+    // After confirmation, the modal stays open for download
   };
+
+  // Manage body class for modal open state - must be before conditional return
+  useEffect(() => {
+    if (!isOpen || typeof document === "undefined") return undefined;
+
+    document.body.classList.add("walkin-modal-open");
+    return () => {
+      document.body.classList.remove("walkin-modal-open");
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const activeCategoryData = SERVICE_CATEGORIES.find(c => c.id === activeCategory);
-
-  return (
+  return createPortal(
     <>
+      {/* ── Toast Notifications (Top Fixed Position) ── */}
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 999999, pointerEvents: "auto", display: "flex", justifyContent: "center", padding: "20px" }}>
+        <Toast 
+          message="Walk-in Confirmed!" 
+          type="success" 
+          duration={2000} 
+          isVisible={showConfirmationToast} 
+        />
+      </div>
       <div 
-        className="appt-overlay"
+        className={`appt-overlay walkin-force-dark ${BOOKING_MODAL_THEME_CLASS}`}
+        style={{
+          ...DARK_MODAL_VARS,
+          zIndex: 10000001,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          backdropFilter: "blur(2px)",
+        }}
         onClick={(e) => {
           // Only trigger if clicking directly on the overlay, not on child elements
           if (e.target === e.currentTarget) {
-            setShowConfirmCancel(true);
+            if (!isConfirmed) {
+              setShowConfirmCancel(true);
+            } else if (isConfirmed && !showReceiptReminder) {
+              setShowReceiptReminder(true);
+            }
           }
         }}
       >
         <div className="appt-root">
           <ModalHeader onBack={handleBack} />
-          <ProgressIndicator currentStep={step} />
+          <ProgressIndicator currentStep={step} steps={WALK_IN_STEPS} />
 
           <div className="appt-body">
             {/* Step 1: Customer Name */}
@@ -991,40 +880,32 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
               </div>
             )}
 
-            {/* Step 2: Service Categories */}
+            {/* Step 2: Service Selection (Using Phase 2 Component) */}
             {step === 2 && (
-              <div className="appt-section-heading">
-                <h2 className="appt-section-title">Select Services</h2>
-                <p className="appt-section-sub">Choose service categories to browse</p>
-                <div className="appt-svc-grid">
-                  {SERVICE_CATEGORIES.map((category) => (
-                    <CategoryCard
-                      key={category.id}
-                      category={category}
-                      selectedCount={getServiceCountForCategory(category.id)}
-                      onSelect={handleOpenCategoryModal}
-                    />
-                  ))}
-                </div>
-              </div>
+              <AppointmentFormPhase2
+                onBack={handleBack}
+                onContinue={handlePhase2Continue}
+                onCancel={handleCancelClick}
+                initialData={null}
+                headerTitle="Add Walk-in"
+                stepLabels={WALK_IN_STEPS}
+                showPromoCode={false}
+                isInline
+                isWalkIn
+              />
             )}
 
-            {/* Step 3: Stylist Selection */}
-            {step === 3 && (
-              <div className="appt-section-heading">
-                <h2 className="appt-section-title">Choose a stylist</h2>
-                <p className="appt-section-sub">Pick your preferred stylist or choose "Any Available"</p>
-                <div className="stylist-list">
-                  <AnyRow isSelected={selectedStylist === "any"} onSelect={setSelectedStylist} />
-                  {STYLISTS_LIST.filter((s) => !s.isAny).map((stylist) => (
-                    <StylistRow
-                      key={stylist.id}
-                      stylist={stylist}
-                      isSelected={selectedStylist === stylist.id}
-                      onSelect={setSelectedStylist}
-                    />
-                  ))}
-                </div>
+            {/* Step 3: Stylist Selection (Using Phase 3 Component) */}
+            {step === 3 && phase2Data && (
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "column" }}>
+                <AppointmentFormPhase3
+                  onBack={handleBack}
+                  onContinue={handlePhase3Continue}
+                  onCancel={handleCancelClick}
+                  initialData={{ services: phase2Data?.services || [] }}
+                  headerTitle="Add Walk-in"
+                  stepLabels={WALK_IN_STEPS}
+                />
               </div>
             )}
 
@@ -1035,7 +916,6 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
                 <p className="appt-section-sub">Review appointment details</p>
                 
                 <div className="confirm-card">
-                  {/* Service Summary Section */}
                   {receiptData.services.length > 0 && (
                     <>
                       <div className="confirm-service-row">
@@ -1056,7 +936,6 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
                     </>
                   )}
 
-                  {/* Services List Section */}
                   {receiptData.services.length > 0 && (
                     <>
                       <div style={{ marginBottom: "16px", marginTop: "12px" }}>
@@ -1064,19 +943,23 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
                           Services Selected
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                          {receiptData.services.map((service, idx) => (
-                            <div key={idx} style={{ fontSize: "0.85rem", color: "var(--color-white)", paddingLeft: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <span>• {service.title}</span>
-                              <span style={{ color: "var(--color-tan)" }}>{service.price}</span>
-                            </div>
-                          ))}
+                          {receiptData.services.map((service, idx) => {
+                            const servicePrice = typeof service.price === "number"
+                              ? formatCurrency(service.price)
+                              : (service.price || "₱0.00");
+                            return (
+                              <div key={idx} style={{ fontSize: "0.85rem", color: "var(--color-white)", paddingLeft: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span>• {service.title}</span>
+                                <span style={{ color: "var(--color-tan)" }}>{servicePrice}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                       <Divider />
                     </>
                   )}
 
-                  {/* Contact details */}
                   <div className="confirm-details">
                     <div className="confirm-detail-row">
                       <PersonIcon />
@@ -1092,74 +975,113 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
                         <span className="confirm-detail-value">{receiptData.stylist}</span>
                       </div>
                     </div>
+                    <div className="confirm-detail-row">
+                      <EnvelopeIcon />
+                      <div className="confirm-detail-text">
+                        <span className="confirm-detail-label">Date & Time</span>
+                        <span className="confirm-detail-value">{receiptData.timestamp}</span>
+                      </div>
+                    </div>
+                    <div className="confirm-detail-row">
+                      <DownloadIcon />
+                      <div className="confirm-detail-text">
+                        <span className="confirm-detail-label">Duration</span>
+                        <span className="confirm-detail-value">{receiptData.totalDuration} mins</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Divider />
+
+                  <div className="confirm-details">
+                    <div className="confirm-detail-row">
+                      <span className="confirm-detail-label">Subtotal</span>
+                      <span className="confirm-detail-value">{formatCurrency(receiptData.subtotal)}</span>
+                    </div>
+                    <div className="confirm-detail-row">
+                      <span className="confirm-detail-label">Total Amount</span>
+                      <span className="confirm-detail-value">{receiptData.price}</span>
+                    </div>
                   </div>
 
                   <Divider />
 
                   {/* Bottom: ref no. + reminder */}
                   <div className="confirm-bottom-row">
-                    <div className="confirm-ref-pill">
+                    <div
+                      className="confirm-ref-pill"
+                      style={{
+                        background: 'rgba(221,144,29,0.14)',
+                        border: '1px solid rgba(221,144,29,0.45)',
+                        color: '#f5f1eb',
+                        boxShadow: '0 2px 10px rgba(221,144,29,0.28)'
+                      }}
+                    >
                       Ref. No.: {receiptData.id}
                     </div>
-  
+
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="appt-footer" style={{ display: "flex", flexDirection: "column", gap: step === 2 && selectedServices.length === 0 ? "6px" : "12px" }}>
-            {step === 2 && selectedServices.length === 0 && (
-              <p className="service-error"> Please select one service</p>
-            )}
-            <div style={{ display: "flex", flexDirection: "row", gap: "12px" }}>
-              {step === 4 && (
-                <button 
-                  className="appt-download-receipt-btn"
-                  onClick={handleDownloadReceipt}
-                  title="Download receipt as PDF"
-                >
-                  <DownloadIcon />
-                  Download Receipt
-                </button>
-              )}
-              {step !== 4 && (
+          <div 
+            className="appt-footer" 
+            style={{ 
+              display: "flex", 
+              flexDirection: "row", 
+              gap: "12px",
+              padding: "16px 20px",
+              background: "rgba(0,0,0,0.5)",
+              borderTop: "1px solid rgba(152,143,129,0.2)",
+              flexShrink: 0
+            }}
+          >
+            {/* Only show footer buttons for Step 1 and Step 4 */}
+            {step === 1 && (
+              <>
                 <button 
                   className="appt-cancel-btn"
                   onClick={handleCancelClick}
                   title="Cancel and close"
+                  style={{flex: 1}}
                 >
                   Cancel
                 </button>
-              )}
+                <button 
+                  className="appt-continue-btn" 
+                  onClick={handleContinue}
+                  disabled={!!nameError || !walkInName.trim()}
+                  style={(!!nameError || !walkInName.trim()) ? { opacity: 0.5, cursor: "not-allowed", flex: 1 } : { opacity: 1, flex: 1 }}
+                  title={nameError || "Continue to service selection"}
+                >
+                  Continue
+                </button>
+              </>
+            )}
+            {step === 4 && !isConfirmed && (
               <button 
                 className="appt-continue-btn" 
-                onClick={step === 4 ? handleConfirm : handleContinue}
-                disabled={(step === 1 && (!!nameError || !walkInName.trim())) || (step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)}
-                style={((step === 2 && selectedServices.length === 0) || (step === 3 && !selectedStylist)) ? { opacity: 0.5, cursor: "not-allowed" } : { opacity: 1 }}
-                title={step === 4 ? "Confirm walk-in appointment" : step === 1 && !!nameError ? nameError : step === 2 && selectedServices.length === 0 ? "Please select at least one service" : step === 3 && !selectedStylist ? "Please select a stylist" : "Continue to next step"}
+                onClick={handleConfirm}
+                style={{flex: 1, cursor: "pointer"}}
               >
-                {step === 4 ? "Confirm" : "Continue"}
+                Confirm
               </button>
-            </div>
+            )}
+            {step === 4 && isConfirmed && (
+              <button 
+                className="appt-download-receipt-btn"
+                onClick={handleDownloadReceipt}
+                style={{flex: 1, cursor: "pointer", padding: "12px", fontSize: "16px", fontWeight: "600"}}
+              >
+                <DownloadIcon />
+                Download Receipt
+              </button>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Service Selection Modal (nested) */}
-      {activeCategoryData && (
-        <ServiceSelectionModal
-          isOpen={showServiceModal}
-          categoryId={activeCategory}
-          categoryLabel={activeCategoryData.label}
-          services={SERVICES_LIST}
-          selectedServices={selectedServices}
-          onSelect={handleServiceToggle}
-          onClose={() => handleServiceModalClose(activeCategory)}
-          isUpdating={visitedCategories.has(activeCategory)}
-          onCloseWholeModal={handleClose}
-        />
-      )}
 
       {/* Cancel Confirmation Dialog */}
       <ConfirmationDialog
@@ -1174,6 +1096,30 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit, servicesList: propsS
         }}
         onCancel={() => setShowConfirmCancel(false)}
       />
-    </>
+
+      {/* Receipt Reminder Confirmation Dialog - Only show if walk-in was confirmed */}
+      {isConfirmed && (
+        <ConfirmationDialog
+          isOpen={showReceiptReminder}
+          title="Save Your Walk-in Info"
+          message={`Have you saved your receipt and reference number?\n\nReference No.: ${receiptData?.id || "N/A"}\n\nYou'll need this for check-in.`}
+          confirmText="Yes, Saved"
+          cancelText="Download Again"
+          onConfirm={() => {
+            setShowReceiptReminder(false);
+            handleClose();
+          }}
+          onCancel={() => {
+            setShowReceiptReminder(false);
+            generateReceiptHTML();
+            // Reopen the dialog after a brief delay so user can download again
+            setTimeout(() => {
+              setShowReceiptReminder(true);
+            }, 100);
+          }}
+        />
+      )}
+    </>,
+    document.body
   );
 };

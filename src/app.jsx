@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import React, { useEffect, useLayoutEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import Homepage from './pages/landpage'
 import About from './pages/about'
+import HowItWorksPage from './pages/how_it_works'
+import ServicesPage from './pages/services'
 import { Register } from './pages/register'
 import { LogIn } from './pages/login'
 import { logMagicLinksForTesting } from './services/magicLink'
@@ -11,11 +13,15 @@ import { AdminDashboardLiveStatus } from './pages/admin/admin_live_status_dashbo
 import { AdminDashboardStaffStatus } from './pages/admin/admin_staff_status_dashboard'
 import SuperAdminDashboard from './pages/superadmin/super_admin_dashboard'
 import SuperAdminUsersDashboard from './pages/superadmin/super_admin_users_dashboard'
-import SuperAdminDatabaseDashboard from './pages/superadmin/super_admin_database_dashboard'
+import SuperAdminClientsDashboard from './pages/superadmin/super_admin_clients_dashboard'
 import SuperAdminServicesDashboard from './pages/superadmin/super_admin_services_dashboard'
 import SuperAdminLogsDashboard from './pages/superadmin/super_admin_logs_dashboard'
 import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security_dashboard'
 import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage_edit_dashboard'
+import CustomerDashboard from './pages/customer/customer_dashboard'
+import CustomerProfilePage from './pages/customer/customer_profile'
+import CustomerHistoryPage from './pages/customer/customer_history'
+import CustomerCouponsPage from './pages/customer/customer_coupons'
 // Staff Dashboard routes hidden - all features moved to admin dashboard
 // import StaffDashboard from './pages/staff/staff_dashboard'
 // import StaffServices from './pages/staff/staff_service_dashboard'
@@ -30,12 +36,48 @@ function App() {
 
   return (
     <Router>
+      <ThemeRouteSync />
+      <ScrollToTopOnRouteChange />
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path="/landpage" element={<Homepage />} />
+        <Route path="/how-it-works" element={<HowItWorksPage />} />
         <Route path="/about" element={<About />} />
+        <Route path="/services" element={<ServicesPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/operators/login" element={<LogIn />} />
+        <Route
+          path="/customer/dashboard"
+          element={
+            <ProtectedRoute requiredRole="customer">
+              <CustomerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customer/profile"
+          element={
+            <ProtectedRoute requiredRole="customer">
+              <CustomerProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customer/history"
+          element={
+            <ProtectedRoute requiredRole="customer">
+              <CustomerHistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customer/coupons"
+          element={
+            <ProtectedRoute requiredRole="customer">
+              <CustomerCouponsPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin/dashboard"
           element={
@@ -85,10 +127,10 @@ function App() {
           }
         />
         <Route
-          path="/superadmin/database"
+          path="/superadmin/clients"
           element={
             <ProtectedRoute requiredRole="super admin">
-              <SuperAdminDatabaseDashboard />
+              <SuperAdminClientsDashboard />
             </ProtectedRoute>
           }
         />
@@ -154,6 +196,46 @@ function App() {
       </Routes>
     </Router>
   )
+}
+
+function ThemeRouteSync() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const isAdminRoute = location.pathname.startsWith('/admin');
+    const savedAdminTheme = window.localStorage.getItem('adminThemeMode');
+    const nextTheme = isAdminRoute ? (savedAdminTheme === 'dark' ? 'dark' : 'light') : 'dark';
+
+    document.documentElement.dataset.theme = nextTheme;
+  }, [location.pathname]);
+
+  return null;
+}
+
+function ScrollToTopOnRouteChange() {
+  const location = useLocation();
+
+  useLayoutEffect(() => {
+    const resetToTop = () => {
+      window.scrollTo(0, 0);
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+    };
+
+    resetToTop();
+    const raf1 = window.requestAnimationFrame(() => {
+      resetToTop();
+      window.requestAnimationFrame(resetToTop);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(raf1);
+    };
+  }, [location.pathname]);
+
+  return null;
 }
 
 export default App

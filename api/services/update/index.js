@@ -12,7 +12,7 @@ export default async (req, res) => {
 
   try {
     const { id } = req.query;
-    const { name, service_name, category, description, meta, price, available, availability, est_time, estimated_time } = req.body;
+    const { name, service_name, category, description, meta, price, available, availability, est_time, estimated_time, is_deleted } = req.body;
 
     if (!id) {
       return res.status(400).json({ error: 'Service ID is required' });
@@ -36,30 +36,52 @@ export default async (req, res) => {
     const serviceAvailability = availability !== undefined ? availability : available;
     const serviceEstimatedTime = estimated_time !== undefined ? estimated_time : est_time;
 
-    if (!serviceName || !category || price === undefined) {
+    // Validate that required fields are provided if being updated
+    if (serviceName && !category) {
       return res.status(400).json({ 
-        error: 'Missing required fields: name/service_name, category, price' 
+        error: 'Missing required field: category' 
       });
     }
 
-    // Build update data with only fields that exist in the schema
+    // Build update data with only fields that are explicitly provided
+    // This ensures unmodified fields retain their existing values
     const updateData = {};
     
-    // Handle name field - try both 'name' and 'service_name'
-    if ('name' in existingService) {
-      updateData.name = serviceName;
-    } else if ('service_name' in existingService) {
-      updateData.service_name = serviceName;
+    // Only update fields that are explicitly provided in the request
+    if (name !== undefined) {
+      if ('name' in existingService) {
+        updateData.name = name;
+      } else if ('service_name' in existingService) {
+        updateData.service_name = name;
+      }
+    } else if (service_name !== undefined) {
+      if ('service_name' in existingService) {
+        updateData.service_name = service_name;
+      } else if ('name' in existingService) {
+        updateData.name = service_name;
+      }
     }
     
-    // Add other fields if they exist
-    if ('category' in existingService) updateData.category = category;
-    if ('description' in existingService) updateData.description = description || meta || '';
-    if ('price' in existingService) updateData.price = parseFloat(price) || 0;
-    if ('est_time' in existingService) updateData.est_time = serviceEstimatedTime !== undefined && serviceEstimatedTime !== '' ? parseInt(serviceEstimatedTime, 10) : null;
-    if ('estimated_time' in existingService) updateData.estimated_time = serviceEstimatedTime !== undefined && serviceEstimatedTime !== '' ? parseInt(serviceEstimatedTime, 10) : null;
-    if ('availability' in existingService) updateData.availability = serviceAvailability !== false;
-    if ('available' in existingService) updateData.available = serviceAvailability !== false;
+    // Add other fields only if explicitly provided
+    if (category !== undefined && 'category' in existingService) updateData.category = category;
+    if (description !== undefined && 'description' in existingService) updateData.description = description;
+    else if (meta !== undefined && 'description' in existingService) updateData.description = meta;
+    
+    if (price !== undefined && 'price' in existingService) updateData.price = parseFloat(price);
+    
+    // Handle estimated_time - only update if explicitly provided and not empty
+    if (estimated_time !== undefined && estimated_time !== null && estimated_time !== '') {
+      if ('est_time' in existingService) updateData.est_time = parseInt(estimated_time, 10);
+      if ('estimated_time' in existingService) updateData.estimated_time = parseInt(estimated_time, 10);
+    } else if (est_time !== undefined && est_time !== null && est_time !== '') {
+      if ('est_time' in existingService) updateData.est_time = parseInt(est_time, 10);
+      if ('estimated_time' in existingService) updateData.estimated_time = parseInt(est_time, 10);
+    }
+    
+    if (availability !== undefined && 'availability' in existingService) updateData.availability = availability !== false;
+    else if (available !== undefined && 'available' in existingService) updateData.available = available !== false;
+    
+    if (is_deleted !== undefined && 'is_deleted' in existingService) updateData.is_deleted = Boolean(is_deleted);
 
     console.log(`[Services:Update] Updating service ID: ${id}`, updateData);
 

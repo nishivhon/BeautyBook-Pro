@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
  * ProtectedRoute Component
  * 
  * Secures routes that require operator authentication.
- * Only allows access for: admin, staff, super admin
+ * Allows access for: admin, staff, super admin, customer
  * 
  * Usage:
  * <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><Dashboard /></ProtectedRoute>} />
@@ -15,8 +15,8 @@ export const ProtectedRoute = ({ children, requiredRole = null }) => {
   // Get user data from localStorage (set after successful login)
   const user = JSON.parse(localStorage.getItem('operator_user') || 'null');
   
-  // Allowed roles for operators
-  const ALLOWED_ROLES = ['admin', 'staff', 'super admin'];
+  // Allowed roles for operators and customers
+  const ALLOWED_ROLES = ['admin', 'staff', 'super admin', 'customer'];
   
   // Check if user exists and has valid role
   const isAuthenticated = user && ALLOWED_ROLES.includes(user.role?.toLowerCase());

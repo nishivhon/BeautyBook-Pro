@@ -22,7 +22,7 @@ export default async (req, res) => {
     
     const { data: staff, error } = await supabase
       .from('staffs')
-      .select('id, names, status, category_specialty, employment')
+      .select('id, names, status, category_specialty, employment, clock_in, clock_out, walk_in, done_clients, in_service')
       .order('id', { ascending: true });
 
     if (error) {
@@ -32,8 +32,50 @@ export default async (req, res) => {
 
     console.log(`[Staffs] Found ${staff?.length || 0} staff members`);
 
+    // Calculate total_clients and done_clients for each staff member from available_slots table
+    const staffWithCounts = await Promise.all(staff.map(async (s) => {
+      try {
+        // Count total bookings for this staff
+        const { count: totalBookings, error: totalError } = await supabase
+          .from('available_slots')
+          .select('*', { count: 'exact', head: true })
+          .eq('assigned_staff', s.names);
+
+        if (totalError) {
+          console.warn(`[Staffs] Error counting total bookings for ${s.names}:`, totalError);
+        }
+
+        // Count done/completed bookings for this staff
+        const { count: doneBookings, error: doneError } = await supabase
+          .from('available_slots')
+          .select('*', { count: 'exact', head: true })
+          .eq('assigned_staff', s.names)
+          .eq('status', 'done');
+
+        if (doneError) {
+          console.warn(`[Staffs] Error counting done bookings for ${s.names}:`, doneError);
+        }
+
+        const totalCount = totalBookings || 0;
+        const doneCount = doneBookings || 0;
+
+        console.log(`[Staffs] Staff: "${s.names}", Total: ${totalCount}, Done: ${doneCount}`);
+
+        return {
+          ...s,
+          total_clients: totalCount,
+          done_clients: doneCount
+        };
+      } catch (err) {
+        console.error(`[Staffs] Exception counting for ${s.names}:`, err);
+        return { ...s, total_clients: 0, done_clients: 0 };
+      }
+    }));
+
+    console.log('[Staffs] Calculated total_clients and done_clients from available_slots');
+
     // Manually create JSON to avoid serialization issues
-    const jsonString = JSON.stringify(staff || []);
+    const jsonString = JSON.stringify(staffWithCounts || []);
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Length', Buffer.byteLength(jsonString));
     res.status(200).send(jsonString);

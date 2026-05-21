@@ -1,13 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { couponService } from "../../services/couponService";
 import { EditServiceModal } from "../../components/modal/admin/edit_service";
-import { CreatePromoModal } from "../../components/modal/admin/create_promo";
-import { CreateDiscountModal } from "../../components/modal/admin/create_discount";
+import CouponModal from "../../components/modal/admin/coupon_modal";
+import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
+import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+
+// ═══════════════════════════════════════════════════════════════════
+// DARK MODE HELPER
+// ═══════════════════════════════════════════════════════════════════
+const isDarkMode = () => {
+  if (typeof document === 'undefined') return true;
+  const theme = document.documentElement.getAttribute('data-theme');
+  return theme !== 'light';
+};
+
+const getThemeStyles = (darkStyles, lightStyles) => {
+  return isDarkMode() ? darkStyles : lightStyles;
+};
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 
 const ScissorsIcon = ({ size = 20, color = "#000" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -33,16 +48,6 @@ const SettingsIcon = ({ size = 15, color = "#fff" }) => (
   </svg>
 );
 
-const CalendarIcon = ({ size = 20, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="4" width="18" height="18" rx="3" stroke={color} strokeWidth="1.8" />
-    <path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    <circle cx="8" cy="15" r="1" fill={color} />
-    <circle cx="12" cy="15" r="1" fill={color} />
-    <circle cx="16" cy="15" r="1" fill={color} />
-  </svg>
-);
-
 const RevenueIcon = ({ size = 20, color = "#dd901d" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <line x1="12" y1="1" x2="12" y2="23" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
@@ -50,19 +55,19 @@ const RevenueIcon = ({ size = 20, color = "#dd901d" }) => (
   </svg>
 );
 
+const GiftIcon = ({ size = 20, color = "#dd901d" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M10 1v7M10 1H6a1 1 0 0 0-1 1v4h10V2a1 1 0 0 0-1-1h-4z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10 1h4a1 1 0 0 1 1 1v4H6V2a1 1 0 0 1 1-1h3z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M2 6h16v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10 8v9" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
 const PromoIcon = ({ size = 20, color = "#dd901d" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     <circle cx="7" cy="7" r="1.5" fill={color} />
-  </svg>
-);
-
-const LoyaltyIcon = ({ size = 20, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <rect x="2" y="5" width="20" height="14" rx="3" stroke={color} strokeWidth="1.8" />
-    <path d="M2 10h20" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    <circle cx="7" cy="15" r="1" fill={color} />
-    <path d="M11 15h6" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
   </svg>
 );
 
@@ -217,7 +222,7 @@ const SERVICE_GROUPS = [
 
 /* ── Navbar ── */
 /* ── Sidebar ── */
-const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpanded, onLogout }) => {
+const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, onLogout }) => {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
 
@@ -226,6 +231,9 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
     return () => clearTimeout(t);
   }, []);
 
+  
+
+  
   const handleNavClick = (itemId) => {
     setActiveNav(itemId);
     if (itemId === "home") {
@@ -240,8 +248,7 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
   };
 
   const handleLogout = () => {
-    logoutOperator();
-    navigate("/");
+    onLogout?.();
   };
 
   return (
@@ -250,27 +257,11 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, setSidebarExpa
       transform: mounted ? "translateX(0)" : "translateX(-16px)",
       transition: "all 0.5s ease"
     }}>
-      {/* Logo + Toggle */}
-      <div className="sidebar-logo-section">
-        <button 
-          onClick={() => setSidebarExpanded(!sidebarExpanded)}
-          className="logo-toggle-btn"
-          title="Toggle sidebar"
-        >
-          <div className="logo-badge">
-            <LogoIcon />
-          </div>
-        </button>
-        {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
-      </div>
-
       {/* Admin pill */}
-      {sidebarExpanded && (
-        <div className="admin-badge-pill">
-          <div className="admin-badge-circle">A</div>
-          <span className="admin-badge-text">Administrator</span>
-        </div>
-      )}
+      <div className="admin-badge-pill">
+        <div className="admin-badge-circle">A</div>
+        <span className="admin-badge-text">Administrator</span>
+      </div>
 
       {/* Nav items */}
       <nav className="sidebar-nav">
@@ -367,16 +358,7 @@ const PageTitle = () => {
         <h1 className="dash-page-title">Services Management</h1>
         <p className="dash-page-subtitle">BeautyBook Pro · {todayDate}</p>
       </div>
-      <div className="dash-page-actions">
-        <button className="dash-action-btn">
-          <BellIcon size={14} color="#fff" />
-          Notifications
-        </button>
-        <button className="dash-action-btn">
-          <SettingsIcon size={14} color="#fff" />
-          Settings
-        </button>
-      </div>
+      <AdminHeaderActions />
     </div>
   );
 };
@@ -406,86 +388,131 @@ const PageMetrics = ({ stats }) => (
 );
 
 /* ── Single service item row ── */
-const ServiceItem = ({ id, name, category, meta, available, price, onEdit }) => (
-  <div className="svc-item-row">
-    <div className="svc-item-left">
-      <div className="svc-item-icon-box">
-        <ScissorsIcon size={18} color="#000" />
+const ServiceItem = ({ id, name, category, meta, available, price, estimatedTime, onEdit }) => {
+  const rowStyles = getThemeStyles(
+    {
+      backgroundColor: 'rgba(20, 17, 15, 0.35)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '12px',
+      padding: '16px',
+      marginBottom: '12px'
+    },
+    {
+      backgroundColor: '#ffffff',
+      border: '1px solid rgba(213, 210, 211, 0.35)',
+      borderRadius: '12px',
+      padding: '16px',
+      marginBottom: '12px'
+    }
+  );
+
+  const titleColor = isDarkMode() ? '#f5f1eb' : '#0c0a09';
+  const metaColor = isDarkMode() ? '#988f81' : '#666';
+  const priceColor = isDarkMode() ? '#f5f1eb' : '#0c0a09';
+
+  return (
+    <div className="svc-item-row" style={rowStyles}>
+      <div className="svc-item-left">
+        <div className="svc-item-icon-box">
+          <ScissorsIcon size={18} color={titleColor} />
+        </div>
+        <div className="svc-item-info">
+          <span className="svc-item-name" style={{ color: titleColor }}>{name}</span>
+          <span className="svc-item-meta" style={{ color: metaColor }}>{meta}</span>
+        </div>
       </div>
-      <div className="svc-item-info">
-        <span className="svc-item-name">{name}</span>
-        <span className="svc-item-meta">{meta}</span>
+      <div className="svc-item-right">
+        <div className="svc-item-status-col">
+          <span className={available ? "svc-item-status-available" : "svc-item-status-unavailable"}>
+            {available ? "Available" : "Not Available"}
+          </span>
+          <span className="svc-item-price" style={{ color: priceColor }}>{price}</span>
+        </div>
+        <button 
+          className="svc-item-edit-btn" 
+          aria-label="Edit service"
+          onClick={() => onEdit({ id, name, category, meta, available, price, estimatedTime })}
+        >
+          <EditIcon size={14} color="currentColor" />
+        </button>
       </div>
     </div>
-    <div className="svc-item-right">
-      <div className="svc-item-status-col">
-        <span className={available ? "svc-item-status-available" : "svc-item-status-unavailable"}>
-          {available ? "Available" : "Not Available"}
-        </span>
-        <span className="svc-item-price">{price}</span>
-      </div>
-      <button 
-        className="svc-item-edit-btn" 
-        aria-label="Edit service"
-        onClick={() => onEdit({ id, name, category, meta, available, price })}
-      >
-        <EditIcon size={14} color="currentColor" />
-      </button>
-    </div>
-  </div>
-);
+  );
+};
 
 /* ── Services list panel ── */
 const ServicesPanel = ({ serviceGroups, loading, error, onEditService }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-
   return (
     <div className="svc-group-panel">
       <div className="svc-group-header">
         <h2 className="svc-group-title">All Services</h2>
-        <button 
-          className="svc-see-less-btn"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {isExpanded ? "See less" : "See more"}
-        </button>
       </div>
 
       {/* Loading State */}
       {loading && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#999'
+          }
+        )}>
           Loading services...
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444' }}>
+        <div style={getThemeStyles(
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#f5f1eb'
+          },
+          {
+            padding: '20px',
+            textAlign: 'center',
+            color: '#ef4444'
+          }
+        )}>
           Error loading services: {error}
         </div>
       )}
 
       {/* Services List */}
       {!loading && !error && (
-        <div className={isExpanded ? "svc-services-scroll" : "svc-services-scroll-limited"}>
-          {/* Show all services grouped by category (both expanded and collapsed) */}
-          {serviceGroups.map((group, gi) => (
-            <div key={gi}>
-              <p className="svc-category-label">{group.category}</p>
-              <div className="svc-item-list">
-                {group.items.map((svc, i) => (
-                  <ServiceItem 
-                    key={i} 
-                    {...svc} 
-                    onEdit={onEditService}
-                  />
-                ))}
-              </div>
-              {gi < serviceGroups.length - 1 && (
-                <div className="svc-category-divider" />
-              )}
+        <div className="svc-services-scroll-limited">
+          {serviceGroups.length === 0 ? (
+            <div className="container-empty-state">
+              No services found
             </div>
-          ))}
+          ) : (
+            <>
+              {/* Show all services grouped by category (both expanded and collapsed) */}
+              {serviceGroups.map((group, gi) => (
+                <div key={gi}>
+                  <p className="svc-category-label">{group.category}</p>
+                  <div className="svc-item-list">
+                    {group.items.map((svc, i) => (
+                      <ServiceItem 
+                        key={i} 
+                        {...svc} 
+                        onEdit={onEditService}
+                      />
+                    ))}
+                  </div>
+                  {gi < serviceGroups.length - 1 && (
+                    <div className="svc-category-divider" />
+                  )}
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>
@@ -493,7 +520,7 @@ const ServicesPanel = ({ serviceGroups, loading, error, onEditService }) => {
 };
 
 /* ── Quick Actions sidebar ── */
-const QuickActionsPanel = ({ onNewService, onCreatePromo, onCreateDiscount }) => (
+const QuickActionsPanel = ({ onNewService, onManageCoupons }) => (
   <div className="svc-quick-actions-panel">
     <h3 className="svc-quick-title">Quick Actions</h3>
 
@@ -507,18 +534,10 @@ const QuickActionsPanel = ({ onNewService, onCreatePromo, onCreateDiscount }) =>
 
     <button 
       className="svc-action-btn-secondary"
-      onClick={onCreatePromo}
+      onClick={onManageCoupons}
     >
       <PromoIcon size={16} color="currentColor" />
-      Create Promo
-    </button>
-
-    <button 
-      className="svc-action-btn-secondary"
-      onClick={onCreateDiscount}
-    >
-      <DiscountIcon size={16} color="currentColor" />
-      Create Discount
+      Manage Coupons
     </button>
   </div>
 );
@@ -552,13 +571,11 @@ export const AdminDashboardServices = ({ date }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingService, setEditingService] = useState(null);
-  const [isCreatingPromo, setIsCreatingPromo] = useState(false);
-  const [isCreatingDiscount, setIsCreatingDiscount] = useState(false);
+  const [isManagingCoupons, setIsManagingCoupons] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [stats, setStats] = useState([
-    { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: "0",       label: "Today's Appointments" },
-    { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱0.00",   label: "Revenue Today"        },
-    { Icon: ScissorsIcon, badge: null,    badgeType: null,    value: "0",       label: "Promo Bookings Today" },
-    { Icon: LoyaltyIcon,  badge: "+5",    badgeType: "green", value: "0",       label: "Loyalty Cards Activated" },
+    { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱0.00", label: "Revenue Today" },
+    { Icon: GiftIcon,     badge: "+8%",   badgeType: "green", value: "0",       label: "Coupons Used"   },
   ]);
   const [appointmentData, setAppointmentData] = useState({
     current: [],
@@ -577,12 +594,51 @@ export const AdminDashboardServices = ({ date }) => {
     localStorage.setItem('adminSidebarExpanded', JSON.stringify(sidebarExpanded));
   }, [sidebarExpanded]);
 
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const res = await fetch('/api/services');
+      if (!res.ok) {
+        throw new Error(`Failed to fetch services: ${res.status}`);
+      }
+
+      const servicesData = await res.json();
+
+      // Transform services data to include formatted price and availability
+      const transformedServices = servicesData.map(s => {
+        // Try both 'name' and 'service_name' columns (handle both DB schemas)
+        const serviceName = s.name || s.service_name || 'Unknown';
+
+        console.log('Service data:', { id: s.id, name: s.name, service_name: s.service_name, serviceName });
+
+        return {
+          id: s.id,
+          name: serviceName,
+          category: s.category || 'Other',
+          description: s.description || s.meta || '',
+          price: s.price ? `₱${parseFloat(s.price).toFixed(2)}` : '₱0.00',
+          estimatedTime: s.estimated_time || s.est_time || '30 mins',
+          available: s.availability !== false,
+          meta: s.description || s.meta || ''
+        };
+      });
+
+      setServices(transformedServices);
+    } catch (err) {
+      console.error('Error fetching services:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
   }, []);
 
-  // Fetch appointments data
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -611,72 +667,28 @@ export const AdminDashboardServices = ({ date }) => {
     fetchAppointments();
   }, []);
 
-  // Calculate stats dynamically
+  // Fetch coupon metrics for the admin services dashboard
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Total appointments for today
-    const todayAppointments = [
-      ...appointmentData.current.filter(apt => apt.date === today),
-      ...appointmentData.pending.filter(apt => apt.date === today),
-      ...appointmentData.done.filter(apt => apt.date === today)
-    ];
-    
-    const totalToday = todayAppointments.length;
-
-    setStats([
-      { Icon: CalendarIcon, badge: "+3",    badgeType: "green", value: totalToday.toString(), label: "Today's Appointments" },
-      { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱12,450",   label: "Revenue Today"        },
-      { Icon: ScissorsIcon, badge: null,    badgeType: null,    value: "0",       label: "Promo Bookings Today" },
-      { Icon: LoyaltyIcon,  badge: "+5",    badgeType: "green", value: "0",       label: "Loyalty Cards Activated" },
-    ]);
-  }, [appointmentData]);
-
-  // Fetch services from API on component mount
-  useEffect(() => {
-    const fetchServices = async () => {
+    const fetchCouponMetrics = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        const coupons = await couponService.getCoupons();
+        const usedCoupons = coupons.reduce((sum, coupon) => sum + (Number(coupon.number_of_uses) || 0), 0);
 
-        const res = await fetch('/api/services');
-        if (!res.ok) {
-          throw new Error(`Failed to fetch services: ${res.status}`);
-        }
-
-        const servicesData = await res.json();
-        
-        // Transform services data to include formatted price and availability
-        const transformedServices = servicesData.map(s => {
-          // Try both 'name' and 'service_name' columns (handle both DB schemas)
-          const serviceName = s.name || s.service_name || 'Unknown';
-          
-          console.log('Service data:', { id: s.id, name: s.name, service_name: s.service_name, serviceName });
-          
-          return {
-            id: s.id,
-            name: serviceName,
-            category: s.category || 'Other',
-            description: s.description || s.meta || '',
-            price: s.price ? `₱${parseFloat(s.price).toFixed(2)}` : '₱0.00',
-            estimatedTime: s.estimated_time || s.est_time || '30 mins',
-            available: s.availability !== false,
-            meta: s.description || s.meta || ''
-          };
-        });
-
-        setServices(transformedServices);
+        setStats([
+          { Icon: RevenueIcon, badge: "+15%", badgeType: "green", value: "₱12,450", label: "Revenue Today" },
+          { Icon: GiftIcon,    badge: "+8%",  badgeType: "green", value: usedCoupons.toString(), label: "Coupons Used"   },
+        ]);
       } catch (err) {
-        console.error('Error fetching services:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        console.error('Error loading coupon metrics:', err);
       }
     };
 
+    fetchCouponMetrics();
+  }, []);
+
+  // Fetch services from API on component mount
+  useEffect(() => {
     fetchServices();
-    
-    return () => {};
   }, []);
 
   // Group services by category
@@ -700,8 +712,17 @@ export const AdminDashboardServices = ({ date }) => {
   const categories = serviceGroups.map(group => group.category);
 
   const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
     logoutOperator();
+    setShowLogoutConfirm(false);
     navigate("/");
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   const handleEditService = (service) => {
@@ -734,36 +755,40 @@ export const AdminDashboardServices = ({ date }) => {
           ? parseFloat(serviceData.price.replace(/[₱\s]/g, ''))
           : parseFloat(serviceData.price);
 
+        const requestBody = {
+          name: serviceData.name,
+          service_name: serviceData.name,
+          category: serviceData.category,
+          description: serviceData.meta,
+          price: isNaN(priceValue) ? 0 : priceValue,
+          availability: serviceData.available,
+          estimated_time: serviceData.estimated_time ? parseInt(serviceData.estimated_time, 10) : 0
+        };
+        
+        console.log("Request body being sent:", requestBody);
+
         const res = await fetch('/api/services/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: serviceData.name,
-            service_name: serviceData.name,
-            category: serviceData.category,
-            description: serviceData.meta,
-            price: isNaN(priceValue) ? 0 : priceValue,
-            availability: serviceData.available
-          })
+          body: JSON.stringify(requestBody)
         });
 
+        console.log("Response status:", res.status);
+        console.log("Response headers:", Object.fromEntries(res.headers));
+        
         if (!res.ok) {
-          throw new Error(`Failed to create service: ${res.status}`);
+          const errorData = await res.json();
+          console.error("Error response body:", errorData);
+          const errorMsg = errorData.error || 'Unknown error';
+          const details = errorData.details || '';
+          const insertData = errorData.insertData ? JSON.stringify(errorData.insertData) : '';
+          throw new Error(`Failed to create service: ${errorMsg}. Details: ${details}. Data sent: ${insertData}`);
         }
 
         const newService = await res.json();
         console.log("Service created successfully:", newService);
-        
-        // Add new service to list
-        setServices(prev => [...prev, {
-          id: newService.id,
-          name: newService.name,
-          category: newService.category,
-          description: newService.description,
-          price: `₱${parseFloat(newService.price).toFixed(2)}`,
-          available: newService.availability !== false,
-          meta: newService.description
-        }]);
+
+        await fetchServices();
 
       } else {
         // Update existing service via PUT to /api/services/update
@@ -778,39 +803,39 @@ export const AdminDashboardServices = ({ date }) => {
           ? parseFloat(serviceData.price.replace(/[₱\s]/g, '')) 
           : parseFloat(serviceData.price);
 
+        // Build request body with only fields that have values (not empty)
+        // This ensures unmodified fields retain their original values
+        const updateBody = {
+          name: serviceData.name,
+          category: serviceData.category,
+          description: serviceData.meta,
+          available: serviceData.available
+        };
+
+        // Only include price if it's a valid number
+        if (!isNaN(priceValue) && priceValue !== '') {
+          updateBody.price = priceValue;
+        }
+
+        // Only include estimated_time if it's provided and not empty
+        if (serviceData.estimated_time !== undefined && serviceData.estimated_time !== '') {
+          updateBody.estimated_time = parseInt(serviceData.estimated_time, 10);
+        }
+
+        console.log("Update request body:", updateBody);
+
         const res = await fetch(`/api/services/update?id=${serviceData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: serviceData.name,
-            category: serviceData.category,
-            description: serviceData.meta,
-            price: isNaN(priceValue) ? 0 : priceValue,
-            available: serviceData.available
-          })
+          body: JSON.stringify(updateBody)
         });
 
         if (!res.ok) {
-          throw new Error(`Failed to update service: ${res.status}`);
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Failed to update service: ${res.status}`);
         }
 
-        const updatedService = await res.json();
-        console.log("Service updated successfully:", updatedService);
-        
-        // Update service in list
-        setServices(prev => prev.map(svc => 
-          svc.id === serviceData.id 
-            ? {
-                ...svc,
-                name: serviceData.name,
-                category: serviceData.category,
-                description: serviceData.meta,
-                price: `₱${parseFloat(serviceData.price).toFixed(2)}`,
-                available: serviceData.available,
-                meta: serviceData.meta
-              }
-            : svc
-        ));
+        await fetchServices();
       }
 
       setEditingService(null);
@@ -841,9 +866,8 @@ export const AdminDashboardServices = ({ date }) => {
       }
 
       console.log("Service deleted successfully");
-      
-      // Remove service from list
-      setServices(prev => prev.filter(svc => svc.id !== service.id));
+
+      await fetchServices();
       setEditingService(null);
     } catch (err) {
       console.error('Error deleting service:', err);
@@ -855,42 +879,54 @@ export const AdminDashboardServices = ({ date }) => {
     setEditingService(null);
   };
 
-  const handleCreatePromo = () => {
-    setIsCreatingPromo(true);
-  };
+  const handleOpenCoupons = () => setIsManagingCoupons(true);
+  const handleCloseCoupons = () => setIsManagingCoupons(false);
 
-  const handleClosePromoModal = () => {
-    setIsCreatingPromo(false);
-  };
+  // Generate header notifications from appointment and service data
+  const headerNotifications = useMemo(() => {
+    const pendingFeed = appointmentData.pending.slice(0, 2).map((appointment, index) => ({
+      id: `services-pending-${appointment.id || index}`,
+      tone: "amber",
+      category: "New booking",
+      title: `${appointment.name || "Customer"} booked ${appointment.service || "a service"}`,
+      description: `${appointment.time || "TBA"} • ${appointment.staff || "Any available stylist"}`,
+      time: "Today",
+      unread: index === 0,
+    }));
 
-  const handleSavePromo = (formData) => {
-    console.log("Promo created:", formData);
-    // Here you can integrate with your API to create the promo
-    setIsCreatingPromo(false);
-  };
+    const completedFeed = appointmentData.done.slice(0, 1).map((appointment, index) => ({
+      id: `services-done-${appointment.id || index}`,
+      tone: "green",
+      category: "Completed",
+      title: `${appointment.name || "Customer"} appointment finished`,
+      description: `${appointment.service || "Service"} marked done successfully.`,
+      time: "Today",
+      unread: false,
+    }));
 
-  const handleCreateDiscount = () => {
-    setIsCreatingDiscount(true);
-  };
+    const serviceFeed = services.slice(0, 1).map((service, index) => ({
+      id: `services-item-${service.id || index}`,
+      tone: service.available ? "green" : "red",
+      category: "Service catalog",
+      title: `${service.name || "Service"} is ${service.available ? "available" : "hidden"}`,
+      description: service.meta || service.description || "Service record updated.",
+      time: "Now",
+      unread: false,
+    }));
 
-  const handleCloseDiscountModal = () => {
-    setIsCreatingDiscount(false);
-  };
-
-  const handleSaveDiscount = (formData) => {
-    console.log("Discount created:", formData);
-    // Here you can integrate with your API to create the discount
-    setIsCreatingDiscount(false);
-  };
+    return [...pendingFeed, ...completedFeed, ...serviceFeed].slice(0, 5);
+  }, [appointmentData, services]);
 
   return (
-    <div className="super-admin-container">
+    <div
+      className="super-admin-container admin-dashboard-page"
+      style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
+    >
       {/* Sidebar */}
       <AdminSidebar 
         activeNav={activeNav}
         setActiveNav={setActiveNav}
         sidebarExpanded={sidebarExpanded}
-        setSidebarExpanded={setSidebarExpanded}
         onLogout={handleLogout}
       />
 
@@ -898,20 +934,23 @@ export const AdminDashboardServices = ({ date }) => {
       <div className="super-admin-main">
         {/* Dashboard Header - Fixed Title and Actions */}
         <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
-          <div>
-            <h1 className="dash-page-title">Services Management</h1>
-            <p className="dash-page-subtitle">BeautyBook Pro · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
-          </div>
-          <div className="dash-page-actions">
-            <button className="dash-action-btn">
-              <BellIcon size={14} color="#fff" />
-              Notifications
+          <div className="dashboard-header-main">
+            <button
+              onClick={() => setSidebarExpanded((prev) => !prev)}
+              className="logo-toggle-btn dashboard-header-logo-btn"
+              title="Toggle sidebar"
+            >
+              <div className="logo-badge">
+                <LogoIcon />
+              </div>
             </button>
-            <button className="dash-action-btn">
-              <SettingsIcon size={14} color="#fff" />
-              Settings
-            </button>
+            <span className="dashboard-system-title">BeautyBook Pro</span>
+            <div className="dashboard-page-title-wrap">
+              <h1 className="dash-page-title">Services Management</h1>
+              <p className="dash-page-subtitle">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+            </div>
           </div>
+          <AdminHeaderActions notifications={headerNotifications} />
         </header>
 
         <main className="dashboard-main">
@@ -931,11 +970,10 @@ export const AdminDashboardServices = ({ date }) => {
 
           {/* Right — Quick actions + Analytics */}
           <div>
-            <QuickActionsPanel 
-              onNewService={handleNewService} 
-              onCreatePromo={handleCreatePromo}
-              onCreateDiscount={handleCreateDiscount}
-            />
+                    <QuickActionsPanel 
+                      onNewService={handleNewService} 
+                      onManageCoupons={handleOpenCoupons}
+                    />
             <AnalyticsPanel />
           </div>
         </div>
@@ -953,17 +991,20 @@ export const AdminDashboardServices = ({ date }) => {
       />
 
       {/* Create Promo Modal - Rendered at page level */}
-      <CreatePromoModal 
-        isOpen={isCreatingPromo}
-        onClose={handleClosePromoModal}
-        onSave={handleSavePromo}
+      <CouponModal
+        isOpen={isManagingCoupons}
+        onClose={handleCloseCoupons}
+        services={services}
       />
 
-      {/* Create Discount Modal - Rendered at page level */}
-      <CreateDiscountModal 
-        isOpen={isCreatingDiscount}
-        onClose={handleCloseDiscountModal}
-        onSave={handleSaveDiscount}
+      <ConfirmationDialog
+        isOpen={showLogoutConfirm}
+        title="Log Out?"
+        message="Are you sure you want to log out of the admin dashboard?"
+        confirmText="Yes, Log Out"
+        cancelText="Stay Logged In"
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
       />
     </div>
   );
