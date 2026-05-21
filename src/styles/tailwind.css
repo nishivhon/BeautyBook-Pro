@@ -2050,6 +2050,8 @@ html[data-theme="light"] .dash-page-title,
   html[data-theme="light"] .appt-section-sub   { color: var(--color-tan) !important; font-family: 'Inter', sans-serif !important; font-weight: 400 !important; font-size: 0.78rem !important; }
 
   html[data-theme="light"] .appt-footer { display: flex !important; flex-direction: row !important; gap: 12px !important; padding: 16px 40px 20px !important; background: #070605 !important; border-top: 1px solid rgba(152,143,129,0.1) !important; }
+  html[data-theme="light"] .walkin-appt-body { padding: 12px 16px 12px !important; gap: 14px !important; }
+  html[data-theme="light"] .walkin-appt-footer { padding: 10px 16px !important; gap: 10px !important; }
 
   html[data-theme="light"] .walkin-label {
     color: var(--color-white) !important;
@@ -11513,6 +11515,7 @@ html[data-theme="light"] .dash-page-title,
     border-color: #ef4444;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
   }
+
 
   .walkin-error {
     color: #ef4444;

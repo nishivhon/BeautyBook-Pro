@@ -30,6 +30,12 @@ const BOOKING_MODAL_THEME_CSS = `
   }
 
   .booking-modal-theme .appt-root {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    max-height: calc(100vh - 80px) !important;
+    width: min(960px, calc(100vw - 32px)) !important;
+    overflow: hidden !important;
     background: #070605 !important;
     border: 1px solid rgba(221, 144, 29, 0.15) !important;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
@@ -45,21 +51,28 @@ const BOOKING_MODAL_THEME_CSS = `
     border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
   }
 
-  .booking-modal-theme .appt-footer {
+  .booking-modal-theme .appt-footer,
+  .booking-modal-theme .booking-service-footer {
     border-top: 1px solid rgba(152, 143, 129, 0.18) !important;
     display: flex !important;
     flex-direction: row !important;
+    flex-wrap: nowrap !important;
     align-items: center !important;
     gap: 12px !important;
+    flex-shrink: 0 !important;
   }
 
-  .booking-modal-theme .appt-root .appt-footer > button {
+  .booking-modal-theme .appt-root .appt-footer > button,
+  .booking-modal-theme .booking-service-footer > button {
     flex: 1 1 0 !important;
     min-width: 0 !important;
+    width: auto !important;
   }
 
   .booking-modal-theme .appt-root .appt-footer .appt-cancel-btn,
-  .booking-modal-theme .appt-root .appt-footer .appt-continue-btn {
+  .booking-modal-theme .appt-root .appt-footer .appt-continue-btn,
+  .booking-modal-theme .booking-service-footer .appt-cancel-btn,
+  .booking-modal-theme .booking-service-footer .appt-continue-btn {
     width: auto !important;
   }
 
@@ -69,6 +82,10 @@ const BOOKING_MODAL_THEME_CSS = `
   }
 
   .booking-modal-theme .appt-body {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 28px 40px 20px !important;
     background: #070605 !important;
     color: #f5f1eb !important;
   }
@@ -441,12 +458,25 @@ export const DynamicServiceModal = ({
         pointerEvents: 'auto'
       }}
     >
-      <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ ...BOOKING_MODAL_THEME_VARS, pointerEvents: 'auto' }}>
+      <div
+        className="appt-root"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          ...BOOKING_MODAL_THEME_VARS,
+          pointerEvents: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          height: 'auto',
+          maxHeight: 'calc(100vh - 80px)',
+          width: 'min(960px, calc(100vw - 32px))',
+          overflow: 'hidden',
+        }}
+      >
         <ServiceHeader title={categoryName} onBack={handleBack} isSaving={isUpdating} />
         <ProgressIndicator currentStep={2} />
 
         {/* ── Scrollable body ── */}
-        <div className="appt-body">
+        <div className="appt-body" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '28px 40px 20px' }}>
           <div className="appt-section-heading">
             <p className="appt-section-title">Choose {categoryName.toLowerCase()}</p>
             <p className="appt-section-sub">Select one or more services you&apos;d like to book</p>
@@ -490,10 +520,12 @@ export const DynamicServiceModal = ({
 
         {/* ── Buttons footer ── */}
         <div
-          className="appt-footer"
+          className="appt-footer booking-service-footer"
           style={{
             display: "flex",
             flexDirection: "row",
+            flexWrap: "nowrap",
+            alignItems: "center",
             gap: 12,
             width: "100%",
             padding: "16px 20px",
@@ -502,17 +534,19 @@ export const DynamicServiceModal = ({
             flexShrink: 0,
           }}
         >
-          <button className="appt-cancel-btn" onClick={handleBack} style={{ flex: 1, minWidth: 0 }}>
-            Back
-          </button>
-          <button
-            className="appt-continue-btn"
-            onClick={handleContinue}
-            disabled={selected.length === 0 && !isUpdating}
-            style={{ flex: 1, minWidth: 0 }}
-          >
-            Continue
-          </button>
+          <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+            <button className="appt-cancel-btn" onClick={handleBack} style={{ flex: '1 1 0', minWidth: 0, width: 'auto' }}>
+              Back
+            </button>
+            <button
+              className="appt-continue-btn"
+              onClick={handleContinue}
+              disabled={selected.length === 0 && !isUpdating}
+              style={{ flex: '1 1 0', minWidth: 0, width: 'auto' }}
+            >
+              Continue
+            </button>
+          </div>
         </div>
       </div>
     </div>

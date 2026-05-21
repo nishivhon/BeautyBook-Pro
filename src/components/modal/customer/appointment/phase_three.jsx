@@ -534,7 +534,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
           data-theme="dark"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              handleBack();
+              handleExitRequest();
             }
           }}
           style={{

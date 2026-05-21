@@ -152,6 +152,90 @@ const DARK_MODAL_VARS = {
   colorScheme: "dark",
 };
 
+const BOOKING_MODAL_THEME_CLASS = "booking-modal-theme";
+
+const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-walkin";
+
+const BOOKING_MODAL_THEME_CSS = `
+  .booking-modal-theme,
+  .booking-modal-theme * {
+    color-scheme: dark;
+  }
+
+  .booking-modal-theme .appt-root {
+    background: #070605 !important;
+    border: 1px solid rgba(221, 144, 29, 0.15) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-header,
+  .booking-modal-theme .appt-footer {
+    background: #070605 !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    background: #070605 !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .confirm-card {
+    background: #11100d !important;
+    border: 1px solid rgba(221, 144, 29, 0.12) !important;
+    color: #f5f1eb !important;
+  }
+  /* Override any residual light-theme pink glows for confirm elements */
+  .booking-modal-theme .confirm-ref-pill {
+    background: rgba(221,144,29,0.14) !important;
+    border: 1px solid rgba(221,144,29,0.45) !important;
+    color: #f5f1eb !important;
+    box-shadow: 0 2px 10px rgba(221,144,29,0.28) !important;
+  }
+
+  .booking-modal-theme .confirm-reminder-box {
+    background: rgba(221,144,29,0.12) !important;
+    border-left: 3px solid rgba(221,144,29,0.95) !important;
+    box-shadow: 0 2px 12px rgba(221,144,29,0.25) !important;
+  }
+
+  .booking-modal-theme .queue-current-row,
+  .booking-modal-theme .queue-row,
+  .booking-modal-theme .queue-stat-card,
+  .booking-modal-theme .queue-schedule-item,
+  .booking-modal-theme .service-card,
+  .booking-modal-theme .cdb-card {
+    box-shadow: 0 16px 36px rgba(221,144,29,0.14) !important;
+    background: #11100d !important;
+    border-color: rgba(221,144,29,0.08) !important;
+  }
+  /* Scrollbar overrides (WebKit + Firefox) */
+  .booking-modal-theme .appt-body::-webkit-scrollbar,
+  .booking-modal-theme .svc-list::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-track,
+  .booking-modal-theme .svc-list::-webkit-scrollbar-track {
+    background: rgba(19,19,19,0.4) !important;
+    border-radius: 10px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb,
+  .booking-modal-theme .svc-list::-webkit-scrollbar-thumb {
+    background: rgba(221,144,29,0.9) !important;
+    border-radius: 10px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  .booking-modal-theme .appt-body,
+  .booking-modal-theme .svc-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221,144,29,0.9) rgba(19,19,19,0.4);
+  }
+`;
+
 /* ── Header ── */
 const ModalHeader = ({ onBack }) => (
   <header className="appt-header">
@@ -270,6 +354,20 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
       return () => clearTimeout(timer);
     }
   }, [showConfirmationToast]);
+
+  // Inject booking modal theme CSS for dark styling
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const existing = document.getElementById(BOOKING_MODAL_THEME_STYLE_ID);
+    if (existing) {
+      existing.textContent = BOOKING_MODAL_THEME_CSS;
+      return;
+    }
+    const style = document.createElement('style');
+    style.id = BOOKING_MODAL_THEME_STYLE_ID;
+    style.textContent = BOOKING_MODAL_THEME_CSS;
+    document.head.appendChild(style);
+  }, []);
 
   // Validation for customer name
   const validateName = (value) => {
@@ -727,7 +825,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
         />
       </div>
       <div 
-        className="appt-overlay walkin-force-dark"
+        className={`appt-overlay walkin-force-dark ${BOOKING_MODAL_THEME_CLASS}`}
         style={{
           ...DARK_MODAL_VARS,
           zIndex: 10000001,
@@ -784,17 +882,17 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
             {/* Step 2: Service Selection (Using Phase 2 Component) */}
             {step === 2 && (
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "column" }}>
-                <AppointmentFormPhase2
-                  onBack={handleBack}
-                  onContinue={handlePhase2Continue}
-                  onCancel={handleCancelClick}
-                  initialData={null}
-                  headerTitle="Add Walk-in"
-                  stepLabels={WALK_IN_STEPS}
-                  showPromoCode={false}
-                />
-              </div>
+              <AppointmentFormPhase2
+                onBack={handleBack}
+                onContinue={handlePhase2Continue}
+                onCancel={handleCancelClick}
+                initialData={null}
+                headerTitle="Add Walk-in"
+                stepLabels={WALK_IN_STEPS}
+                showPromoCode={false}
+                isInline
+                isWalkIn
+              />
             )}
 
             {/* Step 3: Stylist Selection (Using Phase 3 Component) */}
@@ -910,10 +1008,18 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
                   {/* Bottom: ref no. + reminder */}
                   <div className="confirm-bottom-row">
-                    <div className="confirm-ref-pill">
+                    <div
+                      className="confirm-ref-pill"
+                      style={{
+                        background: 'rgba(221,144,29,0.14)',
+                        border: '1px solid rgba(221,144,29,0.45)',
+                        color: '#f5f1eb',
+                        boxShadow: '0 2px 10px rgba(221,144,29,0.28)'
+                      }}
+                    >
                       Ref. No.: {receiptData.id}
                     </div>
-  
+
                   </div>
                 </div>
               </div>
