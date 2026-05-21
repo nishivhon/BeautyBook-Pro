@@ -508,10 +508,10 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
   // Update staff when staffList changes
   useEffect(() => {
     setStaff(staffList);
-    // Initialize walk-in status for each staff member (default to "Accepting")
+    // Initialize walk-in status from the actual walk_in column
     const initialWalkInStatus = {};
     staffList.forEach(member => {
-      initialWalkInStatus[member.name] = member.details?.availableForWalkIn ? "Accepting" : "Not Accepting";
+      initialWalkInStatus[member.name] = member.walk_in ? "Accepting" : "Not Accepting";
     });
     setWalkInStatus(initialWalkInStatus);
   }, [staffList]);
@@ -532,7 +532,11 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
   };
 
   const handleStatusUpdate = (staffName, newStatus) => {
-    const walkInEnabled = newStatus === "Available";
+    const currentStaff = staff.find(s => s.name === staffName);
+    const shouldAcceptWalkIns = newStatus === "Available" || newStatus === "Open Slots"
+      ? Boolean(currentStaff?.walk_in)
+      : false;
+
     const updatedStaff = staff.map(s => 
       s.name === staffName 
         ? { 
@@ -546,7 +550,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
         : s
     );
     setStaff(updatedStaff);
-      setWalkInStatus(prev => ({ ...prev, [staffName]: walkInEnabled ? "Accepting" : "Not Accepting" }));
+    setWalkInStatus(prev => ({ ...prev, [staffName]: shouldAcceptWalkIns ? "Accepting" : "Not Accepting" }));
     onCloseStatusModal();
     onStaffStatusUpdate?.(staffName, newStatus);
   };
@@ -1358,6 +1362,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           id: s.id,
           initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
           name: staffName,
+          walk_in: Boolean(s.walk_in),
           status: status,
           statusClass: statusClass,
           subStatus: subStatus,
@@ -1373,7 +1378,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
             noOfClientToday: s.clients_today || 0,
             totalClients: s.total_clients || 0,
             doneClients: s.done_clients || 0,
-            availableForWalkIn: statusValue === 'avail' || inServiceValue === 'avail'
+            availableForWalkIn: Boolean(s.walk_in)
           }
         };
       });
