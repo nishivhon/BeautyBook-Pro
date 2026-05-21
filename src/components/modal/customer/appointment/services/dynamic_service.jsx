@@ -489,27 +489,30 @@ export const DynamicServiceModal = ({
         </div>
 
         {/* ── Buttons footer ── */}
-          <div
-            className="appt-footer"
-            style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 10, width: "100%" }}
+        <div
+          className="appt-footer"
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 12,
+            width: "100%",
+            padding: "16px 20px",
+            background: "rgba(0,0,0,0.5)",
+            borderTop: "1px solid rgba(152,143,129,0.2)",
+            flexShrink: 0,
+          }}
+        >
+          <button className="appt-cancel-btn" onClick={handleBack} style={{ flex: 1, minWidth: 0 }}>
+            Back
+          </button>
+          <button
+            className="appt-continue-btn"
+            onClick={handleContinue}
+            disabled={selected.length === 0 && !isUpdating}
+            style={{ flex: 1, minWidth: 0 }}
           >
-            <div style={{ width: "100%" }} aria-hidden="true" />
-            <div
-              className="booking-phase-footer-actions"
-              style={{ display: "flex", flexDirection: "row", gap: 12, width: "100%" }}
-            >
-              <button className="appt-cancel-btn" onClick={handleBack} style={{ flex: 1, minWidth: 0 }}>
-                Back
-              </button>
-              <button 
-                className="appt-continue-btn" 
-                onClick={handleContinue}
-                disabled={selected.length === 0 && !isUpdating}
-                style={{ flex: 1, minWidth: 0 }}
-              >
-                Continue
-              </button>
-            </div>
+            Continue
+          </button>
         </div>
       </div>
     </div>
