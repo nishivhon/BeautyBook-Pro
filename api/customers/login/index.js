@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
@@ -40,9 +41,18 @@ export default async (req, res) => {
 
     const customer = customers[0];
 
-    // Compare passwords (simple comparison for now)
-    // TODO: In production, use bcrypt to compare hashed passwords
-    if (customer.password !== password) {
+    const storedPassword = String(customer.password || '');
+    const looksHashed = storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$') || storedPassword.startsWith('$2y$');
+
+    let passwordMatches = false;
+    if (looksHashed) {
+      passwordMatches = await bcrypt.compare(password, storedPassword);
+    } else {
+      // Backward compatibility for older accounts saved before hashing
+      passwordMatches = storedPassword === password;
+    }
+
+    if (!passwordMatches) {
       return res.status(401).json({ error: 'Invalid email/phone or password' });
     }
 
