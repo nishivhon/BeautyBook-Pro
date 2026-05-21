@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
+import { deleteOtpByEmail, deleteOtpByPhone } from '../../supabaseOtpClient.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
@@ -84,6 +85,19 @@ export default async (req, res) => {
         });
       }
       return res.status(400).json({ error: 'Failed to create account', details: error.message });
+    }
+
+    // Attempt to remove any lingering OTP records for this contact to keep table clean
+    try {
+      if (normalizedEmail) {
+        await deleteOtpByEmail(normalizedEmail);
+      }
+      if (normalizedPhone) {
+        await deleteOtpByPhone(normalizedPhone);
+      }
+    } catch (deleteErr) {
+      console.error('[Customers:Create] Failed to delete OTP after create:', deleteErr.message || deleteErr);
+      // Do not fail the registration if OTP cleanup fails
     }
 
     return res.status(201).json({
