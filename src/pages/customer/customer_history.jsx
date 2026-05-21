@@ -184,33 +184,10 @@ export default function CustomerHistoryPage() {
                     width: "auto",
                   }}
                 >
-                  <select 
-                    value={serviceFilter} 
+                  <select
+                    className="cdb-service-filter-select"
+                    value={serviceFilter}
                     onChange={(e) => setServiceFilter(e.target.value)}
-                    style={{
-                      padding: "8px 32px 8px 12px",
-                      paddingRight: "32px",
-                      backgroundColor: "#1a0f00",
-                      border: "1px solid rgba(221, 144, 29, 0.3)",
-                      borderRadius: "6px",
-                      color: "#dd901d",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      fontFamily: "Inter, sans-serif",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                      appearance: "none",
-                      WebkitAppearance: "none",
-                      MozAppearance: "none",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                      e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.borderColor = "rgba(221, 144, 29, 0.3)";
-                      e.target.style.backgroundColor = "#1a0f00";
-                    }}
                   >
                     {serviceCategories.map((category) => (
                       <option key={category.id} value={category.id}>
@@ -218,18 +195,7 @@ export default function CustomerHistoryPage() {
                       </option>
                     ))}
                   </select>
-                  <span
-                    style={{
-                      position: "absolute",
-                      right: "10px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      pointerEvents: "none",
-                      color: "#dd901d",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                    }}
-                  >
+                  <span className="cdb-service-filter-arrow">
                     ▼
                   </span>
                 </div>

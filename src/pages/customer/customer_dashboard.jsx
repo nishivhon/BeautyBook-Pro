@@ -266,7 +266,9 @@ export default function CustomerDashboard() {
 					<div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
 									<div className="cdb-profile-avatar-col">
 										<div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${profile.name || "Customer"} avatar`}>
-											<span className="cdb-avatar-initial">{profileInitial}</span>
+											<div className="cdb-avatar-placeholder">
+										<span className="cdb-avatar-initial">{profileInitial}</span>
+									</div>
 										</div>
 										</div>
 										<div className="cdb-profile-info-col">
@@ -365,7 +367,7 @@ export default function CustomerDashboard() {
 						{canCancelAppointment(appointments[0].date, appointments[0].time) ? (
 							<button className="cdb-btn cdb-btn-secondary" onClick={() => handleInitiateCancelAppointment(appointments[0])} style={{ flex: 1 }}>Cancel Appointment</button>
 						) : (
-							<div style={{ flex: 1, textAlign: 'center', color: 'var(--color-tan)', fontSize: '13px', padding: '10px 0' }}>Cannot cancel within 2 hours of appointment</div>
+							<div className="cdb-appointment-cancel-warning">Cannot cancel within 2 hours of appointment</div>
 						)}
 					</div>
 				</div>
@@ -395,7 +397,7 @@ export default function CustomerDashboard() {
 				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 					<h2 className="cdb-section-title">Recent Transaction</h2>
 					<div>
-						<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/history")}>View Full Transaction History</button>
+						<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/history")}>View Full Transaction History</button>
 					</div>
 				</div>
 					<div className="cdb-grid cdb-grid-history">
@@ -430,7 +432,7 @@ export default function CustomerDashboard() {
 				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 					<h2 className="cdb-section-title">Coupons</h2>
 					<div>
-						<button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
+						<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
 					</div>
 				</div>
 					<div className="cdb-grid cdb-grid-coupons">

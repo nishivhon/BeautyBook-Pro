@@ -3,13 +3,6 @@ import { CustomerShell } from "./customer_shell";
 import { useCustomerProfileData } from "./customer_store";
 import { useToast } from "../../components/toast";
 
-const EditIcon = ({ color = "#dd901d" }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
-    <path d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
-  </svg>
-);
-
 const SaveIcon = ({ color = "#22c55e" }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -173,7 +166,9 @@ export default function CustomerProfilePage() {
               <div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
                 <div className="cdb-profile-avatar-col">
                   <div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${profile.name || "Customer"} avatar`}>
-                    <span className="cdb-avatar-initial">{profileInitial}</span>
+                    <div className="cdb-avatar-placeholder">
+                      <span className="cdb-avatar-initial">{profileInitial}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="cdb-profile-info-split">
@@ -184,14 +179,14 @@ export default function CustomerProfilePage() {
                     </div>
                     <div>
                       <label className="cdb-field-label">Email</label>
-                      <p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span style={{ color: "#a3a398" }}>No email added</span>}</p>
+                      <p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span className="cdb-muted-text">No email added</span>}</p>
                     </div>
                     <div>
                       <label className="cdb-field-label">Phone</label>
-                      <p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span style={{ color: "#a3a398" }}>No phone added</span>}</p>
+                      <p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span className="cdb-muted-text">No phone added</span>}</p>
                     </div>
                     <div className="cdb-action-row">
-                      <button className="cdb-btn cdb-btn-edit" onClick={handleEditProfile}><EditIcon /> Edit Profile</button>
+                      <button className="cdb-btn cdb-btn-edit" onClick={handleEditProfile}>Edit Profile</button>
                     </div>
                   </div>
                   <div className="cdb-profile-info-right">
@@ -202,7 +197,7 @@ export default function CustomerProfilePage() {
                           <p key={i} className="cdb-field-value">{email}</p>
                         ))
                       ) : (
-                        <p className="cdb-field-value" style={{ color: "#a3a398" }}>No emails added</p>
+                        <p className="cdb-field-value cdb-muted-text">No emails added</p>
                       )}
                     </div>
                     <div>
@@ -212,7 +207,7 @@ export default function CustomerProfilePage() {
                           <p key={i} className="cdb-field-value">{phone}</p>
                         ))
                       ) : (
-                        <p className="cdb-field-value" style={{ color: "#a3a398" }}>No phone numbers added</p>
+                        <p className="cdb-field-value cdb-muted-text">No phone numbers added</p>
                       )}
                     </div>
                     <div>
@@ -229,7 +224,9 @@ export default function CustomerProfilePage() {
                 <div className="cdb-profile-avatar-col">
                   <div className="cdb-avatar-edit-wrapper">
                     <div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${tempProfile.name || "Customer"} avatar`}>
-                      <span className="cdb-avatar-initial">{(tempProfile.name || "?").trim().charAt(0).toUpperCase() || "?"}</span>
+                      <div className="cdb-avatar-placeholder">
+                        <span className="cdb-avatar-initial">{(tempProfile.name || "?").trim().charAt(0).toUpperCase() || "?"}</span>
+                      </div>
                     </div>
                   </div>
                 </div>

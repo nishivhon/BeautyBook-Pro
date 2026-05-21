@@ -211,6 +211,8 @@ export function DashboardShell({
               roleLabel={roleLabel}
               noNotificationsMessage={superAdminNoNotificationsMessage}
             />
+          ) : headerExtraActions ? (
+            headerExtraActions
           ) : (
             <div className="admin-header-actions" ref={wrapperRef}>
               {headerExtraActions}

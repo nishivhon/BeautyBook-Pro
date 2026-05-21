@@ -91,17 +91,8 @@ export default function CustomerCouponsPage() {
                     {!coupon.isClaimed && (
                       <button 
                         className="cdb-btn cdb-btn-primary" 
+                        type="button"
                         onClick={() => handleClaimCoupon(coupon)}
-                        style={{
-                          padding: '10px 16px',
-                          background: '#dd901d',
-                          border: 'none',
-                          borderRadius: 8,
-                          color: '#fff',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          fontSize: 14
-                        }}
                       >
                         Claim
                       </button>

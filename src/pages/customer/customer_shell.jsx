@@ -7,6 +7,7 @@ import { AppointmentFormPhase3 } from "../../components/modal/customer/appointme
 import { AppointmentFormPhase4 } from "../../components/modal/customer/appointment/phase_four";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 import { ToastViewport, useToast } from "../../components/toast";
+import CustomerHeaderActions from "../../components/customer/CustomerHeaderActions";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { useCustomerAppointmentsData } from "./customer_store";
 
@@ -350,35 +351,38 @@ export function CustomerShell({ activeNav, profile, children }) {
 
   return (
     <>
-      <DashboardShell
-        navItems={NAV_ITEMS}
-        activeNav={activeNav}
-        roleLabel={sidebarDisplayName}
-        roleInitial={sidebarDisplayInitial}
-        showSidebarHeader={false}
-        title={PAGE_META[activeNav].title}
-        subtitle={`BeautyBook Pro · ${todayDate} · ${PAGE_META[activeNav].subtitle}`}
-        profile={profile}
-        notifications={[]}
-        storageKey="customerSidebarExpanded"
-        sidebarExtraAction={(
-          <button onClick={handleBookAppointmentClick} className="nav-button cdb-book-nav-btn" title="Book Appointment" type="button">
-            <BookingIcon color="currentColor" />
-            {sidebarExpanded && <span>Book Appointment</span>}
-          </button>
-        )}
-        onLogoutConfirm={handleLogout}
-        logoutTitle="Log Out?"
-        logoutMessage="Are you sure you want to log out of your customer dashboard?"
-        logoutConfirmText="Yes, Log Out"
-        logoutCancelText="Stay Logged In"
-        profileActionLabel="Edit Profile"
-        profileActionPath="/customer/profile"
-      >
-        {children}
-      </DashboardShell>
+      <div className="customer-shell">
+        <DashboardShell
+          navItems={NAV_ITEMS}
+          activeNav={activeNav}
+          roleLabel={sidebarDisplayName}
+          roleInitial={sidebarDisplayInitial}
+          showSidebarHeader={false}
+          title={PAGE_META[activeNav].title}
+          subtitle={`BeautyBook Pro · ${todayDate} · ${PAGE_META[activeNav].subtitle}`}
+          profile={profile}
+          notifications={[]}
+          headerExtraActions={<CustomerHeaderActions externalNotifications={appointments || []} profile={profile} />}
+          storageKey="customerSidebarExpanded"
+          sidebarExtraAction={(
+            <button onClick={handleBookAppointmentClick} className="nav-button cdb-book-nav-btn" title="Book Appointment" type="button">
+              <BookingIcon color="currentColor" />
+              {sidebarExpanded && <span>Book Appointment</span>}
+            </button>
+          )}
+          onLogoutConfirm={handleLogout}
+          logoutTitle="Log Out?"
+          logoutMessage="Are you sure you want to log out of your customer dashboard?"
+          logoutConfirmText="Yes, Log Out"
+          logoutCancelText="Stay Logged In"
+          profileActionLabel="Edit Profile"
+          profileActionPath="/customer/profile"
+        >
+          {children}
+        </DashboardShell>
 
-      <ToastViewport onDismiss={dismissToast} />
+        <ToastViewport onDismiss={dismissToast} />
+      </div>
 
       {showAppointment && (
         <div
