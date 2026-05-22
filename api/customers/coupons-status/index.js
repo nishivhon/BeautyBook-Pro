@@ -39,17 +39,20 @@ export default async (req, res) => {
       throw customerError;
     }
 
-    // Parse claimed coupon codes
-    const claimedCodes = [];
-    if (customerData?.coupons_used && Array.isArray(customerData.coupons_used)) {
-      claimedCodes.push(...customerData.coupons_used.map(c => c.code?.toUpperCase()));
-    }
+    // Parse claimed coupon objects
+    const claimedCoupons = Array.isArray(customerData?.coupons_used) ? customerData.coupons_used : [];
 
-    // Map coupons with claimed status
-    const couponsWithStatus = coupons.map(coupon => ({
-      ...coupon,
-      isClaimed: claimedCodes.includes(coupon.code?.toUpperCase())
-    }));
+    // Map coupons with claimed status and include customer's coupon object (to expose `used` flag)
+    const couponsWithStatus = coupons.map(coupon => {
+      const code = String(coupon.code || '').toUpperCase();
+      const customerCoupon = claimedCoupons.find(c => String(c?.code || '').toUpperCase() === code) || null;
+      return {
+        ...coupon,
+        isClaimed: Boolean(customerCoupon),
+        customerCoupon,
+        used: Boolean(customerCoupon?.used),
+      };
+    });
 
     return res.status(200).json({
       data: couponsWithStatus

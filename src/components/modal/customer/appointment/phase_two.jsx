@@ -598,16 +598,28 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
             {couponsLoading && (
               <div style={{ padding: '10px 12px', color: '#cfcfcf' }}>Loading...</div>
             )}
-            {coupons.map((c) => (
-              <div
-                key={c.id}
-                role="option"
-                onClick={() => handleSelect(getCouponValue(c), c)}
-                style={{ padding: '10px 12px', cursor: 'pointer', color: '#f5f1eb', borderBottom: '1px solid rgba(255,255,255,0.03)' }}
-              >
-                {formatCouponDisplay(c)}
-              </div>
-            ))}
+            {coupons.map((c) => {
+              const isUsed = Boolean(c?.used || c?.customerCoupon?.used);
+              return (
+                <div
+                  key={c.id}
+                  role="option"
+                  onClick={() => { if (!isUsed) handleSelect(getCouponValue(c), c); }}
+                  style={{
+                    padding: '10px 12px',
+                    cursor: isUsed ? 'not-allowed' : 'pointer',
+                    color: isUsed ? '#777' : '#f5f1eb',
+                    borderBottom: '1px solid rgba(255,255,255,0.03)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <span>{formatCouponDisplay(c)}</span>
+                  {isUsed && <span style={{ fontSize: '0.8rem', color: '#cfcfcf' }}>(used)</span>}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

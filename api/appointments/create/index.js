@@ -72,6 +72,32 @@ export default async (req, res) => {
     const totalDurationMinutes = Number(service_est_time) || getServiceDurationMinutes(formattedServices);
     const resolvedStaff = resolveStaffLabel(staff_assigned);
 
+    // If a coupon code was provided, check the customer's coupons_used to ensure it hasn't been used already
+    const couponCode = String(req.body?.coupon?.code || req.body?.coupon?.id || '').trim().toUpperCase();
+    if (couponCode && (email || phone)) {
+      try {
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+        const normalizedPhone = typeof phone === 'string' ? phone.replace(/\D/g, '') : '';
+
+        let customerQuery = supabase.from('customers_accounts').select('id, coupons_used').limit(1);
+        if (normalizedEmail) customerQuery = customerQuery.eq('email', normalizedEmail);
+        else if (normalizedPhone) customerQuery = customerQuery.eq('phone', normalizedPhone);
+
+        const { data: customerRows, error: customerFetchError } = await customerQuery;
+        if (!customerFetchError && customerRows && customerRows.length > 0) {
+          const customer = customerRows[0];
+          const couponsUsed = Array.isArray(customer.coupons_used) ? customer.coupons_used : [];
+          const matching = couponsUsed.find(c => String(c?.code || '').toUpperCase() === couponCode);
+          if (matching && matching.used) {
+            return res.status(409).json({ error: 'Coupon has already been used by this customer' });
+          }
+        }
+      } catch (err) {
+        console.warn('[Appointments] Warning: could not verify coupon usage for customer:', err?.message || err);
+        // don't block booking on verification failure, we'll try marking it later
+      }
+    }
+
     const conflict = await findStaffScheduleConflict({
       supabase,
       date,
