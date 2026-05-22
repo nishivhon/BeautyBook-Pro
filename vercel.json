@@ -4,10 +4,13 @@
   "installCommand": "npm install",
   "outputDirectory": "dist",
   "crons": [{
-    "path": "/api/cron/rotate-appointment-slots",
+    "path": "/api/cron/archive-daily-staff-logs",
     "schedule": "0 16 * * *"
   }, {
+    "path": "/api/cron/rotate-appointment-slots",
+    "schedule": "2 16 * * *"
+  }, {
     "path": "/api/cron/sync-daily-staff-stats",
-    "schedule": "0 16 * * *"
+    "schedule": "1 16 * * *"
   }]
 }

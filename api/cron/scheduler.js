@@ -10,6 +10,7 @@
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import { archiveDailyStaffLogs } from '../../server/src/services/staffLogService.js';
 
 dotenv.config({ path: '.env' });
 
@@ -176,10 +177,11 @@ async function syncDailyStaffStats() {
         const { error: updateError } = await supabase
           .from('staffs')
           .update({
-            total_clients: totalCount,
-            done_clients: doneCount,
-            total_walk_in: totalWalkInCount,
+            total_clients: 0,
+            done_clients: 0,
+            total_walk_in: 0,
             clock_in: null,
+            clock_out: null,
             status: 'off',
             in_service: null,
             walk_in: false
@@ -187,8 +189,8 @@ async function syncDailyStaffStats() {
           .eq('id', s.id);
 
         if (!updateError) {
-          updates.push({ name: s.names, total: totalCount, done: doneCount, totalWalkIn: totalWalkInCount });
-          console.log(`[Scheduler] ✓ Updated ${s.names}: total=${totalCount}, done=${doneCount}, walkIns=${totalWalkInCount}`);
+          updates.push({ name: s.names, total: 0, done: 0, totalWalkIn: 0 });
+          console.log(`[Scheduler] ✓ Updated ${s.names}: archive complete, counters reset to zero`);
         }
       } catch (err) {
         console.error(`[Scheduler] Error updating ${s.names}:`, err.message);
@@ -202,15 +204,33 @@ async function syncDailyStaffStats() {
   }
 }
 
-// Schedule: Run at midnight Philippine Time every day (4:00 PM UTC = 12:00 AM PHT)
-// Format: minute, hour, day-of-month, month, day-of-week
-// PHT is UTC+8, so 12:00 AM PHT = 4:00 PM UTC (16:00)
-cron.schedule('0 16 * * *', rotateAppointmentSlots);
+/**
+ * Archive daily staff logs before resetting counters
+ */
+async function archiveDailyStaffStats() {
+  try {
+    const now = new Date();
+    const phtDate = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+
+    console.log('[Scheduler] Starting staff log archive at', phtDate.toISOString(), '(Philippine Time)');
+    const result = await archiveDailyStaffLogs(supabase, phtDate);
+    console.log(`[Scheduler] ✓ Archived ${result.archived} staff log rows for ${phtDate.toISOString().split('T')[0]}`);
+  } catch (error) {
+    console.error('[Scheduler] Error archiving staff logs:', error.message);
+  }
+}
 
 // Schedule: Run at midnight Philippine Time every day (4:00 PM UTC = 12:00 AM PHT)
-// PHT is UTC+8, so 12:00 AM PHT = 4:00 PM UTC (16:00)
-cron.schedule('0 16 * * *', syncDailyStaffStats);
+// Archive first so it captures the day's values before the reset job clears them.
+cron.schedule('0 16 * * *', archiveDailyStaffStats);
 
-console.log('[Scheduler] Appointment slot rotation scheduled for daily at 12:00 AM Philippine Time (4:00 PM UTC)');
-console.log('[Scheduler] Daily staff stats sync scheduled for daily at 12:00 AM Philippine Time (4:00 PM UTC)');
+// Schedule: Run one minute later at 12:01 AM PHT so counters reset after archive completes.
+cron.schedule('1 16 * * *', syncDailyStaffStats);
+
+// Schedule: Run two minutes later to rotate slots after staff archive/reset work completes.
+cron.schedule('2 16 * * *', rotateAppointmentSlots);
+
+console.log('[Scheduler] Staff log archive scheduled for daily at 12:00 AM Philippine Time (4:00 PM UTC)');
+console.log('[Scheduler] Daily staff stats sync scheduled for daily at 12:01 AM Philippine Time (4:01 PM UTC)');
+console.log('[Scheduler] Appointment slot rotation scheduled for daily at 12:02 AM Philippine Time (4:02 PM UTC)');
 console.log('[Scheduler] Waiting for jobs...\n');

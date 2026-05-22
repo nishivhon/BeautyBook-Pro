@@ -109,9 +109,10 @@ export default async (req, res) => {
           .from('staffs')
           .update({
             total_clients: 0,
-            done_clients: doneCount,
-            total_walk_in: totalWalkInCount,
+            done_clients: 0,
+            total_walk_in: 0,
             clock_in: null,
+            clock_out: null,
             status: 'off',
             in_service: null,
             walk_in: false
@@ -127,8 +128,8 @@ export default async (req, res) => {
           staffId: s.id,
           staffName: s.names,
           totalClients: 0,
-          doneClients: doneCount,
-          totalWalkIn: totalWalkInCount,
+          doneClients: 0,
+          totalWalkIn: 0,
           success: true
         });
 
