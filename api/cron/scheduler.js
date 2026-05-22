@@ -135,15 +135,23 @@ async function syncDailyStaffStats() {
 
     if (staff_list.error) throw staff_list.error;
 
+    const today = phtDate.toISOString().split('T')[0];
     const updates = [];
 
     for (const s of staff_list.data || []) {
       try {
-        // Count total bookings for this staff
+        // Count total bookings for this staff from available_slots
         const { count: totalBookings, error: totalError } = await supabase
           .from('available_slots')
           .select('id', { count: 'exact', head: true })
           .eq('assigned_staff', s.names);
+
+        // Count same-day walk-ins for this staff
+        const { count: walkInTotalBookings, error: walkInTotalError } = await supabase
+          .from('walk_in_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('assigned_staff', s.names)
+          .eq('date', today);
 
         // Count done/completed bookings for this staff
         const { count: doneBookings, error: doneError } = await supabase
@@ -152,8 +160,17 @@ async function syncDailyStaffStats() {
           .eq('assigned_staff', s.names)
           .eq('status', 'done');
 
+        // Count same-day walk-in logs that are done for this staff
+        const { count: walkInDoneBookings, error: walkInDoneError } = await supabase
+          .from('walk_in_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('assigned_staff', s.names)
+          .eq('date', today)
+          .eq('status', 'done');
+
         const totalCount = totalBookings || 0;
-        const doneCount = doneBookings || 0;
+        const doneCount = (doneBookings || 0) + (walkInDoneBookings || 0);
+        const totalWalkInCount = walkInTotalBookings || 0;
 
         // Update the staffs table
         const { error: updateError } = await supabase
@@ -161,13 +178,17 @@ async function syncDailyStaffStats() {
           .update({
             total_clients: totalCount,
             done_clients: doneCount,
-            updated_at: new Date().toISOString()
+            total_walk_in: totalWalkInCount,
+            clock_in: null,
+            status: 'off',
+            in_service: null,
+            walk_in: false
           })
           .eq('id', s.id);
 
         if (!updateError) {
-          updates.push({ name: s.names, total: totalCount, done: doneCount });
-          console.log(`[Scheduler] ✓ Updated ${s.names}: total=${totalCount}, done=${doneCount}`);
+          updates.push({ name: s.names, total: totalCount, done: doneCount, totalWalkIn: totalWalkInCount });
+          console.log(`[Scheduler] ✓ Updated ${s.names}: total=${totalCount}, done=${doneCount}, walkIns=${totalWalkInCount}`);
         }
       } catch (err) {
         console.error(`[Scheduler] Error updating ${s.names}:`, err.message);

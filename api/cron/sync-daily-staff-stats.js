@@ -2,12 +2,13 @@ import { createClient } from '@supabase/supabase-js';
 
 /**
  * End-of-day cron job to sync staff statistics from appointment sources to staffs table
- * Calculates total_clients and done_clients for each staff member
+ * Calculates total_clients, done_clients, and total_walk_in for each staff member
  *
  * This job:
  * 1. Counts total bookings for each staff from available_slots (total_clients)
- * 2. Counts completed bookings for each staff from available_slots and walk_in_logs (done_clients)
- * 3. Updates the staffs table with these counts
+ * 2. Counts same-day walk-ins for each staff from walk_in_logs (total_walk_in)
+ * 3. Counts completed bookings for each staff from available_slots and walk_in_logs (done_clients)
+ * 4. Updates the staffs table with these counts
  */
 export default async (req, res) => {
   if (req.method !== 'POST') {
@@ -46,7 +47,7 @@ export default async (req, res) => {
 
     console.log(`[SyncDailyStats] Found ${staff?.length || 0} staff members`);
 
-    // For each staff member, calculate total_clients and done_clients
+    // For each staff member, calculate total_clients, done_clients, and total_walk_in
     const updates = [];
 
     for (const s of staff) {
@@ -97,10 +98,11 @@ export default async (req, res) => {
           console.warn(`[SyncDailyStats] Error counting walk-in done for ${s.names}:`, walkInDoneError);
         }
 
-        const totalCount = (totalBookings || 0) + (walkInTotalBookings || 0);
+        const totalCount = totalBookings || 0;
         const doneCount = (doneBookings || 0) + (walkInDoneBookings || 0);
+        const totalWalkInCount = walkInTotalBookings || 0;
 
-        console.log(`[SyncDailyStats] Staff: ${s.names} | Total: ${totalCount} | Done: ${doneCount} | Walk-ins today: ${walkInTotalBookings || 0} | Walk-in done today: ${walkInDoneBookings || 0}`);
+        console.log(`[SyncDailyStats] Staff: ${s.names} | Total: ${totalCount} | Done: ${doneCount} | Walk-ins today: ${totalWalkInCount} | Walk-in done today: ${walkInDoneBookings || 0}`);
 
         // Update the staffs table and reset end-of-day staff state
         const { error: updateError } = await supabase
@@ -108,6 +110,7 @@ export default async (req, res) => {
           .update({
             total_clients: totalCount,
             done_clients: doneCount,
+            total_walk_in: totalWalkInCount,
             clock_in: null,
             status: 'off',
             in_service: null,
@@ -125,6 +128,7 @@ export default async (req, res) => {
           staffName: s.names,
           totalClients: totalCount,
           doneClients: doneCount,
+          totalWalkIn: totalWalkInCount,
           success: true
         });
 
