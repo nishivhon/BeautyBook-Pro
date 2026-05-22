@@ -42,7 +42,7 @@ export default async (req, res) => {
     }
 
     // Fetch walk-in logs for the specified date
-    const supabaseUrl = `${SUPABASE_URL}/rest/v1/walk_in_logs?date=eq.${date}&order=created_at.desc`;
+    const supabaseUrl = `${SUPABASE_URL}/rest/v1/walk_in_logs?date=eq.${date}&order=created_at.asc`;
     
     const response = await fetch(supabaseUrl, {
       method: "GET",
