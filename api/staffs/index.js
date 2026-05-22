@@ -22,7 +22,7 @@ export default async (req, res) => {
     
     const { data: staff, error } = await supabase
       .from('staffs')
-      .select('id, names, status, category_specialty, employment, clock_in, clock_out, walk_in, done_clients, in_service')
+      .select('id, names, status, category_specialty, employment, clock_in, clock_out, walk_in, done_clients, in_service, total_walk_in')
       .order('id', { ascending: true });
 
     if (error) {
@@ -64,7 +64,8 @@ export default async (req, res) => {
         return {
           ...s,
           total_clients: totalCount,
-          done_clients: doneCount
+          done_clients: doneCount,
+          total_walk_in: s.total_walk_in || 0
         };
       } catch (err) {
         console.error(`[Staffs] Exception counting for ${s.names}:`, err);

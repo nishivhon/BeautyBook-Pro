@@ -505,6 +505,53 @@ export default async (req, res) => {
       console.log(`[UpdateStatus] No staff name provided, skipping staff update`);
     }
 
+    // If slot transitioned to 'done' (and wasn't already done), increment staff counters.
+    try {
+      const previousStatus = actualSlotData?.status;
+      if (status === 'done' && previousStatus !== 'done' && resolvedStaffName) {
+        console.log('[UpdateStatus] Incrementing staff counters for', resolvedStaffName);
+
+        // Fetch current staff counters
+        const { data: staffRows, error: staffFetchErr } = await supabase
+          .from('staffs')
+          .select('id, total_clients, done_clients, total_walk_in')
+          .eq('names', resolvedStaffName)
+          .limit(1);
+
+        if (staffFetchErr) {
+          console.error('[UpdateStatus] Failed to fetch staff counters:', staffFetchErr.message);
+        } else if (!staffRows || staffRows.length === 0) {
+          console.warn('[UpdateStatus] No staff row found to increment for', resolvedStaffName);
+        } else {
+          const staffRow = staffRows[0];
+          const updateObj = {};
+
+          // If this was a walk-in appointment, increment total_walk_in
+          if (isWalkIn) {
+            updateObj.total_walk_in = (Number(staffRow.total_walk_in) || 0) + 1;
+            updateObj.done_clients = (Number(staffRow.done_clients) || 0) + 1;
+          } else {
+            updateObj.total_clients = (Number(staffRow.total_clients) || 0) + 1;
+            updateObj.done_clients = (Number(staffRow.done_clients) || 0) + 1;
+          }
+
+          const { data: updatedStaff, error: staffIncErr } = await supabase
+            .from('staffs')
+            .update(updateObj)
+            .eq('id', staffRow.id)
+            .select();
+
+          if (staffIncErr) {
+            console.error('[UpdateStatus] Error incrementing staff counters:', staffIncErr.message);
+          } else {
+            console.log('[UpdateStatus] Staff counters incremented:', updatedStaff);
+          }
+        }
+      }
+    } catch (incErr) {
+      console.error('[UpdateStatus] Exception while incrementing staff counters:', incErr);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Status updated successfully',

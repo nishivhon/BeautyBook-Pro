@@ -339,7 +339,7 @@ const AnyRow = ({ isSelected, onSelect }) => (
 );
 
 /* ── Named stylist row ── */
-const StylistRow = ({ stylist, isSelected, onSelect }) => {
+const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext = true }) => {
   const statusLabel = stylist.status === "no slots" ? "No Slots" : "Unavailable";
   const hasNextAppointment = Boolean(stylist.nextAppointmentTime);
   
@@ -358,11 +358,11 @@ const StylistRow = ({ stylist, isSelected, onSelect }) => {
         </div>
         <div className="stylist-text">
           <span className={`stylist-name${stylist.unavailable ? " muted" : ""}`}>{stylist.name}</span>
-          <span className="stylist-unavailable-tag" style={{ marginTop: 4, display: "inline-flex", gap: 8, flexWrap: "wrap" }}>
-            <span>{stylist.totalSelectedTime || 0} min total</span>
-            <span>•</span>
-            <span>{hasNextAppointment ? `Next: ${formatTimeTo12Hour(stylist.nextAppointmentTime)}` : "No next appointment"}</span>
-          </span>
+          <div style={{ marginTop: 4, display: "inline-flex", gap: 8, flexWrap: "wrap" }}>
+            {showTime && <span className="stylist-unavailable-tag">{stylist.totalSelectedTime || 0} min total</span>}
+            {showTime && showNext && <span>•</span>}
+            {showNext && <span className="stylist-unavailable-tag">{hasNextAppointment ? `Next: ${formatTimeTo12Hour(stylist.nextAppointmentTime)}` : "No next appointment"}</span>}
+          </div>
           {stylist.unavailable && <span className="stylist-unavailable-tag">{statusLabel}</span>}
         </div>
       </div>
@@ -373,7 +373,7 @@ const StylistRow = ({ stylist, isSelected, onSelect }) => {
 /* ══════════════════════════════════════════
    MAIN COMPONENT — Phase 3
 ══════════════════════════════════════════ */
-export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS }) => {
+export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showTime = true, showNext = true }) => {
   const [selected, setSelected] = useState(null);
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
@@ -591,6 +591,8 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
                   stylist={stylist}
                   isSelected={selected === stylist.id}
                   onSelect={setSelected}
+                  showTime={showTime}
+                  showNext={showNext}
                 />
               ))}
           </div>
