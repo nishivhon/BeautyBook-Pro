@@ -467,7 +467,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
           }
         }
         const now = new Date();
-        const claimed = (data || []).filter(c => (c.claimed || c.isClaimed || c.is_claimed || c.status === 'claimed') && (!c.expiration || new Date(c.expiration) > now));
+        const claimed = (data || []).filter(c => (c.claimed || c.isClaimed || c.is_claimed || c.status === 'claimed') && (!c.expiration && !c.end_date || new Date(c.expiration || c.end_date) > now));
         setCoupons(claimed);
       } catch (err) {
         console.error('Failed to load customer coupons', err);
@@ -483,11 +483,19 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
     if (!c) return '';
     const code = c.code || c.id || '';
     const desc = c.description || '';
-    let discountText = c.discount || '';
-    // normalize $ to ₱ if needed
-    discountText = discountText.replace('$', '₱');
-    const exp = c.expiration ? new Date(c.expiration).toLocaleDateString() : 'No expiry';
-    return `${code} - ${desc} (${discountText}) - Expires ${exp}`;
+    const rawValue = c.value ?? c.discount ?? c.discount_amount ?? c.amount ?? '';
+    const rawType = String(c.value_type || c.discount_type || '').toLowerCase();
+    const numericValue = String(rawValue).replace(/[^0-9.]/g, '');
+    const isPercent = rawType.includes('percent') || rawType.includes('percentage') || String(rawValue).includes('%');
+    const discountText = numericValue
+      ? isPercent
+        ? `${numericValue}% off`
+        : `₱${Number(numericValue).toFixed(2)} off`
+      : '';
+    const expDateValue = c.expiration || c.end_date;
+    const exp = expDateValue ? new Date(expDateValue).toLocaleDateString() : 'No expiry';
+    const parts = [code, desc, discountText ? `(${discountText})` : null, `Expires ${exp}`].filter(Boolean);
+    return parts.join(' - ');
   };
 
   const CouponDropdown = ({ value, onChange }) => {

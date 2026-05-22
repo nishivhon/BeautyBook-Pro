@@ -18,7 +18,6 @@ export default async (req, res) => {
       value_type,
       value,
       description,
-      applicable_services,
       start_date,
       end_date,
       max_uses,
@@ -44,9 +43,6 @@ export default async (req, res) => {
       value_type,
       value: Number(value),
       description: description || null,
-      applicable_services: applicable_services && applicable_services.length > 0 
-        ? applicable_services.map(id => Number(id)) 
-        : [],
       start_date,
       end_date,
       max_uses: max_uses ? Number(max_uses) : null,
