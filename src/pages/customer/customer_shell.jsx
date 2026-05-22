@@ -246,6 +246,7 @@ export function CustomerShell({ activeNav, profile, children }) {
     }));
 
     return {
+      rawServices: allServices,
       services: formattedServices,
       dateTime: `${scheduleInfo?.date?.date || "Not Selected"} | ${scheduleInfo?.time || "N/A"}`,
       date: scheduleInfo?.dateISO || scheduleInfo?.date?.date || null,
@@ -270,6 +271,13 @@ export function CustomerShell({ activeNav, profile, children }) {
       console.log("[Phase4] API URL:", apiUrl);
       
       const booking = formatBooking();
+      const serviceEstTime = Array.isArray(booking.rawServices)
+        ? booking.rawServices.reduce((total, service) => {
+            const minutes = Number(service?.est_time ?? service?.estimated_time ?? service?.duration_minutes ?? service?.duration ?? 0);
+            return total + (Number.isFinite(minutes) ? minutes : 0);
+          }, 0)
+        : 0;
+
       const payload = {
         name: booking.name,
         email: booking.email,
@@ -277,7 +285,9 @@ export function CustomerShell({ activeNav, profile, children }) {
         date: booking.date,
         time: booking.time,
         service: booking.services.map((s) => s.title).join(", ") || "General Service",
+        services: booking.rawServices,
         staff_assigned: booking.stylist,
+        service_est_time: serviceEstTime,
       };
 
       const response = await fetch(`${apiUrl}/appointments/create`, {
@@ -412,7 +422,7 @@ export function CustomerShell({ activeNav, profile, children }) {
               onBack={handleBackPhase3}
               onContinue={handlePhase3Continue}
               onCancel={handleCancelBooking}
-              initialData={{ services: appointmentData?.services || [] }}
+              initialData={{ services: appointmentData?.services || [], schedule: appointmentData?.schedule || {} }}
               showTime={false}
               showNext={false}
             />

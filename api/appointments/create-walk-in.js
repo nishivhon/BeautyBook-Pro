@@ -1,3 +1,6 @@
+import { createClient } from '@supabase/supabase-js';
+import { findStaffScheduleConflict, getPhtDateString, getPhtTimeString, getServiceDurationMinutes, resolveStaffLabel } from './utils/staffConflict.js';
+
 export default async (req, res) => {
   // CORS headers
   res.setHeader("Access-Control-Allow-Credentials", "true");
@@ -13,48 +16,58 @@ export default async (req, res) => {
 
   if (req.method === "OPTIONS") {
     res.status(200).end();
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false },
+    });
+
+    const today = getPhtDateString();
+    const startTime = getPhtTimeString();
+    const resolvedStylist = resolveStaffLabel(stylist);
+    const durationMinutes = getServiceDurationMinutes(services);
+
+    const conflict = await findStaffScheduleConflict({
+      supabase,
+      date: today,
+      startTime,
+      durationMinutes,
+      staff: resolvedStylist,
+    });
+
+    if (conflict) {
+      return res.status(409).json({
+        success: false,
+        message: "Stylist is already occupied for part of the walk-in window.",
+        conflict,
+      });
+    }
     return;
   }
-
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
 
-  try {
+      assigned_staff: resolvedStylist,
     const { name, contact, stylist, services, refNo } = req.body;
 
     console.log("[Walk-in Log] Received request - name:", name);
 
     // Get environment variables
     const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
-    console.log("[Walk-in Log] SUPABASE_URL available:", !!SUPABASE_URL);
-    console.log("[Walk-in Log] SUPABASE_ANON_KEY available:", !!SUPABASE_ANON_KEY);
+    const { data: responseData, error: insertError } = await supabase
+      .from('walk_in_logs')
+      .insert(walkInData)
+      .select();
 
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      console.error("[Walk-in Log] Missing Supabase configuration");
-      return res.status(500).json({
+    if (insertError) {
+      console.error("[Walk-in Log] Supabase error:", insertError.message);
+      return res.status(400).json({
         success: false,
-        message: "Server configuration error: Missing Supabase credentials",
+        message: "Failed to insert walk-in data",
+        details: insertError.message,
       });
     }
-
-    // Validate required fields
-    if (!name) {
-      return res.status(400).json({ success: false, message: "Customer name is required" });
-    }
-
-    if (!services || !Array.isArray(services) || services.length === 0) {
-      return res.status(400).json({ success: false, message: "At least one service is required" });
-    }
-
-    if (!stylist) {
-      return res.status(400).json({ success: false, message: "Stylist assignment is required" });
-    }
-
-    // Prepare the data for insertion
-    const today = new Date().toISOString().split("T")[0];
     const walkInData = {
       date: today,
       customer_name: name.trim(),

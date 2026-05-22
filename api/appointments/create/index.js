@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { bookSlot } from '../utils/slotManager.js';
+import { findStaffScheduleConflict, getServiceDurationMinutes, resolveStaffLabel } from '../utils/staffConflict.js';
 
 // Convert 12-hour format to 24-hour format
 function convertTo24HourFormat(time12) {
@@ -21,7 +22,7 @@ export default async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { name, email, phone, date, time, service, services, staff_assigned, total_amount } = req.body;
+  const { name, email, phone, date, time, service, services, staff_assigned, total_amount, service_est_time } = req.body;
 
   // Validate: name, date, time, staff_assigned are required
   // AND at least one of email or phone is required
@@ -61,14 +62,33 @@ export default async (req, res) => {
       typeof svc === 'string' ? { name: svc } : svc
     );
 
+    const totalDurationMinutes = Number(service_est_time) || getServiceDurationMinutes(formattedServices);
+    const resolvedStaff = resolveStaffLabel(staff_assigned);
+
+    const conflict = await findStaffScheduleConflict({
+      supabase,
+      date,
+      startTime: time24,
+      durationMinutes: totalDurationMinutes,
+      staff: resolvedStaff,
+    });
+
+    if (conflict) {
+      return res.status(409).json({
+        error: 'Stylist is already booked for part of the selected time window.',
+        conflict,
+      });
+    }
+
     // Book the slot with customer info, staff, and services
     const slotBooked = await bookSlot(
       date, 
       time24, 
       name, 
       customerContact,
-      staff_assigned,
+      resolvedStaff,
       formattedServices,
+      totalDurationMinutes,
       total_amount
     );
     
@@ -133,7 +153,7 @@ export default async (req, res) => {
         date,
         time,
         services: formattedServices,
-        staff_assigned
+        staff_assigned: resolvedStaff
       }
     });
   } catch (error) {

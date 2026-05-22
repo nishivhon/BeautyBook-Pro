@@ -410,6 +410,8 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
   const [showReceiptReminder, setShowReceiptReminder] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showConfirmationToast, setShowConfirmationToast] = useState(false);
+  const [showErrorToast, setShowErrorToast] = useState(false);
+  const [errorToastMessage, setErrorToastMessage] = useState('');
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -499,6 +501,20 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
   const discountAmount = Math.max(0, Math.min(subtotal, getCouponDiscountAmount(coupon, subtotal)));
   const totalAfterDiscount = Math.max(0, subtotal - discountAmount);
+  const serviceItems = Array.isArray(booking.rawServices)
+    ? booking.rawServices
+    : (Array.isArray(booking.services) ? booking.services : []);
+  const serviceEstTime = serviceItems.reduce((total, item) => {
+    const minutes = Number(
+      item?.est_time ??
+      item?.estimated_time ??
+      item?.duration_minutes ??
+      item?.duration ??
+      item?.time ??
+      0
+    );
+    return total + (Number.isFinite(minutes) ? minutes : 0);
+  }, 0);
 
   /* Handle final confirmation */
   const handleConfirmBooking = async () => {
@@ -535,9 +551,11 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
         date: booking.date,
         time: booking.time,
         service: serviceList,
+        services: serviceItems,
         staff_assigned: booking.stylist,
         coupon: coupon || null,
-        total_amount: totalAfterDiscount
+        total_amount: totalAfterDiscount,
+        service_est_time: serviceEstTime,
       };
       
       console.log('[Phase4] Booking data:', bookingData);
@@ -566,6 +584,8 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
       
       if (!response.ok) {
         console.error('[Phase4] API error:', result);
+        setErrorToastMessage(result?.error || result?.message || 'Unable to create booking right now.');
+        setShowErrorToast(true);
         return;
       }
       
@@ -826,6 +846,12 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           type="success" 
           duration={2000} 
           isVisible={showConfirmationToast} 
+        />
+        <Toast 
+          message={errorToastMessage || 'Unable to create booking right now.'}
+          type="error"
+          duration={3000}
+          isVisible={showErrorToast}
         />
       </div>
 

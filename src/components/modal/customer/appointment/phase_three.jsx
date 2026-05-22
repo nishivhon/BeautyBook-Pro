@@ -430,16 +430,21 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
         setLoading(true);
         setError(null);
         
-        const [staffResponse, appointmentsResponse] = await Promise.all([
-          fetchStaffWithAnyOption(),
-          fetch('/api/appointments/read/by-status?status=pending')
-        ]);
+        // Build date to query appointment logs (use ISO date if available)
+        const queryDate = initialData?.schedule?.dateISO || initialData?.schedule?.date || null;
+
+        const staffPromise = fetchStaffWithAnyOption();
+        const apptsPromise = queryDate
+          ? fetch(`/api/appointments/read/by-date?date=${encodeURIComponent(queryDate)}`)
+          : fetch('/api/appointments/read/by-status?status=pending');
+
+        const [staffResponse, appointmentsResponse] = await Promise.all([staffPromise, apptsPromise]);
 
         const response = staffResponse;
         const filteredStaff = response.staff || [];
         let pendingAppointments = [];
 
-        if (appointmentsResponse.ok) {
+        if (appointmentsResponse && appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json();
           pendingAppointments = appointmentsData.appointments || [];
         }
@@ -472,20 +477,12 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
             })
           : filteredStaff;
 
-        const nextAppointmentByStaff = pendingAppointments.reduce((map, appointment) => {
-          if (!appointment?.staff || !appointment?.time) {
-            return map;
-          }
-
+        // Build a map of appointments for quick lookup per staff
+        const apptsByStaff = pendingAppointments.reduce((map, appointment) => {
+          if (!appointment?.staff || !appointment?.time) return map;
           const key = String(appointment.staff).toLowerCase();
-          const existing = map.get(key);
-          const currentMinutes = appointment.time ? Number.parseInt(String(appointment.time).split(':')[0], 10) * 60 + Number.parseInt(String(appointment.time).split(':')[1] || '0', 10) : Number.MAX_SAFE_INTEGER;
-          const existingMinutes = existing?.time ? Number.parseInt(String(existing.time).split(':')[0], 10) * 60 + Number.parseInt(String(existing.time).split(':')[1] || '0', 10) : Number.MAX_SAFE_INTEGER;
-
-          if (!existing || currentMinutes < existingMinutes) {
-            map.set(key, appointment);
-          }
-
+          if (!map.has(key)) map.set(key, []);
+          map.get(key).push(appointment);
           return map;
         }, new Map());
         
@@ -498,21 +495,64 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
           response.any,
           ...staffToShow.map((staff) => {
             const stylist = transformStaffToStylist(staff);
-            const nextAppointment = nextAppointmentByStaff.get(String(staff.names).toLowerCase());
+            const staffKey = String(staff.names).toLowerCase();
 
             // If this is a walk-in flow and the staff doesn't accept walk-ins, or is currently in-service, mark unavailable
             const staffInServiceValue = (staff.in_service || '').toString().trim().toLowerCase();
             const staffIsInService = staffInServiceValue === 'in-service';
             const disabledForWalkIn = isWalkIn && (staff.walk_in === false || staff.walk_in === 0 || staffIsInService);
 
+            // Compute overlap using appointments from both available_slots and appointment_logs
+            let hasOverlap = false;
+
+            try {
+              const requestedTimeStr = initialData?.schedule?.time;
+              if (requestedTimeStr) {
+                const parseTime = (t) => {
+                  if (!t) return null;
+                  // Accept formats like '14:00' or '2:00 PM'
+                  if (t.toLowerCase().includes('am') || t.toLowerCase().includes('pm')) {
+                    const [timePart, period] = String(t).split(' ');
+                    const [h, m] = timePart.split(':').map(Number);
+                    let hh = h;
+                    if (period.toUpperCase() === 'PM' && h !== 12) hh = h + 12;
+                    if (period.toUpperCase() === 'AM' && h === 12) hh = 0;
+                    return hh * 60 + (Number.isFinite(m) ? m : 0);
+                  }
+                  const [hhStr, mmStr] = String(t).split(':');
+                  const hh = Number.parseInt(hhStr, 10) || 0;
+                  const mm = Number.parseInt(mmStr || '0', 10) || 0;
+                  return hh * 60 + mm;
+                };
+
+                const requestedStart = parseTime(requestedTimeStr);
+                const requestedEnd = requestedStart + totalSelectedTime;
+
+                const staffAppts = apptsByStaff.get(staffKey) || [];
+                for (const appt of staffAppts) {
+                  const apptStart = parseTime(appt.time);
+                  const apptDur = Number(appt.service_est_time || 0) || 0;
+                  const apptEnd = apptStart + apptDur;
+
+                  // Overlap if appt starts before requested end AND appt ends after requested start
+                  if (apptStart < requestedEnd && apptEnd > requestedStart) {
+                    hasOverlap = true;
+                    break;
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn('[Phase3] overlap check failed', e);
+            }
+
             return {
               ...stylist,
-              nextAppointmentTime: nextAppointment?.time || null,
-              nextAppointmentName: nextAppointment?.name || null,
+              nextAppointmentTime: (apptsByStaff.get(staffKey) || [])[0]?.time || null,
+              nextAppointmentName: (apptsByStaff.get(staffKey) || [])[0]?.name || null,
               totalSelectedTime,
               walk_in: staff.walk_in === true,
               in_service: staff.in_service,
-              unavailable: stylist.unavailable || disabledForWalkIn || staffIsInService,
+              unavailable: stylist.unavailable || disabledForWalkIn || staffIsInService || hasOverlap,
             };
           })
         ];
@@ -529,7 +569,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
     };
 
     fetchStylists();
-  }, [selectedCategories, totalSelectedTime]);
+  }, [selectedCategories, totalSelectedTime, initialData?.schedule]);
 
   const handleContinue = () => {
     onContinue?.({ stylist: stylists.find((s) => s.id === selected) });

@@ -63,6 +63,7 @@ export default async (req, res) => {
         customer_contact: null,
         assigned_staff: null,
         services: [],
+        service_est_time: 0,
         total_price: 0,
         cancellations: (slot.cancellations || 0) + 1,
         status: null,
