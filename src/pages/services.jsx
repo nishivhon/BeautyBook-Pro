@@ -1,5 +1,13 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import haircutImage from "../../images/Service Category/Haircut.png";
+import hairColorImage from "../../images/Service Category/Hair Color.png";
+import stylingImage from "../../images/Service Category/Styling.png";
+import treatmentsImage from "../../images/Service Category/Treatments.png";
+import rebondingImage from "../../images/Service Category/Rebonding & Chemical Treatments.png";
+import highlightsImage from "../../images/Service Category/Highlights & Specialty.png";
+import handFootImage from "../../images/Service Category/Hand & Foot Care.png";
+import othersImage from "../../images/Service Category/Others.png";
 
 // ── Service Categories with Descriptions ──────────────────────────────────────
 const CATEGORIES = [
@@ -12,6 +20,21 @@ const CATEGORIES = [
   { id: 7, name: "Nail Care", description: "Complete manicure and pedicure services with gel and polish options", imageLabel: "Category Visual", imageNote: "Primary image: manicure and pedicure station." },
   { id: 8, name: "Other", description: "Additional beauty services including threading, perming, and cellophane treatments", imageLabel: "Category Visual", imageNote: "Primary image: assorted salon service tools and accessories." },
 ];
+
+const CATEGORY_IMAGES = [
+  { match: /hair\s*cut|\bbasic hair\b|\bcut\b/i, src: haircutImage },
+  { match: /color|coloring|dye/i, src: hairColorImage },
+  { match: /styling|blowout|style/i, src: stylingImage },
+  { match: /treatment|hair treatment|keratin/i, src: treatmentsImage },
+  { match: /rebonding|chemical|perm|relaxer/i, src: rebondingImage },
+  { match: /highlight|balayage|ombre|specialty/i, src: highlightsImage },
+  { match: /hand|foot|nail|manicure|pedicure/i, src: handFootImage },
+];
+
+const getCategoryImage = (categoryName) => {
+  const found = CATEGORY_IMAGES.find(({ match }) => match.test(categoryName));
+  return found ? found.src : othersImage;
+};
 
 // ── Complete Services Data ────────────────────────────────────────────────────
 const SERVICES = [
@@ -287,37 +310,60 @@ function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCateg
                 boxSizing: "border-box",
                 borderRadius: "8px",
                 border: "2px solid #e1d4b8",
-                background: "#ececec",
+                background: "#181412",
                 color: "#171717",
                 padding: 0,
                 cursor: "pointer",
                 position: "relative",
+                overflow: "hidden",
                 transition: "width 320ms cubic-bezier(0.22, 0.61, 0.36, 1), height 320ms cubic-bezier(0.22, 0.61, 0.36, 1), transform 240ms ease, box-shadow 240ms ease, filter 240ms ease, border-color 240ms ease",
                 transform: isPrimary ? (isHovered ? "translateY(-6px)" : "translateY(0)") : (isHovered ? "translateY(-2px)" : "translateY(4px)"),
                 boxShadow: isHovered ? "0 16px 30px rgba(221, 144, 29, 0.28), 0 0 0 1px rgba(221, 144, 29, 0.26)" : "0 0 0 rgba(0, 0, 0, 0)",
                 filter: isHovered ? "brightness(1.03) saturate(1.02)" : "none",
                 borderColor: isHovered ? "rgba(221, 144, 29, 0.88)" : "#e1d4b8",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
                 willChange: "transform, box-shadow, filter",
               }}
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+              <img
+                src={getCategoryImage(category.name)}
+                alt={category.name}
+                loading="lazy"
+                draggable="false"
                 style={{
-                  width: isPrimary ? "88px" : "62px",
-                  height: isPrimary ? "88px" : "62px",
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
                   transform: isHovered ? "scale(1.04)" : "scale(1)",
-                  transition: "width 340ms cubic-bezier(0.22, 0.61, 0.36, 1), height 340ms cubic-bezier(0.22, 0.61, 0.36, 1), transform 240ms ease",
+                  transition: "transform 240ms ease, filter 240ms ease",
+                  filter: isHovered ? "saturate(1.04) brightness(1.03)" : "none",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(180deg, rgba(14, 11, 8, 0.1) 42%, rgba(14, 11, 8, 0.7) 100%)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  left: "10px",
+                  right: "10px",
+                  bottom: "9px",
+                  color: "#fffaf3",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: isPrimary ? "0.9rem" : "0.8rem",
+                  fontWeight: 700,
+                  lineHeight: 1.15,
+                  textShadow: "0 2px 8px rgba(0, 0, 0, 0.5)",
+                  textAlign: "left",
                 }}
               >
-                <rect x="1" y="1" width="22" height="22" stroke="#a6a6a6" strokeWidth="1" fill="none" />
-                <circle cx="6" cy="6" r="1.8" fill="#a6a6a6" />
-                <path d="M3.8 18.8L9.6 11.9L13.1 15.4L16.6 10.8L20.3 18.8H3.8Z" fill="#a6a6a6" />
-              </svg>
+                {category.name}
+              </div>
             </button>
           );
         })}
