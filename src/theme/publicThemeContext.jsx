@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 const themeStorageKey = "publicThemeMode";
 const themeTransitionMs = 500;
-const publicThemeRoutes = new Set(["/", "/landpage", "/how-it-works", "/about", "/services"]);
+const publicThemeRoutes = new Set(["/", "/landpage", "/how-it-works", "/about", "/services", "/operators/login"]);
 
 const PublicThemeContext = createContext(null);
 
@@ -78,7 +78,7 @@ export function PublicThemeRouteSync() {
   const location = useLocation();
   const { themeMode } = usePublicTheme();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof document === "undefined") return;
 
     const pathname = location.pathname;

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { validateOperatorCredentials, loginOperator } from "../services/operatorAuth";
 import { isMagicLinkValid, getMagicLinkInfo } from "../services/magicLink";
-import { CreateAccountModal } from "../components/modal/customer/create-account";
+import { CreateAccountPanel } from "../components/modal/customer/create-account";
+import { usePublicTheme } from "../theme/publicThemeContext";
 
 // ── SVG Icons ─────────────────────────────────────────────────────
 const ScissorsIcon = ({ size = 28, color = "#000" }) => (
@@ -104,20 +105,40 @@ const GridTexture = () => (
   </svg>
 );
 
-// ── Feature list data ─────────────────────────────────────────────
-const FEATURES = [
-  { Icon: CalendarIcon, label: "Appointment Management" },
-  { Icon: UsersIcon,    label: "Staff & Customer Records" },
-  { Icon: ChartIcon,    label: "Revenue Analytics" },
-  { Icon: StarIcon,     label: "Service Catalog" },
-];
-
 // ── Main Component ────────────────────────────────────────────────
 export const LogIn = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { themeMode } = usePublicTheme();
+  const isLightMode = themeMode === "light";
   const magicToken = searchParams.get('token');
-  const shouldOpenCreateAccountModal = searchParams.get('createAccount') === '1';
+  const shouldOpenCreateAccountPanel = searchParams.get('createAccount') === '1';
+
+  const loginTheme = {
+    pageSurface: isLightMode ? "#f5f0e8" : "#0a0908",
+    pagePanel: isLightMode ? "#fdf7f9" : "#0c0b09",
+    cardSurface: isLightMode ? "#ffffff" : "#1a1714",
+    inputSurface: isLightMode ? "#ffffff" : "#231d1a",
+    inputBorder: isLightMode ? "rgba(213, 210, 211, 0.8)" : "rgba(152, 143, 129, 0.3)",
+    inputText: isLightMode ? "#0c0a09" : "#fff",
+    inputPlaceholder: isLightMode ? "rgba(107, 93, 82, 0.72)" : "rgba(152, 143, 129, 0.5)",
+    title: isLightMode ? "#0c0a09" : "#fff",
+    subtitle: isLightMode ? "#6b5d52" : "#988f81",
+    bodyText: isLightMode ? "#5f5348" : "#b8a599",
+    mutedText: isLightMode ? "#6b5d52" : "#b8a599",
+    link: isLightMode ? "#f38ba6" : "#dd901d",
+    linkHover: isLightMode ? "#d94680" : "#c47f18",
+    overlay: isLightMode ? "rgba(10, 9, 8, 0.34)" : "rgba(0, 0, 0, 0.5)",
+    modalSurface: isLightMode ? "#ffffff" : "#1a1714",
+    modalBorder: isLightMode ? "rgba(213, 210, 211, 0.8)" : "rgba(221, 144, 29, 0.2)",
+    modalTitle: isLightMode ? "#0c0a09" : "white",
+    modalText: isLightMode ? "#5f5348" : "#b8a599",
+    modalInputSurface: isLightMode ? "#fff" : "#231d1a",
+    modalInputBorder: isLightMode ? "rgba(213, 210, 211, 0.8)" : "rgba(152, 143, 129, 0.3)",
+    modalInputText: isLightMode ? "#0c0a09" : "white",
+    modalInputFocus: isLightMode ? "rgba(221, 144, 29, 0.55)" : "rgba(221, 144, 29, 0.6)",
+    modalButtonHover: isLightMode ? "rgba(221, 144, 29, 0.1)" : "rgba(221, 144, 29, 0.1)",
+  };
 
   const [password, setPassword] = useState("");
   const [email,    setEmail]    = useState("");
@@ -130,13 +151,10 @@ export const LogIn = () => {
   const [userRole, setUserRole] = useState("admin");
   const [shakeError, setShakeError] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(3);
-  const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
-
-  // Create account modal state
-  const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
+  const [activePanel, setActivePanel] = useState("login");
 
   useEffect(() => {
     // Only check magic link if a token is provided
@@ -173,13 +191,13 @@ export const LogIn = () => {
   }, [magicToken, navigate]);
 
   useEffect(() => {
-    if (!shouldOpenCreateAccountModal) return;
+    if (!shouldOpenCreateAccountPanel) return;
 
-    setShowCreateAccountModal(true);
+    setActivePanel("signup");
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('createAccount');
     setSearchParams(nextParams, { replace: true });
-  }, [searchParams, setSearchParams, shouldOpenCreateAccountModal]);
+  }, [searchParams, setSearchParams, shouldOpenCreateAccountPanel]);
 
   // Trigger shake animation when form error appears
   useEffect(() => {
@@ -297,7 +315,7 @@ export const LogIn = () => {
       if (data.success) {
         setForgotMessage("✓ Password reset link sent to your email. Check your inbox.");
         setTimeout(() => {
-          setShowForgotModal(false);
+          setActivePanel("login");
           setForgotEmail("");
           setForgotMessage("");
         }, 2000);
@@ -334,41 +352,41 @@ export const LogIn = () => {
     }, 1500);
   };
 
+  const headingText = {
+    login: { title: 'Welcome Back', subtitle: 'Sign in to your account.' },
+    forgot: { title: 'Reset Password', subtitle: 'Enter your email address and we\'ll send you a reset link.' },
+  };
+
   // If magic link is invalid or missing, show unauthorized message
   if (unauthorized) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-mid p-5">
-        <div style={{ width: '100%', maxWidth: '420px', height: '480px', padding: '48px 32px', backgroundColor: '#1a1714', borderRadius: '16px', border: '1px solid rgba(221, 144, 29, 0.2)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          {/* Top Section */}
+      <div className="flex items-center justify-center min-h-screen p-5" style={{ backgroundColor: loginTheme.pageSurface }}>
+        <div style={{ width: '100%', maxWidth: '420px', height: '480px', padding: '48px 32px', backgroundColor: loginTheme.modalSurface, borderRadius: '16px', border: `1px solid ${loginTheme.modalBorder}`, boxShadow: isLightMode ? '0 18px 42px rgba(10, 9, 8, 0.12)' : '0 8px 32px rgba(0, 0, 0, 0.3)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-            <div className="text-6xl">
-              🔒
-            </div>
-            <h1 className="text-white text-3xl font-bold" style={{ fontFamily: 'Georgia, serif', letterSpacing: '-0.5px', margin: 0 }}>
+            <div className="text-6xl">🔒</div>
+            <h1 className="text-3xl font-bold" style={{ fontFamily: 'Georgia, serif', letterSpacing: '-0.5px', margin: 0, color: loginTheme.modalTitle }}>
               Access Restricted
             </h1>
           </div>
 
-          {/* Middle Section */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-            <p style={{ margin: 0, textAlign: 'center', color: '#e5d9d0', fontSize: '0.875rem', lineHeight: '1.6' }}>
-              This page is only accessible via a magic link generated by the super admin. 
+            <p style={{ margin: 0, textAlign: 'center', color: loginTheme.modalText, fontSize: '0.875rem', lineHeight: '1.6' }}>
+              This page is only accessible via a magic link generated by the super admin.
               If you believe this is an error, contact your administrator.
             </p>
             <button
               onClick={() => navigate("/")}
               className="font-600 text-sm"
               style={{ padding: '12px 32px', backgroundColor: '#dd901d', color: '#000', border: 'none', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: '0 4px 20px rgba(221, 144, 29, 0.25)', fontWeight: '700' }}
-              onMouseEnter={(e) => { e.target.style.backgroundColor = '#c47f18'; e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 8px 28px rgba(221, 144, 29, 0.4)'; }}
-              onMouseLeave={(e) => { e.target.style.backgroundColor = '#dd901d'; e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 20px rgba(221, 144, 29, 0.25)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = loginTheme.linkHover; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(221, 144, 29, 0.4)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#dd901d'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(221, 144, 29, 0.25)'; }}
             >
               Return to Home
             </button>
           </div>
 
-          {/* Bottom Section */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <p style={{ margin: 0, textAlign: 'center', color: '#b8a599', fontSize: '0.75rem' }}>
+            <p style={{ margin: 0, textAlign: 'center', color: loginTheme.mutedText, fontSize: '0.75rem' }}>
               Redirecting automatically in {redirectCountdown} {redirectCountdown === 1 ? 'second' : 'seconds'}...
             </p>
           </div>
@@ -377,184 +395,301 @@ export const LogIn = () => {
     );
   }
 
+  const renderLoginPanel = () => (
+    <section style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      <button
+        type="button"
+        onClick={() => navigate("/")}
+        style={{
+          alignSelf: 'flex-start',
+          backgroundColor: 'transparent',
+          border: 'none',
+          color: loginTheme.link,
+          fontSize: '0.9rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          padding: '4px 8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = loginTheme.linkHover; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = loginTheme.link; }}
+      >
+        ← Back
+      </button>
+
+      <div className="login-logo-row">
+        <div className="login-logo-badge">
+          <ScissorsIcon size={22} color="#000" />
+        </div>
+        <span className="brand-name">BeautyBook Pro</span>
+      </div>
+
+      <div className="login-heading-block">
+        <h1 className="login-title">Welcome Back</h1>
+        <p className="login-subtitle">Sign in to your account.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="form-body">
+        {errors.form && (
+          <div className={`mb-4 font-inter ${shakeError ? 'login-error-shake' : ''}`} style={{ padding: '16px 18px', backgroundColor: isLightMode ? 'rgba(239, 67, 67, 0.08)' : 'rgba(239, 67, 67, 0.12)', border: '1.5px solid rgba(239, 67, 67, 0.5)', borderRadius: '12px', color: '#ef4343', boxShadow: '0 2px 8px rgba(239, 67, 67, 0.1)', fontSize: '0.9rem', lineHeight: '1.5' }}>
+            {errors.form}
+          </div>
+        )}
+
+        <div className="field-box">
+          <span className="field-label">Email or Phone Number</span>
+          <div className={`login-input-inner ${errors.email ? "has-error" : ""}`}>
+            <MailIcon />
+            <input
+              type="text"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: null })); }}
+              placeholder="admin@beautybook.pro or +15551234567"
+              aria-label="Email or phone number"
+            />
+          </div>
+          {errors.email && <span className="login-error-msg">{errors.email}</span>}
+        </div>
+
+        <div className="field-box">
+          <span className="field-label">Password</span>
+          <div className={`login-input-inner ${errors.password ? "has-error" : ""}`}>
+            <LockIcon />
+            <input
+              type={showPw ? "text" : "password"}
+              value={password}
+              onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: null })); }}
+              placeholder="••••••••"
+              aria-label="Password"
+            />
+            <button
+              type="button"
+              className="login-eye-btn"
+              onClick={() => setShowPw(p => !p)}
+              aria-label={showPw ? "Hide password" : "Show password"}
+            >
+              {showPw ? <EyeOpenIcon /> : <EyeClosedIcon />}
+            </button>
+          </div>
+          {errors.password && <span className="login-error-msg">{errors.password}</span>}
+        </div>
+
+        <div className="login-meta-row">
+          <label className="login-remember-label">
+            <div
+              className={`login-checkbox ${remember ? "checked" : ""}`}
+              onClick={() => setRemember(p => !p)}
+              role="checkbox"
+              aria-checked={remember}
+            >
+              {remember && <CheckIcon />}
+            </div>
+            <span className="login-remember-text">Remember me</span>
+          </label>
+          <button
+            type="button"
+            className="login-forgot-btn"
+            onClick={() => setActivePanel("forgot")}
+          >
+            Forgot Password?
+          </button>
+        </div>
+
+        <button type="submit" className="login-submit-btn" disabled={loading}>
+          {loading ? (
+            <>
+              <SpinnerIcon />
+              Signing In…
+            </>
+          ) : "Sign In"}
+        </button>
+      </form>
+
+      <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(221, 144, 29, 0.1)', textAlign: 'center' }}>
+        <p style={{ margin: '0 0 4px 0', fontSize: '0.9rem', color: loginTheme.bodyText }}>
+          Don't have an account?
+        </p>
+        <button
+          type="button"
+          onClick={() => setActivePanel("signup")}
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: loginTheme.link,
+            fontSize: '0.95rem',
+            fontWeight: '700',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            padding: '4px 8px',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = loginTheme.linkHover; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = loginTheme.link; }}
+        >
+          Create Account
+        </button>
+      </div>
+    </section>
+  );
+
+  const renderForgotPanel = () => (
+    <section style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      <button
+        type="button"
+        onClick={() => setActivePanel("login")}
+        style={{
+          alignSelf: 'flex-start',
+          backgroundColor: 'transparent',
+          border: 'none',
+          color: loginTheme.link,
+          fontSize: '0.9rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          padding: '4px 8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = loginTheme.linkHover; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = loginTheme.link; }}
+      >
+        ← Back to Login
+      </button>
+
+      <div className="login-logo-row">
+        <div className="login-logo-badge">
+          <ScissorsIcon size={22} color="#000" />
+        </div>
+        <span className="brand-name">BeautyBook Pro</span>
+      </div>
+
+      <div className="login-heading-block">
+        <h1 className="login-title">Reset Password</h1>
+        <p className="login-subtitle">Enter your email to receive password reset instructions.</p>
+      </div>
+
+      <form onSubmit={handleForgotPassword} className="form-body">
+        <div className="field-box">
+          <span className="field-label">Email Address</span>
+          <div className="login-input-inner">
+            <MailIcon />
+            <input
+              type="email"
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              placeholder="admin@beautybook.pro"
+              aria-label="Email address"
+            />
+          </div>
+        </div>
+
+        {forgotMessage && (
+          <div style={{
+            padding: '12px 16px',
+            backgroundColor: forgotMessage.includes('✓') ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 67, 67, 0.12)',
+            border: `1px solid ${forgotMessage.includes('✓') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 67, 67, 0.4)'}`,
+            borderRadius: '10px',
+            color: forgotMessage.includes('✓') ? '#10b981' : '#ef4343',
+            fontSize: '0.9rem',
+            lineHeight: '1.5',
+          }}>
+            {forgotMessage}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+          <button
+            type="button"
+            onClick={() => setActivePanel("login")}
+            style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: 'transparent',
+              color: loginTheme.link,
+              border: `1.5px solid ${loginTheme.link}`,
+              borderRadius: '10px',
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = loginTheme.modalButtonHover; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            Back to Login
+          </button>
+          <button
+            type="submit"
+            disabled={forgotLoading}
+            style={{
+              flex: 1,
+              padding: '12px 16px',
+              backgroundColor: '#dd901d',
+              color: '#000',
+              border: 'none',
+              borderRadius: '10px',
+              fontSize: '0.95rem',
+              fontWeight: '700',
+              cursor: forgotLoading ? 'not-allowed' : 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              transition: 'all 0.2s ease',
+              opacity: forgotLoading ? 0.7 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+            }}
+            onMouseEnter={(e) => {
+              if (!forgotLoading) {
+                e.currentTarget.style.backgroundColor = loginTheme.linkHover;
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!forgotLoading) {
+                e.currentTarget.style.backgroundColor = '#dd901d';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }
+            }}
+          >
+            {forgotLoading ? (
+              <>
+                <SpinnerIcon />
+                Sending…
+              </>
+            ) : (
+              'Send Reset Link'
+            )}
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+
   return (
     <div className="login-root" style={{ height: '100vh', overflow: 'hidden' }}>
-
-      {/* ── LEFT PANEL ─────────────────────────────────────── */}
       <div className="login-left" style={{ overflow: 'hidden' }}>
         <GridTexture />
 
-        <div className={`login-form-inner ${mounted ? "mounted" : ""}`} style={{ display: 'flex', flexDirection: 'column' }}>
-
-          {/* Back Button */}
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            style={{
-              alignSelf: 'flex-start',
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#dd901d',
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              padding: '4px 8px',
-              marginBottom: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.color = '#e6a326';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.color = '#dd901d';
-            }}
-          >
-            ← Back
-          </button>
-
-          {/* Logo */}
-          <div className="login-logo-row">
-            <div className="login-logo-badge">
-              <ScissorsIcon size={22} color="#000" />
-            </div>
-            <span className="brand-name">BeautyBook Pro</span>
-          </div>
-
-          {/* Heading */}
-          <div className="login-heading-block">
-            <h1 className="login-title">Welcome Back</h1>
-            <p className="login-subtitle">
-              Sign in to your account.
-            </p>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="form-body">
-
-            {/* Form-level error */}
-            {errors.form && (
-              <div className={`mb-4 font-inter ${shakeError ? 'login-error-shake' : ''}`} style={{ padding: '16px 18px', backgroundColor: 'rgba(239, 67, 67, 0.12)', border: '1.5px solid rgba(239, 67, 67, 0.5)', borderRadius: '12px', color: '#ef4343', boxShadow: '0 2px 8px rgba(239, 67, 67, 0.1)', fontSize: '0.9rem', lineHeight: '1.5' }}>
-                {errors.form}
-              </div>
-            )}
-
-            {/* Email */}
-            <div className="field-box">
-              <span className="field-label">Email or Phone Number</span>
-              <div className={`login-input-inner ${errors.email ? "has-error" : ""}`}>
-                <MailIcon />
-                <input
-                  type="text"
-                  value={email}
-                  onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: null })); }}
-                  placeholder="admin@beautybook.pro or +15551234567"
-                  aria-label="Email or phone number"
-                />
-              </div>
-              {errors.email && <span className="login-error-msg">{errors.email}</span>}
-            </div>
-
-            {/* Password */}
-            <div className="field-box">
-              <span className="field-label">Password</span>
-              <div className={`login-input-inner ${errors.password ? "has-error" : ""}`}>
-                <LockIcon />
-                <input
-                  type={showPw ? "text" : "password"}
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: null })); }}
-                  placeholder="••••••••"
-                  aria-label="Password"
-                />
-                <button
-                  type="button"
-                  className="login-eye-btn"
-                  onClick={() => setShowPw(p => !p)}
-                  aria-label={showPw ? "Hide password" : "Show password"}
-                >
-                  {showPw ? <EyeOpenIcon /> : <EyeClosedIcon />}
-                </button>
-              </div>
-              {errors.password && <span className="login-error-msg">{errors.password}</span>}
-            </div>
-
-            {/* Remember me + Forgot */}
-            <div className="login-meta-row">
-              <label className="login-remember-label">
-                <div
-                  className={`login-checkbox ${remember ? "checked" : ""}`}
-                  onClick={() => setRemember(p => !p)}
-                  role="checkbox"
-                  aria-checked={remember}
-                >
-                  {remember && <CheckIcon />}
-                </div>
-                <span className="login-remember-text">Remember me</span>
-              </label>
-              <button 
-                type="button" 
-                className="login-forgot-btn"
-                onClick={() => setShowForgotModal(true)}
-              >
-                Forgot Password?
-              </button>
-            </div>
-
-            {/* Submit */}
-            <button type="submit" className="login-submit-btn" disabled={loading}>
-              {loading ? (
-                <>
-                  <SpinnerIcon />
-                  Signing In…
-                </>
-              ) : "Sign In"}
-            </button>
-          </form>
-
-          {/* Restricted note */}
-          <p className="login-access-note">
-            Access restricted to authorized salon operators only.
-          </p>
-
-          {/* Sign up link */}
-          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(221, 144, 29, 0.1)', textAlign: 'center' }}>
-            <p style={{ margin: '0 0 4px 0', fontSize: '0.9rem', color: '#b8a599' }}>
-              Don't have an account?
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowCreateAccountModal(true)}
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: '#dd901d',
-                fontSize: '0.95rem',
-                fontWeight: '700',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                padding: '4px 8px',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.color = '#e6a326';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = '#dd901d';
-              }}
-            >
-              Create Account
-            </button>
-          </div>
+        <div className={`login-form-inner ${mounted ? "mounted" : ""}`} style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '460px' }}>
+          {activePanel === 'login' && renderLoginPanel()}
+          {activePanel === 'signup' && (
+            <CreateAccountPanel
+              theme={loginTheme}
+              onBackToLogin={() => setActivePanel("login")}
+              onAccountCreated={handleAccountCreated}
+            />
+          )}
+          {activePanel === 'forgot' && renderForgotPanel()}
         </div>
       </div>
 
-      {/* ── RIGHT PANEL ────────────────────────────────────── */}
       <div className="login-right">
-
-        {/* Decorative layers */}
         <div className="login-orb login-orb-1" />
         <div className="login-orb login-orb-2" />
         <div className="login-orb login-orb-3" />
@@ -563,210 +698,23 @@ export const LogIn = () => {
         <div className="login-ring login-ring-lg" />
         <div className="login-ring login-ring-sm" />
 
-        {/* Content */}
         <div className={`login-right-content ${mounted ? "mounted" : ""}`}>
-
-          {/* Brand icon */}
           <div className="login-icon-circle">
             <ScissorsIcon size={52} color="#000" />
           </div>
 
-          {/* Heading */}
           <div className="login-right-heading">
-            <h2 className="login-right-title">
+            <h2 className="hero-title login-right-title">
               Customer Management{" "}
               <span className="accent">System</span>
             </h2>
             <p className="login-right-desc">
-              Sign in to access your dashboard and manage appointments,
-              staff, and customer records.
+              Sign in to access your customer dashboard, view your appointments,
+              and manage your profile and booking history.
             </p>
-          </div>
-
-          {/* Feature pills — staggered via CSS transitionDelay only */}
-          <div className="login-features-list">
-            {FEATURES.map(({ Icon, label }, i) => (
-              <div
-                key={i}
-                className={`login-feature-pill ${mounted ? "mounted" : ""}`}
-                style={{ transitionDelay: `${0.3 + i * 0.1}s` }}
-              >
-                <Icon />
-                <span className="login-feature-label">{label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Status badge */}
-          <div className="login-status-badge">
-            <span className="login-status-dot" />
-            <span className="login-status-text">
-              System Online · Secure Connection
-            </span>
           </div>
         </div>
       </div>
-
-      {/* ── FORGOT PASSWORD MODAL ────────────────────────── */}
-      {showForgotModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          backdropFilter: 'blur(2px)',
-        }}>
-          <div style={{
-            backgroundColor: '#1a1714',
-            borderRadius: '16px',
-            border: '1px solid rgba(221, 144, 29, 0.2)',
-            padding: '40px 32px',
-            maxWidth: '420px',
-            width: '90%',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-          }}>
-            <h2 style={{ margin: '0 0 12px 0', color: 'white', fontSize: '24px', fontWeight: 'bold', fontFamily: 'Georgia, serif' }}>
-              Reset Password
-            </h2>
-            <p style={{ margin: '0 0 24px 0', color: '#b8a599', fontSize: '0.95rem', lineHeight: '1.5' }}>
-              Enter your email address and we'll send you a link to reset your password.
-            </p>
-
-            <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: '#e5d9d0', fontSize: '0.9rem', fontWeight: '600' }}>
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="admin@beautybook.pro"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    backgroundColor: '#231d1a',
-                    border: '1px solid rgba(152, 143, 129, 0.3)',
-                    borderRadius: '10px',
-                    color: 'white',
-                    fontSize: '0.95rem',
-                    fontFamily: 'Inter, sans-serif',
-                    boxSizing: 'border-box',
-                    outline: 'none',
-                    transition: 'all 0.3s ease',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = 'rgba(221, 144, 29, 0.6)';
-                    e.target.style.backgroundColor = '#2a1f1a';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = 'rgba(152, 143, 129, 0.3)';
-                    e.target.style.backgroundColor = '#231d1a';
-                  }}
-                />
-              </div>
-
-              {forgotMessage && (
-                <div style={{
-                  padding: '12px 16px',
-                  backgroundColor: forgotMessage.includes('✓') ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 67, 67, 0.12)',
-                  border: `1px solid ${forgotMessage.includes('✓') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 67, 67, 0.4)'}`,
-                  borderRadius: '10px',
-                  color: forgotMessage.includes('✓') ? '#10b981' : '#ef4343',
-                  fontSize: '0.9rem',
-                  lineHeight: '1.5',
-                }}>
-                  {forgotMessage}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowForgotModal(false)}
-                  style={{
-                    flex: 1,
-                    padding: '12px 16px',
-                    backgroundColor: 'transparent',
-                    color: '#dd901d',
-                    border: '1.5px solid #dd901d',
-                    borderRadius: '10px',
-                    fontSize: '0.95rem',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    fontFamily: 'Inter, sans-serif',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = 'rgba(221, 144, 29, 0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={forgotLoading}
-                  style={{
-                    flex: 1,
-                    padding: '12px 16px',
-                    backgroundColor: '#dd901d',
-                    color: '#000',
-                    border: 'none',
-                    borderRadius: '10px',
-                    fontSize: '0.95rem',
-                    fontWeight: '700',
-                    cursor: forgotLoading ? 'not-allowed' : 'pointer',
-                    fontFamily: 'Inter, sans-serif',
-                    transition: 'all 0.2s ease',
-                    opacity: forgotLoading ? 0.7 : 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!forgotLoading) {
-                      e.target.style.backgroundColor = '#c47f18';
-                      e.target.style.transform = 'translateY(-1px)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!forgotLoading) {
-                      e.target.style.backgroundColor = '#dd901d';
-                      e.target.style.transform = 'translateY(0)';
-                    }
-                  }}
-                >
-                  {forgotLoading ? (
-                    <>
-                      <SpinnerIcon />
-                      Sending…
-                    </>
-                  ) : (
-                    'Send Reset Link'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── CREATE ACCOUNT MODAL ────────────────────────── */}
-      <CreateAccountModal 
-        isOpen={showCreateAccountModal}
-        onClose={() => setShowCreateAccountModal(false)}
-        onAccountCreated={handleAccountCreated}
-      />
     </div>
   );
 };
