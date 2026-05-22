@@ -51,7 +51,8 @@ async function rotateAppointmentSlots() {
             client_name: slot.client_name,
             client_phone: slot.client_phone,
             client_email: slot.client_email,
-            notes: slot.notes
+            notes: slot.notes,
+            cancellations: slot.cancellations || 0
           }))
         );
 
@@ -95,6 +96,7 @@ async function rotateAppointmentSlots() {
                 slot_date: tomorrow,
                 start_time: startTime,
                 end_time: endTime,
+                cancellations: 0,
                 status: 'pending'
               });
             }

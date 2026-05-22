@@ -187,11 +187,29 @@ export const updateSlotStatus = async (date, time, newStatus) => {
     const supabase = getSupabaseClient();
     console.log(`[SlotManager] Updating slot status: ${date} ${time} → ${newStatus}`);
 
+    let cancellations = undefined;
+    if (newStatus === 'cancelled') {
+      const { data: currentSlot, error: fetchError } = await supabase
+        .from('available_slots')
+        .select('cancellations')
+        .eq('date', date)
+        .eq('time_slot', time)
+        .single();
+
+      if (fetchError) {
+        console.error('[SlotManager] Error reading cancellations before cancel update:', fetchError);
+        return false;
+      }
+
+      cancellations = (currentSlot?.cancellations || 0) + 1;
+    }
+
     const { data, error } = await supabase
       .from('available_slots')
       .update({ 
         status: newStatus,
-        updated_at: new Date().toISOString() 
+        updated_at: new Date().toISOString(),
+        ...(cancellations !== undefined ? { cancellations } : {})
       })
       .eq('date', date)
       .eq('time_slot', time)

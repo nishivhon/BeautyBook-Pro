@@ -62,7 +62,8 @@ export default async (req, res) => {
         customer_name: null,
         customer_contact: null,
         assigned_staff: null,
-        services: null,
+        services: [],
+        cancellations: (slot.cancellations || 0) + 1,
         status: null,
       })
       .eq('id', id)
