@@ -1456,6 +1456,7 @@ html[data-theme="light"] {
   html[data-theme="light"] .dash-stat-icon-box,
   html[data-theme="light"] .dash-queue-icon-box,
   html[data-theme="light"] .live-queue-icon-box,
+  html[data-theme="light"] .live-queue-number-box,
   html[data-theme="light"] .dash-analytics-icon-box,
   html[data-theme="light"] .svc-item-icon-box {
     background: #f5f0e8;
@@ -12543,6 +12544,7 @@ html[data-theme="light"] .admin-nav-logo-badge,
 html[data-theme="light"] .dash-stat-icon-box,
 html[data-theme="light"] .dash-queue-icon-box,
 html[data-theme="light"] .live-queue-icon-box,
+html[data-theme="light"] .live-queue-number-box,
 html[data-theme="light"] .dash-analytics-icon-box,
 html[data-theme="light"] .svc-item-icon-box {
   background: #f5f0e8 !important;

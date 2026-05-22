@@ -1110,9 +1110,9 @@ const CouponsPanel = () => {
               {
                 padding: '12px',
                 marginBottom: '8px',
-                background: '#ffffff',
+                background: 'rgba(243, 139, 166, 0.5)',
                 borderRadius: 6,
-                border: '1px solid rgba(213, 210, 211, 0.2)',
+                border: '1px solid rgba(255, 255, 255, 0.6)',
                 fontSize: 13,
                 display: 'flex',
                 justifyContent: 'space-between',
