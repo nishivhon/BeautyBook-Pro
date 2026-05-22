@@ -8,6 +8,11 @@ import rebondingImage from "../../images/Service Category/Rebonding & Chemical T
 import highlightsImage from "../../images/Service Category/Highlights & Specialty.png";
 import handFootImage from "../../images/Service Category/Hand & Foot Care.png";
 import othersImage from "../../images/Service Category/Others.png";
+import { usePublicTheme } from "../theme/publicThemeContext";
+import { ThemeToggle } from "../components/public/ThemeToggle";
+
+const HERO_BG_IMAGE_DARK = new URL("../../images/DarkmodeBG.png", import.meta.url).href;
+const HERO_BG_IMAGE_LIGHT = new URL("../../images/LightmodeBG.png", import.meta.url).href;
 
 // ── Service Categories with Descriptions ──────────────────────────────────────
 const CATEGORIES = [
@@ -176,7 +181,13 @@ const NavBar = () => {
         <button onClick={() => handleNavClick({label:"About", path:"/about"})} className="nav-link">About</button>
       </div>
 
-      <button onClick={handleBooking} className="btn-primary btn-nav btn-nav-desktop">Login</button>
+      <div
+        className="btn-nav-desktop"
+        style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", flexWrap: "nowrap", gap: 8 }}
+      >
+        <ThemeToggle />
+        <button onClick={handleBooking} className="btn-primary btn-nav">Login</button>
+      </div>
 
       {menuOpen && (
         <div className="mobile-menu">
@@ -189,7 +200,10 @@ const NavBar = () => {
             <button onClick={() => { handleNavClick({label:'Services', path:'/services'}); setMenuOpen(false); }} className="mobile-menu-link">Services</button>
             <button onClick={() => { handleNavClick({label:'About', path:'/about'}); setMenuOpen(false); }} className="mobile-menu-link">About</button>
           </div>
-          <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">Login</button>
+          <div className="mobile-menu-footer">
+            <ThemeToggle className="mobile-theme-toggle" />
+            <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">Login</button>
+          </div>
         </div>
       )}
     </nav>
@@ -198,21 +212,24 @@ const NavBar = () => {
 
 // ── Hero Section ─────────────────────────────────────────────────────────────
 function HeroSection() {
+  const { themeMode } = usePublicTheme();
+  const heroBackgroundImage = themeMode === "light" ? HERO_BG_IMAGE_LIGHT : HERO_BG_IMAGE_DARK;
+
   return (
     <section
       id="hero"
       className="hero-section services-hero"
       style={{
-        backgroundImage: `linear-gradient(rgba(10, 9, 8, 0.55), rgba(10, 9, 8, 0.72)), url('/images/DarkmodeBG.png')`,
+        backgroundImage: `linear-gradient(rgba(10, 9, 8, 0.55), rgba(10, 9, 8, 0.72)), url('${heroBackgroundImage}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         position: 'relative',
       }}
     >
-      <h1 className="hero-title">
-        <span className="hero-line-1">Discover Our</span>
-        <span className="hero-line-2 accent">Premium Services</span>
+      <h1 className="hero-title services-hero-title">
+        <span className="hero-line-1">Look Good, Feel Good</span>
+        <span className="hero-line-2 accent">Without the Wait</span>
       </h1>
 
       <p className="hero-text">
@@ -254,9 +271,17 @@ const SERVICES_BY_CATEGORY = CATEGORIES.reduce((accumulator, category) => {
 }, {});
 
 function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCategoryIndex, onHoverCategory, onSelectCategory, isSliding }) {
+  const { themeMode } = usePublicTheme();
   const [isHovered, setIsHovered] = useState(false);
   const wheelCooldownRef = useRef(false);
   const containerRef = useRef(null);
+  const hoverBorderColor = themeMode === "light" ? "rgba(243, 139, 166, 0.88)" : "rgba(221, 144, 29, 0.88)";
+  const hoverBoxShadow = themeMode === "light" ? "0 16px 30px rgba(243, 139, 166, 0.28), 0 0 0 1px rgba(243, 139, 166, 0.26)" : "0 16px 30px rgba(221, 144, 29, 0.28), 0 0 0 1px rgba(221, 144, 29, 0.26)";
+  const activePillColor = themeMode === "light" ? "#f38ba6" : "#dd901d";
+  const inactivePillColor = themeMode === "light" ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.18)";
+  const inactivePillBorder = themeMode === "light" ? "1px solid rgba(0,0,0,0.06)" : "none";
+  const activePillShadow = themeMode === "light" ? "0 0 0 3px rgba(243, 139, 166, 0.18)" : "0 0 0 3px rgba(221, 144, 29, 0.18)";
+  const inactivePillShadow = themeMode === "light" ? "inset 0 -1px 0 rgba(0,0,0,0.02)" : "none";
 
   // Use a native wheel listener with passive:false so we can reliably prevent page scroll
   useEffect(() => {
@@ -310,7 +335,7 @@ function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCateg
                 boxSizing: "border-box",
                 borderRadius: "8px",
                 border: "2px solid #e1d4b8",
-                background: "#181412",
+                background: themeMode === "light" ? "#fff7f8" : "#181412",
                 color: "#171717",
                 padding: 0,
                 cursor: "pointer",
@@ -318,9 +343,9 @@ function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCateg
                 overflow: "hidden",
                 transition: "width 320ms cubic-bezier(0.22, 0.61, 0.36, 1), height 320ms cubic-bezier(0.22, 0.61, 0.36, 1), transform 240ms ease, box-shadow 240ms ease, filter 240ms ease, border-color 240ms ease",
                 transform: isPrimary ? (isHovered ? "translateY(-6px)" : "translateY(0)") : (isHovered ? "translateY(-2px)" : "translateY(4px)"),
-                boxShadow: isHovered ? "0 16px 30px rgba(221, 144, 29, 0.28), 0 0 0 1px rgba(221, 144, 29, 0.26)" : "0 0 0 rgba(0, 0, 0, 0)",
+                boxShadow: isHovered ? hoverBoxShadow : "0 0 0 rgba(0, 0, 0, 0)",
                 filter: isHovered ? "brightness(1.03) saturate(1.02)" : "none",
-                borderColor: isHovered ? "rgba(221, 144, 29, 0.88)" : "#e1d4b8",
+                borderColor: isHovered ? hoverBorderColor : "#e1d4b8",
                 willChange: "transform, box-shadow, filter",
               }}
             >
@@ -344,7 +369,9 @@ function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCateg
                 style={{
                   position: "absolute",
                   inset: 0,
-                  background: "linear-gradient(180deg, rgba(14, 11, 8, 0.1) 42%, rgba(14, 11, 8, 0.7) 100%)",
+                  background: themeMode === "light"
+                    ? "linear-gradient(180deg, rgba(14, 11, 8, 0.06) 42%, rgba(14, 11, 8, 0.58) 100%)"
+                    : "linear-gradient(180deg, rgba(14, 11, 8, 0.1) 42%, rgba(14, 11, 8, 0.7) 100%)",
                 }}
               />
               <div
@@ -380,12 +407,12 @@ function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCateg
               aria-pressed={isActive}
               onClick={() => onSelectCategory(index)}
               style={{
-                width: isActive ? "34px" : "20px",
+                width: "20px",
                 height: "10px",
                 borderRadius: "999px",
-                border: "none",
-                background: isActive ? "#dd901d" : "rgba(255, 255, 255, 0.28)",
-                boxShadow: isActive ? "0 0 0 3px rgba(221, 144, 29, 0.18)" : "none",
+                border: isActive ? "none" : inactivePillBorder,
+                background: isActive ? activePillColor : inactivePillColor,
+                boxShadow: isActive ? activePillShadow : inactivePillShadow,
                 transition: "all 0.25s ease",
                 cursor: "pointer",
                 padding: 0,
@@ -399,6 +426,7 @@ function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCateg
 }
 
 function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService, isCompact }) {
+  const { themeMode } = usePublicTheme();
   const wheelLockRef = useRef(null);
   const scrollTimeoutRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -412,6 +440,18 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
   const visibleCount = Math.min(5, services.length);
   // Increased spacing between carousel items to make gaps larger
   const itemSpacing = 90;
+  const activeCardBorder = themeMode === "light" ? "1px solid rgba(243, 139, 166, 0.72)" : "1px solid rgba(221, 144, 29, 0.9)";
+  const inactiveCardBorder = themeMode === "light" ? "1px solid rgba(0, 0, 0, 0.08)" : "1px solid rgba(225, 212, 184, 0.26)";
+  const activeCardBackground = themeMode === "light"
+    ? "linear-gradient(180deg, rgba(243, 139, 166, 0.36), rgba(255, 231, 238, 0.98))"
+    : "linear-gradient(180deg, rgba(221, 144, 29, 0.25), rgba(20, 20, 20, 0.98))";
+  const inactiveCardBackground = themeMode === "light" ? "#fff7f8" : "rgba(18, 18, 18, 0.88)";
+  const activeCardShadow = themeMode === "light" ? "0 20px 36px rgba(243, 139, 166, 0.18)" : "0 20px 36px rgba(221, 144, 29, 0.18)";
+  const inactiveCardShadow = themeMode === "light" ? "0 10px 20px rgba(0, 0, 0, 0.08)" : "0 10px 20px rgba(0, 0, 0, 0.2)";
+  const serviceNameColor = themeMode === "light" ? "#111111" : "#f7f1e6";
+  const durationColor = themeMode === "light" ? "rgba(17, 17, 17, 0.68)" : "rgba(229, 218, 198, 0.82)";
+  const priceColor = themeMode === "light" ? "#f38ba6" : "rgba(247, 241, 230, 0.78)";
+  const activePriceColor = themeMode === "light" ? "#f38ba6" : "#f7c669";
 
   useEffect(() => () => {
     if (wheelLockRef.current) window.clearTimeout(wheelLockRef.current);
@@ -515,14 +555,12 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
                   zIndex: 20 - distance,
                   minHeight: "75px",
                   borderRadius: "16px",
-                  border: isActive ? "1px solid rgba(221, 144, 29, 0.9)" : "1px solid rgba(225, 212, 184, 0.26)",
-                  background: isActive
-                    ? "linear-gradient(180deg, rgba(221, 144, 29, 0.25), rgba(20, 20, 20, 0.98))"
-                    : "rgba(18, 18, 18, 0.88)",
-                  color: "#f7f1e6",
+                  border: isActive ? activeCardBorder : inactiveCardBorder,
+                  background: isActive ? activeCardBackground : inactiveCardBackground,
+                  color: themeMode === "light" ? "#111111" : "#f7f1e6",
                   padding: "12px 16px",
                   cursor: "pointer",
-                  boxShadow: isActive ? "0 20px 36px rgba(221, 144, 29, 0.18)" : "0 10px 20px rgba(0, 0, 0, 0.2)",
+                  boxShadow: isActive ? activeCardShadow : inactiveCardShadow,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -532,11 +570,11 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
                 }}
             >
               <div style={{ minWidth: 0, textAlign: "left" }}>
-                <div style={{ fontSize: "1.06rem", fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{service.name}</div>
-                <div style={{ fontSize: "0.9rem", color: "rgba(229, 218, 198, 0.82)", marginTop: "4px" }}>{service.duration}</div>
+                <div style={{ fontSize: "1.06rem", fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: serviceNameColor }}>{service.name}</div>
+                <div style={{ fontSize: "0.9rem", color: durationColor, marginTop: "4px" }}>{service.duration}</div>
               </div>
 
-              <span style={{ fontSize: "0.9rem", fontWeight: 800, letterSpacing: "0.04em", color: isActive ? "#f7c669" : "rgba(247, 241, 230, 0.78)", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: "0.9rem", fontWeight: 800, letterSpacing: "0.04em", color: isActive ? activePriceColor : priceColor, textTransform: "uppercase", whiteSpace: "nowrap" }}>
                 {service.price}
               </span>
             </button>
@@ -548,6 +586,7 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
 }
 
 function ServiceDetailsPanel({ service, onBookService, isCompact }) {
+  const { themeMode } = usePublicTheme();
   return (
     <div
       style={{
@@ -580,14 +619,14 @@ function ServiceDetailsPanel({ service, onBookService, isCompact }) {
         {service.name}
       </h3>
       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px", width: isCompact ? "18rem" : "20rem" }}>
-        <div style={{ color: "#a79c8b", fontSize: "0.8rem", letterSpacing: "0.06em", textTransform: "none" }}>Category:</div>
-        <div style={{ color: "#f7f1e6", fontSize: "0.86rem", fontWeight: 700, fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(CATEGORIES.find(c => c.id === service.category) || {}).name || "—"}</div>
+        <div style={{ color: themeMode === "light" ? "#000000" : "#a79c8b", fontSize: "0.8rem", letterSpacing: "0.06em", textTransform: "none" }}>Category:</div>
+        <div style={{ color: themeMode === "light" ? "#000000" : "#f7f1e6", fontSize: "0.86rem", fontWeight: 700, fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(CATEGORIES.find(c => c.id === service.category) || {}).name || "—"}</div>
       </div>
 
       <p
         style={{
           margin: 0,
-          color: "#a79c8b",
+          color: "#000000",
           fontSize: isCompact ? "0.94rem" : "1rem",
           lineHeight: 1.35,
           maxWidth: isCompact ? "18rem" : "20rem",
