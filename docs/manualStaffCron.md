@@ -1,0 +1,1 @@
+curl.exe -X POST http://localhost:3000/api/cron/sync-daily-staff-stats -H "Content-Type: application/json" -d "{}"

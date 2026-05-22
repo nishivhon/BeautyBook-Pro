@@ -186,10 +186,10 @@ async function syncDailyStaffStats() {
 // PHT is UTC+8, so 12:00 AM PHT = 4:00 PM UTC (16:00)
 cron.schedule('0 16 * * *', rotateAppointmentSlots);
 
-// Schedule: Run at end of day - 11:59 PM Philippine Time (3:59 PM UTC)
-// PHT is UTC+8, so 11:59 PM PHT = 3:59 PM UTC (15:59)
-cron.schedule('59 15 * * *', syncDailyStaffStats);
+// Schedule: Run at midnight Philippine Time every day (4:00 PM UTC = 12:00 AM PHT)
+// PHT is UTC+8, so 12:00 AM PHT = 4:00 PM UTC (16:00)
+cron.schedule('0 16 * * *', syncDailyStaffStats);
 
 console.log('[Scheduler] Appointment slot rotation scheduled for daily at 12:00 AM Philippine Time (4:00 PM UTC)');
-console.log('[Scheduler] Daily staff stats sync scheduled for daily at 11:59 PM Philippine Time (3:59 PM UTC)');
+console.log('[Scheduler] Daily staff stats sync scheduled for daily at 12:00 AM Philippine Time (4:00 PM UTC)');
 console.log('[Scheduler] Waiting for jobs...\n');
