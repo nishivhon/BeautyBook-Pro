@@ -108,7 +108,7 @@ export default async (req, res) => {
         const { error: updateError } = await supabase
           .from('staffs')
           .update({
-            total_clients: totalCount,
+            total_clients: 0,
             done_clients: doneCount,
             total_walk_in: totalWalkInCount,
             clock_in: null,
@@ -126,7 +126,7 @@ export default async (req, res) => {
         updates.push({
           staffId: s.id,
           staffName: s.names,
-          totalClients: totalCount,
+          totalClients: 0,
           doneClients: doneCount,
           totalWalkIn: totalWalkInCount,
           success: true
