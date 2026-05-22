@@ -905,6 +905,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                   initialData={{ services: phase2Data?.services || [] }}
                   headerTitle="Add Walk-in"
                   stepLabels={WALK_IN_STEPS}
+                  isWalkIn={true}
                 />
               </div>
             )}

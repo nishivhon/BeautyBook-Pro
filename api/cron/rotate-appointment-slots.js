@@ -35,13 +35,13 @@ export default async (req, res) => {
     
     const { data: pastSlots, error: fetchError } = await supabase
       .from('available_slots')
-      .select('id, availability, status, date, time_slot, customer_name, customer_contact, assigned_staff, services')
+      .select('availability, status, date, time_slot, customer_name, customer_contact, assigned_staff, services, cancellations, total_price')
       .lt('date', today); // Less than today (so yesterday and older)
 
     if (fetchError) throw fetchError;
 
     if (pastSlots && pastSlots.length > 0) {
-      // Insert into appointment_logs (copy all columns including id)
+      // Insert into appointment_logs without the source slot id so the archive table can use its own key
       const { error: insertError } = await supabase
         .from('appointment_logs')
         .insert(pastSlots);
@@ -104,6 +104,8 @@ export default async (req, res) => {
             date: targetDate,
             time_slot: time,
             availability: true,
+            cancellations: 0,
+            total_price: 0,
             status: null
           });
         });
@@ -114,6 +116,8 @@ export default async (req, res) => {
             date: targetDate,
             time_slot: time,
             availability: true,
+            cancellations: 0,
+            total_price: 0,
             status: null
           });
         });

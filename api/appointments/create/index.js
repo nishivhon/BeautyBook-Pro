@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { bookSlot } from '../utils/slotManager.js';
 
 // Convert 12-hour format to 24-hour format
@@ -20,7 +21,7 @@ export default async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { name, email, phone, date, time, service, services, staff_assigned } = req.body;
+  const { name, email, phone, date, time, service, services, staff_assigned, total_amount } = req.body;
 
   // Validate: name, date, time, staff_assigned are required
   // AND at least one of email or phone is required
@@ -41,6 +42,13 @@ export default async (req, res) => {
 
   try {
     console.log(`[Appointments] Creating new appointment for: ${name}`);
+
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false }
+    });
     
     // Convert time to 24-hour format for slot booking
     const time24 = convertTo24HourFormat(time);
@@ -60,12 +68,58 @@ export default async (req, res) => {
       name, 
       customerContact,
       staff_assigned,
-      formattedServices
+      formattedServices,
+      total_amount
     );
     
     if (!slotBooked) {
       console.warn('[Appointments] Failed to book slot - it may already be taken');
       return res.status(400).json({ error: 'Time slot is no longer available. Please select another time.' });
+    }
+
+    // Best-effort: mark the selected coupon as used in the customer account
+    const couponCode = String(req.body?.coupon?.code || req.body?.coupon?.id || '').trim().toUpperCase();
+    if (couponCode && (email || phone)) {
+      const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+      const normalizedPhone = typeof phone === 'string' ? phone.replace(/\D/g, '') : '';
+
+      let customerQuery = supabase.from('customers_accounts').select('id, coupons_used');
+      if (normalizedEmail) {
+        customerQuery = customerQuery.eq('email', normalizedEmail);
+      } else if (normalizedPhone) {
+        customerQuery = customerQuery.eq('phone', normalizedPhone);
+      }
+
+      const { data: customerRows, error: customerFetchError } = await customerQuery.limit(1);
+
+      if (customerFetchError) {
+        console.warn('[Appointments] Failed to load customer for coupon update:', customerFetchError.message);
+      } else if (customerRows && customerRows.length > 0) {
+        const customer = customerRows[0];
+        const couponsUsed = Array.isArray(customer.coupons_used) ? customer.coupons_used : [];
+        const updatedCoupons = couponsUsed.map((coupon) => {
+          const currentCode = String(coupon?.code || '').toUpperCase();
+          return currentCode === couponCode
+            ? { ...coupon, claimed: true, used: true }
+            : coupon;
+        });
+
+        const matchingCouponIndex = updatedCoupons.findIndex((coupon) => String(coupon?.code || '').toUpperCase() === couponCode);
+        if (matchingCouponIndex !== -1) {
+          const { error: updateCouponError } = await supabase
+            .from('customers_accounts')
+            .update({ coupons_used: updatedCoupons })
+            .eq('id', customer.id);
+
+          if (updateCouponError) {
+            console.warn('[Appointments] Coupon use update failed:', updateCouponError.message);
+          } else {
+            console.log(`[Appointments] Marked coupon ${couponCode} as used for customer ${customer.id}`);
+          }
+        } else {
+          console.warn(`[Appointments] Coupon ${couponCode} not found in customer coupons_used`);
+        }
+      }
     }
 
     console.log(`[Appointments] Appointment successfully booked for ${name} on ${date} at ${time}`);

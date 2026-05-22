@@ -10,6 +10,7 @@
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import { archiveDailyStaffLogs } from '../../server/src/services/staffLogService.js';
 
 dotenv.config({ path: '.env' });
 
@@ -50,7 +51,9 @@ async function rotateAppointmentSlots() {
             client_name: slot.client_name,
             client_phone: slot.client_phone,
             client_email: slot.client_email,
-            notes: slot.notes
+            notes: slot.notes,
+            cancellations: slot.cancellations || 0,
+            total_price: slot.total_price || 0
           }))
         );
 
@@ -94,6 +97,8 @@ async function rotateAppointmentSlots() {
                 slot_date: tomorrow,
                 start_time: startTime,
                 end_time: endTime,
+                cancellations: 0,
+                total_price: 0,
                 status: 'pending'
               });
             }
@@ -135,15 +140,23 @@ async function syncDailyStaffStats() {
 
     if (staff_list.error) throw staff_list.error;
 
+    const today = phtDate.toISOString().split('T')[0];
     const updates = [];
 
     for (const s of staff_list.data || []) {
       try {
-        // Count total bookings for this staff
+        // Count total bookings for this staff from available_slots
         const { count: totalBookings, error: totalError } = await supabase
           .from('available_slots')
           .select('id', { count: 'exact', head: true })
           .eq('assigned_staff', s.names);
+
+        // Count same-day walk-ins for this staff
+        const { count: walkInTotalBookings, error: walkInTotalError } = await supabase
+          .from('walk_in_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('assigned_staff', s.names)
+          .eq('date', today);
 
         // Count done/completed bookings for this staff
         const { count: doneBookings, error: doneError } = await supabase
@@ -152,22 +165,36 @@ async function syncDailyStaffStats() {
           .eq('assigned_staff', s.names)
           .eq('status', 'done');
 
+        // Count same-day walk-in logs that are done for this staff
+        const { count: walkInDoneBookings, error: walkInDoneError } = await supabase
+          .from('walk_in_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('assigned_staff', s.names)
+          .eq('date', today)
+          .eq('status', 'done');
+
         const totalCount = totalBookings || 0;
-        const doneCount = doneBookings || 0;
+        const doneCount = (doneBookings || 0) + (walkInDoneBookings || 0);
+        const totalWalkInCount = walkInTotalBookings || 0;
 
         // Update the staffs table
         const { error: updateError } = await supabase
           .from('staffs')
           .update({
-            total_clients: totalCount,
-            done_clients: doneCount,
-            updated_at: new Date().toISOString()
+            total_clients: 0,
+            done_clients: 0,
+            total_walk_in: 0,
+            clock_in: null,
+            clock_out: null,
+            status: 'off',
+            in_service: null,
+            walk_in: false
           })
           .eq('id', s.id);
 
         if (!updateError) {
-          updates.push({ name: s.names, total: totalCount, done: doneCount });
-          console.log(`[Scheduler] ✓ Updated ${s.names}: total=${totalCount}, done=${doneCount}`);
+          updates.push({ name: s.names, total: 0, done: 0, totalWalkIn: 0 });
+          console.log(`[Scheduler] ✓ Updated ${s.names}: archive complete, counters reset to zero`);
         }
       } catch (err) {
         console.error(`[Scheduler] Error updating ${s.names}:`, err.message);
@@ -181,15 +208,33 @@ async function syncDailyStaffStats() {
   }
 }
 
+/**
+ * Archive daily staff logs before resetting counters
+ */
+async function archiveDailyStaffStats() {
+  try {
+    const now = new Date();
+    const phtDate = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+
+    console.log('[Scheduler] Starting staff log archive at', phtDate.toISOString(), '(Philippine Time)');
+    const result = await archiveDailyStaffLogs(supabase, phtDate);
+    console.log(`[Scheduler] ✓ Archived ${result.archived} staff log rows for ${phtDate.toISOString().split('T')[0]}`);
+  } catch (error) {
+    console.error('[Scheduler] Error archiving staff logs:', error.message);
+  }
+}
+
 // Schedule: Run at midnight Philippine Time every day (4:00 PM UTC = 12:00 AM PHT)
-// Format: minute, hour, day-of-month, month, day-of-week
-// PHT is UTC+8, so 12:00 AM PHT = 4:00 PM UTC (16:00)
-cron.schedule('0 16 * * *', rotateAppointmentSlots);
+// Archive first so it captures the day's values before the reset job clears them.
+cron.schedule('0 16 * * *', archiveDailyStaffStats);
 
-// Schedule: Run at end of day - 11:59 PM Philippine Time (3:59 PM UTC)
-// PHT is UTC+8, so 11:59 PM PHT = 3:59 PM UTC (15:59)
-cron.schedule('59 15 * * *', syncDailyStaffStats);
+// Schedule: Run one minute later at 12:01 AM PHT so counters reset after archive completes.
+cron.schedule('1 16 * * *', syncDailyStaffStats);
 
-console.log('[Scheduler] Appointment slot rotation scheduled for daily at 12:00 AM Philippine Time (4:00 PM UTC)');
-console.log('[Scheduler] Daily staff stats sync scheduled for daily at 11:59 PM Philippine Time (3:59 PM UTC)');
+// Schedule: Run two minutes later to rotate slots after staff archive/reset work completes.
+cron.schedule('2 16 * * *', rotateAppointmentSlots);
+
+console.log('[Scheduler] Staff log archive scheduled for daily at 12:00 AM Philippine Time (4:00 PM UTC)');
+console.log('[Scheduler] Daily staff stats sync scheduled for daily at 12:01 AM Philippine Time (4:01 PM UTC)');
+console.log('[Scheduler] Appointment slot rotation scheduled for daily at 12:02 AM Philippine Time (4:02 PM UTC)');
 console.log('[Scheduler] Waiting for jobs...\n');

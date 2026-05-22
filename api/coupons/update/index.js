@@ -17,7 +17,6 @@ export default async (req, res) => {
       value_type,
       value,
       description,
-      applicable_services,
       start_date,
       end_date,
       max_uses,
@@ -40,7 +39,6 @@ export default async (req, res) => {
     if (value_type) updateData.value_type = value_type;
     if (value) updateData.value = Number(value);
     if (description !== undefined) updateData.description = description || null;
-    if (applicable_services) updateData.applicable_services = applicable_services.map(id => Number(id));
     if (start_date) updateData.start_date = start_date;
     if (end_date) updateData.end_date = end_date;
     if (max_uses !== undefined) updateData.max_uses = max_uses ? Number(max_uses) : null;

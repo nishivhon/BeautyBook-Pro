@@ -32,6 +32,7 @@ export default async (req, res) => {
       status: s.status,
       category_specialty: s.category_specialty,
       in_service: s.in_service,
+      walk_in: s.walk_in === true,
       unavailable: s.status !== 'avail',
     }));
 

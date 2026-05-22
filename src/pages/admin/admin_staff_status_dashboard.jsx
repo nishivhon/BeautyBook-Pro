@@ -849,6 +849,11 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                   </div>
 
                   <div>
+                    <p className="dash-detail-label">Total Walk-Ins Today</p>
+                    <p className="dash-detail-value">{s.details.totalWalkIns}</p>
+                  </div>
+
+                  <div>
                     <p className="dash-detail-label">Clock In</p>
                     <p className="dash-detail-value">{s.clock_in}</p>
                   </div>
@@ -1378,6 +1383,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
             noOfClientToday: s.clients_today || 0,
             totalClients: s.total_clients || 0,
             doneClients: s.done_clients || 0,
+            totalWalkIns: s.total_walk_in || 0,
             availableForWalkIn: Boolean(s.walk_in)
           }
         };

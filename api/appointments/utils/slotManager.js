@@ -29,7 +29,7 @@ function getSupabaseClient() {
  * @param {Array} services - Array of service objects booked (optional)
  * @returns {Promise<boolean>} - True if booking successful
  */
-export const bookSlot = async (date, time, customerName = null, customerContact = null, assignedStaff = null, services = []) => {
+export const bookSlot = async (date, time, customerName = null, customerContact = null, assignedStaff = null, services = [], totalPrice = 0) => {
   try {
     const supabase = getSupabaseClient();
     console.log(`[SlotManager] Booking slot: ${date} ${time} for ${customerName} with staff: ${assignedStaff}`);
@@ -40,6 +40,7 @@ export const bookSlot = async (date, time, customerName = null, customerContact 
       customer_contact: customerContact,
       assigned_staff: assignedStaff,
       services: services.length > 0 ? services : [],
+      total_price: Number(totalPrice) || 0,
       status: 'pending',
       updated_at: new Date().toISOString() 
     };
@@ -89,6 +90,7 @@ export const releaseSlot = async (date, time) => {
         customer_name: null,
         customer_contact: null,
         services: [],
+        total_price: 0,
         status: 'pending',
         updated_at: new Date().toISOString() 
       })
@@ -187,11 +189,29 @@ export const updateSlotStatus = async (date, time, newStatus) => {
     const supabase = getSupabaseClient();
     console.log(`[SlotManager] Updating slot status: ${date} ${time} → ${newStatus}`);
 
+    let cancellations = undefined;
+    if (newStatus === 'cancelled') {
+      const { data: currentSlot, error: fetchError } = await supabase
+        .from('available_slots')
+        .select('cancellations')
+        .eq('date', date)
+        .eq('time_slot', time)
+        .single();
+
+      if (fetchError) {
+        console.error('[SlotManager] Error reading cancellations before cancel update:', fetchError);
+        return false;
+      }
+
+      cancellations = (currentSlot?.cancellations || 0) + 1;
+    }
+
     const { data, error } = await supabase
       .from('available_slots')
       .update({ 
         status: newStatus,
-        updated_at: new Date().toISOString() 
+        updated_at: new Date().toISOString(),
+        ...(cancellations !== undefined ? { cancellations } : {})
       })
       .eq('date', date)
       .eq('time_slot', time)

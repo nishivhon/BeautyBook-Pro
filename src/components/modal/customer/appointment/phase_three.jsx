@@ -216,6 +216,7 @@ const transformStaffToStylist = (staff) => ({
   initial: staff.names?.charAt(0)?.toUpperCase() || "?",
   name: staff.names,
   status: staff.status,
+  in_service: staff.in_service,
   unavailable: staff.unavailable, // API already calculates this
 });
 
@@ -339,10 +340,19 @@ const AnyRow = ({ isSelected, onSelect }) => (
 );
 
 /* ── Named stylist row ── */
-const StylistRow = ({ stylist, isSelected, onSelect }) => {
+const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext = true }) => {
   const statusLabel = stylist.status === "no slots" ? "No Slots" : "Unavailable";
   const hasNextAppointment = Boolean(stylist.nextAppointmentTime);
-  
+
+  const inServiceValue = (stylist.in_service || '').toString().trim().toLowerCase();
+  const isCurrentlyInService = inServiceValue === 'in-service';
+  const isAvailableState = inServiceValue === 'avail' || stylist.status === 'avail';
+  const acceptsWalkIn = stylist.walk_in === true;
+
+  // Custom status messages for walk-in flows
+  const walkInDisabledMessage = isAvailableState && !acceptsWalkIn ? 'Not accepting walk-in' : null;
+  const inServiceMessage = isCurrentlyInService ? 'Currently in-service' : null;
+
   return (
     <button
       className={`stylist-row${isSelected ? " selected" : ""}${stylist.unavailable ? " unavailable" : ""}`}
@@ -358,12 +368,15 @@ const StylistRow = ({ stylist, isSelected, onSelect }) => {
         </div>
         <div className="stylist-text">
           <span className={`stylist-name${stylist.unavailable ? " muted" : ""}`}>{stylist.name}</span>
-          <span className="stylist-unavailable-tag" style={{ marginTop: 4, display: "inline-flex", gap: 8, flexWrap: "wrap" }}>
-            <span>{stylist.totalSelectedTime || 0} min total</span>
-            <span>•</span>
-            <span>{hasNextAppointment ? `Next: ${formatTimeTo12Hour(stylist.nextAppointmentTime)}` : "No next appointment"}</span>
-          </span>
-          {stylist.unavailable && <span className="stylist-unavailable-tag">{statusLabel}</span>}
+          <div style={{ marginTop: 4, display: "inline-flex", gap: 8, flexWrap: "wrap" }}>
+            {showTime && <span className="stylist-unavailable-tag">{stylist.totalSelectedTime || 0} min total</span>}
+            {showTime && showNext && <span>•</span>}
+            {showNext && <span className="stylist-unavailable-tag">{hasNextAppointment ? `Next: ${formatTimeTo12Hour(stylist.nextAppointmentTime)}` : "No next appointment"}</span>}
+          </div>
+          {/* Priority messages: in-service > not-accepting-walkin > generic unavailable */}
+          {isCurrentlyInService && <span className="stylist-unavailable-tag">{inServiceMessage}</span>}
+          {!isCurrentlyInService && walkInDisabledMessage && <span className="stylist-unavailable-tag">{walkInDisabledMessage}</span>}
+          {!isCurrentlyInService && !walkInDisabledMessage && stylist.unavailable && <span className="stylist-unavailable-tag">{statusLabel}</span>}
         </div>
       </div>
     </button>
@@ -373,7 +386,7 @@ const StylistRow = ({ stylist, isSelected, onSelect }) => {
 /* ══════════════════════════════════════════
    MAIN COMPONENT — Phase 3
 ══════════════════════════════════════════ */
-export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS }) => {
+export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showTime = true, showNext = true, isWalkIn = false }) => {
   const [selected, setSelected] = useState(null);
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
@@ -487,11 +500,19 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
             const stylist = transformStaffToStylist(staff);
             const nextAppointment = nextAppointmentByStaff.get(String(staff.names).toLowerCase());
 
+            // If this is a walk-in flow and the staff doesn't accept walk-ins, or is currently in-service, mark unavailable
+            const staffInServiceValue = (staff.in_service || '').toString().trim().toLowerCase();
+            const staffIsInService = staffInServiceValue === 'in-service';
+            const disabledForWalkIn = isWalkIn && (staff.walk_in === false || staff.walk_in === 0 || staffIsInService);
+
             return {
               ...stylist,
               nextAppointmentTime: nextAppointment?.time || null,
               nextAppointmentName: nextAppointment?.name || null,
               totalSelectedTime,
+              walk_in: staff.walk_in === true,
+              in_service: staff.in_service,
+              unavailable: stylist.unavailable || disabledForWalkIn || staffIsInService,
             };
           })
         ];
@@ -591,6 +612,8 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
                   stylist={stylist}
                   isSelected={selected === stylist.id}
                   onSelect={setSelected}
+                  showTime={showTime}
+                  showNext={showNext}
                 />
               ))}
           </div>

@@ -1,1 +1,3 @@
-curl http://localhost:3000/api/cron/rotate-appointment-slots
+```bash
+curl.exe http://localhost:3000/api/cron/rotate-appointment-slots
+```

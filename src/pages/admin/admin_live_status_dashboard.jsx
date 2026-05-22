@@ -690,9 +690,15 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
     });
   };
 
-  const currentItems = formatQueueItems(currentAppointments, 'active');
+  const currentWalkIns = walkInAppointments.filter((walkin) => walkin.status === 'current');
+  const pendingWalkIns = walkInAppointments.filter((walkin) => walkin.status === 'pending');
+
+  const currentItems = [
+    ...formatQueueItems(currentAppointments, 'active'),
+    ...formatWalkInItems(currentWalkIns, 'active')
+  ];
   const pendingItems = formatQueueItems(pendingAppointments, 'waiting');
-  const walkInItems = formatWalkInItems(walkInAppointments, 'waiting');
+  const walkInItems = formatWalkInItems(pendingWalkIns, 'waiting');
 
   // Combine pending items with walk-ins
   const combinedPendingItems = [...pendingItems, ...walkInItems];
