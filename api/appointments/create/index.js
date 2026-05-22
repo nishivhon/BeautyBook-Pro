@@ -62,6 +62,13 @@ export default async (req, res) => {
       typeof svc === 'string' ? { name: svc } : svc
     );
 
+    // Normalize services to minimal shape to store in DB (only name and category)
+    const minimalServices = formattedServices.map((svc) => {
+      const name = svc?.name || svc?.title || svc?.service || String(svc || '').trim();
+      const category = svc?.category || svc?.category_name || null;
+      return { name, category };
+    });
+
     const totalDurationMinutes = Number(service_est_time) || getServiceDurationMinutes(formattedServices);
     const resolvedStaff = resolveStaffLabel(staff_assigned);
 
@@ -87,7 +94,7 @@ export default async (req, res) => {
       name, 
       customerContact,
       resolvedStaff,
-      formattedServices,
+      minimalServices,
       totalDurationMinutes,
       total_amount
     );
@@ -152,7 +159,7 @@ export default async (req, res) => {
         contact: customerContact,
         date,
         time,
-        services: formattedServices,
+        services: minimalServices,
         staff_assigned: resolvedStaff
       }
     });
