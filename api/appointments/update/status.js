@@ -373,28 +373,51 @@ export default async (req, res) => {
       auth: { persistSession: false }
     });
 
+    const isUuid = (value) =>
+      typeof value === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+    const isWalkInPrefixedId = typeof id === 'string' && id.startsWith('walkin-');
+    const normalizedWalkInId = isWalkInPrefixedId ? id.replace(/^walkin-/, '') : id;
+
     console.log(`[UpdateStatus] === STEP 1: Fetching slot with id=${id} ===`);
 
     // First try to fetch from available_slots
-    const { data: slotData, error: slotFetchError } = await supabase
-      .from('available_slots')
-      .select('id, date, time_slot, customer_name, customer_contact, assigned_staff, services, status, created_at')
-      .eq('id', id)
-      .single();
-
-    console.log('[UpdateStatus] Slot fetch from available_slots - error:', slotFetchError?.message);
-    console.log('[UpdateStatus] Slot fetch - data:', slotData);
-
-    // If not found in available_slots, try walk_in_logs
     let isWalkIn = false;
-    let actualSlotData = slotData;
-    if (slotFetchError || !slotData) {
-      console.log('[UpdateStatus] Slot not found in available_slots, trying walk_in_logs...');
-      const { data: walkInData, error: walkInFetchError } = await supabase
-        .from('walk_in_logs')
-        .select('id, date, customer_name, customer_contact, assigned_staff, services, status, created_at')
+
+    let actualSlotData = null;
+    let slotData = null;
+    let slotFetchError = null;
+
+    if (!isWalkInPrefixedId && isUuid(id)) {
+      const availableSlotResult = await supabase
+        .from('available_slots')
+        .select('id, date, time_slot, customer_name, customer_contact, assigned_staff, services, status, created_at')
         .eq('id', id)
         .single();
+
+      slotData = availableSlotResult.data;
+      slotFetchError = availableSlotResult.error;
+
+      console.log('[UpdateStatus] Slot fetch from available_slots - error:', slotFetchError?.message);
+      console.log('[UpdateStatus] Slot fetch - data:', slotData);
+    } else {
+      console.log('[UpdateStatus] Skipping available_slots lookup for walk-in prefixed or non-UUID id');
+    }
+
+    // If not found in available_slots, try walk_in_logs
+    actualSlotData = slotData;
+    if (slotFetchError || !slotData || isWalkInPrefixedId) {
+      console.log('[UpdateStatus] Slot not found in available_slots, trying walk_in_logs...');
+      const walkInQuery = supabase
+        .from('walk_in_logs')
+        .select('id, date, customer_name, customer_contact, assigned_staff, services, status, created_at');
+
+      const walkInResult = isWalkInPrefixedId || !isUuid(id)
+        ? await walkInQuery.eq('id', normalizedWalkInId).single()
+        : await walkInQuery.eq('id', id).single();
+
+      const { data: walkInData, error: walkInFetchError } = walkInResult;
 
       console.log('[UpdateStatus] Slot fetch from walk_in_logs - error:', walkInFetchError?.message);
       console.log('[UpdateStatus] Walk-in data:', walkInData);
@@ -415,7 +438,7 @@ export default async (req, res) => {
     const updateQuery = supabase
       .from(isWalkIn ? 'walk_in_logs' : 'available_slots')
       .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', id)
+      .eq('id', isWalkIn ? normalizedWalkInId : id)
       .select();
 
     const { data, error } = await updateQuery;
