@@ -8,8 +8,11 @@ import rebondingImage from "../../images/Service Category/Rebonding & Chemical T
 import highlightsImage from "../../images/Service Category/Highlights & Specialty.png";
 import handFootImage from "../../images/Service Category/Hand & Foot Care.png";
 import othersImage from "../../images/Service Category/Others.png";
+import { usePublicTheme } from "../theme/publicThemeContext";
+import { ThemeToggle } from "../components/public/ThemeToggle";
 
-const HERO_BG_IMAGE = "/images/DarkmodeBG.png";
+const HERO_BG_IMAGE_DARK = new URL("../../images/DarkmodeBG.png", import.meta.url).href;
+const HERO_BG_IMAGE_LIGHT = new URL("../../images/LightmodeBG.png", import.meta.url).href;
 
 const CATEGORY_IMAGES = [
   { match: /hair\s*cut|\bbasic hair\b|\bcut\b/i, src: haircutImage },
@@ -221,9 +224,15 @@ const NavBar = ({ onBookAppointment }) => {
       </div>
 
       {/* CTA - Desktop */}
-      <button onClick={() => { navigate("/operators/login"); setMenuOpen(false); }} className="btn-primary btn-nav btn-nav-desktop">
-        Login
-      </button>
+      <div
+        className="btn-nav-desktop"
+        style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", flexWrap: "nowrap", gap: 8 }}
+      >
+        <ThemeToggle />
+        <button onClick={() => { navigate("/operators/login"); setMenuOpen(false); }} className="btn-primary btn-nav">
+          Login
+        </button>
+      </div>
 
       {/* Mobile menu */}
       {menuOpen && (
@@ -249,9 +258,12 @@ const NavBar = ({ onBookAppointment }) => {
               About
             </button>
           </div>
-          <button onClick={() => { navigate("/operators/login"); setMenuOpen(false); }} className="btn-primary btn-nav btn-mobile-cta">
-            Login
-          </button>
+          <div className="mobile-menu-footer">
+            <ThemeToggle className="mobile-theme-toggle" />
+            <button onClick={() => { navigate("/operators/login"); setMenuOpen(false); }} className="btn-primary btn-nav btn-mobile-cta">
+              Login
+            </button>
+          </div>
         </div>
       )}
     </nav>
@@ -260,13 +272,15 @@ const NavBar = ({ onBookAppointment }) => {
 
 const HeroSection = ({ onBookAppointment }) => {
   const navigate = useNavigate();
+  const { themeMode } = usePublicTheme();
+  const heroBackgroundImage = themeMode === "light" ? HERO_BG_IMAGE_LIGHT : HERO_BG_IMAGE_DARK;
   
   return (
     <section
       id="home"
       className="hero-section"
       style={{
-        backgroundImage: `linear-gradient(rgba(10, 9, 8, 0.55), rgba(10, 9, 8, 0.72)), url('${HERO_BG_IMAGE}')`,
+        backgroundImage: `linear-gradient(rgba(10, 9, 8, 0.55), rgba(10, 9, 8, 0.72)), url('${heroBackgroundImage}')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -407,6 +421,7 @@ const SERVICE_CATEGORIES = [
 
 const ServicesSection = () => {
   const navigate = useNavigate();
+  const { themeMode } = usePublicTheme();
   const [activeSlide, setActiveSlide] = useState(0);
   const [hoveredSlide, setHoveredSlide] = useState(null);
   const [isSliding, setIsSliding] = useState(false);
@@ -507,7 +522,7 @@ const ServicesSection = () => {
           <p
             style={{
               margin: 0,
-              color: "#c9c2b8",
+              color: themeMode === "light" ? "#0b0b0b" : "#c9c2b8",
               fontFamily: "Inter, sans-serif",
               fontSize: "0.93rem",
               lineHeight: 1.45,
@@ -567,6 +582,10 @@ const ServicesSection = () => {
                 const isHovered = hoveredSlide === sourceIndex;
                 const isPrimary = orderedIndex === 0;
 
+                // theme-aware hover colors
+                const hoverBorderColor = themeMode === "light" ? "rgba(243, 139, 166, 0.88)" : "rgba(221, 144, 29, 0.88)";
+                const hoverBoxShadow = themeMode === "light" ? "0 16px 30px rgba(243, 139, 166, 0.28), 0 0 0 1px rgba(243, 139, 166, 0.26)" : "0 16px 30px rgba(221, 144, 29, 0.28), 0 0 0 1px rgba(221, 144, 29, 0.26)";
+
                 return (
               <button
                 key={category.name}
@@ -588,9 +607,9 @@ const ServicesSection = () => {
                     overflow: "hidden",
                   transition: "width 340ms cubic-bezier(0.22, 0.61, 0.36, 1), height 340ms cubic-bezier(0.22, 0.61, 0.36, 1), transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 280ms ease, filter 280ms ease, border-color 240ms ease",
                   transform: isPrimary ? (isHovered ? "translateY(-6px)" : "translateY(0)") : (isHovered ? "translateY(-2px)" : "translateY(4px)"),
-                  boxShadow: isHovered ? "0 16px 30px rgba(221, 144, 29, 0.28), 0 0 0 1px rgba(221, 144, 29, 0.26)" : "0 0 0 rgba(0, 0, 0, 0)",
+                  boxShadow: isHovered ? hoverBoxShadow : "0 0 0 rgba(0, 0, 0, 0)",
                   filter: isHovered ? "brightness(1.03) saturate(1.02)" : "none",
-                  borderColor: isHovered ? "rgba(221, 144, 29, 0.88)" : "#e1d4b8",
+                  borderColor: isHovered ? hoverBorderColor : "#e1d4b8",
                   willChange: "transform, box-shadow, filter",
                 }}
               >
@@ -643,6 +662,21 @@ const ServicesSection = () => {
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
             {SERVICE_CATEGORIES.map((category, index) => {
               const isActive = index === activeSlide;
+              // Use pink accent for active pill in light mode, amber for dark mode
+              const PINK = "#f38ba6"; // rgb(243,139,166)
+              const PINK_SHADOW = "0 0 0 3px rgba(243, 139, 166, 0.18)";
+              const AMBER = "#dd901d";
+
+              const pillBg = isActive
+                ? (themeMode === "light" ? PINK : AMBER)
+                : (themeMode === "light" ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.18)");
+              const pillBorder = isActive ? "none" : (themeMode === "light" ? "1px solid rgba(0,0,0,0.06)" : "none");
+              const pillBoxShadow = isActive
+                ? (themeMode === "light" ? PINK_SHADOW : "0 0 0 3px rgba(221, 144, 29, 0.18)")
+                : (themeMode === "light" ? "inset 0 -1px 0 rgba(0,0,0,0.02)" : "none");
+              const pillWidth = isActive ? "34px" : "20px";
+              const pillHeight = isActive ? "10px" : "12px";
+
               return (
                 <button
                   key={`${category.name}-pill`}
@@ -651,12 +685,12 @@ const ServicesSection = () => {
                   aria-pressed={isActive}
                   onClick={() => rotateTo(index)}
                   style={{
-                    width: isActive ? "34px" : "20px",
-                    height: "10px",
+                    width: pillWidth,
+                    height: pillHeight,
                     borderRadius: "999px",
-                    border: "none",
-                    background: isActive ? "#dd901d" : "rgba(255, 255, 255, 0.28)",
-                    boxShadow: isActive ? "0 0 0 3px rgba(221, 144, 29, 0.18)" : "none",
+                    border: pillBorder,
+                    background: pillBg,
+                    boxShadow: pillBoxShadow,
                     transition: "all 0.25s ease",
                     cursor: "pointer",
                     padding: 0,
