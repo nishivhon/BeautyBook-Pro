@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { bookSlot } from '../utils/slotManager.js';
+import { findStaffScheduleConflict, getServiceDurationMinutes, resolveStaffLabel } from '../utils/staffConflict.js';
 
 // Convert 12-hour format to 24-hour format
 function convertTo24HourFormat(time12) {
@@ -21,7 +22,7 @@ export default async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { name, email, phone, date, time, service, services, staff_assigned, total_amount } = req.body;
+  const { name, email, phone, date, time, service, services, staff_assigned, total_amount, service_est_time } = req.body;
 
   // Validate: name, date, time, staff_assigned are required
   // AND at least one of email or phone is required
@@ -61,14 +62,66 @@ export default async (req, res) => {
       typeof svc === 'string' ? { name: svc } : svc
     );
 
+    // Normalize services to minimal shape to store in DB (only name and category)
+    const minimalServices = formattedServices.map((svc) => {
+      const name = svc?.name || svc?.title || svc?.service || String(svc || '').trim();
+      const category = svc?.category || svc?.category_name || null;
+      return { name, category };
+    });
+
+    const totalDurationMinutes = Number(service_est_time) || getServiceDurationMinutes(formattedServices);
+    const resolvedStaff = resolveStaffLabel(staff_assigned);
+
+    // If a coupon code was provided, check the customer's coupons_used to ensure it hasn't been used already
+    const couponCode = String(req.body?.coupon?.code || req.body?.coupon?.id || '').trim().toUpperCase();
+    if (couponCode && (email || phone)) {
+      try {
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+        const normalizedPhone = typeof phone === 'string' ? phone.replace(/\D/g, '') : '';
+
+        let customerQuery = supabase.from('customers_accounts').select('id, coupons_used').limit(1);
+        if (normalizedEmail) customerQuery = customerQuery.eq('email', normalizedEmail);
+        else if (normalizedPhone) customerQuery = customerQuery.eq('phone', normalizedPhone);
+
+        const { data: customerRows, error: customerFetchError } = await customerQuery;
+        if (!customerFetchError && customerRows && customerRows.length > 0) {
+          const customer = customerRows[0];
+          const couponsUsed = Array.isArray(customer.coupons_used) ? customer.coupons_used : [];
+          const matching = couponsUsed.find(c => String(c?.code || '').toUpperCase() === couponCode);
+          if (matching && matching.used) {
+            return res.status(409).json({ error: 'Coupon has already been used by this customer' });
+          }
+        }
+      } catch (err) {
+        console.warn('[Appointments] Warning: could not verify coupon usage for customer:', err?.message || err);
+        // don't block booking on verification failure, we'll try marking it later
+      }
+    }
+
+    const conflict = await findStaffScheduleConflict({
+      supabase,
+      date,
+      startTime: time24,
+      durationMinutes: totalDurationMinutes,
+      staff: resolvedStaff,
+    });
+
+    if (conflict) {
+      return res.status(409).json({
+        error: 'Stylist is already booked for part of the selected time window.',
+        conflict,
+      });
+    }
+
     // Book the slot with customer info, staff, and services
     const slotBooked = await bookSlot(
       date, 
       time24, 
       name, 
       customerContact,
-      staff_assigned,
-      formattedServices,
+      resolvedStaff,
+      minimalServices,
+      totalDurationMinutes,
       total_amount
     );
     
@@ -132,8 +185,8 @@ export default async (req, res) => {
         contact: customerContact,
         date,
         time,
-        services: formattedServices,
-        staff_assigned
+        services: minimalServices,
+        staff_assigned: resolvedStaff
       }
     });
   } catch (error) {

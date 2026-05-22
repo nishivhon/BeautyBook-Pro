@@ -524,6 +524,13 @@ export const Register = () => {
         allServices = servicesData.map(s => s.title || s.name || s.service);
       }
 
+      const serviceEstTime = Array.isArray(servicesData)
+        ? servicesData.reduce((total, service) => {
+            const minutes = Number(service?.est_time ?? service?.estimated_time ?? service?.duration_minutes ?? service?.duration ?? 0);
+            return total + (Number.isFinite(minutes) ? minutes : 0);
+          }, 0)
+        : 0;
+
       console.log('[Phase4] Services data:', servicesData);
       console.log('[Phase4] Extracted services:', allServices);
       
@@ -543,7 +550,9 @@ export const Register = () => {
         date: appointmentDate,
         time: formattedTime,
         service: servicesList,
-        staff_assigned: stylistName
+        services: Array.isArray(servicesData) ? servicesData : [],
+        staff_assigned: stylistName,
+        service_est_time: serviceEstTime,
       };
 
       console.log('Sending appointment to backend:', appointmentPayload);

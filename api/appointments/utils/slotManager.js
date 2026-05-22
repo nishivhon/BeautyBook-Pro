@@ -27,9 +27,10 @@ function getSupabaseClient() {
  * @param {string} customerContact - Customer's email or phone
  * @param {string} assignedStaff - Assigned staff member (optional, null for "Any available")
  * @param {Array} services - Array of service objects booked (optional)
+ * @param {number} serviceEstTime - Total estimated service time in minutes
  * @returns {Promise<boolean>} - True if booking successful
  */
-export const bookSlot = async (date, time, customerName = null, customerContact = null, assignedStaff = null, services = [], totalPrice = 0) => {
+export const bookSlot = async (date, time, customerName = null, customerContact = null, assignedStaff = null, services = [], serviceEstTime = 0, totalPrice = 0) => {
   try {
     const supabase = getSupabaseClient();
     console.log(`[SlotManager] Booking slot: ${date} ${time} for ${customerName} with staff: ${assignedStaff}`);
@@ -40,6 +41,7 @@ export const bookSlot = async (date, time, customerName = null, customerContact 
       customer_contact: customerContact,
       assigned_staff: assignedStaff,
       services: services.length > 0 ? services : [],
+      service_est_time: Number(serviceEstTime) || 0,
       total_price: Number(totalPrice) || 0,
       status: 'pending',
       updated_at: new Date().toISOString() 
@@ -90,6 +92,7 @@ export const releaseSlot = async (date, time) => {
         customer_name: null,
         customer_contact: null,
         services: [],
+        service_est_time: 0,
         total_price: 0,
         status: 'pending',
         updated_at: new Date().toISOString() 
