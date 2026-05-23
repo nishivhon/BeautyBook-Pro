@@ -228,8 +228,6 @@ const HeroSection = ({ isDesktop }) => {
         padding: isDesktop ? '4.5rem 1.25rem' : '2.5rem 1rem 2.75rem',
       }}
     >
-      <div style={{position:'absolute', inset:0, background:'rgba(6,6,6,0.6)', zIndex:0}} />
-
       <div style={{position:'relative', zIndex:1, color:'var(--color-white)'}}>
       <div className="hero-badge" style={{marginBottom:16}}>
         <span>ABOUT BEAUTYBOOK PRO</span>

@@ -739,7 +739,7 @@ function ServiceDetailsPanel({ service, onBookService, isCompact }) {
       <p
         style={{
           margin: 0,
-          color: "#000000",
+          color: themeMode === "light" ? "#111111" : "#f7f1e6",
           fontSize: isCompact ? "0.94rem" : "1rem",
           lineHeight: 1.35,
           maxWidth: isCompact ? "18rem" : "20rem",
