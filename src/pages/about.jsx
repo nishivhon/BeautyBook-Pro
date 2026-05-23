@@ -142,17 +142,6 @@ const NavBar = () => {
         </span>
       </div>
 
-      {/* Mobile menu button */}
-      <button 
-        onClick={() => setMenuOpen(!menuOpen)} 
-        className="mobile-menu-btn"
-        aria-label="Toggle menu"
-      >
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:20,height:20}}>
-          <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
-      </button>
-
       {/* Nav links - Desktop */}
       <div className="flex-center-gap-1 nav-links-desktop">
         {[
@@ -178,6 +167,22 @@ const NavBar = () => {
         </button>
       </div>
 
+      <div className="mobile-auth-actions">
+        <ThemeToggle className="mobile-theme-toggle" />
+        <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
+          Login
+        </button>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="mobile-menu-btn mobile-menu-btn-inline"
+          aria-label="Toggle menu"
+        >
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:20,height:20}}>
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
+      </div>
+
       {/* Mobile menu */}
       {menuOpen && (
         <div className="mobile-menu">
@@ -197,19 +202,13 @@ const NavBar = () => {
               </button>
             ))}
           </div>
-          <div className="mobile-menu-footer">
-            <ThemeToggle className="mobile-theme-toggle" />
-            <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
-              Login
-            </button>
-          </div>
         </div>
       )}
     </nav>
   );
 };
 
-const HeroSection = () => {
+const HeroSection = ({ isDesktop }) => {
   const { themeMode } = usePublicTheme();
   const heroBackgroundImage = themeMode === "light" ? HERO_BG_IMAGE_LIGHT : HERO_BG_IMAGE_DARK;
 
@@ -225,8 +224,8 @@ const HeroSection = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 420,
-        padding: '4.5rem 1.25rem',
+        minHeight: isDesktop ? 420 : 'auto',
+        padding: isDesktop ? '4.5rem 1.25rem' : '2.5rem 1rem 2.75rem',
       }}
     >
       <div style={{position:'absolute', inset:0, background:'rgba(6,6,6,0.6)', zIndex:0}} />
@@ -249,8 +248,8 @@ const HeroSection = () => {
   );
 };
 
-const PurposeSection = () => (
-  <section className="section" style={{backgroundColor:'var(--bg-secondary)', padding:'4rem 1.5rem 0'}}>
+const PurposeSection = ({ isDesktop }) => (
+  <section className="section" style={{backgroundColor:'var(--bg-secondary)', padding: isDesktop ? '4rem 1.5rem 0' : '2.5rem 20px 0'}}>
     <div className="section-container">
       <h2 className="section-title">Project Purpose</h2>
       <div style={{maxWidth:900, margin:'0 auto'}}>
@@ -262,8 +261,8 @@ const PurposeSection = () => (
   </section>
 );
 
-const MissionSection = () => (
-  <section className="section" style={{backgroundColor:'var(--bg-secondary)', paddingBottom:'4rem'}}>
+const MissionSection = ({ isDesktop }) => (
+  <section className="section" style={{backgroundColor:'var(--bg-secondary)', padding: isDesktop ? '0 1.5rem 4rem' : '0 20px 2.5rem'}}>
     <div className="section-container">
       <h2 className="section-title">Mission</h2>
       <div style={{maxWidth:900, margin:'0 auto'}}>
@@ -275,7 +274,7 @@ const MissionSection = () => (
   </section>
 );
 
-const ProblemSection = () => {
+const ProblemSection = ({ isDesktop }) => {
   const { themeMode } = usePublicTheme();
   const problems = [
     {icon:<ConflictIcon/>, text:"Scheduling conflicts and double bookings"},
@@ -287,12 +286,12 @@ const ProblemSection = () => {
   ];
 
   return (
-    <section className="section" style={{backgroundColor:'var(--bg-darker)', padding:'4rem 1.5rem'}}>
+    <section className="section" style={{backgroundColor:'var(--bg-darker)', paddingTop: isDesktop ? '4rem' : '2.5rem', paddingBottom: isDesktop ? '4rem' : '2.5rem', paddingLeft: isDesktop ? '1.5rem' : '20px', paddingRight: isDesktop ? '1.5rem' : '20px'}}>
       <div className="section-container">
         <h2 className="section-title">The Problem We Solve</h2>
         <p className="section-subtitle">Beauty businesses face real challenges in the digital age</p>
 
-        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'1.25rem', maxWidth:1100, margin:'2.5rem auto 0'}}>
+        <div style={{display:'grid', gridTemplateColumns: isDesktop ? 'repeat(auto-fit, minmax(240px, 1fr))' : 'repeat(2, minmax(0, 1fr))', gap:'1.25rem', maxWidth:1100, margin:'2.5rem auto 0'}}>
           {problems.map((p, i) => (
             <div key={i}
               className={themeMode === 'light' ? 'step-card' : ''}
@@ -341,7 +340,7 @@ const ProblemSection = () => {
   );
 };
 
-const SolutionSection = () => {
+const SolutionSection = ({ isDesktop }) => {
   const { themeMode } = usePublicTheme();
   const features = [
     'Online booking with real-time availability',
@@ -353,13 +352,13 @@ const SolutionSection = () => {
   ];
 
   return (
-    <section className="section" style={{backgroundColor:'var(--bg-secondary)', paddingTop:'4rem', paddingBottom:'44px', paddingLeft:'1.5rem', paddingRight:'1.5rem'}}>
+    <section className="section" style={{backgroundColor:'var(--bg-secondary)', paddingTop: isDesktop ? '4rem' : '2.5rem', paddingBottom: isDesktop ? '44px' : '2.5rem', paddingLeft: isDesktop ? '1.5rem' : '20px', paddingRight: isDesktop ? '1.5rem' : '20px'}}>
       <div className="section-container" style={{maxWidth:1100}}>
         <h2 className="section-title">Our Solution</h2>
         <p className="section-subtitle">Comprehensive features designed for modern beauty businesses</p>
 
-        <div style={{maxWidth:1000, margin:'3rem auto', paddingLeft:'75px'}}>
-          <div style={{display:'grid', gridTemplateColumns:'repeat(2, minmax(0, 420px))', gap:'2rem', alignItems:'start', justifyContent:'center'}}>
+        <div style={{maxWidth:1000, margin: isDesktop ? '3rem auto' : '1.75rem auto 0', paddingLeft: isDesktop ? '75px' : '0'}}>
+          <div style={{display:'grid', gridTemplateColumns: isDesktop ? 'repeat(2, minmax(0, 420px))' : '1fr', gap: isDesktop ? '2rem' : '1.25rem', alignItems:'start', justifyContent:'center'}}>
             <div style={{marginTop:'0'}}>
               <p style={{fontSize:'1.05rem', lineHeight:1.8, color:'var(--color-tan)', marginTop:0, marginBottom:'1rem'}}>
                 BeautyBook Pro combines modern web technologies with established theories such as the Technology Acceptance Model (TAM) and Customer Relationship Management (CRM) principles to deliver a platform tailored to the beauty industry.
@@ -386,7 +385,7 @@ const SolutionSection = () => {
   );
 };
 
-const TeamSection = () => {
+const TeamSection = ({ isDesktop }) => {
   const { themeMode } = usePublicTheme();
   const team = [
     {id:1, name:'Dagodog, Vhon Inishi M.', role:'Project Leader'},
@@ -396,21 +395,21 @@ const TeamSection = () => {
   ];
 
   return (
-    <section className="section" style={{backgroundColor:'var(--bg-darker)', paddingTop:'4rem', paddingBottom:'44px', paddingLeft:'1.5rem', paddingRight:'1.5rem'}}>
+    <section className="section" style={{backgroundColor:'var(--bg-darker)', paddingTop: isDesktop ? '4rem' : '2.5rem', paddingBottom: isDesktop ? '44px' : '2.5rem', paddingLeft: isDesktop ? '1.5rem' : '1rem', paddingRight: isDesktop ? '1.5rem' : '1rem'}}>
       <div className="section-container">
         <h2 className="section-title">Meet The Team</h2>
         <p className="section-subtitle">Passionate PUP IT students behind BeautyBook Pro</p>
 
-        <div style={{display:'grid', gridTemplateColumns:'repeat(2, 220px)', gap:'60px', justifyContent:'center', maxWidth:760, margin:'3rem auto'}}>
+        <div style={{display:'grid', gridTemplateColumns: isDesktop ? 'repeat(2, 220px)' : 'repeat(2, minmax(0, 1fr))', gap: isDesktop ? '60px' : '24px', justifyContent:'center', maxWidth: isDesktop ? 760 : '100%', margin: isDesktop ? '3rem auto' : '1.5rem auto 0'}}>
           {team.map((member) => (
-            <div key={member.id} style={{display:'flex', justifyContent:'center'}}>
-              <div className="team-card" style={{width:220, height:220, borderRadius:10, border:'1px solid var(--border-tan-light)', background:'var(--bg-card)', position:'relative', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center'}}>
+            <div key={member.id} style={{display:'flex', justifyContent:'center', width:'100%'}}>
+              <div className="team-card" style={{width: isDesktop ? 220 : '100%', maxWidth: isDesktop ? 220 : 320, height: isDesktop ? 220 : 'auto', aspectRatio: isDesktop ? undefined : '1 / 1', borderRadius:10, border:'1px solid var(--border-tan-light)', background:'var(--bg-card)', position:'relative', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center'}}>
                 <div style={{color:'var(--color-tan)'}}>
                   Photo Placeholder
                 </div>
 
                 <div style={{position:'absolute', left:0, right:0, bottom:14, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', pointerEvents:'none'}}>
-                  <h3 style={{fontSize:'1.02rem', fontWeight:600, color:'var(--color-white)', margin:0}}>{member.name}</h3>
+                  <h3 style={{fontSize: isDesktop ? '1.02rem' : '0.85rem', fontWeight:600, color:'var(--color-white)', margin:0}}>{member.name}</h3>
                   <p style={{fontSize:'0.85rem', color: themeMode === 'light' ? '#f38ba6' : '#dd901d', fontWeight:600, margin:'6px 0 0'}}>{member.role}</p>
                 </div>
               </div>
@@ -481,14 +480,14 @@ export default function About() {
   return (
     <div className="app-wrapper" style={{ zoom: isDesktop ? '150%' : '100%' }}>
       <NavBar/>
-      <HeroSection/>
+      <HeroSection isDesktop={isDesktop}/>
       <div style={{backgroundColor:'var(--bg-secondary)'}}>
-        <PurposeSection/>
-        <MissionSection/>
+        <PurposeSection isDesktop={isDesktop}/>
+        <MissionSection isDesktop={isDesktop}/>
       </div>
-      <ProblemSection/>
-      <SolutionSection/>
-      <TeamSection/>
+      <ProblemSection isDesktop={isDesktop}/>
+      <SolutionSection isDesktop={isDesktop}/>
+      <TeamSection isDesktop={isDesktop}/>
       <FooterSection/>
     </div>
   );
