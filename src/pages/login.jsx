@@ -629,8 +629,8 @@ export const LogIn = () => {
             style={{
               flex: 1,
               padding: '12px 16px',
-              backgroundColor: '#dd901d',
-              color: '#000',
+              backgroundColor: loginTheme.link,
+              color: isLightMode ? '#0c0a09' : '#000',
               border: 'none',
               borderRadius: '10px',
               fontSize: '0.95rem',
@@ -652,7 +652,7 @@ export const LogIn = () => {
             }}
             onMouseLeave={(e) => {
               if (!forgotLoading) {
-                e.currentTarget.style.backgroundColor = '#dd901d';
+                e.currentTarget.style.backgroundColor = loginTheme.link;
                 e.currentTarget.style.transform = 'translateY(0)';
               }
             }}
