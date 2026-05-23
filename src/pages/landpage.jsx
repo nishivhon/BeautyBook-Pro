@@ -196,17 +196,6 @@ const NavBar = ({ onBookAppointment }) => {
         <span className="brand-name">BeautyBook Pro</span>
       </div>
 
-      {/* Mobile menu button */}
-      <button 
-        onClick={() => setMenuOpen(!menuOpen)} 
-        className="mobile-menu-btn"
-        aria-label="Toggle menu"
-      >
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:20,height:20}}>
-          <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
-      </button>
-
       {/* Nav links - Desktop */}
       <div className="flex-center-gap-1 nav-links-desktop">
         {[
@@ -234,6 +223,22 @@ const NavBar = ({ onBookAppointment }) => {
         </button>
       </div>
 
+      <div className="mobile-auth-actions">
+        <ThemeToggle className="mobile-theme-toggle" />
+        <button onClick={() => { navigate("/operators/login"); setMenuOpen(false); }} className="btn-primary btn-nav btn-mobile-cta">
+          Login
+        </button>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="mobile-menu-btn mobile-menu-btn-inline"
+          aria-label="Toggle menu"
+        >
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:20,height:20}}>
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
+      </div>
+
       {/* Mobile menu */}
       {menuOpen && (
         <div className="mobile-menu">
@@ -256,12 +261,6 @@ const NavBar = ({ onBookAppointment }) => {
               className="mobile-menu-link"
             >
               About
-            </button>
-          </div>
-          <div className="mobile-menu-footer">
-            <ThemeToggle className="mobile-theme-toggle" />
-            <button onClick={() => { navigate("/operators/login"); setMenuOpen(false); }} className="btn-primary btn-nav btn-mobile-cta">
-              Login
             </button>
           </div>
         </div>
@@ -427,12 +426,21 @@ const ServicesSection = () => {
   const [isSliding, setIsSliding] = useState(false);
   const [slideDirection, setSlideDirection] = useState(1);
   const [isHovered, setIsHovered] = useState(false);
+  const [isTouchActive, setIsTouchActive] = useState(false);
+  const [isCompact, setIsCompact] = useState(window.innerWidth < 768);
   const wheelCooldownRef = useRef(false);
+  const touchStateRef = useRef({ active: false, startX: 0, startY: 0 });
   const containerRef = useRef(null);
   const currentCategory = SERVICE_CATEGORIES[activeSlide];
-  const sectionSidePadding = 40;
-  const contentGridWidth = 860;
+  const sectionSidePadding = isCompact ? 12 : 40;
+  const contentGridWidth = isCompact ? 1000 : 860;
   const leftAlignedGridInset = `max(0px, calc((100% - ${contentGridWidth}px) / 2))`;
+
+  useEffect(() => {
+    const handleResize = () => setIsCompact(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const rotateTo = (targetIndex) => {
     if (isSliding || targetIndex === activeSlide) return;
@@ -449,6 +457,48 @@ const ServicesSection = () => {
       setActiveSlide(targetIndex);
       setIsSliding(false);
     }, 220);
+  };
+
+  const handleTouchStart = (event) => {
+    if (isSliding) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    touchStateRef.current = { active: true, startX: touch.clientX, startY: touch.clientY };
+    setIsTouchActive(true);
+  };
+
+  const handleTouchMove = (event) => {
+    if (!touchStateRef.current.active) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - touchStateRef.current.startX;
+    const deltaY = touch.clientY - touchStateRef.current.startY;
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
+  const handleTouchEnd = (event) => {
+    if (!touchStateRef.current.active) return;
+    const touch = event.changedTouches && event.changedTouches[0];
+    if (!touch) {
+      touchStateRef.current.active = false;
+      setIsTouchActive(false);
+      return;
+    }
+
+    const deltaX = touch.clientX - touchStateRef.current.startX;
+    const deltaY = touch.clientY - touchStateRef.current.startY;
+    if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      const direction = deltaX < 0 ? 1 : -1;
+      const target = ((activeSlide + direction) % SERVICE_CATEGORIES.length + SERVICE_CATEGORIES.length) % SERVICE_CATEGORIES.length;
+      rotateTo(target);
+    }
+
+    touchStateRef.current.active = false;
+    setIsTouchActive(false);
   };
 
   // Wheel scroll listener
@@ -505,7 +555,7 @@ const ServicesSection = () => {
             flexDirection: "column",
             justifyContent: "center",
             gap: "16px",
-            minHeight: "280px",
+            minHeight: isCompact ? "auto" : "280px",
           }}
         >
           <h3
@@ -554,12 +604,20 @@ const ServicesSection = () => {
           className="service-carousel-panel"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
           style={{
             minWidth: 0,
             display: "flex",
             flexDirection: "column",
             gap: "12px",
             transform: "translateX(-10px)",
+            touchAction: "pan-y",
+            WebkitTapHighlightColor: "transparent",
+            boxShadow: isTouchActive ? "0 0 0 1px rgba(221, 144, 29, 0.18), 0 0 24px rgba(221, 144, 29, 0.12)" : "none",
+            borderRadius: "12px",
           }}
         >
           <div
@@ -567,13 +625,13 @@ const ServicesSection = () => {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "20px",
+              gap: isCompact ? "12px" : "20px",
               overflow: "visible",
               borderRadius: "0",
               border: "none",
               background: "transparent",
               boxShadow: "none",
-              padding: "12px 10px 16px 24px",
+              padding: isCompact ? "10px 2px 16px 12px" : "12px 10px 16px 24px",
               pointerEvents: isSliding ? "none" : "auto",
             }}
           >
@@ -595,8 +653,8 @@ const ServicesSection = () => {
                 onMouseLeave={() => setHoveredSlide(null)}
                 style={{
                   flex: "0 0 auto",
-                  width: isPrimary ? "330px" : "235px",
-                  height: isPrimary ? "250px" : "182px",
+                  width: isPrimary ? (isCompact ? "min(82vw, 280px)" : "330px") : (isCompact ? "min(62vw, 200px)" : "235px"),
+                  height: isPrimary ? (isCompact ? "200px" : "250px") : (isCompact ? "150px" : "182px"),
                   boxSizing: "border-box",
                   borderRadius: "8px",
                   border: "2px solid #e1d4b8",
@@ -639,12 +697,12 @@ const ServicesSection = () => {
                   <div
                     style={{
                       position: "absolute",
-                      left: "12px",
-                      right: "12px",
-                      bottom: "12px",
+                      left: isCompact ? "10px" : "12px",
+                      right: isCompact ? "10px" : "12px",
+                      bottom: isCompact ? "10px" : "12px",
                       color: "#fffaf3",
                       fontFamily: "Inter, sans-serif",
-                      fontSize: isPrimary ? "1rem" : "0.86rem",
+                      fontSize: isPrimary ? (isCompact ? "0.9rem" : "1rem") : (isCompact ? "0.8rem" : "0.86rem"),
                       fontWeight: 700,
                       lineHeight: 1.15,
                       textShadow: "0 2px 8px rgba(0, 0, 0, 0.5)",
