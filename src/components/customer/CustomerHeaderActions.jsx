@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useThemeScope } from "../../theme/publicThemeContext";
 
 const BellIcon = ({ size = 15, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -33,15 +34,6 @@ const CheckIcon = ({ size = 14, color = "currentColor" }) => (
   </svg>
 );
 
-// Use a dedicated storage key so customer and admin theme preferences remain independent.
-const themeStorageKey = "customerThemeMode";
-
-const getInitialTheme = () => {
-  if (typeof window === "undefined") return "dark";
-  const saved = window.localStorage.getItem(themeStorageKey);
-  return saved === "dark" ? "dark" : "light";
-};
-
 const defaultNotifications = [
   { id: 1, tone: "green", category: "Appointment confirmed", title: "Appointment confirmed", description: "Your appointment has been confirmed.", time: "Just now", unread: true },
   { id: 2, tone: "blue", category: "Appointment reminder", title: "Appointment reminder", description: "You have an upcoming appointment.", time: "1h", unread: true },
@@ -52,18 +44,12 @@ const defaultNotifications = [
 
 export function CustomerHeaderActions({ externalNotifications = [], profile = null }) {
   const wrapperRef = useRef(null);
-  const themeTransitionTimerRef = useRef(null);
   const [openMenu, setOpenMenu] = useState(null);
-  const [themeMode, setThemeMode] = useState(getInitialTheme);
   const [notifications, setNotifications] = useState(defaultNotifications);
+  const { themeMode, toggleTheme } = useThemeScope("customer");
 
   const unreadCount = useMemo(() => notifications.filter((n) => n.unread).length, [notifications]);
   const displayName = profile?.name || profile?.email || "Customer";
-
-  useEffect(() => () => {
-    if (themeTransitionTimerRef.current) window.clearTimeout(themeTransitionTimerRef.current);
-    if (typeof document !== "undefined") document.documentElement.classList.remove("theme-transitioning");
-  }, []);
 
   useEffect(() => {
     // externalNotifications may be either pre-shaped UI notifications or raw appointment objects.
@@ -114,13 +100,6 @@ export function CustomerHeaderActions({ externalNotifications = [], profile = nu
   }, [JSON.stringify(externalNotifications), profile?.id]);
 
   useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.dataset.theme = themeMode;
-      window.localStorage.setItem(themeStorageKey, themeMode);
-    }
-  }, [themeMode]);
-
-  useEffect(() => {
     const handlePointerDown = (event) => { if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setOpenMenu(null); };
     const handleEscape = (event) => { if (event.key === "Escape") setOpenMenu(null); };
     document.addEventListener("mousedown", handlePointerDown);
@@ -131,15 +110,6 @@ export function CustomerHeaderActions({ externalNotifications = [], profile = nu
 
   const toggleMenu = (menu) => { setOpenMenu((prev) => (prev === menu ? null : menu)); };
   const closeMenu = () => { setOpenMenu(null); };
-
-  const toggleTheme = () => {
-    if (typeof document !== "undefined") {
-      document.documentElement.classList.add("theme-transitioning");
-      if (themeTransitionTimerRef.current) window.clearTimeout(themeTransitionTimerRef.current);
-      themeTransitionTimerRef.current = window.setTimeout(() => document.documentElement.classList.remove("theme-transitioning"), 500);
-    }
-    setThemeMode((m) => (m === "dark" ? "light" : "dark"));
-  };
 
   const markAllNotificationsRead = () => setNotifications((n) => n.map((it) => ({ ...it, unread: false })));
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getOperatorSession } from "../../services/operatorAuth";
+import { useThemeScope } from "../../theme/publicThemeContext";
 
 const BellIcon = ({ size = 15, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -77,14 +78,7 @@ const settingsItems = [
   { id: "profile-view", label: "Profile settings", description: "View your account details and role." },
 ];
 
-const themeStorageKey = "superAdminThemeMode";
 const profileStorageKey = "superAdminOperatorProfile";
-
-const getInitialTheme = () => {
-  if (typeof window === "undefined") return "dark";
-  const savedTheme = window.localStorage.getItem(themeStorageKey);
-  return savedTheme === "dark" ? "dark" : "light";
-};
 
 const getDisplayUsername = (session) => {
   const emailPrefix = (session?.email || "").split("@")[0];
@@ -113,25 +107,12 @@ export function SuperAdminHeaderActions({
   noNotificationsMessage = "No recent super admin activity across client, staff, security, or database events.",
 }) {
   const wrapperRef = useRef(null);
-  const themeTransitionTimerRef = useRef(null);
   const [openMenu, setOpenMenu] = useState(null);
   const [settingsView, setSettingsView] = useState("main");
-  const [themeMode, setThemeMode] = useState(getInitialTheme);
   const [notifications, setNotifications] = useState(defaultNotificationItems);
+  const { themeMode, toggleTheme } = useThemeScope("staff");
 
   const session = getOperatorSession();
-
-  useEffect(
-    () => () => {
-      if (themeTransitionTimerRef.current) {
-        window.clearTimeout(themeTransitionTimerRef.current);
-      }
-      if (typeof document !== "undefined") {
-        document.documentElement.classList.remove("theme-transitioning");
-      }
-    },
-    []
-  );
 
   const notificationSeed = externalNotifications.length > 0 ? externalNotifications : defaultNotificationItems;
   const notificationSeedKey = useMemo(
@@ -158,13 +139,6 @@ export function SuperAdminHeaderActions({
 
     setNotifications(mapped);
   }, [notificationSeedKey, notificationSeed]);
-
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.dataset.theme = themeMode;
-      window.localStorage.setItem(themeStorageKey, themeMode);
-    }
-  }, [themeMode]);
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -196,20 +170,6 @@ export function SuperAdminHeaderActions({
   const closeMenu = () => {
     setOpenMenu(null);
     setSettingsView("main");
-  };
-
-  const toggleTheme = () => {
-    if (typeof document !== "undefined") {
-      document.documentElement.classList.add("theme-transitioning");
-      if (themeTransitionTimerRef.current) {
-        window.clearTimeout(themeTransitionTimerRef.current);
-      }
-      themeTransitionTimerRef.current = window.setTimeout(() => {
-        document.documentElement.classList.remove("theme-transitioning");
-      }, 500);
-    }
-
-    setThemeMode((mode) => (mode === "dark" ? "light" : "dark"));
   };
 
   const markAllNotificationsRead = () => {
