@@ -258,12 +258,6 @@ function Navbar() {
         <span className="brand-name">BeautyBook Pro</span>
       </div>
 
-      <button onClick={() => setMenuOpen(!menuOpen)} className="mobile-menu-btn" aria-label="Toggle menu">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 20, height: 20 }}>
-          <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      </button>
-
       <div className="flex-center-gap-1 nav-links-desktop">
         {NAV_ITEMS.map((item) => (
           <button key={item.label} onClick={() => handleNavClick(item)} className="nav-link">
@@ -282,6 +276,18 @@ function Navbar() {
         </button>
       </div>
 
+      <div className="mobile-auth-actions">
+        <ThemeToggle className="mobile-theme-toggle" />
+        <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
+          Login
+        </button>
+        <button onClick={() => setMenuOpen(!menuOpen)} className="mobile-menu-btn mobile-menu-btn-inline" aria-label="Toggle menu">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 20, height: 20 }}>
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+
       {menuOpen && (
         <div className="mobile-menu">
           <div className="mobile-menu-content">
@@ -290,12 +296,6 @@ function Navbar() {
                 {item.label}
               </button>
             ))}
-          </div>
-          <div className="mobile-menu-footer">
-            <ThemeToggle className="mobile-theme-toggle" />
-            <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
-              Login
-            </button>
           </div>
         </div>
       )}

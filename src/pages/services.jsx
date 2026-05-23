@@ -161,12 +161,6 @@ const NavBar = () => {
         <span className="brand-name">BeautyBook Pro</span>
       </div>
 
-      <button onClick={() => setMenuOpen(!menuOpen)} className="mobile-menu-btn" aria-label="Toggle menu">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:20,height:20}}>
-          <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
-      </button>
-
       <div className="flex-center-gap-1 nav-links-desktop">
         {[
           {label:"Home", path:"/"},
@@ -189,6 +183,16 @@ const NavBar = () => {
         <button onClick={handleBooking} className="btn-primary btn-nav">Login</button>
       </div>
 
+      <div className="mobile-auth-actions">
+        <ThemeToggle className="mobile-theme-toggle" />
+        <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">Login</button>
+        <button onClick={() => setMenuOpen(!menuOpen)} className="mobile-menu-btn mobile-menu-btn-inline" aria-label="Toggle menu">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:20,height:20}}>
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
+      </div>
+
       {menuOpen && (
         <div className="mobile-menu">
           <div className="mobile-menu-content">
@@ -199,10 +203,6 @@ const NavBar = () => {
             ))}
             <button onClick={() => { handleNavClick({label:'Services', path:'/services'}); setMenuOpen(false); }} className="mobile-menu-link">Services</button>
             <button onClick={() => { handleNavClick({label:'About', path:'/about'}); setMenuOpen(false); }} className="mobile-menu-link">About</button>
-          </div>
-          <div className="mobile-menu-footer">
-            <ThemeToggle className="mobile-theme-toggle" />
-            <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">Login</button>
           </div>
         </div>
       )}
@@ -270,11 +270,13 @@ const SERVICES_BY_CATEGORY = CATEGORIES.reduce((accumulator, category) => {
   return accumulator;
 }, {});
 
-function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCategoryIndex, onHoverCategory, onSelectCategory, isSliding }) {
+function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCategoryIndex, onHoverCategory, onSelectCategory, isSliding, isCompact }) {
   const { themeMode } = usePublicTheme();
   const [isHovered, setIsHovered] = useState(false);
+  const [isTouchActive, setIsTouchActive] = useState(false);
   const wheelCooldownRef = useRef(false);
   const containerRef = useRef(null);
+  const touchStateRef = useRef({ active: false, startX: 0, startY: 0 });
   const hoverBorderColor = themeMode === "light" ? "rgba(243, 139, 166, 0.88)" : "rgba(221, 144, 29, 0.88)";
   const hoverBoxShadow = themeMode === "light" ? "0 16px 30px rgba(243, 139, 166, 0.28), 0 0 0 1px rgba(243, 139, 166, 0.26)" : "0 16px 30px rgba(221, 144, 29, 0.28), 0 0 0 1px rgba(221, 144, 29, 0.26)";
   const activePillColor = themeMode === "light" ? "#f38ba6" : "#dd901d";
@@ -282,6 +284,52 @@ function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCateg
   const inactivePillBorder = themeMode === "light" ? "1px solid rgba(0,0,0,0.06)" : "none";
   const activePillShadow = themeMode === "light" ? "0 0 0 3px rgba(243, 139, 166, 0.18)" : "0 0 0 3px rgba(221, 144, 29, 0.18)";
   const inactivePillShadow = themeMode === "light" ? "inset 0 -1px 0 rgba(0,0,0,0.02)" : "none";
+  const primaryWidth = isCompact ? "min(78vw, 260px)" : "250px";
+  const secondaryWidth = isCompact ? "min(58vw, 190px)" : "176px";
+  const primaryHeight = isCompact ? "190px" : "170px";
+  const secondaryHeight = isCompact ? "140px" : "126px";
+
+  const handleTouchStart = (event) => {
+    if (isSliding) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    touchStateRef.current = { active: true, startX: touch.clientX, startY: touch.clientY };
+    setIsTouchActive(true);
+  };
+
+  const handleTouchMove = (event) => {
+    if (!touchStateRef.current.active) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - touchStateRef.current.startX;
+    const deltaY = touch.clientY - touchStateRef.current.startY;
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
+  const handleTouchEnd = (event) => {
+    if (!touchStateRef.current.active) return;
+    const touch = event.changedTouches && event.changedTouches[0];
+    if (!touch) {
+      touchStateRef.current.active = false;
+      setIsTouchActive(false);
+      return;
+    }
+
+    const deltaX = touch.clientX - touchStateRef.current.startX;
+    const deltaY = touch.clientY - touchStateRef.current.startY;
+    if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      const direction = deltaX < 0 ? 1 : -1;
+      const target = ((activeCategoryIndex + direction) % categories.length + categories.length) % categories.length;
+      onSelectCategory(target);
+    }
+
+    touchStateRef.current.active = false;
+    setIsTouchActive(false);
+  };
 
   // Use a native wheel listener with passive:false so we can reliably prevent page scroll
   useEffect(() => {
@@ -314,9 +362,13 @@ function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCateg
       className="hide-scrollbar"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "10px 0", pointerEvents: isSliding ? "none" : "auto" }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "10px 0", pointerEvents: isSliding ? "none" : "auto", touchAction: "pan-y", WebkitTapHighlightColor: "transparent" }}
     >
-      <div className="hide-scrollbar" style={{ display: "flex", alignItems: "center", gap: "14px", overflow: "visible", padding: "10px 8px 14px" }}>
+      <div className="hide-scrollbar" style={{ display: "flex", alignItems: "center", gap: isCompact ? "12px" : "14px", overflow: "visible", padding: isCompact ? "10px 4px 14px" : "10px 8px 14px", boxShadow: isTouchActive ? "0 0 0 1px rgba(221, 144, 29, 0.18), 0 0 24px rgba(221, 144, 29, 0.12)" : "none", borderRadius: "12px" }}>
         {orderedCategories.map(({ sourceIndex, category }, orderedIndex) => {
           const isHovered = hoveredCategoryIndex === sourceIndex;
           const isPrimary = orderedIndex === 0;
@@ -330,8 +382,8 @@ function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCateg
               onMouseLeave={() => onHoverCategory(null)}
               style={{
                 flex: "0 0 auto",
-                width: isPrimary ? "250px" : "176px",
-                height: isPrimary ? "170px" : "126px",
+                width: isPrimary ? primaryWidth : secondaryWidth,
+                height: isPrimary ? primaryHeight : secondaryHeight,
                 boxSizing: "border-box",
                 borderRadius: "8px",
                 border: "2px solid #e1d4b8",
@@ -432,13 +484,14 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
   const animationFrameRef = useRef(null);
   const virtualIndexRef = useRef(activeServiceIndex);
   const wheelStepCooldownRef = useRef(false);
+  const touchStateRef = useRef({ active: false, startX: 0, startY: 0 });
   const [virtualIndex, setVirtualIndex] = useState(activeServiceIndex);
   const [isUserScroll, setIsUserScroll] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isTouchActive, setIsTouchActive] = useState(false);
   const containerRef = useRef(null);
 
   const visibleCount = Math.min(5, services.length);
-  // Increased spacing between carousel items to make gaps larger
   const itemSpacing = 90;
   const activeCardBorder = themeMode === "light" ? "1px solid rgba(243, 139, 166, 0.72)" : "1px solid rgba(221, 144, 29, 0.9)";
   const inactiveCardBorder = themeMode === "light" ? "1px solid rgba(0, 0, 0, 0.08)" : "1px solid rgba(225, 212, 184, 0.26)";
@@ -452,6 +505,58 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
   const durationColor = themeMode === "light" ? "rgba(17, 17, 17, 0.68)" : "rgba(229, 218, 198, 0.82)";
   const priceColor = themeMode === "light" ? "#f38ba6" : "rgba(247, 241, 230, 0.78)";
   const activePriceColor = themeMode === "light" ? "#f38ba6" : "#f7c669";
+  const cardVerticalSpacing = isCompact ? 90 : itemSpacing;
+  const cardPaddingX = isCompact ? "12px" : "16px";
+
+  const handleTouchStart = (event) => {
+    if (!services.length) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    touchStateRef.current = { active: true, startX: touch.clientX, startY: touch.clientY };
+    setIsTouchActive(true);
+  };
+
+  const handleTouchMove = (event) => {
+    if (!touchStateRef.current.active) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - touchStateRef.current.startX;
+    const deltaY = touch.clientY - touchStateRef.current.startY;
+    if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 10) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
+  const handleTouchEnd = (event) => {
+    if (!touchStateRef.current.active) return;
+    const touch = event.changedTouches && event.changedTouches[0];
+    if (!touch) {
+      touchStateRef.current.active = false;
+      setIsTouchActive(false);
+      return;
+    }
+
+    const deltaX = touch.clientX - touchStateRef.current.startX;
+    const deltaY = touch.clientY - touchStateRef.current.startY;
+    if (Math.abs(deltaY) >= 50 && Math.abs(deltaY) > Math.abs(deltaX)) {
+      const direction = deltaY < 0 ? 1 : -1;
+      const current = Math.round(virtualIndexRef.current);
+      const target = ((current + direction) % services.length + services.length) % services.length;
+      onSelectService(target);
+      virtualIndexRef.current = target;
+      setVirtualIndex(target);
+      setIsUserScroll(true);
+      if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = window.setTimeout(() => {
+        setIsUserScroll(false);
+      }, 260);
+    }
+
+    touchStateRef.current.active = false;
+    setIsTouchActive(false);
+  };
 
   useEffect(() => () => {
     if (wheelLockRef.current) window.clearTimeout(wheelLockRef.current);
@@ -512,6 +617,10 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
       ref={containerRef}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
       style={{
         position: "relative",
         minHeight: isCompact ? "220px" : "280px",
@@ -521,9 +630,13 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
         flexDirection: "column",
         justifyContent: "flex-start",
         transform: "none",
+        touchAction: "none",
+        WebkitTapHighlightColor: "transparent",
+        boxShadow: isTouchActive ? "0 0 0 1px rgba(221, 144, 29, 0.16), 0 0 28px rgba(221, 144, 29, 0.12)" : "none",
+        borderRadius: "16px",
       }}
     >
-      <div style={{ position: "relative", height: "100%", minHeight: isCompact ? "160px" : "220px" }}>
+      <div style={{ position: "relative", height: "100%", minHeight: isCompact ? "160px" : "220px", paddingInline: isCompact ? "4px" : 0 }}>
         {services.map((service, index) => {
           let offset = index - virtualIndex;
           if (offset > services.length / 2) offset -= services.length;
@@ -550,7 +663,7 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
                   left: "50%",
                   top: "50%",
                   width: "100%",
-                  transform: `translate(-50%, calc(-50% + ${offset * itemSpacing}px)) scale(${scale})`,
+                  transform: `translate(-50%, calc(-50% + ${offset * cardVerticalSpacing}px)) scale(${scale})`,
                   opacity,
                   zIndex: 20 - distance,
                   minHeight: "75px",
@@ -558,7 +671,7 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
                   border: isActive ? activeCardBorder : inactiveCardBorder,
                   background: isActive ? activeCardBackground : inactiveCardBackground,
                   color: themeMode === "light" ? "#111111" : "#f7f1e6",
-                  padding: "12px 16px",
+                  padding: `12px ${cardPaddingX}`,
                   cursor: "pointer",
                   boxShadow: isActive ? activeCardShadow : inactiveCardShadow,
                   display: "flex",
@@ -650,9 +763,12 @@ function ServiceDetailsPanel({ service, onBookService, isCompact }) {
           className="btn-primary"
           onClick={onBookService}
           style={{
-            display: "inline-block",
-            minWidth: "180px",
-            height: "34px",
+            display: "inline-flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minWidth: isCompact ? "100%" : "180px",
+            width: isCompact ? "100%" : "auto",
+            height: isCompact ? "44px" : "34px",
             borderRadius: "6px",
             fontSize: "0.88rem",
             padding: "0 18px",
@@ -714,52 +830,108 @@ export default function ServicesPage() {
           style={{
             display: "grid",
             gridTemplateColumns: isDesktop ? "minmax(240px, 280px) minmax(0, 1fr) minmax(220px, 300px)" : "1fr",
-            gap: isDesktop ? "24px" : "18px",
+            gap: isDesktop ? "24px" : "14px",
             alignItems: "start",
             width: isDesktop ? "min(1320px, calc(100% - 32px))" : "100%",
             margin: "0 auto",
             padding: isDesktop ? "0 16px" : "0 12px",
           }}
         >
-          <div
-            className="service-carousel-copy"
-            style={{
-              minWidth: 0,
-              marginTop: isDesktop ? "24px" : "16px",
-            }}
-          >
-            <ServicePinWheelCarousel
-              services={categoryServices}
-              activeServiceIndex={activeServiceIndex}
-              onSelectService={setActiveServiceIndex}
-              isCompact={isCompact}
-            />
-          </div>
-
-          <div className="service-carousel-panel" style={{ minWidth: 0 }}>
-            <div style={{ width: "100%" }}>
-              <div style={{ position: "sticky", top: isCompact ? "8px" : "80px", zIndex: 40 }}>
-                <ServiceDetailsPanel
-                  service={activeService}
-                  onBookService={() => navigate("/login")}
+          {isDesktop ? (
+            <>
+              <div
+                className="service-carousel-copy"
+                style={{
+                  minWidth: 0,
+                  marginTop: isDesktop ? "24px" : "16px",
+                }}
+              >
+                <ServicePinWheelCarousel
+                  services={categoryServices}
+                  activeServiceIndex={activeServiceIndex}
+                  onSelectService={setActiveServiceIndex}
                   isCompact={isCompact}
                 />
               </div>
-            </div>
-          </div>
 
-          <div className="service-carousel-copy" style={{ minWidth: 0 }}>
-            <div>
-              <ServiceCategoryCarousel
-                categories={CATEGORIES}
-                activeCategoryIndex={activeCategoryIndex}
-                hoveredCategoryIndex={hoveredCategoryIndex}
-                onHoverCategory={setHoveredCategoryIndex}
-                onSelectCategory={rotateToCategory}
-                isSliding={isCategorySliding}
-              />
-            </div>
-          </div>
+              <div className="service-carousel-panel" style={{ minWidth: 0 }}>
+                <div style={{ width: "100%" }}>
+                  <div style={{ position: isCompact ? "static" : "sticky", top: isCompact ? "auto" : "80px", zIndex: 40 }}>
+                    <ServiceDetailsPanel
+                      service={activeService}
+                      onBookService={() => navigate("/login")}
+                      isCompact={isCompact}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="service-carousel-copy" style={{ minWidth: 0 }}>
+                <div>
+                  <ServiceCategoryCarousel
+                    categories={CATEGORIES}
+                    activeCategoryIndex={activeCategoryIndex}
+                    hoveredCategoryIndex={hoveredCategoryIndex}
+                    onHoverCategory={setHoveredCategoryIndex}
+                    onSelectCategory={rotateToCategory}
+                    isSliding={isCategorySliding}
+                    isCompact={isCompact}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  gap: "12px",
+                  alignItems: "flex-start",
+                  width: "100%",
+                  justifyContent: "space-between",
+                  flexWrap: "nowrap",
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                <div style={{ flex: "0 0 55%", minWidth: "0" }}>
+                  <ServicePinWheelCarousel
+                    services={categoryServices}
+                    activeServiceIndex={activeServiceIndex}
+                    onSelectService={setActiveServiceIndex}
+                    isCompact={isCompact}
+                  />
+                </div>
+
+                <div style={{ flex: "0 0 43%", minWidth: "0" }}>
+                  <div style={{ width: "100%" }}>
+                    <div style={{ position: "static", top: "auto", zIndex: 40 }}>
+                      <ServiceDetailsPanel
+                        service={activeService}
+                        onBookService={() => navigate("/login")}
+                        isCompact={isCompact}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="service-carousel-copy" style={{ minWidth: 0, marginTop: "0", position: "relative", zIndex: 2 }}>
+                <div>
+                  <ServiceCategoryCarousel
+                    categories={CATEGORIES}
+                    activeCategoryIndex={activeCategoryIndex}
+                    hoveredCategoryIndex={hoveredCategoryIndex}
+                    onHoverCategory={setHoveredCategoryIndex}
+                    onSelectCategory={rotateToCategory}
+                    isSliding={isCategorySliding}
+                    isCompact={isCompact}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
