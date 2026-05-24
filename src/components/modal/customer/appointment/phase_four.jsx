@@ -111,6 +111,7 @@ const BOOKING_MODAL_THEME_CSS = `
   .booking-modal-theme .appt-body {
     background: #070605 !important;
     color: #f5f1eb !important;
+    padding: 0 40px 24px !important;
   }
 
   .booking-modal-theme .appt-back-btn,
@@ -158,6 +159,7 @@ const BOOKING_MODAL_THEME_CSS = `
     border: 1px solid rgba(221, 144, 29, 0.12) !important;
     box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22) !important;
     color: #f5f1eb !important;
+    padding-bottom: 28px !important;
   }
 
   .booking-modal-theme .confirm-service-row,
@@ -285,6 +287,18 @@ const BOOKING_MODAL_THEME_CSS = `
 }
 
 @media (min-width: 1025px) {
+  html[data-theme="light"] .booking-modal-theme .appt-root {
+    background: #070605 !important;
+    border: 1px solid rgba(221, 144, 29, 0.15) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+    color: #f5f1eb !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-header,
+  html[data-theme="light"] .booking-modal-theme .appt-footer {
+    background: #070605 !important;
+  }
+
   .booking-modal-theme .appt-root {
     background: #070605 !important;
     border: 1px solid rgba(221, 144, 29, 0.15) !important;
@@ -309,6 +323,7 @@ const BOOKING_MODAL_THEME_CSS = `
   .booking-modal-theme .appt-body {
     background: #070605 !important;
     color: #f5f1eb !important;
+    padding: 0 40px 24px !important;
   }
 
   .booking-modal-theme .appt-body::-webkit-scrollbar {
