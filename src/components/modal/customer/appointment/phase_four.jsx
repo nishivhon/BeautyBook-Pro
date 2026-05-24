@@ -1,6 +1,6 @@
-/* ══════════════════════════════════════════
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
    IMPORTS
-══════════════════════════════════════════ */
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../confirmation_dialog";
@@ -28,9 +28,59 @@ const BOOKING_MODAL_THEME_VARS = {
 const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-phase-four-v2";
 
 const BOOKING_MODAL_THEME_CSS = `
+@media (max-width: 1024px) {
   .booking-modal-theme,
   .booking-modal-theme * {
     color-scheme: dark;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-root {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    width: calc(100vw - 32px) !important;
+    max-width: calc(100vw - 32px) !important;
+    height: 520px !important;
+    max-height: 520px !important;
+    overflow: hidden !important;
+  }
+
+  @media (max-width: 480px) {
+    html[data-theme="light"] .booking-modal-theme .appt-root {
+      width: calc(100vw - 24px) !important;
+      height: 480px !important;
+      max-height: 480px !important;
+    }
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-header,
+  html[data-theme="light"] .booking-modal-theme .appt-footer {
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-body {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 12px 12px 10px !important;
+    gap: 12px !important;
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-footer {
+    padding: 10px 12px 12px !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-cancel-btn,
+  html[data-theme="light"] .booking-modal-theme .appt-continue-btn,
+  html[data-theme="light"] .booking-modal-theme .appt-download-receipt-btn {
+    min-height: 40px !important;
   }
 
   .booking-modal-theme .appt-root {
@@ -231,11 +281,13 @@ const BOOKING_MODAL_THEME_CSS = `
     scrollbar-width: thin;
     scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
   }
+
+}
 `;
 
-/* ══════════════════════════════════════════
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
    INLINE SVG ICONS
-══════════════════════════════════════════ */
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 
 /* Scissors icon for the service row */
 const ScissorsIcon = () => (
@@ -301,9 +353,9 @@ const DownloadIcon = () => (
   </svg>
 );
 
-/* ══════════════════════════════════════════
-   DATA — in real app these would be props
-══════════════════════════════════════════ */
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+   DATA ΓÇö in real app these would be props
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 const BOOKING = {
   service:   "Haircut",
   duration:  "30 mins",
@@ -323,11 +375,11 @@ const STEPS = [
   { number: 4, label: "Confirm"  },
 ];
 
-/* ══════════════════════════════════════════
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
    SUB-COMPONENTS
-══════════════════════════════════════════ */
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 
-/* ── Header ── */
+/* ΓöÇΓöÇ Header ΓöÇΓöÇ */
 const BookingHeader = ({ onBack, isConfirmed }) => (
   <header className="appt-header">
     <button 
@@ -345,8 +397,8 @@ const BookingHeader = ({ onBack, isConfirmed }) => (
   </header>
 );
 
-/* ── Progress bar — Phase 4 state ── */
-/* Steps 1, 2, 3 done (✓); all connectors amber; step 4 active */
+/* ΓöÇΓöÇ Progress bar ΓÇö Phase 4 state ΓöÇΓöÇ */
+/* Steps 1, 2, 3 done (Γ£ô); all connectors amber; step 4 active */
 const ProgressIndicator = ({ currentStep = 4 }) => (
   <div className="appt-progress">
     <div className="appt-progress-track">
@@ -384,14 +436,14 @@ const ProgressIndicator = ({ currentStep = 4 }) => (
   </div>
 );
 
-/* ── Thin divider ── */
+/* ΓöÇΓöÇ Thin divider ΓöÇΓöÇ */
 const Divider = () => (
   <div style={{ width: "100%", height: 1, background: "rgba(152,143,129,0.25)", flexShrink: 0 }} />
 );
 
-/* ══════════════════════════════════════════
-   MAIN COMPONENT — Phase 4
-══════════════════════════════════════════ */
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+   MAIN COMPONENT ΓÇö Phase 4
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 const DARK_MODAL_VARS = {
   "--bg-card": "#070605",
   "--bg-dark": "#070605",
@@ -809,15 +861,15 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             </div>
           </div>
 
-          <div class="ref-box">
-            <div class="ref-label">Reference Number</div>
+          <div class="section">
+            <div class="section-title">Reference</div>
             <div class="ref-code">${bookingData?.refNo || 'N/A'}</div>
           </div>
 
           <div class="footer">
             <p>Please keep this reference number for your records.</p>
-            <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">You will receive a confirmation via email and SMS 15 minutes before your appointment.</p>
-            <p style="margin-top: 12px; color: #dd901d;">Thank you for choosing BeautyBook Pro!</p>
+            <p>You will receive a confirmation via email and SMS 15 minutes before your appointment.</p>
+            <p class="footer-highlight">Thank you for choosing BeautyBook Pro!</p>
           </div>
         </div>
       </body>
@@ -839,7 +891,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
   return (
     <>
-      {/* ── Toast Notifications (Top Fixed Position) ── */}
+      {/* ΓöÇΓöÇ Toast Notifications (Top Fixed Position) ΓöÇΓöÇ */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 999999, pointerEvents: "auto", display: "flex", justifyContent: "center", padding: "20px" }}>
         <Toast 
           message="Booking Confirmed!" 
@@ -898,14 +950,14 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           <BookingHeader onBack={handleBack} isConfirmed={isConfirmed} />
           <ProgressIndicator currentStep={4} />
 
-          {/* ── Scrollable body ── */}
+          {/* ΓöÇΓöÇ Scrollable body ΓöÇΓöÇ */}
           <div className="appt-body" style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 40px" }}>
             <div className="appt-section-heading">
               <p className="appt-section-title">Confirm Booking</p>
               <p className="appt-section-sub">Review your appointment details</p>
             </div>
 
-            {/* ── Confirmation summary card ── */}
+            {/* ΓöÇΓöÇ Confirmation summary card ΓöÇΓöÇ */}
             <div className="confirm-card">
               {services.length > 0 && (
                 <>
@@ -1002,12 +1054,12 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
                     <div className="confirm-ref-pill" style={{ background: 'rgba(221, 144, 29, 0.14)', border: '1px solid rgba(221, 144, 29, 0.45)', color: '#f5f1eb', boxShadow: '0 0 0 1px rgba(221, 144, 29, 0.08) inset' }}>
                   Ref. No.: {bookingData?.refNo || 'N/A'}
                 </div>
-                    <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>You will receive notifications 15 minutes before your appointment</div>
+                    <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'normal', wordBreak: 'break-word', overflow: 'visible' }}>You will receive notifications 15 minutes before your appointment</div>
               </div>
             </div>
           </div>
 
-          {/* ── Footer CTA (Inside Modal) ── */}
+          {/* ΓöÇΓöÇ Footer CTA (Inside Modal) ΓöÇΓöÇ */}
           <div 
             className="appt-footer" 
             style={{ 

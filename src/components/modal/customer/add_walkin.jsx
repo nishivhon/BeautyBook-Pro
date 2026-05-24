@@ -11,7 +11,7 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-/* Person silhouette — used in "Any available" row */
+/* Person silhouette ΓÇö used in "Any available" row */
 const PersonIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={20} height={20}>
     <circle cx="12" cy="8" r="4" stroke="#1a0f00" strokeWidth="1.8" fill="none"/>
@@ -19,7 +19,7 @@ const PersonIcon = () => (
   </svg>
 );
 
-/* Star — used inline for ratings */
+/* Star ΓÇö used inline for ratings */
 const StarIcon = ({ muted = false }) => (
   <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width={11} height={11} style={{ flexShrink: 0 }}>
     <path
@@ -82,7 +82,7 @@ const ScissorsIcon = () => (
   </svg>
 );
 
-/* Hair Services — broom/brush icon */
+/* Hair Services ΓÇö broom/brush icon */
 const HairIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
     <path d="M6 3c0 0 1 4 1 8s-1 6-1 6" stroke="#1a0f00" strokeWidth="1.6" strokeLinecap="round"/>
@@ -93,7 +93,7 @@ const HairIcon = () => (
   </svg>
 );
 
-/* Nail Services — polish bottle */
+/* Nail Services ΓÇö polish bottle */
 const NailIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
     <rect x="8" y="10" width="8" height="11" rx="2" stroke="#1a0f00" strokeWidth="1.7" fill="none"/>
@@ -103,7 +103,7 @@ const NailIcon = () => (
   </svg>
 );
 
-/* Skincare — face with sparkles */
+/* Skincare ΓÇö face with sparkles */
 const SkincareIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
     <circle cx="12" cy="13" r="7.5" stroke="#1a0f00" strokeWidth="1.6" fill="none"/>
@@ -114,7 +114,7 @@ const SkincareIcon = () => (
   </svg>
 );
 
-/* Massage — hands / wave */
+/* Massage ΓÇö hands / wave */
 const MassageIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
     <path d="M4 14 Q7 10 12 12 Q17 14 20 10" stroke="#1a0f00" strokeWidth="1.7" strokeLinecap="round" fill="none"/>
@@ -123,7 +123,7 @@ const MassageIcon = () => (
   </svg>
 );
 
-/* Premium Services — diamond */
+/* Premium Services ΓÇö diamond */
 const PremiumIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
     <path d="M12 20L3 9h18L12 20z" stroke="#1a0f00" strokeWidth="1.6" strokeLinejoin="round" fill="none"/>
@@ -157,6 +157,7 @@ const BOOKING_MODAL_THEME_CLASS = "booking-modal-theme";
 const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-walkin";
 
 const BOOKING_MODAL_THEME_CSS = `
+@media (max-width: 1024px) {
   .booking-modal-theme,
   .booking-modal-theme * {
     color-scheme: dark;
@@ -234,9 +235,11 @@ const BOOKING_MODAL_THEME_CSS = `
     scrollbar-width: thin;
     scrollbar-color: rgba(221,144,29,0.9) rgba(19,19,19,0.4);
   }
+
+}
 `;
 
-/* ── Header ── */
+/* ΓöÇΓöÇ Header ΓöÇΓöÇ */
 const ModalHeader = ({ onBack }) => (
   <header className="appt-header">
     <button className="appt-back-btn" onClick={onBack} aria-label="Go back">
@@ -248,7 +251,7 @@ const ModalHeader = ({ onBack }) => (
   </header>
 );
 
-/* ── Progress Indicator ── */
+/* ΓöÇΓöÇ Progress Indicator ΓöÇΓöÇ */
 const ProgressIndicator = ({ currentStep, steps = STEPS }) => (
   <div className="appt-progress">
     <div className="appt-progress-track">
@@ -285,7 +288,7 @@ const ProgressIndicator = ({ currentStep, steps = STEPS }) => (
   </div>
 );
 
-/* ── Thin divider ── */
+/* ΓöÇΓöÇ Thin divider ΓöÇΓöÇ */
 const Divider = () => (
   <div style={{ width: "100%", height: 1, background: "rgba(152,143,129,0.25)", flexShrink: 0 }} />
 );
@@ -815,7 +818,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
   return createPortal(
     <>
-      {/* ── Toast Notifications (Top Fixed Position) ── */}
+      {/* ΓöÇΓöÇ Toast Notifications (Top Fixed Position) ΓöÇΓöÇ */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 999999, pointerEvents: "auto", display: "flex", justifyContent: "center", padding: "20px" }}>
         <Toast 
           message="Walk-in Confirmed!" 
@@ -868,12 +871,12 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                   />
                   {nameError && nameTouched && (
                     <p id="name-error" className="walkin-error">
-                      ⚠️ {nameError}
+                      ΓÜá∩╕Å {nameError}
                     </p>
                   )}
                   {!nameError && nameTouched && (
                     <p style={{ fontSize: "0.8rem", color: "#22c55e", margin: "4px 0 0 0", fontWeight: "500" }}>
-                      ✓ Name is valid
+                      Γ£ô Name is valid
                     </p>
                   )}
                 </div>
