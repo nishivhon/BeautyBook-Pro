@@ -24,8 +24,40 @@ export default function CustomerDashboard() {
 	const [ratingValue, setRatingValue] = useState(0);
 	const [cancelModalOpen, setCancelModalOpen] = useState(false);
 	const [selectedAppointmentToCancel, setSelectedAppointmentToCancel] = useState(null);
+	const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 768 : false));
+	const avatarSize = isMobile ? 70 : 230;
+	const avatarFontSize = isMobile ? 22 : 62;
+	const avatarStyle = {
+		width: avatarSize,
+		height: avatarSize,
+		fontSize: avatarFontSize,
+	};
+	const sectionHeaderStyle = {
+		display: 'flex',
+		flexDirection: 'column',
+		gap: '12px',
+		marginBottom: isMobile ? '16px' : '20px',
+	};
+	const sectionHeaderRowStyle = {
+		display: 'flex',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		gap: '12px',
+	};
+	const sectionHeaderDividerStyle = {
+		width: '100%',
+		height: '1px',
+		backgroundColor: 'rgba(221, 144, 29, 0.12)',
+	};
 
 	// Fetch full customer data from database (including histories)
+	useEffect(() => {
+		const handleResize = () => setIsMobile(window.innerWidth <= 768);
+		handleResize();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
+
 	useEffect(() => {
 		const fetchFullCustomerData = async () => {
 			try {
@@ -112,6 +144,13 @@ export default function CustomerDashboard() {
 	const recentUnclaimedCoupons = coupons.filter((coupon) => !coupon.claimed && coupon.status !== "expired");
 
 	const profileInitial = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
+	const profileAvatar = (
+		<div className="cdb-avatar cdb-avatar-dashboard cdb-avatar-profile" style={avatarStyle} aria-label={`${profile.name || "Customer"} avatar`}>
+			<div className="cdb-avatar-placeholder">
+				<span className="cdb-avatar-initial">{profileInitial}</span>
+			</div>
+		</div>
+	);
 
 
 
@@ -264,37 +303,60 @@ export default function CustomerDashboard() {
 				<h2 className="cdb-section-title">My Profile</h2>
 				<>
 					<div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
-									<div className="cdb-profile-avatar-col">
-										<div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${profile.name || "Customer"} avatar`}>
-											<div className="cdb-avatar-placeholder">
-										<span className="cdb-avatar-initial">{profileInitial}</span>
-									</div>
-										</div>
-										</div>
-										<div className="cdb-profile-info-col">
-											<div>
-												<label className="cdb-field-label">Name</label>
-												<p className="cdb-field-value cdb-field-value-lg">{profile.name}</p>
-											</div>
-											<div>
-												<label className="cdb-field-label">Email</label>
-											<p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span style={{ color: "#a3a398" }}>No email added</span>}</p>
-										</div>
-										<div>
-											<label className="cdb-field-label">Phone</label>
-											<p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span style={{ color: "#a3a398" }}>No phone added</span>}</p>
-											</div>
-											<div>
-												<label className="cdb-field-label">Notification Preference</label>
-												<p className="cdb-field-value cdb-field-value-lg">{typeof profile.notificationPreference === 'string' ? profile.notificationPreference.toUpperCase() : (profile.notificationPreference ? 'ENABLED' : 'DISABLED')}</p>
-											</div>
-											<div className="cdb-action-row">
-												<button className="cdb-btn cdb-btn-edit" onClick={() => navigate("/customer/profile")}>Edit Profile</button>
-											</div>
-										</div>
-									</div>
-								</>
-				</div>
+{isMobile ? (
+<div className="cdb-profile-info-col">
+<div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+{profileAvatar}
+</div>
+<div>
+<label className="cdb-field-label">Name</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.name}</p>
+</div>
+<div>
+<label className="cdb-field-label">Email</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span style={{ color: "#a3a398" }}>No email added</span>}</p>
+</div>
+<div>
+<label className="cdb-field-label">Phone</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span style={{ color: "#a3a398" }}>No phone added</span>}</p>
+</div>
+<div>
+<label className="cdb-field-label">Notification Preference</label>
+<p className="cdb-field-value cdb-field-value-lg">{typeof profile.notificationPreference === 'string' ? profile.notificationPreference.toUpperCase() : (profile.notificationPreference ? 'ENABLED' : 'DISABLED')}</p>
+</div>
+<div className="cdb-action-row">
+<button className="cdb-btn cdb-btn-edit" onClick={() => navigate("/customer/profile")}>Edit Profile</button>
+</div>
+</div>
+) : (
+<>
+<div className="cdb-profile-avatar-col">{profileAvatar}</div>
+<div className="cdb-profile-info-col">
+<div>
+<label className="cdb-field-label">Name</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.name}</p>
+</div>
+<div>
+<label className="cdb-field-label">Email</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span style={{ color: "#a3a398" }}>No email added</span>}</p>
+</div>
+<div>
+<label className="cdb-field-label">Phone</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span style={{ color: "#a3a398" }}>No phone added</span>}</p>
+</div>
+<div>
+<label className="cdb-field-label">Notification Preference</label>
+<p className="cdb-field-value cdb-field-value-lg">{typeof profile.notificationPreference === 'string' ? profile.notificationPreference.toUpperCase() : (profile.notificationPreference ? 'ENABLED' : 'DISABLED')}</p>
+</div>
+<div className="cdb-action-row">
+<button className="cdb-btn cdb-btn-edit" onClick={() => navigate("/customer/profile")}>Edit Profile</button>
+</div>
+</div>
+</>
+)}
+</div>
+				</>
+					</div>
 			</section>
 		<section className="cdb-section cdb-section-appointments cdb-mounted">
 		<div className="cdb-card">
@@ -394,26 +456,33 @@ export default function CustomerDashboard() {
 		</section>
 			<section className="cdb-section cdb-mounted">
 			<div className="cdb-card">
-				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-					<h2 className="cdb-section-title">Recent Transaction</h2>
-					<div>
-						<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/history")}>View Full Transaction History</button>
+				<header className="cdb-section-head-row" style={sectionHeaderStyle}>
+					<div style={sectionHeaderRowStyle}>
+						<h2 className="cdb-section-title" style={{ fontSize: isMobile ? '16px' : undefined }}>Recent Transaction</h2>
+						<div style={{ flex: isMobile ? 1 : '0 0 auto', marginLeft: isMobile ? undefined : 'auto', textAlign: isMobile ? 'left' : 'right' }}>
+							<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/history")} style={{ padding: isMobile ? '6px 10px' : undefined, fontSize: isMobile ? '11px' : undefined, whiteSpace: 'nowrap' }}>
+								{isMobile ? 'Full History' : 'View Full Transaction History'}
+							</button>
+						</div>
 					</div>
-				</div>
+					<div style={sectionHeaderDividerStyle} />
+				</header>
 					<div className="cdb-grid cdb-grid-history">
 						{recentCompleted && recentCompleted.length > 0 ? (
 							recentCompleted.map((item) => (
 								<div key={item.id} className="cdb-item-card">
-									<div className="cdb-item-left">
-										<h3 className="cdb-item-title">{item.service}</h3>
+									<div className="cdb-item-left" style={{ minWidth: 0, flex: isMobile ? '1 1 0' : undefined }}>
+										<h3 className="cdb-item-title" style={{ fontSize: isMobile ? '15px' : undefined, whiteSpace: isMobile ? 'normal' : undefined, wordBreak: isMobile ? 'break-word' : undefined }}>{item.service}</h3>
 										<p className="cdb-item-subtitle">{item.stylist} · ${item.cost.toFixed(2)}</p>
 										<p className="cdb-date-text">{new Date(item.date).toLocaleDateString()}</p>
 										{item.rated && <div className="cdb-rating-row">{[1, 2, 3, 4, 5].map((star) => <span key={star}>{star <= item.rating ? "★" : "☆"}</span>)}</div>}
 									</div>
-									<div className="cdb-item-right">
+									<div className="cdb-item-right" style={{ flex: isMobile ? '0 0 auto' : undefined }}>
 										<span className={`cdb-status-badge ${item.status === "completed" ? "completed" : "upcoming"}`}>{item.status}</span>
 										{(item.rating === 0 || item.rating === undefined || item.rating === null) && (
-											<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)}>Rate Service</button>
+											<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)} style={{ padding: isMobile ? '8px 12px' : undefined, fontSize: isMobile ? '12px' : undefined, whiteSpace: 'nowrap' }}>
+												Rate Service
+											</button>
 										)}
 									</div>
 								</div>
@@ -429,33 +498,40 @@ export default function CustomerDashboard() {
 
 			<section className="cdb-section cdb-mounted">
 			<div className="cdb-card">
-				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-					<h2 className="cdb-section-title">Coupons</h2>
-					<div>
-						<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
+				<header className="cdb-section-head-row" style={sectionHeaderStyle}>
+					<div style={sectionHeaderRowStyle}>
+						<h2 className="cdb-section-title">Coupons</h2>
+						<div>
+							<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/coupons")}>View Coupons</button>
+						</div>
 					</div>
-				</div>
-					<div className="cdb-grid cdb-grid-coupons">
-						{recentUnclaimedCoupons.map((coupon) => (
-							<div key={coupon.id} className={`cdb-coupon-card ${coupon.status === "expired" ? "expired" : ""}`}>
-								<div className="cdb-coupon-left">
-									<h3 className={`cdb-coupon-title ${coupon.status === "expired" ? "expired" : ""}`}>{coupon.discount}</h3>
-									<p className="cdb-coupon-code">{coupon.code} · {coupon.category}</p>
-									<p className="cdb-coupon-description">{coupon.description}</p>
-									<p className="cdb-date-text">Expires: {new Date(coupon.expiration).toLocaleDateString()}</p>
+					<div style={sectionHeaderDividerStyle} />
+				</header>
+						<div className="cdb-grid cdb-grid-coupons">
+							{recentUnclaimedCoupons.map((coupon) => (
+								<div
+									key={coupon.id}
+									className={`cdb-coupon-card ${coupon.status === "expired" ? "expired" : ""}`}
+									style={isMobile ? { flexDirection: 'column', alignItems: 'flex-start' } : undefined}
+								>
+									<div className="cdb-coupon-left">
+										<h3 className={`cdb-coupon-title ${coupon.status === "expired" ? "expired" : ""}`}>{coupon.discount}</h3>
+										<p className="cdb-coupon-code">{coupon.code} · {coupon.category}</p>
+										<p className="cdb-coupon-description">{coupon.description}</p>
+										<p className="cdb-date-text">Expires: {new Date(coupon.expiration).toLocaleDateString()}</p>
+									</div>
+									<div className="cdb-coupon-right" style={isMobile ? { width: '100%', justifyContent: 'flex-start', alignItems: 'stretch' } : undefined}>
+										{coupon.status === "expired" ? (
+											<span className={`cdb-status-badge ${coupon.status}`}>{coupon.status}</span>
+										) : coupon.claimed ? (
+											<span className="cdb-status-badge claimed">claimed</span>
+										) : (
+											<button className="cdb-btn cdb-btn-primary" onClick={() => handleClaimCoupon(coupon.id, coupon.code)} style={isMobile ? { width: '100%' } : undefined}>Claim Coupon</button>
+										)}
+									</div>
 								</div>
-								<div className="cdb-coupon-right">
-									{coupon.status === "expired" ? (
-										<span className={`cdb-status-badge ${coupon.status}`}>{coupon.status}</span>
-									) : coupon.claimed ? (
-										<span className="cdb-status-badge claimed">claimed</span>
-									) : (
-										<button className="cdb-btn cdb-btn-primary" onClick={() => handleClaimCoupon(coupon.id, coupon.code)}>Claim Coupon</button>
-									)}
-								</div>
-							</div>
-						))}
-					</div>
+							))}
+						</div>
 				</div>
 			</section>
 

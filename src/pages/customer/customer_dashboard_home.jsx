@@ -48,7 +48,7 @@ export default function CustomerDashboardHome() {
               </div>
             ))}
           </div>
-          <button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
+          <button className="cdb-btn cdb-btn-secondary" onClick={() => navigate("/customer/coupons")}>View Coupons</button>
         </section>
       </div>
     </CustomerShell>

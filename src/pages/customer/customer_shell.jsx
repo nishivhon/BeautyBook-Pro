@@ -93,6 +93,7 @@ const PAGE_META = {
 export function CustomerShell({ activeNav, profile, children }) {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 768 : false));
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem("customerSidebarExpanded");
     return saved !== null ? JSON.parse(saved) : true;
@@ -112,6 +113,14 @@ export function CustomerShell({ activeNav, profile, children }) {
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => setIsMobileViewport(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const todayDate = useMemo(
@@ -372,7 +381,7 @@ export function CustomerShell({ activeNav, profile, children }) {
           subtitle={`BeautyBook Pro · ${todayDate} · ${PAGE_META[activeNav].subtitle}`}
           profile={profile}
           notifications={[]}
-          headerExtraActions={<CustomerHeaderActions externalNotifications={appointments || []} profile={profile} />}
+          headerExtraActions={<CustomerHeaderActions externalNotifications={appointments || []} profile={profile} compact={isMobileViewport} />}
           storageKey="customerSidebarExpanded"
           sidebarExtraAction={(
             <button onClick={handleBookAppointmentClick} className="nav-button cdb-book-nav-btn" title="Book Appointment" type="button">
@@ -387,7 +396,25 @@ export function CustomerShell({ activeNav, profile, children }) {
           logoutCancelText="Stay Logged In"
           profileActionLabel="Edit Profile"
           profileActionPath="/customer/profile"
+          enableMobileDrawer
+          showHeaderPageMeta={!isMobileViewport}
         >
+          {isMobileViewport ? (
+            <section className="cdb-page-meta-section">
+              <h1
+                className="cdb-page-meta-title"
+                style={{ fontSize: "1.12rem", lineHeight: 1.16 }}
+              >
+                {PAGE_META[activeNav].title}
+              </h1>
+              <p
+                className="cdb-page-meta-subtitle"
+                style={{ fontSize: "0.82rem", lineHeight: 1.3 }}
+              >
+                BeautyBook Pro · {todayDate} · {PAGE_META[activeNav].subtitle}
+              </p>
+            </section>
+          ) : null}
           {children}
         </DashboardShell>
 

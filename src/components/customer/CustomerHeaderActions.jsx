@@ -42,10 +42,11 @@ const defaultNotifications = [
   { id: 5, tone: "green", category: "Coupon awarded", title: "Coupon received", description: "You've been awarded a coupon.", time: "Today", unread: false },
 ];
 
-export function CustomerHeaderActions({ externalNotifications = [], profile = null }) {
+export function CustomerHeaderActions({ externalNotifications = [], profile = null, compact = false }) {
   const wrapperRef = useRef(null);
   const [openMenu, setOpenMenu] = useState(null);
   const [notifications, setNotifications] = useState(defaultNotifications);
+  const [isMobileView, setIsMobileView] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 768 : false));
   const { themeMode, toggleTheme } = useThemeScope("customer");
 
   const unreadCount = useMemo(() => notifications.filter((n) => n.unread).length, [notifications]);
@@ -108,26 +109,64 @@ export function CustomerHeaderActions({ externalNotifications = [], profile = nu
     return () => { document.removeEventListener("mousedown", handlePointerDown); document.removeEventListener("touchstart", handlePointerDown); document.removeEventListener("keydown", handleEscape); };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => setIsMobileView(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const toggleMenu = (menu) => { setOpenMenu((prev) => (prev === menu ? null : menu)); };
   const closeMenu = () => { setOpenMenu(null); };
+
+  const mobileDropdownStyle = isMobileView
+    ? {
+        position: "fixed",
+        top: 84,
+        right: 8,
+        left: "auto",
+        width: "min(80vw, 250px)",
+        maxHeight: "calc(100vh - 96px)",
+        padding: 12,
+        zIndex: 13050,
+        overflow: "hidden",
+      }
+    : undefined;
+
+  const notificationListStyle = isMobileView
+    ? { minHeight: 140, maxHeight: 220, overflowY: "scroll", paddingRight: 18, scrollbarGutter: "stable both-edges" }
+    : { minHeight: 220, maxHeight: 360, overflowY: "auto" };
+
+  const markAllReadStyle = isMobileView
+    ? {
+        width: "100%",
+        maxWidth: "100%",
+        textAlign: "left",
+        whiteSpace: "normal",
+        fontSize: "0.75rem",
+        lineHeight: 1.2,
+        fontWeight: 700,
+      }
+    : undefined;
 
   const markAllNotificationsRead = () => setNotifications((n) => n.map((it) => ({ ...it, unread: false })));
 
   return (
     <div className="admin-header-actions" ref={wrapperRef}>
-      <button className={`dash-action-btn admin-header-trigger${openMenu === "notifications" ? " active" : ""}`} type="button" onClick={() => toggleMenu("notifications")} aria-expanded={openMenu === "notifications"} aria-haspopup="menu">
+      <button className={`dash-action-btn admin-header-trigger${openMenu === "notifications" ? " active" : ""}`} type="button" onClick={() => toggleMenu("notifications")} aria-expanded={openMenu === "notifications"} aria-haspopup="menu" aria-label="Notifications" title="Notifications">
         <BellIcon size={14} color="currentColor" />
-        Notifications
+        {!compact ? <span>Notifications</span> : null}
         {unreadCount > 0 && <span className="admin-header-badge">{unreadCount}</span>}
       </button>
 
-      <button className={`dash-action-btn admin-header-trigger${openMenu === "settings" ? " active" : ""}`} type="button" onClick={() => toggleMenu("settings")} aria-expanded={openMenu === "settings"} aria-haspopup="menu">
+      <button className={`dash-action-btn admin-header-trigger${openMenu === "settings" ? " active" : ""}`} type="button" onClick={() => toggleMenu("settings")} aria-expanded={openMenu === "settings"} aria-haspopup="menu" aria-label="Settings" title="Settings">
         <SettingsIcon size={14} color="currentColor" />
-        Settings
+        {!compact ? <span>Settings</span> : null}
       </button>
 
       {openMenu && (
-        <div className="admin-header-dropdown" role="menu" aria-label={openMenu === "notifications" ? "Notifications" : "Settings"}>
+        <div className="admin-header-dropdown" role="menu" aria-label={openMenu === "notifications" ? "Notifications" : "Settings"} style={mobileDropdownStyle}>
           {openMenu === "notifications" ? (
             <>
               <div className="admin-dropdown-topbar">
@@ -135,10 +174,10 @@ export function CustomerHeaderActions({ externalNotifications = [], profile = nu
                   <p className="admin-dropdown-eyebrow">Inbox</p>
                   <h3 className="admin-dropdown-title">Recent Notifications</h3>
                 </div>
-                <button type="button" className="admin-dropdown-link admin-mark-read-link" onClick={markAllNotificationsRead}>Mark all as read</button>
+                <button type="button" className="admin-dropdown-link admin-mark-read-link" onClick={markAllNotificationsRead} style={markAllReadStyle}>Mark all as read</button>
               </div>
 
-              <div className="admin-notification-list" style={{ minHeight: 220, maxHeight: 360, overflowY: 'auto' }}>
+              <div className="admin-notification-list" style={notificationListStyle}>
                 {notifications.length === 0 ? (
                   <div className="admin-notification-empty" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 20, color: 'var(--color-muted, #6b7280)' }}>
                     You're all caught up! We'll notify you about appointments, coupons, and promos here.

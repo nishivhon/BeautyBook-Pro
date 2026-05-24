@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CustomerShell } from "./customer_shell";
 import { useCustomerProfileData } from "./customer_store";
 import { useToast } from "../../components/toast";
@@ -43,43 +43,51 @@ export default function CustomerProfilePage() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [tempProfile, setTempProfile] = useState(profile);
   const { showToast } = useToast();
-  
-  // Confirmation dialog state
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationAction, setConfirmationAction] = useState(null);
   const [confirmationMessage, setConfirmationMessage] = useState("");
-  
-  // Validation errors state
   const [validationErrors, setValidationErrors] = useState({});
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 768 : false));
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const profileInitial = (profile.name || tempProfile.name || "?").trim().charAt(0).toUpperCase() || "?";
-
-  // Check if profile has been modified
   const hasChanges = JSON.stringify(tempProfile) !== JSON.stringify(profile);
+  const avatarSize = isMobile ? 70 : 230;
+  const avatarFontSize = isMobile ? 22 : 62;
+  const avatarStyle = {
+    width: avatarSize,
+    height: avatarSize,
+    fontSize: avatarFontSize,
+  };
 
-  // Validation function
   const validateProfile = () => {
     const errors = {};
-    
+
     if (!tempProfile.name || tempProfile.name.trim() === "") {
       errors.name = "Name is required";
     }
-    
-    const validEmails = tempProfile.emails ? tempProfile.emails.filter(email => email.trim()) : [];
-    const validPhones = tempProfile.phones ? tempProfile.phones.filter(phone => phone.trim()) : [];
-    
+
+    const validEmails = tempProfile.emails ? tempProfile.emails.filter((email) => email.trim()) : [];
+    const validPhones = tempProfile.phones ? tempProfile.phones.filter((phone) => phone.trim()) : [];
+
     if (validEmails.length === 0 && validPhones.length === 0) {
       errors.contact = "At least one valid email or phone number is required";
     }
-    
+
     if (tempProfile.notificationPreference === "sms" && validPhones.length === 0) {
       errors.notificationPreference = "Phone number is required for SMS notifications";
     }
-    
+
     if (tempProfile.notificationPreference === "email" && validEmails.length === 0) {
       errors.notificationPreference = "Email is required for email notifications";
     }
-    
+
     return errors;
   };
 
@@ -90,13 +98,13 @@ export default function CustomerProfilePage() {
 
   const handleSaveProfile = () => {
     const errors = validateProfile();
-    
+
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       showToast({ message: Object.values(errors)[0] || "Please fix the highlighted fields.", type: "warning" });
       return;
     }
-    
+
     setValidationErrors({});
     setConfirmationAction("save");
     setConfirmationMessage("Are you sure you want to save these profile details?");
@@ -108,7 +116,7 @@ export default function CustomerProfilePage() {
     setProfile(tempProfile);
     setIsEditingProfile(false);
     setShowConfirmation(false);
-    
+
     if (changesWereMade) {
       showToast({ message: "Profile details saved successfully!", type: "success" });
     }
@@ -156,6 +164,14 @@ export default function CustomerProfilePage() {
     }));
   };
 
+  const profileAvatar = (
+    <div className="cdb-avatar cdb-avatar-dashboard cdb-avatar-profile" style={avatarStyle} aria-label={`${profile.name || "Customer"} avatar`}>
+      <div className="cdb-avatar-placeholder">
+        <span className="cdb-avatar-initial">{profileInitial}</span>
+      </div>
+    </div>
+  );
+
   return (
     <CustomerShell activeNav="profile" profile={profile}>
       <section className="cdb-section cdb-mounted">
@@ -163,169 +179,326 @@ export default function CustomerProfilePage() {
           <h2 className="cdb-section-title">Full Profile Details</h2>
           {!isEditingProfile ? (
             <>
-              <div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
-                <div className="cdb-profile-avatar-col">
-                  <div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${profile.name || "Customer"} avatar`}>
-                    <div className="cdb-avatar-placeholder">
-                      <span className="cdb-avatar-initial">{profileInitial}</span>
+              {isMobile ? (
+                <div className="cdb-profile-info-col">
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+                    {profileAvatar}
+                  </div>
+                  <div>
+                    <label className="cdb-field-label">Name</label>
+                    <p className="cdb-field-value cdb-field-value-lg">{profile.name}</p>
+                  </div>
+                  <div>
+                    <label className="cdb-field-label">Email</label>
+                    <p className="cdb-field-value cdb-field-value-lg">
+                      {profile.emails && profile.emails.length ? profile.emails[0] : <span style={{ color: "#a3a398" }}>No email added</span>}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="cdb-field-label">Phone</label>
+                    <p className="cdb-field-value cdb-field-value-lg">
+                      {profile.phones && profile.phones.length ? profile.phones[0] : <span style={{ color: "#a3a398" }}>No phone added</span>}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="cdb-field-label">Notification Preference</label>
+                    <p className="cdb-field-value cdb-field-value-lg">
+                      {typeof profile.notificationPreference === "string"
+                        ? profile.notificationPreference.toUpperCase()
+                        : profile.notificationPreference
+                          ? "ENABLED"
+                          : "DISABLED"}
+                    </p>
+                  </div>
+                  <div style={{ width: "100%", borderTop: "1px solid rgba(221, 144, 29, 0.12)", margin: "12px 0 8px" }} />
+                  <div>
+                    <label className="cdb-field-label">All Emails</label>
+                    {profile.emails && profile.emails.length > 0 ? (
+                      profile.emails.map((email, i) => <p key={i} className="cdb-field-value">{email}</p>)
+                    ) : (
+                      <p className="cdb-field-value cdb-muted-text">No emails added</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="cdb-field-label">All Phone Numbers</label>
+                    {profile.phones && profile.phones.length > 0 ? (
+                      profile.phones.map((phone, i) => <p key={i} className="cdb-field-value">{phone}</p>)
+                    ) : (
+                      <p className="cdb-field-value cdb-muted-text">No phone numbers added</p>
+                    )}
+                  </div>
+                  <div className="cdb-action-row">
+                    <button className="cdb-btn cdb-btn-edit" onClick={handleEditProfile}>Edit Profile</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
+                  <div className="cdb-profile-avatar-col">{profileAvatar}</div>
+                  <div className="cdb-profile-info-split">
+                    <div className="cdb-profile-info-left">
+                      <div>
+                        <label className="cdb-field-label">Name</label>
+                        <p className="cdb-field-value cdb-field-value-lg">{profile.name}</p>
+                      </div>
+                      <div>
+                        <label className="cdb-field-label">Email</label>
+                        <p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span className="cdb-muted-text">No email added</span>}</p>
+                      </div>
+                      <div>
+                        <label className="cdb-field-label">Phone</label>
+                        <p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span className="cdb-muted-text">No phone added</span>}</p>
+                      </div>
+                      <div className="cdb-action-row">
+                        <button className="cdb-btn cdb-btn-edit" onClick={handleEditProfile}>Edit Profile</button>
+                      </div>
+                    </div>
+                    <div className="cdb-profile-info-right">
+                      <div>
+                        <label className="cdb-field-label">All Emails</label>
+                        {profile.emails && profile.emails.length > 0 ? (
+                          profile.emails.map((email, i) => <p key={i} className="cdb-field-value">{email}</p>)
+                        ) : (
+                          <p className="cdb-field-value cdb-muted-text">No emails added</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="cdb-field-label">All Phone Numbers</label>
+                        {profile.phones && profile.phones.length > 0 ? (
+                          profile.phones.map((phone, i) => <p key={i} className="cdb-field-value">{phone}</p>)
+                        ) : (
+                          <p className="cdb-field-value cdb-muted-text">No phone numbers added</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="cdb-field-label">Notification Preference</label>
+                        <p className="cdb-field-value cdb-field-value-lg">{profile.notificationPreference ? profile.notificationPreference.toUpperCase() : ""}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="cdb-profile-info-split">
-                  <div className="cdb-profile-info-left">
-                    <div>
-                      <label className="cdb-field-label">Name</label>
-                      <p className="cdb-field-value cdb-field-value-lg">{profile.name}</p>
-                    </div>
-                    <div>
-                      <label className="cdb-field-label">Email</label>
-                      <p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span className="cdb-muted-text">No email added</span>}</p>
-                    </div>
-                    <div>
-                      <label className="cdb-field-label">Phone</label>
-                      <p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span className="cdb-muted-text">No phone added</span>}</p>
-                    </div>
-                    <div className="cdb-action-row">
-                      <button className="cdb-btn cdb-btn-edit" onClick={handleEditProfile}>Edit Profile</button>
-                    </div>
-                  </div>
-                  <div className="cdb-profile-info-right">
-                    <div>
-                      <label className="cdb-field-label">All Emails</label>
-                      {profile.emails && profile.emails.length > 0 ? (
-                        profile.emails.map((email, i) => (
-                          <p key={i} className="cdb-field-value">{email}</p>
-                        ))
-                      ) : (
-                        <p className="cdb-field-value cdb-muted-text">No emails added</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="cdb-field-label">All Phone Numbers</label>
-                      {profile.phones && profile.phones.length > 0 ? (
-                        profile.phones.map((phone, i) => (
-                          <p key={i} className="cdb-field-value">{phone}</p>
-                        ))
-                      ) : (
-                        <p className="cdb-field-value cdb-muted-text">No phone numbers added</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="cdb-field-label">Notification Preference</label>
-                      <p className="cdb-field-value cdb-field-value-lg">{profile.notificationPreference ? profile.notificationPreference.toUpperCase() : ""}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </>
           ) : (
             <>
-              <div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
-                <div className="cdb-profile-avatar-col">
-                  <div className="cdb-avatar-edit-wrapper">
-                    <div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${tempProfile.name || "Customer"} avatar`}>
-                      <div className="cdb-avatar-placeholder">
-                        <span className="cdb-avatar-initial">{(tempProfile.name || "?").trim().charAt(0).toUpperCase() || "?"}</span>
+              {isMobile ? (
+                <div className="cdb-profile-info-col">
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+                    <div className="cdb-avatar-edit-wrapper" style={{ width: avatarSize, height: avatarSize }}>
+                      <div className="cdb-avatar cdb-avatar-dashboard cdb-avatar-profile" style={avatarStyle} aria-label={`${tempProfile.name || "Customer"} avatar`}>
+                        <div className="cdb-avatar-placeholder">
+                          <span className="cdb-avatar-initial">{(tempProfile.name || "?").trim().charAt(0).toUpperCase() || "?"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="cdb-field-label">Name</label>
+                    <input className="cdb-input" value={tempProfile.name} onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })} />
+                    {validationErrors.name && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.name}</p>}
+                  </div>
+
+                  <div>
+                    <label className="cdb-field-label">Emails</label>
+                    {tempProfile.emails.map((email, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <input className="cdb-input" value={email} onChange={(e) => handleEditEmail(i, e.target.value)} />
+                        <button
+                          type="button"
+                          className="cdb-btn cdb-btn-icon"
+                          onClick={() => handleRemoveEmail(i)}
+                          aria-label="Remove email"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 44,
+                            height: 44,
+                            borderRadius: 8,
+                            border: "1px solid rgba(239,68,68,0.12)",
+                            background: "#ef4444",
+                            color: "#fff",
+                            padding: 0,
+                            cursor: "pointer",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <CancelIcon color="#fff" />
+                        </button>
+                      </div>
+                    ))}
+                    {validationErrors.emails && <p style={{ color: "#ef4444", fontSize: "12px", marginBottom: "8px" }}>{validationErrors.emails}</p>}
+                    <button className="cdb-btn cdb-btn-secondary" onClick={handleAddEmail}>Add Email</button>
+                  </div>
+
+                  <div>
+                    <label className="cdb-field-label">Phone Numbers</label>
+                    {tempProfile.phones.map((phone, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <input className="cdb-input" maxLength="11" value={phone} onChange={(e) => handleEditPhone(i, e.target.value)} />
+                        <button
+                          type="button"
+                          className="cdb-btn cdb-btn-icon"
+                          onClick={() => handleRemovePhone(i)}
+                          aria-label="Remove phone"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 44,
+                            height: 44,
+                            borderRadius: 8,
+                            border: "1px solid rgba(239,68,68,0.12)",
+                            background: "#ef4444",
+                            color: "#fff",
+                            padding: 0,
+                            cursor: "pointer",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <CancelIcon color="#fff" />
+                        </button>
+                      </div>
+                    ))}
+                    {validationErrors.phones && <p style={{ color: "#ef4444", fontSize: "12px", marginBottom: "8px" }}>{validationErrors.phones}</p>}
+                    <button className="cdb-btn cdb-btn-secondary" onClick={handleAddPhone}>Add Phone</button>
+                  </div>
+
+                  <div>
+                    <label className="cdb-field-label">Notification Preference</label>
+                    <div className="cdb-pref-edit-row" style={{ display: "flex", flexDirection: "row", gap: 10 }}>
+                      <button
+                        type="button"
+                        className={`cdb-pref-option ${tempProfile.notificationPreference === "email" ? "active" : ""}`}
+                        onClick={() => setTempProfile({ ...tempProfile, notificationPreference: "email" })}
+                        style={{ flex: 1, width: "100%" }}
+                      >
+                        <EmailIcon /> Email
+                      </button>
+                      <button
+                        type="button"
+                        className={`cdb-pref-option ${tempProfile.notificationPreference === "sms" ? "active" : ""}`}
+                        onClick={() => setTempProfile({ ...tempProfile, notificationPreference: "sms" })}
+                        style={{ flex: 1, width: "100%" }}
+                      >
+                        <SMSIcon /> SMS
+                      </button>
+                    </div>
+                    {validationErrors.notificationPreference && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px" }}>{validationErrors.notificationPreference}</p>}
+                  </div>
+
+                  <div className="cdb-action-row" style={{ marginTop: 4 }}>
+                    <button className="cdb-btn cdb-btn-danger-outline" onClick={handleCancelEdit}>Cancel</button>
+                    <button className="cdb-btn cdb-btn-success" onClick={handleSaveProfile}>Save</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
+                  <div className="cdb-profile-avatar-col">
+                    <div className="cdb-avatar-edit-wrapper" style={{ width: avatarSize, height: avatarSize }}>
+                      <div className="cdb-avatar cdb-avatar-dashboard cdb-avatar-profile" style={avatarStyle} aria-label={`${tempProfile.name || "Customer"} avatar`}>
+                        <div className="cdb-avatar-placeholder">
+                          <span className="cdb-avatar-initial">{(tempProfile.name || "?").trim().charAt(0).toUpperCase() || "?"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="cdb-profile-edit-col" style={{ height: "500px", overflowY: "auto" }}>
+                    <div className="cdb-profile-edit-left">
+                      <div className="cdb-form-section">
+                        <label className="cdb-field-label">Name</label>
+                        <input className="cdb-input" value={tempProfile.name} onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })} />
+                        {validationErrors.name && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.name}</p>}
+                      </div>
+
+                      <div className="cdb-form-section">
+                        <label className="cdb-field-label">Emails</label>
+                        {tempProfile.emails.map((email, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                            <input className="cdb-input" value={email} onChange={(e) => handleEditEmail(i, e.target.value)} />
+                            <button
+                              type="button"
+                              className="cdb-btn cdb-btn-icon"
+                              onClick={() => handleRemoveEmail(i)}
+                              aria-label="Remove email"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: 34,
+                                height: 34,
+                                borderRadius: 8,
+                                border: "1px solid rgba(239,68,68,0.12)",
+                                background: "#ef4444",
+                                color: "#fff",
+                                padding: 0,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <CancelIcon color="#fff" />
+                            </button>
+                          </div>
+                        ))}
+                        {validationErrors.emails && <p style={{ color: "#ef4444", fontSize: "12px", marginBottom: "8px" }}>{validationErrors.emails}</p>}
+                        <button className="cdb-btn cdb-btn-secondary" onClick={handleAddEmail}>Add Email</button>
+                      </div>
+
+                      <div className="cdb-form-section">
+                        <label className="cdb-field-label">Phone Numbers</label>
+                        {tempProfile.phones.map((phone, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                            <input className="cdb-input" maxLength="11" value={phone} onChange={(e) => handleEditPhone(i, e.target.value)} />
+                            <button
+                              type="button"
+                              className="cdb-btn cdb-btn-icon"
+                              onClick={() => handleRemovePhone(i)}
+                              aria-label="Remove phone"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: 34,
+                                height: 34,
+                                borderRadius: 8,
+                                border: "1px solid rgba(239,68,68,0.12)",
+                                background: "#ef4444",
+                                color: "#fff",
+                                padding: 0,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <CancelIcon color="#fff" />
+                            </button>
+                          </div>
+                        ))}
+                        {validationErrors.phones && <p style={{ color: "#ef4444", fontSize: "12px", marginBottom: "8px" }}>{validationErrors.phones}</p>}
+                        <button className="cdb-btn cdb-btn-secondary" onClick={handleAddPhone}>Add Phone</button>
+                      </div>
+                    </div>
+
+                    <div className="cdb-profile-edit-right">
+                      <div className="cdb-form-section">
+                        <label className="cdb-field-label">Notification Preference</label>
+                        <div className="cdb-pref-edit-row">
+                          <button type="button" className={`cdb-pref-option ${tempProfile.notificationPreference === "email" ? "active" : ""}`} onClick={() => setTempProfile({ ...tempProfile, notificationPreference: "email" })}><EmailIcon /> Email</button>
+                          <button type="button" className={`cdb-pref-option ${tempProfile.notificationPreference === "sms" ? "active" : ""}`} onClick={() => setTempProfile({ ...tempProfile, notificationPreference: "sms" })}><SMSIcon /> SMS</button>
+                        </div>
+                        {validationErrors.notificationPreference && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px" }}>{validationErrors.notificationPreference}</p>}
+                      </div>
+
+                      <div className="cdb-action-row">
+                        <button className="cdb-btn cdb-btn-danger-outline" onClick={handleCancelEdit}>Cancel</button>
+                        <button className="cdb-btn cdb-btn-success" onClick={handleSaveProfile}>Save</button>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="cdb-profile-edit-col" style={{ height: "500px", overflowY: "auto" }}>
-                  <div className="cdb-profile-edit-left">
-                    <div className="cdb-form-section">
-                      <label className="cdb-field-label">Name</label>
-                      <input className="cdb-input" value={tempProfile.name} onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })} />
-                      {validationErrors.name && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.name}</p>}
-                    </div>
-
-                    <div className="cdb-form-section">
-                      <label className="cdb-field-label">Emails</label>
-                      {tempProfile.emails.map((email, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                          <input className="cdb-input" value={email} onChange={(e) => handleEditEmail(i, e.target.value)} />
-                          <button
-                            type="button"
-                            className="cdb-btn cdb-btn-icon"
-                            onClick={() => handleRemoveEmail(i)}
-                            aria-label="Remove email"
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: 34,
-                              height: 34,
-                              borderRadius: 8,
-                              border: "1px solid rgba(239,68,68,0.12)",
-                              background: "#ef4444",
-                              color: "#fff",
-                              padding: 0,
-                              cursor: "pointer"
-                            }}
-                          >
-                            <CancelIcon color="#fff" />
-                          </button>
-                        </div>
-                      ))}
-                      {validationErrors.emails && <p style={{ color: "#ef4444", fontSize: "12px", marginBottom: "8px" }}>{validationErrors.emails}</p>}
-                      <button className="cdb-btn cdb-btn-secondary" onClick={handleAddEmail}>Add Email</button>
-                    </div>
-
-                    <div className="cdb-form-section">
-                      <label className="cdb-field-label">Phone Numbers</label>
-                      {tempProfile.phones.map((phone, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                          <input className="cdb-input" maxLength="11" value={phone} onChange={(e) => handleEditPhone(i, e.target.value)} />
-                          <button
-                            type="button"
-                            className="cdb-btn cdb-btn-icon"
-                            onClick={() => handleRemovePhone(i)}
-                            aria-label="Remove phone"
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: 34,
-                              height: 34,
-                              borderRadius: 8,
-                              border: "1px solid rgba(239,68,68,0.12)",
-                              background: "#ef4444",
-                              color: "#fff",
-                              padding: 0,
-                              cursor: "pointer"
-                            }}
-                          >
-                            <CancelIcon color="#fff" />
-                          </button>
-                        </div>
-                      ))}
-                      {validationErrors.phones && <p style={{ color: "#ef4444", fontSize: "12px", marginBottom: "8px" }}>{validationErrors.phones}</p>}
-                      <button className="cdb-btn cdb-btn-secondary" onClick={handleAddPhone}>Add Phone</button>
-                    </div>
-                  </div>
-
-                  <div className="cdb-profile-edit-right">
-                    <div className="cdb-form-section">
-                      <label className="cdb-field-label">Notification Preference</label>
-                      <div className="cdb-pref-edit-row">
-                        <button className={`cdb-pref-option ${tempProfile.notificationPreference === "email" ? "active" : ""}`} onClick={() => setTempProfile({ ...tempProfile, notificationPreference: "email" })}><EmailIcon /> Email</button>
-                        <button className={`cdb-pref-option ${tempProfile.notificationPreference === "sms" ? "active" : ""}`} onClick={() => setTempProfile({ ...tempProfile, notificationPreference: "sms" })}><SMSIcon /> SMS</button>
-                      </div>
-                      {validationErrors.notificationPreference && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px" }}>{validationErrors.notificationPreference}</p>}
-                    </div>
-
-                    <div className="cdb-action-row">
-                      <button className="cdb-btn cdb-btn-danger-outline" onClick={handleCancelEdit}>Cancel</button>
-                      <button className="cdb-btn cdb-btn-success" onClick={handleSaveProfile}>Save</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </>
           )}
         </div>
       </section>
 
-      {/* Confirmation Dialog */}
       {showConfirmation && (
         <div style={{
           position: "fixed",
@@ -334,7 +507,7 @@ export default function CustomerProfilePage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          zIndex: 9999
+          zIndex: 9999,
         }}>
           <div style={{
             backgroundColor: "#ffffff",
@@ -343,7 +516,7 @@ export default function CustomerProfilePage() {
             padding: "30px 24px",
             maxWidth: "360px",
             width: "90%",
-            boxShadow: "0 24px 60px rgba(0, 0, 0, 0.22)"
+            boxShadow: "0 24px 60px rgba(0, 0, 0, 0.22)",
           }}>
             <h3 style={{ margin: "0 0 14px", fontSize: "20px", fontWeight: "700", color: "#1a0f00", textAlign: "center" }}>
               Confirm {confirmationAction === "save" ? "Save" : "Cancel"}
@@ -363,7 +536,7 @@ export default function CustomerProfilePage() {
                   fontSize: "14px",
                   fontWeight: "700",
                   cursor: "pointer",
-                  transition: "all 0.2s ease"
+                  transition: "all 0.2s ease",
                 }}
               >
                 Keep Changes
@@ -379,7 +552,7 @@ export default function CustomerProfilePage() {
                   fontSize: "14px",
                   fontWeight: "700",
                   cursor: "pointer",
-                  transition: "all 0.2s ease"
+                  transition: "all 0.2s ease",
                 }}
               >
                 {confirmationAction === "save" ? "Yes, Save Changes" : "Yes, Cancel Changes"}
@@ -388,7 +561,6 @@ export default function CustomerProfilePage() {
           </div>
         </div>
       )}
-
     </CustomerShell>
   );
 }
