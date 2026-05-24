@@ -108,10 +108,70 @@ const BOOKING_MODAL_THEME_CSS = `
     border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
   }
 
+  .booking-modal-theme[data-theme="dark"] .appt-progress {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 14px 40px 12px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-progress-track {
+    display: flex !important;
+    align-items: center !important;
+    width: fit-content !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-progress-item {
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-step-circle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.85rem !important;
+    font-weight: 400 !important;
+    flex-shrink: 0 !important;
+    transition: background 0.25s, color 0.25s !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-step-line {
+    width: 52px !important;
+    height: 2px !important;
+    flex-shrink: 0 !important;
+    transition: background 0.3s !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-progress-labels {
+    display: flex !important;
+    align-items: center !important;
+    width: 360px !important;
+    gap: 0 !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-step-label {
+    width: 90px !important;
+    padding: 0 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.72rem !important;
+    font-weight: 300 !important;
+    text-align: center !important;
+    flex-shrink: 0 !important;
+    transition: color 0.25s !important;
+  }
+
   .booking-modal-theme .appt-root .booking-phase-warning {
     width: 100% !important;
     text-align: center !important;
-    color: #ff6b6b !important;
+    color: #ef4343 !important;
     font-size: 0.85rem !important;
     font-weight: 500 !important;
     line-height: 1.25 !important;
@@ -237,6 +297,35 @@ const BOOKING_MODAL_THEME_CSS = `
     scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
   }
 
+}
+
+@media (min-width: 1025px) {
+  .booking-modal-theme .appt-root .appt-footer {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-footer-top {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-footer-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+    justify-content: flex-end !important;
+    flex-wrap: wrap !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-warning {
+    color: #ef4343 !important;
+  }
 }
 `;
 

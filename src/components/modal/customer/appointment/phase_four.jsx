@@ -283,6 +283,60 @@ const BOOKING_MODAL_THEME_CSS = `
   }
 
 }
+
+@media (min-width: 1025px) {
+  .booking-modal-theme .appt-root {
+    background: #070605 !important;
+    border: 1px solid rgba(221, 144, 29, 0.15) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-root .confirm-card,
+  .booking-modal-theme .appt-root .confirm-card {
+    background: #11100d !important;
+    color: #f5f1eb !important;
+    border: 1px solid rgba(221, 144, 29, 0.12) !important;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22) !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .confirm-service-row,
+  html[data-theme="light"] .booking-modal-theme .confirm-detail-row,
+  .booking-modal-theme .confirm-service-row,
+  .booking-modal-theme .confirm-detail-row {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    background: #070605 !important;
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-track {
+    background: rgba(19, 19, 19, 0.4) !important;
+    border-radius: 10px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.9) !important;
+    border-radius: 10px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 1) !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
+  }
+}
 `;
 
 /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
@@ -678,16 +732,17 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #f5f5f5; 
+            background: #070605; 
             padding: 20px;
+            color: #f5f1eb;
           }
           .receipt { 
             max-width: 480px; 
             margin: 0 auto; 
-            background: #fff; 
+            background: #11100d; 
             padding: 32px 24px; 
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.45);
           }
           .header { 
             text-align: center; 
@@ -698,7 +753,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           .logo { 
             font-size: 24px; 
             font-weight: 700; 
-            color: #1a0f00; 
+            color: #f5f1eb; 
             margin-bottom: 4px;
           }
           .subtitle { 
@@ -722,7 +777,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             align-items: center;
             margin-bottom: 8px;
             font-size: 14px;
-            color: #1a0f00;
+            color: #f5f1eb;
           }
           .service-name { flex: 1; }
           .service-price { 
@@ -735,7 +790,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             justify-content: space-between;
             font-size: 13px;
             margin-bottom: 8px;
-            color: #1a0f00;
+            color: #f5f1eb;
           }
           .detail-label { 
             color: #988f81; 
@@ -754,14 +809,14 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             justify-content: space-between;
             font-size: 16px;
             font-weight: 700;
-            color: #1a0f00;
+            color: #f5f1eb;
             padding: 12px 0;
             border-top: 2px solid #dd901d;
             border-bottom: 2px solid #dd901d;
             margin: 16px 0;
           }
           .ref-box { 
-            background: #f9f7f4; 
+            background: rgba(221, 144, 29, 0.08); 
             padding: 12px; 
             border-radius: 8px; 
             text-align: center;

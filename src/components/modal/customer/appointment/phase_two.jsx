@@ -789,7 +789,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   };
 
   const handleBack = () => {
-    onBack?.();
+    setShowCancelConfirm(true);
   };
 
   const openServiceModal = (serviceCardId) => {
@@ -880,11 +880,11 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
       <Toast message={toastState.message} type={toastState.type} isVisible={toastState.isVisible} duration={toastState.duration} />
       {createPortal(
         <div 
-          className={`appt-backdrop ${BOOKING_MODAL_THEME_CLASS}`}
+          className={`appt-backdrop ${BOOKING_MODAL_THEME_CLASS} booking-phase-two-modal`}
           data-theme="dark"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              handleBack();
+              setShowBackdropConfirm(true);
             }
           }}
           style={{
