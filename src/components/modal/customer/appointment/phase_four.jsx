@@ -434,7 +434,6 @@ const BOOKING = {
   email:     "quakerjake@gmail.com",
   phone:     "09xxxxxxxxx",
   stylist:   "Any Available Stylist",
-  refNo:     "18xxx-xxxx",
 };
 
 const STEPS = [
@@ -533,6 +532,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
   const [showConfirmationToast, setShowConfirmationToast] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [errorToastMessage, setErrorToastMessage] = useState('');
+  const [bookingRef, setBookingRef] = useState(null);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -637,6 +637,23 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
     return total + (Number.isFinite(minutes) ? minutes : 0);
   }, 0);
 
+  const formatBookingDateTime = (dateValue, timeValue) => {
+    const dateText = dateValue
+      ? new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Manila',
+          month: 'long',
+          day: 'numeric',
+        }).format(new Date(`${dateValue}T00:00:00`))
+      : '';
+
+    const timeText = timeValue ? String(timeValue).trim().replace(/\s+/g, '') : '';
+
+    if (dateText && timeText) return `${dateText} | ${timeText}`;
+    return dateText || timeText || '';
+  };
+
+  const displayDateTime = bookingData?.dateTime || formatBookingDateTime(bookingData?.date, bookingData?.time);
+
   /* Handle final confirmation */
   const handleConfirmBooking = async () => {
     try {
@@ -671,6 +688,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
         phone: phone,
         date: booking.date,
         time: booking.time,
+        dateTime: booking.dateTime || formatBookingDateTime(booking.date, booking.time),
         service: serviceList,
         services: serviceItems,
         staff_assigned: booking.stylist,
@@ -713,6 +731,58 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
       console.log('[Phase4] Booking confirmed:', result);
       setIsConfirmed(true);
       setShowConfirmationToast(true);
+
+      // Attempt to retrieve the created slot/ref from server by customer
+      try {
+        const email = booking.email?.trim();
+        const phone = booking.phone?.trim()?.replace(/\D/g, "");
+        const params = new URLSearchParams();
+        if (email) params.append('email', email);
+        if (phone) params.append('phone', phone);
+
+        const resp = await fetch(`/api/appointments/read/by-customer?${params.toString()}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          const items = data?.appointments || [];
+          // Try to find exact match by date and time_24 if available
+          const to24 = (t) => {
+            if (!t) return null;
+            const m = String(t).match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+            if (!m) return null;
+            let hh = Number(m[1]);
+            const mm = m[2];
+            const p = m[3].toUpperCase();
+            if (p === 'PM' && hh !== 12) hh += 12;
+            if (p === 'AM' && hh === 12) hh = 0;
+            return `${String(hh).padStart(2,'0')}:${mm}`;
+          };
+
+          const wantedDate = booking.date;
+          const wanted24 = to24(booking.time);
+
+          let found = items.find((it) => {
+            if (!it) return false;
+            if (it.date && wantedDate && it.date === wantedDate) {
+              if (wanted24 && (it.time_24 === wanted24 || String(it.time || '').includes(String(booking.time || '')))) return true;
+              if (!wanted24) return true;
+            }
+            return false;
+          });
+
+          // Fallback: pick the most recently updated item
+          if (!found && items.length > 0) {
+            found = items.sort((a,b) => new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime())[0];
+          }
+
+          if (found) {
+            const ref = String(found.id || found.refNo || found.id).padStart(8, '0');
+            setBookingRef(ref);
+            console.log('[Phase4] Retrieved booking ref:', ref, found);
+          }
+        }
+      } catch (err) {
+        console.warn('[Phase4] Failed to fetch booking ref after confirm:', err);
+      }
       
     } catch (error) {
       console.error('[Phase4] Error confirming booking:', error);
@@ -736,6 +806,8 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
     const receiptDiscount = discountAmount > 0 ? discountAmount.toFixed(2) : null;
     const receiptCouponDescription = coupon?.description || coupon?.discount_description || coupon?.title || coupon?.name || booking?.promoCode || null;
     const receiptTotal = totalAfterDiscount.toFixed(2);
+    const receiptRef = bookingRef || bookingData?.refNo || 'N/A';
+    const receiptDateTime = bookingData?.dateTime || formatBookingDateTime(bookingData?.date, bookingData?.time) || 'Not Selected';
 
     const receiptHTML = `
       <!DOCTYPE html>
@@ -888,7 +960,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             <div class="section-title">Appointment Details</div>
             <div class="detail-row">
               <span class="detail-label">Date & Time</span>
-              <span class="detail-value">${bookingData?.dateTime || 'Not Selected'}</span>
+              <span class="detail-value">${receiptDateTime}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Duration</span>
@@ -933,7 +1005,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
           <div class="section">
             <div class="section-title">Reference</div>
-            <div class="ref-code">${bookingData?.refNo || 'N/A'}</div>
+            <div class="ref-code">${receiptRef}</div>
           </div>
 
           <div class="footer">
@@ -1087,7 +1159,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
                   <EnvelopeIcon />
                   <div className="confirm-detail-text">
                     <span className="confirm-detail-label">Date &amp; Time</span>
-                    <span className="confirm-detail-value">{bookingData?.dateTime || 'Not Selected'}</span>
+                    <span className="confirm-detail-value">{displayDateTime || 'Not Selected'}</span>
                   </div>
                 </div>
                 <div className="confirm-detail-row">
@@ -1121,10 +1193,21 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
               <Divider />
 
               <div className="confirm-bottom-row" style={{ flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
-                    <div className="confirm-ref-pill" style={{ background: 'rgba(221, 144, 29, 0.14)', border: '1px solid rgba(221, 144, 29, 0.45)', color: '#f5f1eb', boxShadow: '0 0 0 1px rgba(221, 144, 29, 0.08) inset' }}>
-                  Ref. No.: {bookingData?.refNo || 'N/A'}
-                </div>
+                {!isConfirmed ? (
+                  <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'normal', wordBreak: 'break-word', overflow: 'visible' }}>
+                    Reference number will be generated upon confirmation
+                  </div>
+                ) : (
+                  <>
                     <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'normal', wordBreak: 'break-word', overflow: 'visible' }}>You will receive notifications 15 minutes before your appointment</div>
+                    {bookingRef ? (
+                      <div className="ref-box" style={{ marginTop: 6 }}>
+                        <div className="ref-label">Reference number</div>
+                        <div className="ref-code">{bookingRef}</div>
+                      </div>
+                    ) : null}
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -1195,7 +1278,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
         <ConfirmationDialog
           isOpen={showReceiptReminder}
           title="Save Your Booking Info"
-          message={`Have you saved your receipt and reference number?\n\nReference No.: ${bookingData?.refNo || "N/A"}\n\nYou'll need this for check-in.`}
+          message={`Have you saved your receipt and reference number?\n\nReference No.: ${bookingRef || bookingData?.refNo || "N/A"}\n\nYou'll need this for check-in.`}
           confirmText="Yes, Saved"
           cancelText="Download Again"
           onConfirm={() => {
