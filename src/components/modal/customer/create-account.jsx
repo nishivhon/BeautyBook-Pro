@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Otp } from "./otp";
 
 const EyeOpenIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -94,6 +95,7 @@ const defaultTheme = {
 };
 
 export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAccountCreated }) => {
+  const [step, setStep] = useState(1); // 1 = form, 2 = OTP verification
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -104,6 +106,7 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
   const [verificationMode, setVerificationMode] = useState("email");
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
 
   const handleModeChange = (mode) => {
     setVerificationMode(mode);
@@ -124,29 +127,112 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "";
-      const response = await fetch(`${apiUrl}/customers/create`, {
+      
+      // Determine endpoint based on verification mode
+      let endpoint, sendData;
+      if (verificationMode === "email") {
+        endpoint = `${apiUrl}/auth/send-email-otp`;
+        sendData = { email: normalizeEmail(email), full_name: name };
+      } else {
+        endpoint = `${apiUrl}/sms/send-otp`;
+        sendData = { phone: normalizePhone(phone), name };
+      }
+
+      console.log(`[CreateAccount] Sending ${verificationMode} OTP to:`, sendData);
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: normalizeEmail(email),
-          phone: normalizePhone(phone),
-          password,
-        }),
+        body: JSON.stringify(sendData),
       });
 
       const body = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setErrors({ form: body.error || body.details || "Failed to create account. Please try again." });
+        console.error(`[CreateAccount] OTP send failed:`, body);
+        setErrors({ form: body.error || body.details || `Failed to send ${verificationMode} OTP. Please try again.` });
         return;
       }
 
+      console.log(`[CreateAccount] OTP sent successfully`);
+      setOtpSent(true);
+      setStep(2); // Move to OTP verification step
+    } catch (error) {
+      console.error(`[CreateAccount] Error sending OTP:`, error);
+      setErrors({ form: "Failed to send OTP. Please check your connection and try again." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpVerified = async (otp) => {
+    const cleanOtp = otp.replace(/\s/g, "");
+    const apiUrl = import.meta.env.VITE_API_URL || "";
+
+    try {
+      setLoading(true);
+
+      // Determine endpoint based on verification mode
+      let endpoint, verifyData;
+      if (verificationMode === "email") {
+        endpoint = `${apiUrl}/auth/verify-email-otp`;
+        verifyData = { email: normalizeEmail(email), otp: cleanOtp };
+      } else {
+        endpoint = `${apiUrl}/sms/verify-otp`;
+        verifyData = { phone: normalizePhone(phone), otp: cleanOtp };
+      }
+
+      console.log(`[CreateAccount] Verifying ${verificationMode} OTP`);
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(verifyData),
+      });
+
+      const body = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        console.error(`[CreateAccount] OTP verification failed:`, body);
+        setErrors({ form: body.error || "Invalid OTP. Please try again." });
+        return;
+      }
+
+      console.log(`[CreateAccount] OTP verified successfully`);
+
+      // Now create the account
+      const createEndpoint = `${apiUrl}/customers/create`;
+      const createData = {
+        name: name.trim(),
+        email: verificationMode === "email" ? normalizeEmail(email) : "",
+        phone: verificationMode === "phone" ? normalizePhone(phone) : "",
+        password,
+      };
+
+      console.log(`[CreateAccount] Creating account with verified OTP`);
+
+      const createResponse = await fetch(createEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(createData),
+      });
+
+      const createBody = await createResponse.json().catch(() => ({}));
+
+      if (!createResponse.ok) {
+        console.error(`[CreateAccount] Account creation failed:`, createBody);
+        setErrors({ form: createBody.error || createBody.details || "Failed to create account. Please try again." });
+        return;
+      }
+
+      console.log(`[CreateAccount] Account created successfully`);
+
       onAccountCreated?.({
-        ...body.data,
+        ...createBody.data,
         password,
       });
     } catch (error) {
+      console.error(`[CreateAccount] Error in OTP verification or account creation:`, error);
       setErrors({ form: "An error occurred. Please try again." });
     } finally {
       setLoading(false);
@@ -197,6 +283,27 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
     transition: "all 0.2s ease",
   });
 
+  // Show OTP modal if step 2
+  if (step === 2 && otpSent) {
+    return (
+      <Otp
+        onClose={() => {
+          setStep(1);
+          setOtpSent(false);
+          setErrors({});
+        }}
+        onVerified={handleOtpVerified}
+        otpType={verificationMode}
+        loading={loading}
+        error={errors.form}
+        onErrorClear={() => setErrors({})}
+        selectedEmail={verificationMode === "email" ? email : ""}
+        selectedPhone={verificationMode === "phone" ? phone : ""}
+        name={name}
+      />
+    );
+  }
+
   return (
     <section style={panelStyle}>
       <button
@@ -238,7 +345,7 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
             type="text"
             value={name}
             onChange={(event) => { setName(event.target.value); setErrors((prev) => ({ ...prev, name: null })); }}
-            placeholder="John Doe"
+            placeholder="Juan Dela Cruz"
             style={{ ...inputStyle, borderColor: errors.name ? "rgba(239, 67, 67, 0.5)" : theme.modalInputBorder }}
             onFocus={(event) => {
               event.currentTarget.style.borderColor = theme.modalInputFocus;
@@ -265,6 +372,9 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
                 aria-label="Email address"
               />
             </div>
+            <span style={{ display: "block", marginTop: "4px", color: theme.modalText, fontSize: "0.74rem" }}>
+              Enter your email address to receive a verification code.
+            </span>
             {errors.email && <span className="login-error-msg">{errors.email}</span>}
           </div>
         ) : (
@@ -276,12 +386,12 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
                 type="tel"
                 value={phone}
                 onChange={(event) => { setPhone(event.target.value); setErrors((prev) => ({ ...prev, phone: null })); }}
-                placeholder="+1 (555) 123-4567"
+                placeholder="09123456789"
                 aria-label="Phone number"
               />
             </div>
             <span style={{ display: "block", marginTop: "4px", color: theme.modalText, fontSize: "0.74rem" }}>
-              Phone is required for this verification mode.
+              Enter your mobile number to receive a verification code.
             </span>
             {errors.phone && <span className="login-error-msg">{errors.phone}</span>}
           </div>
@@ -334,14 +444,10 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
         </div>
 
         <div style={{ marginTop: 4 }}>
-          <label style={labelStyle}>Verify with</label>
           <div style={{ display: "flex", backgroundColor: theme.modalInputSurface, border: `1px solid ${theme.modalInputBorder}`, borderRadius: 10, padding: 4, gap: 4 }}>
             <button type="button" onClick={() => handleModeChange("email")} style={toggleButtonStyle(verificationMode === "email")}>Email</button>
             <button type="button" onClick={() => handleModeChange("phone")} style={toggleButtonStyle(verificationMode === "phone")}>Phone</button>
           </div>
-          <p style={{ margin: "8px 0 0", color: theme.modalText, fontSize: "0.78rem", lineHeight: 1.5 }}>
-            {verificationMode === "email" ? "Email is shown for verification." : "Phone is shown for verification."}
-          </p>
         </div>
 
         {errors.form && (
@@ -389,10 +495,10 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
           {loading ? (
             <>
               <SpinnerIcon />
-              Creating Account...
+              Sending OTP...
             </>
           ) : (
-            "Sign Up"
+            "Send OTP"
           )}
         </button>
 

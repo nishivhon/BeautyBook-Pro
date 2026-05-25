@@ -1,4 +1,11 @@
-import { getOtpByPhone, deleteOtpByPhone } from '../supabaseOtpClient.js';
+import { getOtpByPhone, deleteOtpByPhone, updateOtpVerified } from '../supabaseOtpClient.js';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+  process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY,
+  { auth: { persistSession: false } }
+);
 
 export default async (req, res) => {
   if (req.method !== 'POST') {
@@ -22,6 +29,8 @@ export default async (req, res) => {
       }
     }
 
+    console.log(`[SMSOTP] Verification - Received: ${phone}, Formatted: ${formattedPhone}`);
+
     const storedOtp = await getOtpByPhone(formattedPhone);
 
     if (!storedOtp) {
@@ -32,6 +41,7 @@ export default async (req, res) => {
     const now = new Date();
     const expiresAtStr = storedOtp.expires_at.endsWith('Z') ? storedOtp.expires_at : `${storedOtp.expires_at}Z`;
     const expiresAt = new Date(expiresAtStr);
+    console.log(`[SMSOTP] Verification - Now: ${now.toISOString()}, Expires: ${expiresAt.toISOString()}`);
     
     if (now > expiresAt) {
       await deleteOtpByPhone(formattedPhone);
@@ -45,8 +55,17 @@ export default async (req, res) => {
       });
     }
 
-    // OTP verified - delete it
-    await deleteOtpByPhone(formattedPhone);
+    // OTP verified - mark only the exact unverified row as verified
+    try {
+      await updateOtpVerified({
+        id: storedOtp.id,
+        otp,
+        phone: storedOtp.phone || formattedPhone,
+      });
+    } catch (updateError) {
+      console.error(`[SMSOTP] Error marking OTP as verified:`, updateError);
+      return res.status(500).json({ error: 'Failed to verify OTP. Please try again.' });
+    }
 
     console.log(`[SMSOTP] Verified successfully for: ${phone}`);
 
@@ -54,7 +73,11 @@ export default async (req, res) => {
       success: true,
       verified: true,
       message: 'OTP verified successfully!',
-      phone: phone
+      user: {
+        phone: phone,
+        full_name: storedOtp.name || '',
+        email: storedOtp.email || ''
+      }
     });
 
   } catch (error) {

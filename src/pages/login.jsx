@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { validateOperatorCredentials, loginOperator } from "../services/operatorAuth";
 import { isMagicLinkValid, getMagicLinkInfo } from "../services/magicLink";
 import { CreateAccountPanel } from "../components/modal/customer/create-account";
+import { Otp } from "../components/modal/customer/otp";
+import { PasswordResetModal } from "../components/modal/password_reset_modal";
 import { usePublicTheme } from "../theme/publicThemeContext";
 
 // ── SVG Icons ─────────────────────────────────────────────────────
@@ -28,6 +30,12 @@ const LockIcon = () => (
     <rect x="5" y="11" width="14" height="10" rx="2.5" stroke="#988f81" strokeWidth="1.8" />
     <path d="M8 11V7a4 4 0 018 0v4" stroke="#988f81" strokeWidth="1.8" strokeLinecap="round" />
     <circle cx="12" cy="16" r="1.5" fill="#988f81" />
+  </svg>
+);
+
+const PhoneIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="#988f81" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -152,8 +160,12 @@ export const LogIn = () => {
   const [shakeError, setShakeError] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(3);
   const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotPhone, setForgotPhone] = useState("");
+  const [forgotResetMode, setForgotResetMode] = useState("email"); // email or phone
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
+  const [forgotStep, setForgotStep] = useState(1); // 1: form, 2: OTP, 3: password
+  const [otpSent, setOtpSent] = useState(false);
   const [activePanel, setActivePanel] = useState("login");
 
   useEffect(() => {
@@ -294,8 +306,12 @@ export const LogIn = () => {
 
   const handleForgotPassword = async (ev) => {
     ev.preventDefault();
-    if (!forgotEmail) {
+    if (forgotResetMode === "email" && !forgotEmail) {
       setForgotMessage("Please enter your email address");
+      return;
+    }
+    if (forgotResetMode === "phone" && !forgotPhone) {
+      setForgotMessage("Please enter your phone number");
       return;
     }
 
@@ -303,24 +319,127 @@ export const LogIn = () => {
     setForgotMessage("");
 
     try {
-      // Send password reset request to backend
-      const response = await fetch("/api/auth/forgot-password", {
+      let endpoint, payload;
+      
+      if (forgotResetMode === "email") {
+        endpoint = "/api/auth/forgot-password";
+        payload = { email: forgotEmail.trim().toLowerCase() };
+      } else {
+        endpoint = "/api/auth/forgot-password-phone";
+        const phoneDigits = forgotPhone.replace(/\D/g, "");
+        payload = { phone: phoneDigits };
+      }
+
+      // Send OTP request to backend
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setForgotMessage("✓ Password reset link sent to your email. Check your inbox.");
+        setOtpSent(true);
+        setForgotStep(2); // Move to OTP verification step
+      } else {
+        setForgotMessage(data.error || "Failed to send OTP. Please try again.");
+      }
+    } catch (error) {
+      setForgotMessage("An error occurred. Please try again.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleForgotOtpVerified = async (otpValue) => {
+    const sanitizedOtp = (otpValue || "").replace(/\s/g, "");
+
+    if (!sanitizedOtp) {
+      setForgotMessage("Please enter the OTP code");
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotMessage("");
+
+    try {
+      let endpoint, payload;
+      
+      if (forgotResetMode === "email") {
+        endpoint = "/api/auth/verify-email-otp";
+        payload = { email: forgotEmail, otp: sanitizedOtp };
+      } else {
+        endpoint = "/api/sms/verify-otp";
+        const phoneDigits = forgotPhone.replace(/\D/g, "");
+        payload = { phone: phoneDigits, otp: sanitizedOtp };
+      }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log("[Login] OTP verified, proceeding to password reset");
+        setForgotStep(3);
+        setForgotMessage("");
+      } else {
+        setForgotMessage(data.error || "Invalid OTP. Please try again.");
+      }
+    } catch (error) {
+      setForgotMessage("An error occurred while verifying the OTP. Please try again.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (data) => {
+    setForgotLoading(true);
+    setForgotMessage("");
+
+    try {
+      let payload;
+      
+      if (forgotResetMode === "email") {
+        payload = {
+          email: forgotEmail,
+          newPassword: data.newPassword,
+          confirmPassword: data.confirmPassword
+        };
+      } else {
+        const phoneDigits = forgotPhone.replace(/\D/g, "");
+        payload = {
+          phone: phoneDigits,
+          newPassword: data.newPassword,
+          confirmPassword: data.confirmPassword
+        };
+      }
+      
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const body = await response.json();
+
+      if (response.ok) {
+        setForgotMessage("✓ Password reset successfully! Redirecting to login...");
         setTimeout(() => {
           setActivePanel("login");
+          setForgotStep(1);
+          setOtpSent(false);
           setForgotEmail("");
+          setForgotPhone("");
+          setForgotResetMode("email");
           setForgotMessage("");
         }, 2000);
       } else {
-        setForgotMessage(data.error || "Failed to send reset link. Please try again.");
+        setForgotMessage(body.error || "Failed to reset password. Please try again.");
       }
     } catch (error) {
       setForgotMessage("An error occurred. Please try again.");
@@ -447,7 +566,7 @@ export const LogIn = () => {
               type="text"
               value={email}
               onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: null })); }}
-              placeholder="admin@beautybook.pro or +15551234567"
+              placeholder="you@example.com or 09123456789"
               aria-label="Email or phone number"
             />
           </div>
@@ -535,141 +654,278 @@ export const LogIn = () => {
     </section>
   );
 
-  const renderForgotPanel = () => (
-    <section style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-      <button
-        type="button"
-        onClick={() => setActivePanel("login")}
-        style={{
-          alignSelf: 'flex-start',
-          backgroundColor: 'transparent',
-          border: 'none',
-          color: loginTheme.link,
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          padding: '4px 8px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          transition: 'all 0.2s ease',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = loginTheme.linkHover; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = loginTheme.link; }}
-      >
-        ← Back to Login
-      </button>
-
-      <div className="login-logo-row">
-        <div className="login-logo-badge">
-          <ScissorsIcon size={22} color="#000" />
-        </div>
-        <span className="brand-name">BeautyBook Pro</span>
-      </div>
-
-      <div className="login-heading-block">
-        <h1 className="login-title">Reset Password</h1>
-        <p className="login-subtitle">Enter your email to receive password reset instructions.</p>
-      </div>
-
-      <form onSubmit={handleForgotPassword} className="form-body">
-        <div className="field-box">
-          <span className="field-label">Email Address</span>
-          <div className="login-input-inner">
-            <MailIcon />
-            <input
-              type="email"
-              value={forgotEmail}
-              onChange={(e) => setForgotEmail(e.target.value)}
-              placeholder="admin@beautybook.pro"
-              aria-label="Email address"
-            />
-          </div>
-        </div>
-
-        {forgotMessage && (
-          <div style={{
-            padding: '12px 16px',
-            backgroundColor: forgotMessage.includes('✓') ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 67, 67, 0.12)',
-            border: `1px solid ${forgotMessage.includes('✓') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 67, 67, 0.4)'}`,
-            borderRadius: '10px',
-            color: forgotMessage.includes('✓') ? '#10b981' : '#ef4343',
-            fontSize: '0.9rem',
-            lineHeight: '1.5',
-          }}>
-            {forgotMessage}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+  const renderForgotPanel = () => {
+    // Step 1: Email form
+    if (forgotStep === 1) {
+      return (
+        <section style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <button
             type="button"
             onClick={() => setActivePanel("login")}
             style={{
-              flex: 1,
-              padding: '12px 16px',
+              alignSelf: 'flex-start',
               backgroundColor: 'transparent',
+              border: 'none',
               color: loginTheme.link,
-              border: `1.5px solid ${loginTheme.link}`,
-              borderRadius: '10px',
-              fontSize: '0.95rem',
+              fontSize: '0.9rem',
               fontWeight: '600',
               cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = loginTheme.modalButtonHover; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-          >
-            Back to Login
-          </button>
-          <button
-            type="submit"
-            disabled={forgotLoading}
-            style={{
-              flex: 1,
-              padding: '12px 16px',
-              backgroundColor: loginTheme.link,
-              color: isLightMode ? '#0c0a09' : '#000',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '0.95rem',
-              fontWeight: '700',
-              cursor: forgotLoading ? 'not-allowed' : 'pointer',
-              fontFamily: 'Inter, sans-serif',
-              transition: 'all 0.2s ease',
-              opacity: forgotLoading ? 0.7 : 1,
+              padding: '4px 8px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
+              gap: '6px',
+              transition: 'all 0.2s ease',
             }}
-            onMouseEnter={(e) => {
-              if (!forgotLoading) {
-                e.currentTarget.style.backgroundColor = loginTheme.linkHover;
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!forgotLoading) {
-                e.currentTarget.style.backgroundColor = loginTheme.link;
-                e.currentTarget.style.transform = 'translateY(0)';
-              }
-            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = loginTheme.linkHover; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = loginTheme.link; }}
           >
-            {forgotLoading ? (
-              <>
-                <SpinnerIcon />
-                Sending…
-              </>
-            ) : (
-              'Send Reset Link'
-            )}
+            ← Back to Login
           </button>
+
+          <div className="login-logo-row">
+            <div className="login-logo-badge">
+              <ScissorsIcon size={22} color="#000" />
+            </div>
+            <span className="brand-name">BeautyBook Pro</span>
+          </div>
+
+          <div className="login-heading-block">
+            <h1 className="login-title">Reset Password</h1>
+            <p className="login-subtitle">Enter your email or phone number to receive a verification code.</p>
+          </div>
+
+          <form onSubmit={handleForgotPassword} className="form-body">
+            {/* Verification Mode Toggle */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotResetMode("email");
+                  setForgotPhone("");
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  backgroundColor: forgotResetMode === "email" ? loginTheme.link : 'transparent',
+                  color: forgotResetMode === "email" ? (isLightMode ? '#0c0a09' : '#000') : loginTheme.link,
+                  border: `1.5px solid ${loginTheme.link}`,
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (forgotResetMode !== "email") {
+                    e.currentTarget.style.backgroundColor = loginTheme.modalButtonHover;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (forgotResetMode !== "email") {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotResetMode("phone");
+                  setForgotEmail("");
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  backgroundColor: forgotResetMode === "phone" ? loginTheme.link : 'transparent',
+                  color: forgotResetMode === "phone" ? (isLightMode ? '#0c0a09' : '#000') : loginTheme.link,
+                  border: `1.5px solid ${loginTheme.link}`,
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (forgotResetMode !== "phone") {
+                    e.currentTarget.style.backgroundColor = loginTheme.modalButtonHover;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (forgotResetMode !== "phone") {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                Phone
+              </button>
+            </div>
+
+            {/* Email Input */}
+            {forgotResetMode === "email" && (
+              <div className="field-box">
+                <span className="field-label">Email Address</span>
+                <div className="login-input-inner">
+                  <MailIcon />
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    aria-label="Email address"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Phone Input */}
+            {forgotResetMode === "phone" && (
+              <div className="field-box">
+                <span className="field-label">Phone Number</span>
+                <div className="login-input-inner">
+                  <PhoneIcon />
+                  <input
+                    type="tel"
+                    value={forgotPhone}
+                    onChange={(e) => setForgotPhone(e.target.value.replace(/\D/g, ''))}
+                    placeholder="09123456789"
+                    aria-label="Phone number"
+                  />
+                </div>
+              </div>
+            )}
+
+            {forgotMessage && (
+              <div style={{
+                padding: '12px 16px',
+                backgroundColor: forgotMessage.includes('✓') ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 67, 67, 0.12)',
+                border: `1px solid ${forgotMessage.includes('✓') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 67, 67, 0.4)'}`,
+                borderRadius: '10px',
+                color: forgotMessage.includes('✓') ? '#10b981' : '#ef4343',
+                fontSize: '0.9rem',
+                lineHeight: '1.5',
+              }}>
+                {forgotMessage}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setActivePanel("login")}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  backgroundColor: 'transparent',
+                  color: loginTheme.link,
+                  border: `1.5px solid ${loginTheme.link}`,
+                  borderRadius: '10px',
+                  fontSize: '0.95rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = loginTheme.modalButtonHover; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+              >
+                Back to Login
+              </button>
+              <button
+                type="submit"
+                disabled={forgotLoading}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  backgroundColor: loginTheme.link,
+                  color: isLightMode ? '#0c0a09' : '#000',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '0.95rem',
+                  fontWeight: '700',
+                  cursor: forgotLoading ? 'not-allowed' : 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  transition: 'all 0.2s ease',
+                  opacity: forgotLoading ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
+                onMouseEnter={(e) => {
+                  if (!forgotLoading) {
+                    e.currentTarget.style.backgroundColor = loginTheme.linkHover;
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!forgotLoading) {
+                    e.currentTarget.style.backgroundColor = loginTheme.link;
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }
+                }}
+              >
+                {forgotLoading ? (
+                  <>
+                    <SpinnerIcon />
+                    Sending…
+                  </>
+                ) : (
+                  'Send Code'
+                )}
+              </button>
+            </div>
+          </form>
+        </section>
+      );
+    }
+
+    // Step 2: OTP Verification
+    if (forgotStep === 2 && otpSent) {
+      return (
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <Otp
+            onClose={() => {
+              setForgotStep(1);
+              setOtpSent(false);
+              setForgotMessage("");
+            }}
+            onVerified={handleForgotOtpVerified}
+            selectedEmail={forgotResetMode === "email" ? forgotEmail : undefined}
+            selectedPhone={forgotResetMode === "phone" ? forgotPhone : undefined}
+            otpType={forgotResetMode === "email" ? "email" : "phone"}
+            loading={forgotLoading}
+            error={forgotMessage}
+            onErrorClear={() => setForgotMessage("")}
+            name="User"
+          />
         </div>
-      </form>
-    </section>
-  );
+      );
+    }
+
+    // Step 3: Password Reset
+    if (forgotStep === 3) {
+      return (
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <PasswordResetModal
+            onClose={() => {
+              setActivePanel("login");
+              setForgotStep(1);
+              setOtpSent(false);
+              setForgotEmail("");
+              setForgotMessage("");
+            }}
+            onSubmit={handleResetPassword}
+            email={forgotEmail}
+            loading={forgotLoading}
+            error={forgotMessage}
+          />
+        </div>
+      );
+    }
+  };
 
   return (
     <div className="login-root" style={{ height: '100vh', overflow: 'hidden' }}>
