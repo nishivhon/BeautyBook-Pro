@@ -49,6 +49,14 @@ const ShieldIcon = ({ color = "currentColor" }) => (
   </svg>
 );
 
+// Tag icon (Heroicons outline style)
+const TagIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.293 10.293l-7.586-7.586A1 1 0 008.586 2H4a2 2 0 00-2 2v4.586a1 1 0 00.293.707l7.586 7.586a2 2 0 002.828 0l4.586-4.586a2 2 0 000-2.828z" stroke={color} strokeWidth="1.5"/>
+    <circle cx="6.5" cy="6.5" r="1.5" fill={color} />
+  </svg>
+);
+
 const GlobeIcon = ({ color = "currentColor" }) => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="9" cy="9" r="7" stroke={color} strokeWidth="1.6"/>
@@ -97,8 +105,9 @@ const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
   { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
   { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
-  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
+  { id: "coupons", label: "Coupons", icon: DatabaseIcon, path: "/superadmin/coupons" },
   { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
+  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
   { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
 ];
 
