@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { StaffFeedbackPanel } from "./StaffFeedbackPanel.jsx";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import CustomerHistoryModal from "../../components/modal/admin/customer_history";
@@ -1636,20 +1637,25 @@ export const AdminDashboardStaffStatus = ({ date }) => {
             <PageMetrics stats={stats} loading={loading} error={error} />
           </div>
           <div className="staff-page-grid">
-          {/* Left — Staff List */}
-          <StaffListPanel 
-            staff={staff}
-            loading={loading}
-            error={error}
-            onStaffStatusUpdate={handleStaffStatusUpdate}
-            statusUpdateModal={statusUpdateModal}
-            onOpenStatusModal={openStatusModal}
-            onCloseStatusModal={closeStatusModal}
-            onOpenManageServiceModal={openManageServiceModal}
-          />
+            <div className="staff-page-main-column">
+              {/* Left — Staff List */}
+              <StaffListPanel 
+                staff={staff}
+                loading={loading}
+                error={error}
+                onStaffStatusUpdate={handleStaffStatusUpdate}
+                statusUpdateModal={statusUpdateModal}
+                onOpenStatusModal={openStatusModal}
+                onCloseStatusModal={closeStatusModal}
+                onOpenManageServiceModal={openManageServiceModal}
+              />
 
-          {/* Right — Quick Actions + Analytics */}
-          <div className="staff-sidebar">
+              {/* Staff Feedback Container */}
+              <StaffFeedbackPanel staff={staff} loading={loading} />
+            </div>
+
+            {/* Right — Quick Actions + Analytics */}
+            <div className="staff-sidebar">
             <QuickActionsPanel 
               onCustomerHistory={() => setIsCustomerHistoryOpen(true)}
             />
