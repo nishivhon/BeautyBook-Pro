@@ -103,6 +103,15 @@ export default function CustomerDashboard() {
 				emails: customer.email ? [customer.email] : profile.emails,
 				phones: customer.phone ? [customer.phone] : profile.phones,
 				histories: customer.histories || [],
+				// Map notif_pref (could be 'email'|'sms' or a contact string) to notificationPreference
+				notificationPreference: (function() {
+					if (!customer?.notif_pref) return profile.notificationPreference || "";
+					const val = String(customer.notif_pref || "").trim();
+					if (val === 'email' || val === 'sms') return val;
+					if (val.includes('@')) return 'email';
+					if (/\d/.test(val)) return 'sms';
+					return profile.notificationPreference || "";
+				})(),
 			};
 
 			console.log('[CustomerDashboard] Updated profile:', updatedProfile);
