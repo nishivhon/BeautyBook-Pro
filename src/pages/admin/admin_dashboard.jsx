@@ -1033,12 +1033,15 @@ const AnalyticsPanel = () => (
   </div>
 );
 
+
 const CouponsPanel = () => {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState(null);
 
   useEffect(() => {
-    const fetchAvailableCoupons = async () => {
+    const fetchAllCoupons = async () => {
       setLoading(true);
       try {
         const response = await fetch('/api/coupons/available');
@@ -1046,15 +1049,15 @@ const CouponsPanel = () => {
         const result = await response.json();
         setCoupons(result.data || []);
       } catch (err) {
-        console.error('Error loading available coupons:', err);
+        console.error('Error loading coupons:', err);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchAvailableCoupons();
+    fetchAllCoupons();
   }, []);
 
+  // Helper: format discount
   const formatDiscount = (coupon) => {
     if (coupon.value_type === 'percentage') {
       return `${coupon.value}%`;
@@ -1063,90 +1066,174 @@ const CouponsPanel = () => {
     }
   };
 
-  const CouponIcon = ({ size = 20, color = "#dd901d" }) => (
+  // Helper: get coupon status
+  const getCouponStatus = (coupon) => {
+    const now = new Date();
+    const start = coupon.start_date ? new Date(coupon.start_date) : null;
+    const end = coupon.expiration_date ? new Date(coupon.expiration_date) : null;
+    if (coupon.status === 'inactive') return 'inactive';
+    if (start && now < start) return 'upcoming';
+    if (end && now > end) return 'expired';
+    return 'active';
+  };
+
+  // Helper: badge color
+  const statusBadge = (status) => {
+    switch (status) {
+      case 'active': return 'bg-green-500 text-white';
+      case 'expired': return 'bg-gray-400 text-white';
+      case 'upcoming': return 'bg-amber-400 text-white';
+      case 'inactive': return 'bg-red-400 text-white';
+      default: return 'bg-gray-300 text-black';
+    }
+  };
+
+
+  // Dropdown options (match coupon statuses)
+  const filterOptions = [
+    { key: null, label: 'All Coupons' },
+    { key: 'active', label: 'Active Only' },
+    { key: 'expired', label: 'Expired Only' },
+    { key: 'upcoming', label: 'Upcoming Only' },
+  ];
+
+  // Filter and sort coupons
+  const filteredCoupons = useMemo(() => {
+    let filtered = coupons.map(c => ({ ...c, _status: getCouponStatus(c) }));
+    if (selectedFilter) filtered = filtered.filter(c => c._status === selectedFilter);
+    filtered.sort((a, b) => {
+      const order = { upcoming: 0, active: 1, expired: 2, inactive: 3 };
+      if (order[a._status] !== order[b._status]) return order[a._status] - order[b._status];
+      const aExp = a.expiration_date ? new Date(a.expiration_date) : new Date(0);
+      const bExp = b.expiration_date ? new Date(b.expiration_date) : new Date(0);
+      return bExp - aExp;
+    });
+    return filtered;
+  }, [coupons, selectedFilter]);
+
+  const handleFilterSelect = (key) => {
+    setSelectedFilter(selectedFilter === key ? null : key);
+    setFilterOpen(false);
+  };
+
+  // Filter icon (from staff status page)
+  const FilterIcon = ({ size = 16, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="5" width="9" height="14" rx="2" stroke={color} strokeWidth="1.8" />
-      <rect x="12" y="5" width="9" height="14" rx="2" stroke={color} strokeWidth="1.8" />
-      <line x1="12" y1="5" x2="12" y2="19" stroke={color} strokeWidth="1.8" strokeDasharray="2,2" />
-      <circle cx="7.5" cy="9" r="1.5" fill={color} />
-      <circle cx="16.5" cy="15" r="1.5" fill={color} />
+      <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 
+  // Styling helpers
+  const textColor = isDarkMode() ? '#f5f1eb' : '#0c0a09';
+  const labelColor = isDarkMode() ? '#988f81' : '#666';
+  const tertiaryColor = isDarkMode() ? '#666' : '#999';
+
+
+  // (No old dropdown logic; only staff filter logic is used)
+
   return (
-    <div className="dash-sidebar-panel">
-      <div className="dash-sidebar-header">
-        <h3 className="dash-sidebar-title">Available Coupons</h3>
-        {!loading && coupons.length > 0 && (
-          <span style={{ fontSize: '12px', color: '#dd901d', fontWeight: 600 }}>
-            {coupons.length}
-          </span>
-        )}
+    <div className="live-queue-panel">
+      {/* Header */}
+      <div className="dash-panel-header" style={{ position: 'relative' }}>
+        <div className="dash-panel-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <h2 className="dash-panel-title">Coupons List</h2>
+          <div className="dash-panel-buttons" style={{ marginLeft: 'auto', position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <button
+              className="staff-filter-btn"
+              aria-label="Filter"
+              onClick={() => setFilterOpen(!filterOpen)}
+              style={{ marginLeft: 'auto' }}
+            >
+              <FilterIcon size={15} color="currentColor" />
+            </button>
+            {filterOpen && (
+              <div className="staff-filter-dropdown" style={{ position: 'absolute', top: '110%', right: 0, zIndex: 10, minWidth: 180 }}>
+                {filterOptions.map(opt => (
+                  <button
+                    key={opt.key ?? 'all'}
+                    className={`staff-filter-option${selectedFilter === opt.key ? ' active' : ''}`}
+                    onClick={() => handleFilterSelect(opt.key)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+                {selectedFilter && (
+                  <button
+                    className="staff-filter-clear"
+                    onClick={() => setSelectedFilter(null)}
+                  >
+                    Clear Filter
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      
+
+      {/* Loading State */}
       {loading ? (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13 }}>
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13, minHeight: 120 }}>
           Loading coupons...
         </div>
-      ) : coupons.length === 0 ? (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13 }}>
-          No available coupons
+      ) : filteredCoupons.length === 0 ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13, minHeight: 120 }}>
+          No coupons found
         </div>
       ) : (
-        <div className="dash-coupons-list live-queue-scroll-limited" style={{ maxHeight: "280px", padding: "12px 0", paddingRight: "12px" }}>
-          {coupons.map((coupon) => {
+        <div className="dash-coupons-list live-queue-scroll-limited" style={{ maxHeight: "420px", minHeight: "220px", padding: "12px 0", paddingRight: "12px" }}>
+          {filteredCoupons.map((coupon) => {
+            const status = coupon._status;
+            const muted = status === 'expired' || status === 'inactive';
             const couponRowStyle = getThemeStyles(
               {
                 padding: '12px',
                 marginBottom: '8px',
-                background: 'rgba(20, 17, 15, 0.5)',
+                background: muted ? 'rgba(20, 17, 15, 0.25)' : 'rgba(20, 17, 15, 0.5)',
                 borderRadius: 6,
-                border: '1px solid rgba(221, 144, 29, 0.2)',
+                border: muted ? '1px solid #444' : '1px solid rgba(221, 144, 29, 0.2)',
                 fontSize: 13,
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start'
+                flexDirection: 'column',
+                gap: '4px',
+                transition: 'background 0.2s, border 0.2s',
               },
               {
                 padding: '12px',
                 marginBottom: '8px',
-                background: 'rgba(243, 139, 166, 0.5)',
+                background: muted ? 'rgba(243, 139, 166, 0.15)' : 'rgba(243, 139, 166, 0.5)',
                 borderRadius: 6,
-                border: '1px solid rgba(255, 255, 255, 0.6)',
+                border: muted ? '1px solid #ddd' : '1px solid rgba(255, 255, 255, 0.6)',
                 fontSize: 13,
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start'
+                flexDirection: 'column',
+                gap: '4px',
+                transition: 'background 0.2s, border 0.2s',
               }
             );
-            const textColor = isDarkMode() ? '#f5f1eb' : '#0c0a09';
-            const labelColor = isDarkMode() ? '#988f81' : '#666';
-            const tertiaryColor = isDarkMode() ? '#666' : '#999';
-            const bgBoxColor = isDarkMode() ? 'rgba(221, 144, 29, 0.15)' : 'rgba(221, 144, 29, 0.1)';
-            
             return (
-              <div key={coupon.id} style={couponRowStyle}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, color: textColor, marginBottom: 4 }}>
-                    {formatDiscount(coupon)} OFF
-                  </div>
-                  <div style={{ color: labelColor, fontSize: 12, marginBottom: 2 }}>
-                    Code: <span style={{ fontFamily: 'monospace', fontWeight: 500, color: textColor }}>{coupon.code}</span>
-                  </div>
-                  <div style={{ color: tertiaryColor, fontSize: 11 }}>
-                    Claims: {coupon.number_of_uses}{coupon.max_uses ? ` / ${coupon.max_uses}` : ''}
-                  </div>
+              <div
+                key={coupon.id}
+                style={couponRowStyle}
+                className="group hover:shadow-md"
+              >
+                <div className="flex items-center gap-2 justify-between">
+                  <div className="font-semibold text-base" style={{ color: textColor }}>{coupon.code}</div>
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadge(status)}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
                 </div>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  width: 28,
-                  height: 28,
-                  background: bgBoxColor,
-                  borderRadius: 4
-                }}>
-                  <CouponIcon size={16} color="#dd901d" />
+                <div className="flex items-center gap-2 justify-between">
+                  <span style={{ color: labelColor }}>{formatDiscount(coupon)} OFF</span>
+                  {coupon.expiration_date && (
+                    <span className="text-xs" style={{ color: tertiaryColor }}>
+                      Expires: {new Date(coupon.expiration_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 justify-between text-xs" style={{ color: tertiaryColor }}>
+                  <span>Claims: {coupon.number_of_uses}{coupon.max_uses ? ` / ${coupon.max_uses}` : ''}</span>
+                  {coupon.start_date && status === 'upcoming' && (
+                    <span className="italic text-amber-600">Starts: {new Date(coupon.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  )}
                 </div>
               </div>
             );
