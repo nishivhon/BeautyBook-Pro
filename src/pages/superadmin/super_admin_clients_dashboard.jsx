@@ -107,6 +107,10 @@ export default function SuperAdminClientsDashboard() {
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
+  const [selectedClients, setSelectedClients] = useState(new Set());
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') !== 'light';
+  });
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -168,6 +172,18 @@ export default function SuperAdminClientsDashboard() {
     return () => clearTimeout(t);
   }, []);
 
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const theme = document.documentElement.getAttribute('data-theme');
+      setIsDarkMode(theme !== 'light');
+    };
+
+    const observer = new MutationObserver(handleThemeChange);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    return () => observer.disconnect();
+  }, []);
+
   const handleLogout = () => {
     logoutOperator();
     navigate("/operators/login");
@@ -185,6 +201,50 @@ export default function SuperAdminClientsDashboard() {
 
   const handleCloseAddClientModal = () => {
     setIsAddClientModalOpen(false);
+  };
+
+  const handleSelectClient = (clientId) => {
+    setSelectedClients((prev) => {
+      const updated = new Set(prev);
+      if (updated.has(clientId)) {
+        updated.delete(clientId);
+      } else {
+        updated.add(clientId);
+      }
+      return updated;
+    });
+  };
+
+  const handleRemoveClients = async () => {
+    if (selectedClients.size === 0) {
+      displayToast('Please select clients to remove');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const clientIds = Array.from(selectedClients);
+      
+      // Delete each selected client
+      for (const clientId of clientIds) {
+        await fetch(`/api/customers/${clientId}`, { method: 'DELETE' });
+      }
+
+      // Remove from UI
+      setClientsData((prev) => ({
+        ...prev,
+        rows: prev.rows.filter((client) => !selectedClients.has(client.id)),
+        meta: `${(prev.rows?.length || 0) - selectedClients.size} clients`,
+      }));
+      
+      setSelectedClients(new Set());
+      displayToast(`${clientIds.length} client(s) removed successfully`);
+    } catch (error) {
+      console.error('[Clients] Error removing clients:', error);
+      displayToast('Failed to remove clients');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddNewClient = (result) => {
@@ -286,27 +346,29 @@ export default function SuperAdminClientsDashboard() {
                   />
                 </div>
                 
-                {/* Add Button */}
+                {/* Remove Button */}
                 <button
-                  onClick={handleOpenAddClientModal}
+                  onClick={handleRemoveClients}
+                  disabled={selectedClients.size === 0}
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: '#dd901d',
-                    color: '#1a1a1a',
+                    backgroundColor: selectedClients.size === 0 ? '#6B6157' : isDarkMode ? '#dd901d' : '#e74c3c',
+                    color: isDarkMode ? '#1a1a1a' : '#1a1a1a',
                     border: 'none',
                     borderRadius: '6px',
                     fontSize: '13px',
                     fontWeight: '600',
-                    cursor: 'pointer',
+                    cursor: selectedClients.size === 0 ? 'default' : 'pointer',
                     transition: 'all 0.2s',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    opacity: selectedClients.size === 0 ? 0.5 : 1
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e6a326'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#dd901d'}
+                  onMouseOver={(e) => selectedClients.size > 0 && (e.currentTarget.style.backgroundColor = isDarkMode ? '#e6a326' : '#c0392b')}
+                  onMouseOut={(e) => selectedClients.size > 0 && (e.currentTarget.style.backgroundColor = isDarkMode ? '#dd901d' : '#e74c3c')}
                 >
-                  Add Client
+                  Remove ({selectedClients.size})
                 </button>
               </div>
             </div>
@@ -319,6 +381,7 @@ export default function SuperAdminClientsDashboard() {
                 <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
+                      <th style={{ textAlign: 'center', width: '40px', padding: '8px' }}></th>
                       {clientsData.cols.map((col) => (
                         <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
                       ))}
@@ -331,6 +394,22 @@ export default function SuperAdminClientsDashboard() {
                       const endIdx = startIdx + itemsPerPage;
                       return filteredClients.slice(startIdx, endIdx).map((client, idx) => (
                         <tr key={idx} className="db-row">
+                          <td style={{ width: '40px', fontSize: '13px', textAlign: 'center', padding: '8px' }}>
+                            <input
+                              type="checkbox"
+                              className="client-select-checkbox"
+                              checked={selectedClients.has(client.id)}
+                              onChange={() => handleSelectClient(client.id)}
+                              style={{
+                                cursor: 'pointer',
+                                width: '18px',
+                                height: '18px',
+                                accentColor: isDarkMode ? '#FFD700' : '#e91e63',
+                                appearance: 'auto',
+                                scale: '1.2'
+                              }}
+                            />
+                          </td>
                           {clientsData.cols.map((col) => {
                             const cellValue = client[col];
                             const displayValue = formatCellValue(cellValue, col);

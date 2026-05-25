@@ -112,6 +112,9 @@ export default function SuperAdminServicesDashboard() {
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
   });
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') !== 'light';
+  });
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -138,6 +141,18 @@ export default function SuperAdminServicesDashboard() {
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const theme = document.documentElement.getAttribute('data-theme');
+      setIsDarkMode(theme !== 'light');
+    };
+
+    const observer = new MutationObserver(handleThemeChange);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    return () => observer.disconnect();
   }, []);
 
   // Fetch services table on mount
@@ -354,7 +369,7 @@ export default function SuperAdminServicesDashboard() {
                   onClick={handleOpenAddServiceModal}
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: '#dd901d',
+                    backgroundColor: isDarkMode ? '#dd901d' : '#e74c3c',
                     color: '#1a1a1a',
                     border: 'none',
                     borderRadius: '6px',
@@ -366,8 +381,8 @@ export default function SuperAdminServicesDashboard() {
                     alignItems: 'center',
                     gap: '6px'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e6a326'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#dd901d'}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#e6a326' : '#c0392b'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#dd901d' : '#e74c3c'}
                 >
                   Add Service
                 </button>

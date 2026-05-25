@@ -130,6 +130,9 @@ export default function SuperAdminUsersDashboard() {
     return saved !== null ? JSON.parse(saved) : true;
   });
   const [mounted, setMounted] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') !== 'light';
+  });
   const [activeNav, setActiveNav] = useState("staff-management");
   const [staffsData, setStaffsData] = useState({
     id: 'staffs',
@@ -242,6 +245,18 @@ export default function SuperAdminUsersDashboard() {
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const theme = document.documentElement.getAttribute('data-theme');
+      setIsDarkMode(theme !== 'light');
+    };
+
+    const observer = new MutationObserver(handleThemeChange);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    return () => observer.disconnect();
   }, []);
 
   const handleLogout = () => {
@@ -388,7 +403,7 @@ export default function SuperAdminUsersDashboard() {
                   onClick={handleOpenAddModal}
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: '#dd901d',
+                    backgroundColor: isDarkMode ? '#dd901d' : '#e74c3c',
                     color: '#1a1a1a',
                     border: 'none',
                     borderRadius: '6px',
@@ -400,8 +415,8 @@ export default function SuperAdminUsersDashboard() {
                     alignItems: 'center',
                     gap: '6px'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e6a326'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#dd901d'}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#e6a326' : '#c0392b'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#dd901d' : '#e74c3c'}
                 >
                   Add Staff
                 </button>
