@@ -28,7 +28,7 @@ export default async (req, res) => {
 
     const { data: customer, error } = await supabase
       .from('customers_accounts')
-      .select('id, name, email, phone, histories')
+      .select('id, name, email, phone, histories, notif_pref')
       .eq('id', id)
       .single();
 

@@ -130,6 +130,8 @@ export default async (req, res) => {
       password: hashedPassword,
       ...(normalizedEmail && { email: normalizedEmail }),
       ...(normalizedPhone && { phone: normalizedPhone }),
+      // notif_pref should default to the contact used at registration (email preferred)
+      notif_pref: normalizedEmail || normalizedPhone,
       histories: histories || null,
     };
 

@@ -79,11 +79,11 @@ const CalendarIcon = () => (
 );
 
 const UsersIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <circle cx="9" cy="7" r="4" stroke="#dd901d" strokeWidth="1.6" />
-    <path d="M2 21v-2a4 4 0 014-4h6a4 4 0 014 4v2" stroke="#dd901d" strokeWidth="1.6" strokeLinecap="round" />
-    <path d="M16 3.13a4 4 0 010 7.75" stroke="#dd901d" strokeWidth="1.6" strokeLinecap="round" />
-    <path d="M22 21v-2a4 4 0 00-3-3.87" stroke="#dd901d" strokeWidth="1.6" strokeLinecap="round" />
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <circle cx="9" cy="7" r="4" stroke="#988f81" strokeWidth="1.8" />
+    <path d="M2 21v-2a4 4 0 014-4h6a4 4 0 014 4v2" stroke="#988f81" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M16 3.13a4 4 0 010 7.75" stroke="#988f81" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M22 21v-2a4 4 0 00-3-3.87" stroke="#988f81" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -247,11 +247,17 @@ export const LogIn = () => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '';
 
+      // Determine whether input is email or phone and send appropriate field
+      const isInputEmail = String(email).includes('@');
+      const payload = isInputEmail
+        ? { email: String(email).trim().toLowerCase(), password }
+        : { phone: String(email).replace(/\D/g, ''), password };
+
       // Try customer login first
       const customerResponse = await fetch(`${apiUrl}/customers/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, phone: email, password }),
+        body: JSON.stringify(payload),
       });
 
       if (customerResponse.ok) {
@@ -561,7 +567,7 @@ export const LogIn = () => {
         <div className="field-box">
           <span className="field-label">Email or Phone Number</span>
           <div className={`login-input-inner ${errors.email ? "has-error" : ""}`}>
-            <MailIcon />
+            {String(email || "").trim() === "" ? <UsersIcon /> : String(email || "").includes('@') ? <MailIcon /> : <PhoneIcon />}
             <input
               type="text"
               value={email}
