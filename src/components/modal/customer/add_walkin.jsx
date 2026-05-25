@@ -182,15 +182,16 @@ const BOOKING_MODAL_THEME_CSS = `
 
   .booking-modal-theme .confirm-card {
     background: #11100d !important;
-    border: 1px solid rgba(221, 144, 29, 0.12) !important;
+    border: 1px solid rgba(245, 241, 235, 0.08) !important;
     color: #f5f1eb !important;
+    box-shadow: none !important;
   }
   /* Override any residual light-theme pink glows for confirm elements */
   .booking-modal-theme .confirm-ref-pill {
     background: rgba(221,144,29,0.14) !important;
     border: 1px solid rgba(221,144,29,0.45) !important;
     color: #f5f1eb !important;
-    box-shadow: 0 2px 10px rgba(221,144,29,0.28) !important;
+    box-shadow: 0 2px 10px rgba(221,144,29,0.05) !important;
   }
 
   .booking-modal-theme .confirm-reminder-box {
@@ -870,13 +871,20 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                     aria-describedby={nameError && nameTouched ? "name-error" : undefined}
                   />
                   {nameError && nameTouched && (
-                    <p id="name-error" className="walkin-error">
-                      ΓÜá∩╕Å {nameError}
+                    <p
+                      id="name-error"
+                      className="walkin-error"
+                      style={{ color: "#ef4444", fontSize: "0.8rem", margin: "4px 0 0 0", fontWeight: "500" }}
+                    >
+                      ⚠️ {nameError}
                     </p>
                   )}
                   {!nameError && nameTouched && (
-                    <p style={{ fontSize: "0.8rem", color: "#22c55e", margin: "4px 0 0 0", fontWeight: "500" }}>
-                      Γ£ô Name is valid
+                    <p
+                      className="walkin-success"
+                      style={{ fontSize: "0.8rem", color: "#22c55e", margin: "4px 0 0 0", fontWeight: "500" }}
+                    >
+                      ✓ Name is valid
                     </p>
                   )}
                 </div>
@@ -919,7 +927,15 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                 <p className="appt-section-title">Confirm Walk-in</p>
                 <p className="appt-section-sub">Review appointment details</p>
                 
-                <div className="confirm-card">
+                <div
+                  className="confirm-card walkin-dark-receipt"
+                  style={{
+                    background: "#11100d",
+                    border: "1px solid rgba(245, 241, 235, 0.08)",
+                    color: "#f5f1eb",
+                    boxShadow: "none",
+                  }}
+                >
                   {receiptData.services.length > 0 && (
                     <>
                       <div className="confirm-service-row">
