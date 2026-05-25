@@ -5,6 +5,39 @@ import { useCustomerCouponsData, useCustomerHistoryData, useCustomerProfileData,
 import { couponService } from "../../services/couponService";
 import { useToast } from "../../components/toast";
 
+const CUSTOMER_CACHE_TTL_MS = 5 * 60 * 1000;
+
+const getCustomerCacheKey = (customerId) => `customerDashboardCache:${customerId}`;
+
+const readCustomerCache = (customerId) => {
+	if (typeof window === "undefined" || !customerId) return null;
+	try {
+		const raw = localStorage.getItem(getCustomerCacheKey(customerId));
+		if (!raw) return null;
+
+		const parsed = JSON.parse(raw);
+		if (!parsed?.savedAt || !parsed?.customer) return null;
+
+		if (Date.now() - parsed.savedAt > CUSTOMER_CACHE_TTL_MS) return null;
+		return parsed.customer;
+	} catch (error) {
+		console.warn("[CustomerDashboard] Failed to read cache:", error);
+		return null;
+	}
+};
+
+const writeCustomerCache = (customerId, customer) => {
+	if (typeof window === "undefined" || !customerId || !customer) return;
+	try {
+		localStorage.setItem(
+			getCustomerCacheKey(customerId),
+			JSON.stringify({ savedAt: Date.now(), customer })
+		);
+	} catch (error) {
+		console.warn("[CustomerDashboard] Failed to write cache:", error);
+	}
+};
+
 const StarIcon = ({ filled = false }) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? "#dd901d" : "none"} xmlns="http://www.w3.org/2000/svg">
     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="#dd901d" strokeWidth="1.6" strokeLinejoin="round" />
@@ -59,10 +92,35 @@ export default function CustomerDashboard() {
 	}, []);
 
 	useEffect(() => {
-		const fetchFullCustomerData = async () => {
+		let isMounted = true;
+
+		const applyCustomerData = (customer) => {
+			if (!customer || !isMounted) return;
+
+			const updatedProfile = {
+				...profile,
+				name: customer.name || profile.name,
+				emails: customer.email ? [customer.email] : profile.emails,
+				phones: customer.phone ? [customer.phone] : profile.phones,
+				histories: customer.histories || [],
+			};
+
+			console.log('[CustomerDashboard] Updated profile:', updatedProfile);
+			setProfile(updatedProfile);
+			writeCustomerCache(profile.id, customer);
+		};
+
+		const fetchFullCustomerData = async ({ force = false } = {}) => {
 			try {
 				if (!profile?.id) {
 					console.log('[CustomerDashboard] No customer ID in profile, skipping fetch');
+					return;
+				}
+
+				const cachedCustomer = !force ? readCustomerCache(profile.id) : null;
+				if (cachedCustomer) {
+					console.log('[CustomerDashboard] Using cached customer data for ID:', profile.id);
+					applyCustomerData(cachedCustomer);
 					return;
 				}
 
@@ -83,16 +141,7 @@ export default function CustomerDashboard() {
 
 				// Update profile with full data including histories
 				if (customer) {
-					const updatedProfile = {
-						...profile,
-						name: customer.name || profile.name,
-						emails: customer.email ? [customer.email] : profile.emails,
-						phones: customer.phone ? [customer.phone] : profile.phones,
-						histories: customer.histories || [],
-					};
-					
-					console.log('[CustomerDashboard] Updated profile:', updatedProfile);
-					setProfile(updatedProfile);
+					applyCustomerData(customer);
 				}
 			} catch (error) {
 				console.error('[CustomerDashboard] Error fetching customer data:', error);
@@ -101,13 +150,9 @@ export default function CustomerDashboard() {
 
 		fetchFullCustomerData();
 
-		// Set up auto-refresh every 10 seconds to catch status updates from admin
-		const refreshInterval = setInterval(() => {
-			console.log('[CustomerDashboard] Auto-refreshing customer data');
-			fetchFullCustomerData();
-		}, 10000);
-
-		return () => clearInterval(refreshInterval);
+		return () => {
+			isMounted = false;
+		};
 	}, [profile?.id]);
 
 	// Refetch history data when profile changes (to pick up new bookings from histories)
@@ -502,7 +547,7 @@ export default function CustomerDashboard() {
 					<div style={sectionHeaderRowStyle}>
 						<h2 className="cdb-section-title">Coupons</h2>
 						<div>
-							<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/coupons")}>View Coupons</button>
+							<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/coupons")}>View All Coupons</button>
 						</div>
 					</div>
 					<div style={sectionHeaderDividerStyle} />

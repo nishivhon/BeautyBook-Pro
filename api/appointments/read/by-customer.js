@@ -25,11 +25,25 @@ export default async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, phone } = req.query;
+  const { email, phone, status, statuses, days } = req.query;
 
   if (!email && !phone) {
     return res.status(400).json({ error: 'Either email or phone parameter is required' });
   }
+
+  const requestedStatuses = Array.isArray(statuses)
+    ? statuses
+    : String(statuses || status || 'pending')
+        .split(',')
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+
+  const uniqueStatuses = [...new Set(requestedStatuses)].filter(Boolean);
+  const applyRecentWindow = uniqueStatuses.includes('done') && Number.isFinite(Number(days)) && Number(days) > 0;
+  const recentDays = applyRecentWindow ? Number(days) : 0;
+  const sinceIso = applyRecentWindow
+    ? new Date(Date.now() - recentDays * 24 * 60 * 60 * 1000).toISOString()
+    : null;
 
   try {
     console.log(`[AppointmentsByCustomer] Fetching appointments for email: ${email}, phone: ${phone}`);
@@ -76,20 +90,28 @@ export default async (req, res) => {
     }
     console.log(`[AppointmentsByCustomer] Built service map with ${Object.keys(serviceMap).length} services`);
 
-    // Build query to find pending appointments by customer contact
-    // First, try to fetch all pending appointments and filter locally for reliability
-    const { data: allAppointments, error } = await supabase
+    // Build query to find appointments by customer contact and requested status set
+    let appointmentsQuery = supabase
       .from('available_slots')
-      .select('id, date, time_slot, customer_name, customer_contact, assigned_staff, services, status, service_est_time, total_price')
-      .eq('status', 'pending')
+      .select('id, date, time_slot, customer_name, customer_contact, assigned_staff, services, status, service_est_time, total_price, updated_at')
       .order('date', { ascending: true });
+
+    if (uniqueStatuses.length > 0) {
+      appointmentsQuery = appointmentsQuery.in('status', uniqueStatuses);
+    }
+
+    if (sinceIso) {
+      appointmentsQuery = appointmentsQuery.gte('updated_at', sinceIso);
+    }
+
+    const { data: allAppointments, error } = await appointmentsQuery;
 
     if (error) {
       console.error('[AppointmentsByCustomer] Database error:', error);
       return res.status(500).json({ error: 'Failed to fetch appointments', details: error.message });
     }
 
-    console.log(`[AppointmentsByCustomer] Found ${allAppointments?.length || 0} total pending appointments`);
+    console.log(`[AppointmentsByCustomer] Found ${allAppointments?.length || 0} total appointments for statuses: ${uniqueStatuses.join(', ')}`);
 
     // Filter appointments by matching email or phone
     const filteredAppointments = (allAppointments || []).filter(apt => {
@@ -214,6 +236,7 @@ export default async (req, res) => {
         price: Number(price) || 0,
         service_est_time: estMinutes,
         cancelled: false,
+        updated_at: apt.updated_at || null,
       };
     });
 

@@ -89,8 +89,8 @@ export default function CustomerHistoryPage() {
   }, []);
 
   const filteredHistory = history.filter((h) => {
-    if (historyFilter === "previous") return h.status === "completed";
-    if (historyFilter === "current") return h.status === "upcoming";
+    if (historyFilter === "previous") return h.rated === true;
+    if (historyFilter === "current") return h.rated !== true;
     return true;
   });
 
@@ -159,8 +159,8 @@ export default function CustomerHistoryPage() {
                   )}
                 </div>
                 <div className="cdb-item-right">
-                  <span className={`cdb-status-badge ${item.status === "completed" ? "completed" : "upcoming"}`}>{item.status}</span>
-                  {item.status === "completed" && !item.rated && (
+                  <span className={`cdb-status-badge ${item.rated ? "completed" : "upcoming"}`}>{item.rated ? "rated" : "pending rating"}</span>
+                  {!item.rated && item.status === "completed" && (
                     <button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)}>Rate Service</button>
                   )}
                 </div>

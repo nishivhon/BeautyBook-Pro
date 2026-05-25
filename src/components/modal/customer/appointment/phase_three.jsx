@@ -392,17 +392,7 @@ const AnyRow = ({ isSelected, onSelect }) => (
 
 /* ── Named stylist row ── */
 const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext = true }) => {
-  const statusLabel = stylist.status === "no slots" ? "No Slots" : "Unavailable";
   const hasNextAppointment = Boolean(stylist.nextAppointmentTime);
-
-  const inServiceValue = (stylist.in_service || '').toString().trim().toLowerCase();
-  const isCurrentlyInService = inServiceValue === 'in-service';
-  const isAvailableState = inServiceValue === 'avail' || stylist.status === 'avail';
-  const acceptsWalkIn = stylist.walk_in === true;
-
-  // Custom status messages for walk-in flows
-  const walkInDisabledMessage = isAvailableState && !acceptsWalkIn ? 'Not accepting walk-in' : null;
-  const inServiceMessage = isCurrentlyInService ? 'Currently in-service' : null;
 
   return (
     <button
@@ -424,10 +414,7 @@ const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext =
             {showTime && showNext && <span>•</span>}
             {showNext && <span className="stylist-unavailable-tag">{hasNextAppointment ? `Next: ${formatTimeTo12Hour(stylist.nextAppointmentTime)}` : "No next appointment"}</span>}
           </div>
-          {/* Priority messages: in-service > not-accepting-walkin > generic unavailable */}
-          {isCurrentlyInService && <span className="stylist-unavailable-tag">{inServiceMessage}</span>}
-          {!isCurrentlyInService && walkInDisabledMessage && <span className="stylist-unavailable-tag">{walkInDisabledMessage}</span>}
-          {!isCurrentlyInService && !walkInDisabledMessage && stylist.unavailable && <span className="stylist-unavailable-tag">{statusLabel}</span>}
+          {stylist.unavailable && <span className="stylist-unavailable-tag">Unavailable</span>}
         </div>
       </div>
     </button>
