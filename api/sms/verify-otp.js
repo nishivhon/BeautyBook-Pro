@@ -29,6 +29,8 @@ export default async (req, res) => {
       }
     }
 
+    console.log(`[SMSOTP] Verification - Received: ${phone}, Formatted: ${formattedPhone}`);
+
     const storedOtp = await getOtpByPhone(formattedPhone);
 
     if (!storedOtp) {
@@ -39,6 +41,7 @@ export default async (req, res) => {
     const now = new Date();
     const expiresAtStr = storedOtp.expires_at.endsWith('Z') ? storedOtp.expires_at : `${storedOtp.expires_at}Z`;
     const expiresAt = new Date(expiresAtStr);
+    console.log(`[SMSOTP] Verification - Now: ${now.toISOString()}, Expires: ${expiresAt.toISOString()}`);
     
     if (now > expiresAt) {
       await deleteOtpByPhone(formattedPhone);
@@ -69,7 +72,11 @@ export default async (req, res) => {
       success: true,
       verified: true,
       message: 'OTP verified successfully!',
-      phone: phone
+      user: {
+        phone: phone,
+        full_name: storedOtp.name || '',
+        email: storedOtp.email || ''
+      }
     });
 
   } catch (error) {

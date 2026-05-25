@@ -45,7 +45,7 @@ const SpinnerIcon = () => (
 /* ══════════════════════════════════════════
    OTP MODAL COMPONENT
 ══════════════════════════════════════════ */
-export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, otpType = "phone", loading = false }) => {
+export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, otpType = "phone", loading = false, error = null, onErrorClear = null }) => {
   const INITIAL_TIME = 600; // 10 minutes
   const [timeLeft,   setTimeLeft]   = useState(INITIAL_TIME);
   const [otpValue,   setOtpValue]   = useState("");
@@ -59,6 +59,13 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
     const id = setInterval(() => setTimeLeft((t) => t - 1), 1000);
     return () => clearInterval(id);
   }, [timeLeft]);
+
+  /* Reset verification flag when error is cleared to allow retry */
+  useEffect(() => {
+    if (!error) {
+      verifiedRef.current = false;
+    }
+  }, [error]);
 
   /* auto-verify when 6 digits are entered */
   useEffect(() => {
@@ -136,6 +143,10 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
     const raw = e.target.value.replace(/\D/g, "").slice(0, 6);
     const formatted = raw.length > 3 ? `${raw.slice(0, 3)} ${raw.slice(3)}` : raw;
     setOtpValue(formatted);
+    // Clear error when user starts typing a new OTP
+    if (onErrorClear) {
+      onErrorClear();
+    }
   };
 
   /* handle Enter key press to verify OTP */
@@ -219,7 +230,22 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
             </div>
           </div>
 
-          {/* Meta row */}
+          {/* Error message */}
+          {error && (
+            <div style={{
+              padding: "10px 12px",
+              marginBottom: "12px",
+              backgroundColor: "rgba(239, 68, 68, 0.1)",
+              border: "1px solid #ef4444",
+              borderRadius: "6px",
+              color: "#ef4444",
+              fontSize: "0.9rem",
+              textAlign: "center",
+              animation: "fadeIn 0.3s ease-in"
+            }}>
+              {error}
+            </div>
+          )}
           <div className="otp-meta-row">
             {/* timer */}
             <div className="otp-meta-left">

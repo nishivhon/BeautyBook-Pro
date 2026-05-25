@@ -6302,6 +6302,11 @@ html[data-theme="light"] .dash-page-title,
   to   { transform: rotate(360deg); }
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 .login-spinner {
   animation: spin 1s linear infinite;
 }

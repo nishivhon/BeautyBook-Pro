@@ -295,6 +295,8 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
         onVerified={handleOtpVerified}
         otpType={verificationMode}
         loading={loading}
+        error={errors.form}
+        onErrorClear={() => setErrors({})}
         selectedEmail={verificationMode === "email" ? email : ""}
         selectedPhone={verificationMode === "phone" ? phone : ""}
         name={name}

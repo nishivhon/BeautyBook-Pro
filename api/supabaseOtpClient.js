@@ -164,7 +164,13 @@ export const getOtpByPhone = async (phone) => {
     }
 
     const data = await response.json();
-    return data.length > 0 ? data[0] : null;
+    const result = data.length > 0 ? data[0] : null;
+    if (result) {
+      console.log(`[OTP] Retrieved PHONE OTP from DB - Phone: ${result.phone}, Expires: ${result.expires_at}`);
+    } else {
+      console.log(`[OTP] No phone OTP found in DB for: ${phone}`);
+    }
+    return result;
   } catch (error) {
     console.error(`[OTP] Error getting OTP by phone: ${error.message}`);
     throw error;
