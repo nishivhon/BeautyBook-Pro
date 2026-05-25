@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
@@ -35,6 +36,7 @@ export default async (req, res) => {
       .select('id')
       .eq('email', normalizedEmail)
       .eq('verified', true)
+      .order('created_at', { ascending: false })
       .limit(1);
 
     if (otpError) {
@@ -46,10 +48,12 @@ export default async (req, res) => {
       return res.status(403).json({ error: 'Email verification required. Please verify your email first.' });
     }
 
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
     // Update customer password
     const { data: updateData, error: updateError } = await supabase
       .from('customers_accounts')
-      .update({ password: newPassword })
+      .update({ password: hashedPassword })
       .eq('email', normalizedEmail)
       .select('id, email, name');
 

@@ -38,6 +38,7 @@ export default async (req, res) => {
         .select('id, email, phone, verified')
         .eq('email', normalizedEmail)
         .eq('verified', true)
+        .order('created_at', { ascending: false })
         .limit(1);
       
       if (emailError) {
@@ -65,6 +66,7 @@ export default async (req, res) => {
         .select('id, email, phone, verified')
         .eq('phone', formattedPhone)
         .eq('verified', true)
+        .order('created_at', { ascending: false })
         .limit(1);
       
       if (phoneError) {

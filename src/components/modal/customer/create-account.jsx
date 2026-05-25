@@ -345,7 +345,7 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
             type="text"
             value={name}
             onChange={(event) => { setName(event.target.value); setErrors((prev) => ({ ...prev, name: null })); }}
-            placeholder="John Doe"
+            placeholder="Juan Dela Cruz"
             style={{ ...inputStyle, borderColor: errors.name ? "rgba(239, 67, 67, 0.5)" : theme.modalInputBorder }}
             onFocus={(event) => {
               event.currentTarget.style.borderColor = theme.modalInputFocus;
@@ -372,6 +372,9 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
                 aria-label="Email address"
               />
             </div>
+            <span style={{ display: "block", marginTop: "4px", color: theme.modalText, fontSize: "0.74rem" }}>
+              Enter your email address to receive a verification code.
+            </span>
             {errors.email && <span className="login-error-msg">{errors.email}</span>}
           </div>
         ) : (
@@ -383,12 +386,12 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
                 type="tel"
                 value={phone}
                 onChange={(event) => { setPhone(event.target.value); setErrors((prev) => ({ ...prev, phone: null })); }}
-                placeholder="+1 (555) 123-4567"
+                placeholder="09123456789"
                 aria-label="Phone number"
               />
             </div>
             <span style={{ display: "block", marginTop: "4px", color: theme.modalText, fontSize: "0.74rem" }}>
-              Phone is required for this verification mode.
+              Enter your mobile number to receive a verification code.
             </span>
             {errors.phone && <span className="login-error-msg">{errors.phone}</span>}
           </div>
@@ -441,14 +444,10 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
         </div>
 
         <div style={{ marginTop: 4 }}>
-          <label style={labelStyle}>Verify with</label>
           <div style={{ display: "flex", backgroundColor: theme.modalInputSurface, border: `1px solid ${theme.modalInputBorder}`, borderRadius: 10, padding: 4, gap: 4 }}>
             <button type="button" onClick={() => handleModeChange("email")} style={toggleButtonStyle(verificationMode === "email")}>Email</button>
             <button type="button" onClick={() => handleModeChange("phone")} style={toggleButtonStyle(verificationMode === "phone")}>Phone</button>
           </div>
-          <p style={{ margin: "8px 0 0", color: theme.modalText, fontSize: "0.78rem", lineHeight: 1.5 }}>
-            {verificationMode === "email" ? "Email is shown for verification." : "Phone is shown for verification."}
-          </p>
         </div>
 
         {errors.form && (

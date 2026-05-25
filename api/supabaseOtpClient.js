@@ -114,7 +114,7 @@ export const saveOtp = async (data, retryCount = 0) => {
  */
 export const getOtpByEmail = async (email) => {
   try {
-    const url = `${SUPABASE_URL}/rest/v1/customer_otps?email=eq.${encodeURIComponent(email)}`;
+    const url = `${SUPABASE_URL}/rest/v1/customer_otps?email=eq.${encodeURIComponent(email)}&verified=eq.false&order=created_at.desc&limit=1`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -147,7 +147,7 @@ export const getOtpByEmail = async (email) => {
  */
 export const getOtpByPhone = async (phone) => {
   try {
-    const url = `${SUPABASE_URL}/rest/v1/customer_otps?phone=eq.${encodeURIComponent(phone)}`;
+    const url = `${SUPABASE_URL}/rest/v1/customer_otps?phone=eq.${encodeURIComponent(phone)}&verified=eq.false&order=created_at.desc&limit=1`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -236,9 +236,27 @@ export const deleteOtpByPhone = async (phone) => {
 /**
  * Update OTP verified status
  */
-export const updateOtpVerified = async (id) => {
+export const updateOtpVerified = async (criteria) => {
   try {
-    const url = `${SUPABASE_URL}/rest/v1/customer_otps?id=eq.${id}`;
+    const { id, otp, email, phone } = typeof criteria === 'object' && criteria !== null ? criteria : { id: criteria };
+    const params = new URLSearchParams();
+
+    if (id !== undefined && id !== null) {
+      params.set('id', `eq.${id}`);
+    }
+    if (email) {
+      params.set('email', `eq.${email}`);
+    }
+    if (phone) {
+      params.set('phone', `eq.${phone}`);
+    }
+    if (otp) {
+      params.set('otp', `eq.${otp}`);
+    }
+
+    params.set('verified', 'eq.false');
+
+    const url = `${SUPABASE_URL}/rest/v1/customer_otps?${params.toString()}`;
 
     const response = await fetch(url, {
       method: 'PATCH',
@@ -246,6 +264,7 @@ export const updateOtpVerified = async (id) => {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
       },
       body: JSON.stringify({ verified: true }),
     });
@@ -253,6 +272,11 @@ export const updateOtpVerified = async (id) => {
     if (!response.ok) {
       const error = await response.text();
       throw new Error(`HTTP ${response.status}: ${error}`);
+    }
+
+    const updatedRows = await response.json();
+    if (!Array.isArray(updatedRows) || updatedRows.length === 0) {
+      throw new Error('No matching OTP record was updated');
     }
 
     return true;

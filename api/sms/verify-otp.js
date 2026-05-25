@@ -1,4 +1,4 @@
-import { getOtpByPhone, deleteOtpByPhone } from '../supabaseOtpClient.js';
+import { getOtpByPhone, deleteOtpByPhone, updateOtpVerified } from '../supabaseOtpClient.js';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -55,13 +55,14 @@ export default async (req, res) => {
       });
     }
 
-    // OTP verified - mark as verified instead of deleting
-    const { error: updateError } = await supabase
-      .from('customer_otps')
-      .update({ verified: true })
-      .eq('id', storedOtp.id);
-
-    if (updateError) {
+    // OTP verified - mark only the exact unverified row as verified
+    try {
+      await updateOtpVerified({
+        id: storedOtp.id,
+        otp,
+        phone: storedOtp.phone || formattedPhone,
+      });
+    } catch (updateError) {
       console.error(`[SMSOTP] Error marking OTP as verified:`, updateError);
       return res.status(500).json({ error: 'Failed to verify OTP. Please try again.' });
     }

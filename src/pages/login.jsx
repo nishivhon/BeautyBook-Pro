@@ -299,7 +299,7 @@ export const LogIn = () => {
   const handleForgotPassword = async (ev) => {
     ev.preventDefault();
     if (!forgotEmail) {
-      setForgotMessage("Please enter your email address");
+      setForgotMessage("Please enter your email address or phone number");
       return;
     }
 
@@ -329,9 +329,41 @@ export const LogIn = () => {
     }
   };
 
-  const handleForgotOtpVerified = () => {
-    console.log("[Login] OTP verified, proceeding to password reset");
-    setForgotStep(3);
+  const handleForgotOtpVerified = async (otpValue) => {
+    const sanitizedOtp = (otpValue || "").replace(/\s/g, "");
+
+    if (!sanitizedOtp) {
+      setForgotMessage("Please enter the OTP code");
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotMessage("");
+
+    try {
+      const response = await fetch("/api/auth/verify-email-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: forgotEmail,
+          otp: sanitizedOtp,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log("[Login] OTP verified, proceeding to password reset");
+        setForgotStep(3);
+        setForgotMessage("");
+      } else {
+        setForgotMessage(data.error || "Invalid OTP. Please try again.");
+      }
+    } catch (error) {
+      setForgotMessage("An error occurred while verifying the OTP. Please try again.");
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   const handleResetPassword = async (data) => {
@@ -488,7 +520,7 @@ export const LogIn = () => {
               type="text"
               value={email}
               onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: null })); }}
-              placeholder="admin@beautybook.pro or +15551234567"
+              placeholder="you@example.com or 09123456789"
               aria-label="Email or phone number"
             />
           </div>
@@ -613,20 +645,20 @@ export const LogIn = () => {
 
           <div className="login-heading-block">
             <h1 className="login-title">Reset Password</h1>
-            <p className="login-subtitle">Enter your email to receive a verification code.</p>
+            <p className="login-subtitle">Enter your email or phone number to receive a verification code.</p>
           </div>
 
           <form onSubmit={handleForgotPassword} className="form-body">
             <div className="field-box">
-              <span className="field-label">Email Address</span>
+              <span className="field-label">Email or Phone Number</span>
               <div className="login-input-inner">
                 <MailIcon />
                 <input
                   type="email"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="admin@beautybook.pro"
-                  aria-label="Email address"
+                  placeholder="you@example.com or 09123456789"
+                  aria-label="Email address or Phone number"
                 />
               </div>
             </div>
@@ -731,8 +763,6 @@ export const LogIn = () => {
             loading={forgotLoading}
             error={forgotMessage}
             onErrorClear={() => setForgotMessage("")}
-            selectedEmail={forgotEmail}
-            selectedPhone=""
             name="User"
           />
         </div>
