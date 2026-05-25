@@ -114,11 +114,6 @@ export const PasswordResetModal = ({ onClose, onSubmit, email, loading = false, 
           {/* ── Body ── */}
           <div className="otp-body">
 
-            {/* Email display */}
-            <p className="otp-instruction">
-              Reset password for <strong>{email}</strong>
-            </p>
-
             {/* Error message */}
             {error && (
               <div style={{

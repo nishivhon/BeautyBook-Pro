@@ -8,17 +8,19 @@ const supabase = createClient(
 );
 
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+const normalizePhone = (value) => (typeof value === 'string' ? value.replace(/\D/g, '') : '');
 
 export default async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, newPassword, confirmPassword } = req.body;
-  const normalizedEmail = normalizeEmail(email);
+  const { email, phone, newPassword, confirmPassword } = req.body;
+  const normalizedEmail = email ? normalizeEmail(email) : null;
+  const normalizedPhone = phone ? normalizePhone(phone) : null;
 
-  if (!normalizedEmail || !newPassword || !confirmPassword) {
-    return res.status(400).json({ error: 'Email, new password, and confirm password are required' });
+  if ((!normalizedEmail && !normalizedPhone) || !newPassword || !confirmPassword) {
+    return res.status(400).json({ error: 'Email or phone, new password, and confirm password are required' });
   }
 
   if (newPassword !== confirmPassword) {
@@ -31,13 +33,29 @@ export default async (req, res) => {
 
   try {
     // Check if verified OTP exists
-    const { data: otpRecords, error: otpError } = await supabase
+    let otpQuery = supabase
       .from('customer_otps')
       .select('id')
-      .eq('email', normalizedEmail)
       .eq('verified', true)
       .order('created_at', { ascending: false })
       .limit(1);
+
+    if (normalizedEmail) {
+      otpQuery = otpQuery.eq('email', normalizedEmail);
+    } else if (normalizedPhone) {
+      // Format phone for OTP table lookup (stores with +63 prefix)
+      let formattedPhone = normalizedPhone;
+      if (!formattedPhone.startsWith('+')) {
+        if (formattedPhone.startsWith('0')) {
+          formattedPhone = '+63' + formattedPhone.substring(1);
+        } else {
+          formattedPhone = '+63' + formattedPhone;
+        }
+      }
+      otpQuery = otpQuery.eq('phone', formattedPhone);
+    }
+
+    const { data: otpRecords, error: otpError } = await otpQuery;
 
     if (otpError) {
       console.error(`[ResetPassword] OTP lookup error:`, otpError);
@@ -45,17 +63,25 @@ export default async (req, res) => {
     }
 
     if (!otpRecords || otpRecords.length === 0) {
-      return res.status(403).json({ error: 'Email verification required. Please verify your email first.' });
+      const fieldType = normalizedEmail ? 'Email' : 'Phone';
+      return res.status(403).json({ error: `${fieldType} verification required. Please verify your ${fieldType.toLowerCase()} first.` });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    // Update customer password
-    const { data: updateData, error: updateError } = await supabase
+    // Update customer password by email or phone
+    let updateQuery = supabase
       .from('customers_accounts')
       .update({ password: hashedPassword })
-      .eq('email', normalizedEmail)
       .select('id, email, name');
+
+    if (normalizedEmail) {
+      updateQuery = updateQuery.eq('email', normalizedEmail);
+    } else if (normalizedPhone) {
+      updateQuery = updateQuery.eq('phone', normalizedPhone);
+    }
+
+    const { data: updateData, error: updateError } = await updateQuery;
 
     if (updateError) {
       console.error(`[ResetPassword] Password update error:`, updateError);
@@ -67,11 +93,27 @@ export default async (req, res) => {
     }
 
     // Delete the verified OTP record after successful password reset
-    const { error: deleteError } = await supabase
+    let deleteQuery = supabase
       .from('customer_otps')
       .delete()
-      .eq('email', normalizedEmail)
       .eq('verified', true);
+
+    if (normalizedEmail) {
+      deleteQuery = deleteQuery.eq('email', normalizedEmail);
+    } else if (normalizedPhone) {
+      // Format phone for OTP table lookup (stores with +63 prefix)
+      let formattedPhone = normalizedPhone;
+      if (!formattedPhone.startsWith('+')) {
+        if (formattedPhone.startsWith('0')) {
+          formattedPhone = '+63' + formattedPhone.substring(1);
+        } else {
+          formattedPhone = '+63' + formattedPhone;
+        }
+      }
+      deleteQuery = deleteQuery.eq('phone', formattedPhone);
+    }
+
+    const { error: deleteError } = await deleteQuery;
 
     if (deleteError) {
       console.error(`[ResetPassword] OTP deletion error:`, deleteError);

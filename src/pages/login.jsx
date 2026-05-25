@@ -33,6 +33,12 @@ const LockIcon = () => (
   </svg>
 );
 
+const PhoneIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="#988f81" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const EyeOpenIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#988f81" strokeWidth="1.8" />
@@ -154,9 +160,11 @@ export const LogIn = () => {
   const [shakeError, setShakeError] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(3);
   const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotPhone, setForgotPhone] = useState("");
+  const [forgotResetMode, setForgotResetMode] = useState("email"); // email or phone
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
-  const [forgotStep, setForgotStep] = useState(1); // 1: email, 2: OTP, 3: password
+  const [forgotStep, setForgotStep] = useState(1); // 1: form, 2: OTP, 3: password
   const [otpSent, setOtpSent] = useState(false);
   const [activePanel, setActivePanel] = useState("login");
 
@@ -298,8 +306,12 @@ export const LogIn = () => {
 
   const handleForgotPassword = async (ev) => {
     ev.preventDefault();
-    if (!forgotEmail) {
-      setForgotMessage("Please enter your email address or phone number");
+    if (forgotResetMode === "email" && !forgotEmail) {
+      setForgotMessage("Please enter your email address");
+      return;
+    }
+    if (forgotResetMode === "phone" && !forgotPhone) {
+      setForgotMessage("Please enter your phone number");
       return;
     }
 
@@ -307,11 +319,22 @@ export const LogIn = () => {
     setForgotMessage("");
 
     try {
+      let endpoint, payload;
+      
+      if (forgotResetMode === "email") {
+        endpoint = "/api/auth/forgot-password";
+        payload = { email: forgotEmail.trim().toLowerCase() };
+      } else {
+        endpoint = "/api/auth/forgot-password-phone";
+        const phoneDigits = forgotPhone.replace(/\D/g, "");
+        payload = { phone: phoneDigits };
+      }
+
       // Send OTP request to backend
-      const response = await fetch("/api/auth/forgot-password", {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
@@ -341,13 +364,21 @@ export const LogIn = () => {
     setForgotMessage("");
 
     try {
-      const response = await fetch("/api/auth/verify-email-otp", {
+      let endpoint, payload;
+      
+      if (forgotResetMode === "email") {
+        endpoint = "/api/auth/verify-email-otp";
+        payload = { email: forgotEmail, otp: sanitizedOtp };
+      } else {
+        endpoint = "/api/sms/verify-otp";
+        const phoneDigits = forgotPhone.replace(/\D/g, "");
+        payload = { phone: phoneDigits, otp: sanitizedOtp };
+      }
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: forgotEmail,
-          otp: sanitizedOtp,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -371,14 +402,27 @@ export const LogIn = () => {
     setForgotMessage("");
 
     try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      let payload;
+      
+      if (forgotResetMode === "email") {
+        payload = {
           email: forgotEmail,
           newPassword: data.newPassword,
           confirmPassword: data.confirmPassword
-        })
+        };
+      } else {
+        const phoneDigits = forgotPhone.replace(/\D/g, "");
+        payload = {
+          phone: phoneDigits,
+          newPassword: data.newPassword,
+          confirmPassword: data.confirmPassword
+        };
+      }
+      
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
 
       const body = await response.json();
@@ -390,6 +434,8 @@ export const LogIn = () => {
           setForgotStep(1);
           setOtpSent(false);
           setForgotEmail("");
+          setForgotPhone("");
+          setForgotResetMode("email");
           setForgotMessage("");
         }, 2000);
       } else {
@@ -649,19 +695,107 @@ export const LogIn = () => {
           </div>
 
           <form onSubmit={handleForgotPassword} className="form-body">
-            <div className="field-box">
-              <span className="field-label">Email or Phone Number</span>
-              <div className="login-input-inner">
-                <MailIcon />
-                <input
-                  type="email"
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="you@example.com or 09123456789"
-                  aria-label="Email address or Phone number"
-                />
-              </div>
+            {/* Verification Mode Toggle */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotResetMode("email");
+                  setForgotPhone("");
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  backgroundColor: forgotResetMode === "email" ? loginTheme.link : 'transparent',
+                  color: forgotResetMode === "email" ? (isLightMode ? '#0c0a09' : '#000') : loginTheme.link,
+                  border: `1.5px solid ${loginTheme.link}`,
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (forgotResetMode !== "email") {
+                    e.currentTarget.style.backgroundColor = loginTheme.modalButtonHover;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (forgotResetMode !== "email") {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotResetMode("phone");
+                  setForgotEmail("");
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  backgroundColor: forgotResetMode === "phone" ? loginTheme.link : 'transparent',
+                  color: forgotResetMode === "phone" ? (isLightMode ? '#0c0a09' : '#000') : loginTheme.link,
+                  border: `1.5px solid ${loginTheme.link}`,
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (forgotResetMode !== "phone") {
+                    e.currentTarget.style.backgroundColor = loginTheme.modalButtonHover;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (forgotResetMode !== "phone") {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                Phone
+              </button>
             </div>
+
+            {/* Email Input */}
+            {forgotResetMode === "email" && (
+              <div className="field-box">
+                <span className="field-label">Email Address</span>
+                <div className="login-input-inner">
+                  <MailIcon />
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    aria-label="Email address"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Phone Input */}
+            {forgotResetMode === "phone" && (
+              <div className="field-box">
+                <span className="field-label">Phone Number</span>
+                <div className="login-input-inner">
+                  <PhoneIcon />
+                  <input
+                    type="tel"
+                    value={forgotPhone}
+                    onChange={(e) => setForgotPhone(e.target.value.replace(/\D/g, ''))}
+                    placeholder="09123456789"
+                    aria-label="Phone number"
+                  />
+                </div>
+              </div>
+            )}
 
             {forgotMessage && (
               <div style={{
@@ -759,7 +893,9 @@ export const LogIn = () => {
               setForgotMessage("");
             }}
             onVerified={handleForgotOtpVerified}
-            otpType="email"
+            selectedEmail={forgotResetMode === "email" ? forgotEmail : undefined}
+            selectedPhone={forgotResetMode === "phone" ? forgotPhone : undefined}
+            otpType={forgotResetMode === "email" ? "email" : "phone"}
             loading={forgotLoading}
             error={forgotMessage}
             onErrorClear={() => setForgotMessage("")}
