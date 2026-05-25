@@ -6302,6 +6302,14 @@ html[data-theme="light"] .dash-page-title,
   to   { transform: rotate(360deg); }
 }
 
+.login-spinner {
+  animation: spin 1s linear infinite;
+}
+
+.otp-spinner {
+  animation: spin 1s linear infinite;
+}
+
   /* ═══════════════════════════════════════
      ADMIN DASHBOARD — All Styles
   ═══════════════════════════════════════ */

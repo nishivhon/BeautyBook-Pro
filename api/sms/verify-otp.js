@@ -1,4 +1,11 @@
 import { getOtpByPhone, deleteOtpByPhone } from '../supabaseOtpClient.js';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+  process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY,
+  { auth: { persistSession: false } }
+);
 
 export default async (req, res) => {
   if (req.method !== 'POST') {
@@ -45,8 +52,16 @@ export default async (req, res) => {
       });
     }
 
-    // OTP verified - delete it
-    await deleteOtpByPhone(formattedPhone);
+    // OTP verified - mark as verified instead of deleting
+    const { error: updateError } = await supabase
+      .from('customer_otps')
+      .update({ verified: true })
+      .eq('id', storedOtp.id);
+
+    if (updateError) {
+      console.error(`[SMSOTP] Error marking OTP as verified:`, updateError);
+      return res.status(500).json({ error: 'Failed to verify OTP. Please try again.' });
+    }
 
     console.log(`[SMSOTP] Verified successfully for: ${phone}`);
 

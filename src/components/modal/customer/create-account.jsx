@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Otp } from "./otp";
 
 const EyeOpenIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -94,6 +95,7 @@ const defaultTheme = {
 };
 
 export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAccountCreated }) => {
+  const [step, setStep] = useState(1); // 1 = form, 2 = OTP verification
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -104,6 +106,7 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
   const [verificationMode, setVerificationMode] = useState("email");
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
 
   const handleModeChange = (mode) => {
     setVerificationMode(mode);
@@ -124,29 +127,112 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "";
-      const response = await fetch(`${apiUrl}/customers/create`, {
+      
+      // Determine endpoint based on verification mode
+      let endpoint, sendData;
+      if (verificationMode === "email") {
+        endpoint = `${apiUrl}/auth/send-email-otp`;
+        sendData = { email: normalizeEmail(email), full_name: name };
+      } else {
+        endpoint = `${apiUrl}/sms/send-otp`;
+        sendData = { phone: normalizePhone(phone), name };
+      }
+
+      console.log(`[CreateAccount] Sending ${verificationMode} OTP to:`, sendData);
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: normalizeEmail(email),
-          phone: normalizePhone(phone),
-          password,
-        }),
+        body: JSON.stringify(sendData),
       });
 
       const body = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setErrors({ form: body.error || body.details || "Failed to create account. Please try again." });
+        console.error(`[CreateAccount] OTP send failed:`, body);
+        setErrors({ form: body.error || body.details || `Failed to send ${verificationMode} OTP. Please try again.` });
         return;
       }
 
+      console.log(`[CreateAccount] OTP sent successfully`);
+      setOtpSent(true);
+      setStep(2); // Move to OTP verification step
+    } catch (error) {
+      console.error(`[CreateAccount] Error sending OTP:`, error);
+      setErrors({ form: "Failed to send OTP. Please check your connection and try again." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpVerified = async (otp) => {
+    const cleanOtp = otp.replace(/\s/g, "");
+    const apiUrl = import.meta.env.VITE_API_URL || "";
+
+    try {
+      setLoading(true);
+
+      // Determine endpoint based on verification mode
+      let endpoint, verifyData;
+      if (verificationMode === "email") {
+        endpoint = `${apiUrl}/auth/verify-email-otp`;
+        verifyData = { email: normalizeEmail(email), otp: cleanOtp };
+      } else {
+        endpoint = `${apiUrl}/sms/verify-otp`;
+        verifyData = { phone: normalizePhone(phone), otp: cleanOtp };
+      }
+
+      console.log(`[CreateAccount] Verifying ${verificationMode} OTP`);
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(verifyData),
+      });
+
+      const body = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        console.error(`[CreateAccount] OTP verification failed:`, body);
+        setErrors({ form: body.error || "Invalid OTP. Please try again." });
+        return;
+      }
+
+      console.log(`[CreateAccount] OTP verified successfully`);
+
+      // Now create the account
+      const createEndpoint = `${apiUrl}/customers/create`;
+      const createData = {
+        name: name.trim(),
+        email: verificationMode === "email" ? normalizeEmail(email) : "",
+        phone: verificationMode === "phone" ? normalizePhone(phone) : "",
+        password,
+      };
+
+      console.log(`[CreateAccount] Creating account with verified OTP`);
+
+      const createResponse = await fetch(createEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(createData),
+      });
+
+      const createBody = await createResponse.json().catch(() => ({}));
+
+      if (!createResponse.ok) {
+        console.error(`[CreateAccount] Account creation failed:`, createBody);
+        setErrors({ form: createBody.error || createBody.details || "Failed to create account. Please try again." });
+        return;
+      }
+
+      console.log(`[CreateAccount] Account created successfully`);
+
       onAccountCreated?.({
-        ...body.data,
+        ...createBody.data,
         password,
       });
     } catch (error) {
+      console.error(`[CreateAccount] Error in OTP verification or account creation:`, error);
       setErrors({ form: "An error occurred. Please try again." });
     } finally {
       setLoading(false);
@@ -196,6 +282,25 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
     cursor: "pointer",
     transition: "all 0.2s ease",
   });
+
+  // Show OTP modal if step 2
+  if (step === 2 && otpSent) {
+    return (
+      <Otp
+        onClose={() => {
+          setStep(1);
+          setOtpSent(false);
+          setErrors({});
+        }}
+        onVerified={handleOtpVerified}
+        otpType={verificationMode}
+        loading={loading}
+        selectedEmail={verificationMode === "email" ? email : ""}
+        selectedPhone={verificationMode === "phone" ? phone : ""}
+        name={name}
+      />
+    );
+  }
 
   return (
     <section style={panelStyle}>
@@ -389,10 +494,10 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
           {loading ? (
             <>
               <SpinnerIcon />
-              Creating Account...
+              Sending OTP...
             </>
           ) : (
-            "Sign Up"
+            "Send OTP"
           )}
         </button>
 
