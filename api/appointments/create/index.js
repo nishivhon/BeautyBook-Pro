@@ -17,6 +17,31 @@ function convertTo24HourFormat(time12) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
+function getCurrentDateTimeParts() {
+  const now = new Date();
+  const date = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(now);
+
+  const time = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Manila',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(now);
+
+  return { date, time };
+}
+
+function isPastOrCurrentSlot(dateStr, time24) {
+  if (!dateStr || !time24) return false;
+  const { date: currentDate, time: currentTime } = getCurrentDateTimeParts();
+  return dateStr === currentDate && time24 <= currentTime;
+}
+
 export default async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -53,6 +78,12 @@ export default async (req, res) => {
     
     // Convert time to 24-hour format for slot booking
     const time24 = convertTo24HourFormat(time);
+
+    if (isPastOrCurrentSlot(date, time24)) {
+      return res.status(400).json({
+        error: 'Selected time is no longer available. Please choose a later time.'
+      });
+    }
     
     // Use email or phone as contact (whichever is provided, prioritize email)
     const customerContact = email || phone;
@@ -131,7 +162,6 @@ export default async (req, res) => {
     }
 
     // Best-effort: mark the selected coupon as used in the customer account
-    const couponCode = String(req.body?.coupon?.code || req.body?.coupon?.id || '').trim().toUpperCase();
     if (couponCode && (email || phone)) {
       const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
       const normalizedPhone = typeof phone === 'string' ? phone.replace(/\D/g, '') : '';

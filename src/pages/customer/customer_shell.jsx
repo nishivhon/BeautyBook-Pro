@@ -241,6 +241,15 @@ export function CustomerShell({ activeNav, profile, children }) {
     const scheduleInfo = appointmentData?.schedule;
     const servicesData = appointmentData?.services; // Now guaranteed to be array
     const stylistName = appointmentData?.stylist?.name || "Any Available Stylist";
+    const bookingDateISO = scheduleInfo?.dateISO || scheduleInfo?.date?.date || scheduleInfo?.date || null;
+    const bookingDateLabel = bookingDateISO
+      ? new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Manila',
+          month: 'long',
+          day: 'numeric',
+        }).format(new Date(`${bookingDateISO}T00:00:00`))
+      : (scheduleInfo?.date?.date || scheduleInfo?.dateLabel || "Not Selected");
+    const bookingTimeLabel = scheduleInfo?.time || scheduleInfo?.timeLabel || "N/A";
 
     let allServices = servicesData || [];
 
@@ -257,8 +266,8 @@ export function CustomerShell({ activeNav, profile, children }) {
     return {
       rawServices: allServices,
       services: formattedServices,
-      dateTime: `${scheduleInfo?.date?.date || "Not Selected"} | ${scheduleInfo?.time || "N/A"}`,
-      date: scheduleInfo?.dateISO || scheduleInfo?.date?.date || null,
+      dateTime: `${bookingDateLabel} | ${bookingTimeLabel}`,
+      date: bookingDateISO,
       time: scheduleInfo?.time || null,
       name: profile?.name || "",
       email: profile?.emails?.[0] || "",

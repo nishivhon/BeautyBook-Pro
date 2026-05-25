@@ -428,6 +428,27 @@ const ALL_TIME_SLOTS = [
   '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'
 ];
 
+const getManilaDateStr = (date = new Date()) => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Manila',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+}).format(date);
+
+const getCurrentTime24 = () => {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Manila',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(new Date());
+};
+
+const isPastOrCurrentSlotForDate = (dateStr, time24) => {
+  if (!dateStr || !time24) return false;
+  return dateStr === getManilaDateStr() && time24 <= getCurrentTime24();
+};
+
 export const AppointmentForm = ({ onBack, onContinue }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
@@ -470,7 +491,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
     for (let i = 0; i < 5; i++) {
       const currentDate = new Date(today);
       currentDate.setDate(today.getDate() + i);
-      const dateStr = currentDate.toISOString().split('T')[0];
+      const dateStr = getManilaDateStr(currentDate);
       const dayLabel = i === 0 ? "Today" : dayLabels[currentDate.getDay()];
       const dateLabel = `${monthLabels[currentDate.getMonth()]} ${currentDate.getDate()}`;
 
@@ -498,7 +519,9 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
           if (data.success && data.slots && data.slots.length > 0) {
             // Get times that are available (availability = true)
             // Strip seconds from time_24 (convert 10:30:00 to 10:30)
-            const availableTimes = data.slots.map(slot => slot.time_24.split(':').slice(0, 2).join(':'));
+            const availableTimes = data.slots
+              .map(slot => slot.time_24.split(':').slice(0, 2).join(':'))
+              .filter(time => !isPastOrCurrentSlotForDate(selectedDateObj.date, time));
             console.log(`[Phase1] Available times: ${availableTimes.join(', ')}`);
             // Unavailable times are ones NOT in the available list
             const unavailable = ALL_TIME_SLOTS.filter(time => !availableTimes.includes(time));
@@ -806,7 +829,9 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
               </p>
             ) : (
               ALL_TIME_SLOTS.map((time, i) => {
-                const isDisabled = unavailableTimes.includes(time);
+                  const selectedDateObj = selectedDate !== null ? dateOptions[selectedDate] : null;
+                  const isPastOrCurrentToday = selectedDateObj ? isPastOrCurrentSlotForDate(selectedDateObj.date, time) : false;
+                  const isDisabled = unavailableTimes.includes(time) || isPastOrCurrentToday;
                 const handleTimeSelect = () => {
                   if (isDisabled) {
                     // Show shake animation and toast
@@ -827,8 +852,9 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                     }}
                     className={`appt-time-chip${selectedTime === i ? " selected" : ""}${isDisabled ? " disabled" : ""}`}
                     aria-pressed={selectedTime === i}
+                    disabled={isDisabled}
                     style={{
-                      ...(isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "auto" } : { pointerEvents: "auto" }),
+                      ...(isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "none" } : { pointerEvents: "auto" }),
                       ...(shakingTimeSlot === i ? { animation: "shake 0.6s ease-in-out" } : {}),
                     }}
                   >

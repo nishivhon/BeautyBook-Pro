@@ -11,17 +11,28 @@ export default async (req, res) => {
   }
 
   try {
-    const { includeDeleted } = req.query;
+    const { includeDeleted, recentDays, status } = req.query;
 
     // Build query
     let query = supabase
       .from('coupons')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('updated_at', { ascending: false });
 
     // Filter out deleted coupons by default
     if (includeDeleted !== 'true') {
       query = query.eq('is_deleted', false);
+    }
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const parsedRecentDays = Number(recentDays);
+    if (Number.isFinite(parsedRecentDays) && parsedRecentDays > 0) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - parsedRecentDays);
+      query = query.gte('updated_at', cutoff.toISOString());
     }
 
     const { data, error } = await query;
