@@ -524,7 +524,7 @@ const DARK_MODAL_VARS = {
   colorScheme: "dark",
 };
 
-export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = BOOKING }) => {
+export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, booking = BOOKING }) => {
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showReceiptReminder, setShowReceiptReminder] = useState(false);
@@ -569,6 +569,15 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
       setShowReceiptReminder(true);
     }
   };
+
+  // Escape key should trigger exit/receipt reminder
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') handleExitRequest();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isConfirmed, showReceiptReminder]);
 
   const handleBack = () => {
     onBack?.();
@@ -1081,7 +1090,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 10000010,
+            zIndex: 1000,
             cursor: !isConfirmed ? "pointer" : "default",
             backgroundColor: "rgba(0, 0, 0, 0.5)",
             backdropFilter: 'blur(2px)',
@@ -1264,7 +1273,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           onConfirm={() => {
             console.log('[Phase4] Booking cancelled confirmed');
             setShowBackdropConfirm(false);
-            onCancel?.();
+            onClose?.();
           }}
           onCancel={() => {
             console.log('[Phase4] Keep booking clicked');
@@ -1281,13 +1290,13 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           message={`Have you saved your receipt and reference number?\n\nReference No.: ${bookingRef || bookingData?.refNo || "N/A"}\n\nYou'll need this for check-in.`}
           confirmText="Yes, Saved"
           cancelText="Download Again"
-          onConfirm={() => {
+            onConfirm={() => {
             console.log('[Phase4] Receipt saved confirmed');
             setShowReceiptReminder(false);
             setShowSuccessToast(true);
             // Close the modal after a short delay and stay on the current dashboard page
             setTimeout(() => {
-              onCancel?.();
+              onClose?.();
             }, 2000);
           }}
           onCancel={() => {

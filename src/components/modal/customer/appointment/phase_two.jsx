@@ -424,7 +424,7 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenServiceModal, select
   </button>
 );
 
-export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showPromoCode = true, isWalkIn = false }) => {
+export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, onClose, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showPromoCode = true, isWalkIn = false }) => {
   const [selectedServices, setSelectedServices] = useState([]);
   
   // Dynamic modal state
@@ -806,6 +806,17 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
     setShowBackdropConfirm(true);
   };
 
+  // Show confirmation on Escape key
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        handleExitRequest();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   const handleBack = () => {
     onBack?.();
   };
@@ -924,7 +935,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 10000010,
+            zIndex: 1000,
             backgroundColor: "rgba(0,0,0,0.5)",
             backdropFilter: "blur(2px)",
             pointerEvents: 'auto'
@@ -1048,7 +1059,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
         cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowBackdropConfirm(false);
-          onCancel?.();
+          onClose?.();
         }}
         onCancel={() => setShowBackdropConfirm(false)}
       />
@@ -1060,7 +1071,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
         cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowCancelConfirm(false);
-          onCancel?.();
+          onClose?.();
         }}
         onCancel={() => setShowCancelConfirm(false)}
       />

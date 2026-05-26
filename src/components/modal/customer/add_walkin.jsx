@@ -832,7 +832,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
         className={`appt-overlay walkin-force-dark ${BOOKING_MODAL_THEME_CLASS}`}
         style={{
           ...DARK_MODAL_VARS,
-          zIndex: 10000001,
+            zIndex: 1000,
           backgroundColor: "rgba(0,0,0,0.5)",
           backdropFilter: "blur(2px)",
         }}
@@ -893,17 +893,18 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
             {/* Step 2: Service Selection (Using Phase 2 Component) */}
             {step === 2 && (
-              <AppointmentFormPhase2
-                onBack={handleBack}
-                onContinue={handlePhase2Continue}
-                onCancel={handleCancelClick}
-                initialData={null}
-                headerTitle="Add Walk-in"
-                stepLabels={WALK_IN_STEPS}
-                showPromoCode={false}
-                isInline
-                isWalkIn
-              />
+                <AppointmentFormPhase2
+                  onBack={handleBack}
+                  onContinue={handlePhase2Continue}
+                  onCancel={handleCancelClick}
+                  onClose={handleClose}
+                  initialData={null}
+                  headerTitle="Add Walk-in"
+                  stepLabels={WALK_IN_STEPS}
+                  showPromoCode={false}
+                  isInline
+                  isWalkIn
+                />
             )}
 
             {/* Step 3: Stylist Selection (Using Phase 3 Component) */}
@@ -913,6 +914,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                   onBack={handleBack}
                   onContinue={handlePhase3Continue}
                   onCancel={handleCancelClick}
+                  onClose={handleClose}
                   initialData={{ services: phase2Data?.services || [] }}
                   headerTitle="Add Walk-in"
                   stepLabels={WALK_IN_STEPS}

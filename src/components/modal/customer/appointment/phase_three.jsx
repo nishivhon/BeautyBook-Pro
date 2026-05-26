@@ -424,7 +424,7 @@ const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext =
 /* ══════════════════════════════════════════
    MAIN COMPONENT — Phase 3
 ══════════════════════════════════════════ */
-export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showTime = true, showNext = true, isWalkIn = false }) => {
+export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, onClose, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showTime = true, showNext = true, isWalkIn = false }) => {
   const [selected, setSelected] = useState(null);
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
@@ -649,6 +649,15 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
     setShowBackdropConfirm(true);
   };
 
+  // Escape key triggers confirmation
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') handleExitRequest();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   return (
     <>
       {createPortal(
@@ -670,7 +679,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 10000010,
+            zIndex: 1000,
             backgroundColor: "rgba(0,0,0,0.5)",
             backdropFilter: "blur(2px)",
             pointerEvents: 'auto'
@@ -778,7 +787,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
         cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowBackdropConfirm(false);
-          onCancel?.();
+          onClose?.();
         }}
         onCancel={() => setShowBackdropConfirm(false)}
       />
@@ -790,7 +799,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
         cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowConfirmCancel(false);
-          onCancel?.();
+          onClose?.();
         }}
         onCancel={() => setShowConfirmCancel(false)}
       />

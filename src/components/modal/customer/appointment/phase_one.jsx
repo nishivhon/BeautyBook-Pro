@@ -629,7 +629,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              zIndex: 10000010,
+              zIndex: 1000,
               backgroundColor: "rgba(0,0,0,0.5)",
               backdropFilter: "blur(2px)",
               pointerEvents: 'auto'
