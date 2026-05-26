@@ -46,6 +46,25 @@ const SpinnerIcon = () => (
    OTP MODAL COMPONENT
 ══════════════════════════════════════════ */
 export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, otpType = "phone", loading = false, error = null, onErrorClear = null }) => {
+    // Escape key closes modal
+    useEffect(() => {
+      const handleEsc = (e) => {
+        if (e.key === "Escape") {
+          onClose?.();
+        }
+      };
+      window.addEventListener("keydown", handleEsc);
+      return () => window.removeEventListener("keydown", handleEsc);
+    }, [onClose]);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   const INITIAL_TIME = 600; // 10 minutes
   const [timeLeft,   setTimeLeft]   = useState(INITIAL_TIME);
   const [otpValue,   setOtpValue]   = useState("");
@@ -169,7 +188,24 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
             setShowConfirmDialog(true);
           }
         }}
-        style={{ pointerEvents: "auto" }}
+        style={{
+          pointerEvents: "auto",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 2147483647,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          height: "100%",
+          minHeight: "100vh",
+          background: "rgba(0, 0, 0, 0.82)",
+          backdropFilter: "blur(4px)",
+          padding: "16px",
+        }}
       >
 
       {/* modal card */}
@@ -179,12 +215,25 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
         aria-modal="true" 
         aria-labelledby="otp-title"
         onClick={(e) => e.stopPropagation()}
-        style={{ pointerEvents: "auto" }}
+        style={{
+          pointerEvents: "auto",
+          position: "relative",
+          width: "min(520px, calc(100vw - 32px))",
+          maxWidth: "520px",
+          minWidth: "320px",
+          background: "#131212",
+          color: "#f5f1eb",
+          borderRadius: "18px",
+          border: "1px solid rgba(221, 144, 29, 0.22)",
+          boxShadow: "0 32px 90px rgba(0, 0, 0, 0.72)",
+          overflow: "hidden",
+          margin: "0 auto",
+        }}
       >
 
         {/* ── Header ── */}
-        <header className="otp-header">
-          <h1 id="otp-title" className="otp-header-title">
+        <header className="otp-header" style={{ background: '#1d1815', color: '#ffffff' }}>
+          <h1 id="otp-title" className="otp-header-title" style={{ color: '#ffffff' }}>
             {otpType === "email" ? "Email Verification" : "Phone Verification"}
           </h1>
           <button
@@ -197,7 +246,7 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
         </header>
 
         {/* ── Body ── */}
-        <div className="otp-body">
+        <div className="otp-body" style={{ background: '#131212', color: '#f5f1eb' }}>
 
           {/* Instruction */}
           <p className="otp-instruction">

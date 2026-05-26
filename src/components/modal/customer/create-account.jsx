@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ReactDOM from "react-dom";
 import { Otp } from "./otp";
 
 const EyeOpenIcon = () => (
@@ -283,31 +284,33 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
     transition: "all 0.2s ease",
   });
 
-  // Show OTP modal if step 2
-  if (step === 2 && otpSent) {
-    return (
-      <Otp
-        onClose={() => {
-          setStep(1);
-          setOtpSent(false);
-          setErrors({});
-        }}
-        onVerified={handleOtpVerified}
-        otpType={verificationMode}
-        loading={loading}
-        error={errors.form}
-        onErrorClear={() => setErrors({})}
-        selectedEmail={verificationMode === "email" ? email : ""}
-        selectedPhone={verificationMode === "phone" ? phone : ""}
-        name={name}
-      />
-    );
-  }
+  const otpPanel = (step === 2 && otpSent)
+    ? ReactDOM.createPortal(
+        <Otp
+          onClose={() => {
+            setStep(1);
+            setOtpSent(false);
+            setErrors({});
+          }}
+          onVerified={handleOtpVerified}
+          otpType={verificationMode}
+          loading={loading}
+          error={errors.form}
+          onErrorClear={() => setErrors({})}
+          selectedEmail={verificationMode === "email" ? email : ""}
+          selectedPhone={verificationMode === "phone" ? phone : ""}
+          name={name}
+        />,
+        document.body
+      )
+    : null;
 
   return (
-    <section style={panelStyle}>
-      <button
-        type="button"
+    <>
+      {otpPanel}
+      <section style={panelStyle}>
+        <button
+          type="button"
         onClick={onBackToLogin}
         style={{
           alignSelf: "flex-start",
@@ -523,6 +526,7 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
         </button>
       </form>
     </section>
+    </>
   );
 };
 
