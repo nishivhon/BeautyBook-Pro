@@ -140,6 +140,19 @@ const formatDateTime = (value) => {
   return date.toLocaleString();
 };
 
+const isSameLocalDay = (value, referenceDate = new Date()) => {
+  if (!value) return false;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  return (
+    date.getFullYear() === referenceDate.getFullYear() &&
+    date.getMonth() === referenceDate.getMonth() &&
+    date.getDate() === referenceDate.getDate()
+  );
+};
+
 const buildDeviceLabel = (loginData) => {
   if (!loginData) return "No login data recorded";
 
@@ -570,7 +583,8 @@ export default function SuperAdminSecurityDashboard() {
       profile={null}
       notifications={[]}
       useSuperAdminHeaderActions={true}
-      superAdminNoNotificationsMessage="No new security or backup notifications at this time."
+      superAdminNoNotificationsMessage="No failed login attempts were recorded today."
+      superAdminUseDefaultNotificationsWhenEmpty={false}
       storageKey="superadminSidebarExpanded"
       onLogoutConfirm={handleLogout}
       logoutTitle="Log Out?"

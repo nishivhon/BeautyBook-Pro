@@ -8,6 +8,13 @@ import {
   LogoIcon,
   SettingsIcon,
 } from "./dashboardIcons";
+import {
+  fetchSuperAdminNotifications,
+  getSuperAdminNotificationCacheKey,
+  isSuperAdminNotificationCacheFresh,
+  readSuperAdminNotificationCache,
+  writeSuperAdminNotificationCache,
+} from "../../services/superadminNotifications";
 
 const defaultNotifications = [];
 
@@ -41,6 +48,7 @@ export function DashboardShell({
   profileActionPath,
   useSuperAdminHeaderActions = false,
   superAdminNoNotificationsMessage,
+  superAdminUseDefaultNotificationsWhenEmpty = true,
   enableMobileDrawer = false,
   showHeaderPageMeta = true,
   children,
@@ -58,6 +66,7 @@ export function DashboardShell({
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isMobileView, setIsMobileView] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 768 : false));
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [superAdminNotifications, setSuperAdminNotifications] = useState(() => notifications);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -111,6 +120,54 @@ export function DashboardShell({
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
+
+  useEffect(() => {
+    if (!useSuperAdminHeaderActions) {
+      setSuperAdminNotifications(notifications);
+      return;
+    }
+
+    let cancelled = false;
+
+    const hydrateNotifications = async () => {
+      const cached = readSuperAdminNotificationCache();
+
+      if (!cancelled && cached.items.length > 0) {
+        setSuperAdminNotifications(cached.items);
+      }
+
+      if (!isSuperAdminNotificationCacheFresh(cached.fetchedAt)) {
+        try {
+          const freshItems = await fetchSuperAdminNotifications();
+          if (cancelled) return;
+
+          setSuperAdminNotifications(freshItems);
+          writeSuperAdminNotificationCache(freshItems);
+        } catch (error) {
+          console.warn("[DashboardShell] Failed to refresh super admin notifications:", error);
+          if (!cancelled && cached.items.length === 0) {
+            setSuperAdminNotifications([]);
+          }
+        }
+      }
+    };
+
+    hydrateNotifications();
+
+    const handleStorage = (event) => {
+      if (event.key !== getSuperAdminNotificationCacheKey()) return;
+
+      const nextCache = readSuperAdminNotificationCache();
+      setSuperAdminNotifications(nextCache.items);
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [notifications, useSuperAdminHeaderActions]);
 
   const activeItemId = useMemo(() => {
     const currentPath = normalizePath(location.pathname);
@@ -294,9 +351,10 @@ export function DashboardShell({
 
           {useSuperAdminHeaderActions ? (
             <SuperAdminHeaderActions
-              notifications={notifications}
+              notifications={superAdminNotifications}
               roleLabel={roleLabel}
               noNotificationsMessage={superAdminNoNotificationsMessage}
+              useDefaultNotificationsWhenEmpty={false}
             />
           ) : headerExtraActions ? (
             headerExtraActions
