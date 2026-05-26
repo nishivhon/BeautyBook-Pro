@@ -100,6 +100,7 @@ export function CustomerShell({ activeNav, profile, children }) {
   });
 
   const [showAppointment, setShowAppointment] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [appointmentData, setAppointmentData] = useState(null);
   const [appointmentPhase, setAppointmentPhase] = useState(1);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
@@ -197,6 +198,11 @@ export function CustomerShell({ activeNav, profile, children }) {
   };
 
   const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(false);
     logoutOperator();
     navigate("/");
   };
@@ -451,6 +457,7 @@ export function CustomerShell({ activeNav, profile, children }) {
               onBack={() => setAppointmentPhase(1)}
               onContinue={handlePhase2Continue}
               onCancel={handleCancelBooking}
+              onClose={handleCancelBooking}
               initialData={appointmentData || {}}
             />
           ) : appointmentPhase === 3 ? (
@@ -458,6 +465,7 @@ export function CustomerShell({ activeNav, profile, children }) {
               onBack={handleBackPhase3}
               onContinue={handlePhase3Continue}
               onCancel={handleCancelBooking}
+              onClose={handleCancelBooking}
               initialData={{ services: appointmentData?.services || [], schedule: appointmentData?.schedule || {} }}
               showTime={false}
               showNext={false}
@@ -467,6 +475,7 @@ export function CustomerShell({ activeNav, profile, children }) {
               onBack={() => setAppointmentPhase(3)}
               onConfirm={handlePhase4Confirm}
               onCancel={handleCancelBooking}
+              onClose={handleCancelBooking}
               booking={formatBooking()}
             />
           ) : null}
@@ -484,6 +493,16 @@ export function CustomerShell({ activeNav, profile, children }) {
           handleCancelBooking();
         }}
         onCancel={() => setShowBackdropConfirm(false)}
+      />
+
+      <ConfirmationDialog
+        isOpen={showLogoutConfirm}
+        title="Log Out?"
+        message="Are you sure you want to log out of your account?"
+        confirmText="Yes, Log Out"
+        cancelText="Stay Logged In"
+        onConfirm={() => confirmLogout()}
+        onCancel={() => setShowLogoutConfirm(false)}
       />
     </>
   );

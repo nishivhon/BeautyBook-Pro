@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { validateOperatorCredentials, loginOperator } from "../services/operatorAuth";
 import { isMagicLinkValid, getMagicLinkInfo } from "../services/magicLink";
 import { CreateAccountPanel } from "../components/modal/customer/create-account";
 import { Otp } from "../components/modal/customer/otp";
+import ReactDOM from "react-dom";
 import { PasswordResetModal } from "../components/modal/password_reset_modal";
 import { usePublicTheme } from "../theme/publicThemeContext";
 
@@ -175,6 +176,9 @@ export const LogIn = () => {
   const [forgotStep, setForgotStep] = useState(1); // 1: form, 2: OTP, 3: password
   const [otpSent, setOtpSent] = useState(false);
   const [activePanel, setActivePanel] = useState("login");
+  // OTP modal state for account creation
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpProps, setOtpProps] = useState(null);
 
   useEffect(() => {
     // Only check magic link if a token is provided
@@ -467,31 +471,186 @@ export const LogIn = () => {
 
   // Handle account creation from modal
   const handleAccountCreated = (accountData) => {
-    // Store the new customer profile to localStorage
-    const customerProfile = {
-      name: accountData.name,
-      emails: accountData.email ? [accountData.email] : [],
-      phones: accountData.phone ? [accountData.phone] : [],
-      notificationPreference: "email",
-      profilePhoto: "",
-      id: accountData.id,
-    };
-    
-    localStorage.setItem('customerProfileData', JSON.stringify(customerProfile));
-    
-    // Log in the new customer account
-    loginOperator(accountData.email || accountData.phone, accountData.password, 'customer');
-    
-    // Redirect to customer dashboard
-    setTimeout(() => {
-      navigate('/customer/dashboard');
-    }, 1500);
+    // Show OTP modal at center of page after account creation
+    setOtpProps({
+      selectedPhone: accountData.phone || "",
+      selectedEmail: accountData.email || "",
+      name: accountData.name || "",
+      otpType: accountData.email ? "email" : "phone",
+      loading: false,
+      error: null,
+      onVerified: (otpValue) => {
+        // After OTP is verified, proceed with login and redirect
+        // Store the new customer profile to localStorage
+        const customerProfile = {
+          name: accountData.name,
+          emails: accountData.email ? [accountData.email] : [],
+          phones: accountData.phone ? [accountData.phone] : [],
+          notificationPreference: "email",
+          profilePhoto: "",
+          id: accountData.id,
+        };
+        localStorage.setItem('customerProfileData', JSON.stringify(customerProfile));
+        loginOperator(accountData.email || accountData.phone, accountData.password, 'customer');
+        setShowOtpModal(false);
+        setTimeout(() => {
+          navigate('/customer/dashboard');
+        }, 1500);
+      },
+      onClose: () => setShowOtpModal(false),
+    });
+    setShowOtpModal(true);
   };
 
   const headingText = {
     login: { title: 'Welcome Back', subtitle: 'Sign in to your account.' },
     forgot: { title: 'Reset Password', subtitle: 'Enter your email address and we\'ll send you a reset link.' },
   };
+
+/* Inline OTP form used for forgot-password flow (non-portal) */
+const InlineOtp = ({ onClose, onVerified, selectedPhone, selectedEmail, otpType = "phone", loading = false, error = null, onErrorClear = null, name }) => {
+  const INITIAL_TIME = 600;
+  const [timeLeft, setTimeLeft] = useState(INITIAL_TIME);
+  const [otpValue, setOtpValue] = useState("");
+  const [isResending, setIsResending] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const verifiedRef = useRef(false);
+
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const id = setInterval(() => setTimeLeft((t) => t - 1), 1000);
+    return () => clearInterval(id);
+  }, [timeLeft]);
+
+  useEffect(() => {
+    if (!error) verifiedRef.current = false;
+  }, [error]);
+
+  useEffect(() => {
+    const isComplete = otpValue.replace(/\s/g, "").length === 6;
+    const isExpired = timeLeft <= 0;
+    if (isComplete && !isExpired) {
+      const t = setTimeout(() => handleVerify(), 300);
+      return () => clearTimeout(t);
+    }
+  }, [otpValue, timeLeft]);
+
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  };
+
+  const handleResend = useCallback(async () => {
+    setIsResending(true);
+    setOtpValue("");
+    setTimeLeft(INITIAL_TIME);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      let endpoint, resendData;
+      if (otpType === "email") {
+        endpoint = `${apiUrl}/auth/send-email-otp`;
+        resendData = { email: selectedEmail, full_name: name };
+      } else {
+        endpoint = `${apiUrl}/sms/resend-otp`;
+        resendData = { phone: selectedPhone, name };
+      }
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(resendData)
+      });
+      const data = await response.json();
+      if (!response.ok) console.error('Resend failed', data.error);
+    } catch (err) {
+      console.error('Error resending OTP', err);
+    } finally {
+      setTimeout(() => setIsResending(false), 900);
+    }
+  }, [selectedPhone, selectedEmail, name, otpType]);
+
+  const handleCancel = () => {
+    setOtpValue("");
+    setTimeLeft(INITIAL_TIME);
+    verifiedRef.current = false;
+    onClose?.();
+  };
+
+  const handleVerify = () => {
+    if (verifiedRef.current) return;
+    if (otpValue.replace(/\s/g, "").length < 6) return;
+    verifiedRef.current = true;
+    onVerified?.(otpValue);
+  };
+
+  const handleInput = (e) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 6);
+    const formatted = raw.length > 3 ? `${raw.slice(0,3)} ${raw.slice(3)}` : raw;
+    setOtpValue(formatted);
+    if (onErrorClear) onErrorClear();
+  };
+
+  const isExpired = timeLeft <= 0;
+  const isComplete = otpValue.replace(/\s/g, "").length === 6;
+
+  return (
+    <div style={{ width: '100%' }}>
+      <div style={{ background: 'transparent', borderRadius: 6, padding: 0, boxShadow: 'none' }}>
+        <div style={{ marginBottom: 6 }}>
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{otpType === 'email' ? 'Email Verification' : 'Phone Verification'}</h3>
+        </div>
+
+        <p style={{ marginTop: 8, marginBottom: 8, color: 'rgba(12,10,9,0.75)' }}>Enter the 6-digit code sent to your <strong>{otpType === 'email' ? 'email' : 'phone number'}</strong></p>
+
+        <div style={{ marginTop: 6, marginBottom: 8 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'rgba(12,10,9,0.6)', marginBottom: 6 }}>Verification sent to {otpType === 'email' ? selectedEmail : selectedPhone}</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={otpValue}
+            onChange={handleInput}
+            placeholder="--- ---"
+            maxLength={7}
+            autoComplete="one-time-code"
+            aria-label="Enter 6-digit OTP code"
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(12,10,9,0.06)', fontSize: '1.05rem', letterSpacing: '0.12em', background: 'transparent' }}
+          />
+        </div>
+
+        {error && <div style={{ padding: '10px 12px', marginBottom: 12, backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: '#ef4444' }}>{error}</div>}
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 6 }}>
+          <div>
+            <div style={{ fontSize: 12, color: 'rgba(12,10,9,0.6)' }}>Remaining Time</div>
+            <div style={{ fontWeight: 700, color: isExpired ? 'rgba(239,67,67,0.85)' : 'var(--color-amber)' }}>{isExpired ? 'Expired' : formatTime(timeLeft)}</div>
+          </div>
+
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 12, color: 'rgba(12,10,9,0.6)' }}>Didn't get code?</div>
+            <button onClick={handleResend} disabled={isResending || (!isExpired && timeLeft > 270)} style={{ background: 'transparent', border: 'none', color: 'var(--color-amber)', cursor: 'pointer' }}>{isResending ? 'Sending…' : 'Resend'}</button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
+          <button onClick={() => setShowConfirmDialog(true)} disabled={loading} style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(12,10,9,0.06)', background: 'transparent', cursor: 'pointer' }}>Cancel</button>
+          <button onClick={handleVerify} disabled={!isComplete || isExpired || loading} style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: 'none', background: 'var(--color-amber)', fontWeight: 700, cursor: 'pointer' }}>{loading ? 'Verifying…' : 'Verify'}</button>
+        </div>
+      </div>
+
+      {showConfirmDialog && (
+        <ConfirmationDialog
+          isOpen={showConfirmDialog}
+          title="Exit Verification?"
+          message="Are you sure you want to cancel? Your verification will be lost."
+          confirmText="Yes, Exit"
+          cancelText="Continue Verifying"
+          onConfirm={() => { setShowConfirmDialog(false); handleCancel(); }}
+          onCancel={() => setShowConfirmDialog(false)}
+        />
+      )}
+    </div>
+  );
+};
 
   // If magic link is invalid or missing, show unauthorized message
   if (unauthorized) {
@@ -902,23 +1061,21 @@ export const LogIn = () => {
     // Step 2: OTP Verification
     if (forgotStep === 2 && otpSent) {
       return (
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <Otp
-            onClose={() => {
-              setForgotStep(1);
-              setOtpSent(false);
-              setForgotMessage("");
-            }}
-            onVerified={handleForgotOtpVerified}
-            selectedEmail={forgotResetMode === "email" ? forgotEmail : undefined}
-            selectedPhone={forgotResetMode === "phone" ? forgotPhone : undefined}
-            otpType={forgotResetMode === "email" ? "email" : "phone"}
-            loading={forgotLoading}
-            error={forgotMessage}
-            onErrorClear={() => setForgotMessage("")}
-            name="User"
-          />
-        </div>
+        <Otp
+          onClose={() => {
+            setForgotStep(1);
+            setOtpSent(false);
+            setForgotMessage("");
+          }}
+          onVerified={handleForgotOtpVerified}
+          selectedEmail={forgotResetMode === "email" ? forgotEmail : undefined}
+          selectedPhone={forgotResetMode === "phone" ? forgotPhone : undefined}
+          otpType={forgotResetMode === "email" ? "email" : "phone"}
+          loading={forgotLoading}
+          error={forgotMessage}
+          onErrorClear={() => setForgotMessage("")}
+          name="User"
+        />
       );
     }
 
@@ -945,7 +1102,25 @@ export const LogIn = () => {
   };
 
   return (
-    <div className="login-root" style={{ height: '100vh', overflow: 'hidden' }}>
+    <div className="login-root" style={{ height: '100vh', overflow: 'hidden', position: 'relative' }}>
+      {/* OTP Modal Overlay (centered) */}
+      {showOtpModal && otpProps && ReactDOM.createPortal(
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(0,0,0,0.45)',
+        }}>
+          <Otp {...otpProps} />
+        </div>,
+        document.body
+      )}
       <div className="login-left" style={{ overflow: 'hidden' }}>
         <GridTexture />
 

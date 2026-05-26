@@ -680,7 +680,7 @@ export const DynamicServiceModal = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 10000010,
+        zIndex: 1000,
         backgroundColor: "rgba(0,0,0,0.5)",
         backdropFilter: "blur(2px)",
         pointerEvents: 'auto'
@@ -779,6 +779,15 @@ export const DynamicServiceModal = ({
       </div>
     </div>
   );
+
+  // Escape key should trigger exit request
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') handleExitRequest();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <>
