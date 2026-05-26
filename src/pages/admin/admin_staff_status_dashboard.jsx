@@ -819,7 +819,7 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                     gap: "16px 24px"
                   },
                   {
-                    backgroundColor: "rgba(250, 190, 206, 0.3)",
+                    backgroundColor: "rgba(230, 100, 140, 0.35)",
                     borderLeft: "3px solid rgba(213, 210, 211, 0.35)",
                     padding: "16px",
                     marginTop: "8px",
@@ -1218,11 +1218,27 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     const saved = localStorage.getItem('adminSidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
   });
+  const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme'));
 
   // Persist sidebar state to localStorage
   useEffect(() => {
     localStorage.setItem('adminSidebarExpanded', JSON.stringify(sidebarExpanded));
   }, [sidebarExpanded]);
+
+  // Listen for theme changes
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const newTheme = document.documentElement.getAttribute('data-theme');
+      setTheme(newTheme);
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
