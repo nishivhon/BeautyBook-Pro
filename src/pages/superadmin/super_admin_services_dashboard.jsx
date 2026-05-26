@@ -424,7 +424,7 @@ export default function SuperAdminServicesDashboard() {
                       const filteredServices = servicesData.rows.filter(service =>
                         matchesServiceQuery(service, searchQuery)
                       );
-                      const itemsPerPage = 6;
+                      const itemsPerPage = 10;
                       const startIdx = (currentServicePage - 1) * itemsPerPage;
                       const endIdx = startIdx + itemsPerPage;
                       return filteredServices.slice(startIdx, endIdx).map((service, idx) => (
@@ -489,7 +489,7 @@ export default function SuperAdminServicesDashboard() {
                   );
                   if (filteredServices.length === 0) return null;
                   
-                  const itemsPerPage = 6;
+                  const itemsPerPage = 10;
                   const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
                   const startIdx = (currentServicePage - 1) * itemsPerPage + 1;
                   const endIdx = Math.min(currentServicePage * itemsPerPage, filteredServices.length);
