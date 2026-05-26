@@ -8,6 +8,18 @@ const supabase = createClient(
 
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 
+const getClientInfo = (req) => ({
+  user_agent: req.headers['user-agent'] || null,
+  ip_address: String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim() || null,
+  platform: req.headers['sec-ch-ua-platform'] || null,
+  language: req.headers['accept-language'] || null,
+});
+
+const appendFailedLogin = (existingValue, entry) => {
+  const current = Array.isArray(existingValue) ? existingValue : [];
+  return [...current, entry].slice(-20);
+};
+
 export default async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -23,7 +35,7 @@ export default async (req, res) => {
 
     const { data: credential, error } = await supabase
       .from('secured_credentials')
-      .select('id, email, role, password_hash, is_active')
+      .select('id, email, role, password_hash, is_active, failed_logins')
       .eq('email', normalizedEmail)
       .eq('is_active', true)
       .single();
@@ -35,8 +47,37 @@ export default async (req, res) => {
     const passwordMatches = await bcrypt.compare(password, credential.password_hash || '');
 
     if (!passwordMatches) {
+      const clientInfo = getClientInfo(req);
+      const failedLoginEntry = {
+        device: clientInfo,
+        attempted_at: new Date().toISOString(),
+        reason: 'wrong_password',
+      };
+
+      await supabase
+        .from('secured_credentials')
+        .update({
+          failed_logins: appendFailedLogin(credential.failed_logins, failedLoginEntry),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', credential.id);
+
       return res.status(401).json({ error: 'Invalid email or password' });
     }
+
+    const clientInfo = getClientInfo(req);
+    const loginEntry = {
+      ...clientInfo,
+      logged_in_at: new Date().toISOString(),
+    };
+
+    await supabase
+      .from('secured_credentials')
+      .update({
+        last_login: loginEntry,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', credential.id);
 
     return res.status(200).json({
       success: true,
