@@ -432,7 +432,7 @@ export default function SuperAdminClientsDashboard() {
                                 cursor: 'pointer',
                                 width: '18px',
                                 height: '18px',
-                                accentColor: isDarkMode ? '#988f81' : '#f38ba6',
+                                accentColor: isDarkMode ? '#FFD700' : '#e91e63',
                                 appearance: 'auto',
                                 scale: '1.2'
                               }}
