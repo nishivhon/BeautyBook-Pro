@@ -533,6 +533,11 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, bo
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [errorToastMessage, setErrorToastMessage] = useState('');
   const [bookingRef, setBookingRef] = useState(null);
+  // Determine theme (light/dark) at render time to apply readable receipt colors
+  const themeIsLight = typeof document !== 'undefined' && document.documentElement?.getAttribute('data-theme') === 'light';
+  const receiptBg = themeIsLight ? '#FCF9F5' : '#11100d';
+  const receiptText = themeIsLight ? '#1C1816' : '#f5f1eb';
+  const receiptLabel = themeIsLight ? '#6b6b66' : '#988f81';
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -1109,7 +1114,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, bo
             </div>
 
             {/* ΓöÇΓöÇ Confirmation summary card ΓöÇΓöÇ */}
-            <div className="confirm-card">
+            <div className="confirm-card" style={{ background: receiptBg, color: receiptText }}>
               {services.length > 0 && (
                 <>
                   <div className="confirm-service-row">
@@ -1117,13 +1122,13 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, bo
                       <div className="confirm-svc-icon">
                         <ScissorsIcon />
                       </div>
-                      <div className="confirm-svc-text">
-                        <span className="confirm-svc-name">{services[0].title || services[0].name || 'Service'}</span>
-                        <span className="confirm-svc-duration">{totalDuration} mins</span>
+                      <div className="confirm-svc-text" style={{ color: receiptText }}>
+                        <span className="confirm-svc-name" style={{ color: '#ffffff' }}>{services[0].title || services[0].name || 'Service'}</span>
+                        <span className="confirm-svc-duration" style={{ color: receiptLabel }}>{totalDuration} mins</span>
                       </div>
                     </div>
                     <div className="confirm-svc-meta">
-                      <span className="confirm-svc-price">{services[0].price || 'N/A'}</span>
+                      <span className="confirm-svc-price" style={{ color: receiptLabel }}>{services[0].price || 'N/A'}</span>
                     </div>
                   </div>
                   <Divider />
@@ -1133,14 +1138,14 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, bo
               {services.length > 0 && (
                 <>
                   <div className="confirm-services-selected">
-                    <div className="confirm-services-title">
+                      <div className="confirm-services-title" style={{ color: receiptLabel }}>
                       Services Selected
                     </div>
                     <div className="confirm-services-list">
-                      {services.map((service, idx) => (
-                        <div key={idx} className="confirm-services-item">
-                          <div className="confirm-services-name">{service.title || service.name || 'Service'}</div>
-                          <div className="confirm-services-price">{service.price || 'N/A'}</div>
+                          {services.map((service, idx) => (
+                        <div key={idx} className="confirm-services-item" style={{ color: receiptText }}>
+                          <div className="confirm-services-name" style={{ color: '#ffffff' }}>{service.title || service.name || 'Service'}</div>
+                          <div className="confirm-services-price" style={{ color: receiptLabel }}>{service.price || 'N/A'}</div>
                         </div>
                       ))}
                     </div>
@@ -1153,49 +1158,49 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, bo
                 <div className="confirm-detail-row">
                   <PersonIcon />
                   <div className="confirm-detail-text">
-                    <span className="confirm-detail-label">Name</span>
-                    <span className="confirm-detail-value">{bookingData?.name || 'N/A'}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Name</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{bookingData?.name || 'N/A'}</span>
                   </div>
                 </div>
                 <div className="confirm-detail-row">
                   <StylistIcon />
                   <div className="confirm-detail-text">
-                    <span className="confirm-detail-label">Stylist</span>
-                    <span className="confirm-detail-value">{bookingData?.stylist || 'N/A'}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Stylist</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{bookingData?.stylist || 'N/A'}</span>
                   </div>
                 </div>
                 <div className="confirm-detail-row">
                   <EnvelopeIcon />
                   <div className="confirm-detail-text">
-                    <span className="confirm-detail-label">Date &amp; Time</span>
-                    <span className="confirm-detail-value">{displayDateTime || 'Not Selected'}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Date &amp; Time</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{displayDateTime || 'Not Selected'}</span>
                   </div>
                 </div>
                 <div className="confirm-detail-row">
                   <DownloadIcon />
                   <div className="confirm-detail-text">
-                    <span className="confirm-detail-label">Duration</span>
-                    <span className="confirm-detail-value">{totalDuration} mins</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Duration</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{totalDuration} mins</span>
                   </div>
                 </div>
               </div>
 
               <Divider />
 
-              <div className="confirm-details">
+                <div className="confirm-details">
                 <div className="confirm-detail-row">
-                  <span className="confirm-detail-label">Subtotal</span>
-                  <span className="confirm-detail-value">₱{subtotal.toFixed(2)}</span>
+                  <span className="confirm-detail-label" style={{ color: '#988f81' }}>Subtotal</span>
+                  <span className="confirm-detail-value" style={{ color: '#ffffff' }}>₱{subtotal.toFixed(2)}</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="confirm-detail-row">
-                    <span className="confirm-detail-label">Coupon</span>
-                    <span className="confirm-detail-value">- ₱{discountAmount.toFixed(2)}</span>
+                    <span className="confirm-detail-label" style={{ color: '#988f81' }}>Coupon</span>
+                    <span className="confirm-detail-value" style={{ color: '#ffffff' }}>- ₱{discountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="confirm-detail-row" style={{ paddingTop: 10, paddingBottom: 10, marginTop: 8 }}>
-                  <span className="confirm-detail-label" style={{ color: 'var(--color-white)', fontWeight: 700 }}>Total Amount</span>
-                  <span className="confirm-detail-value" style={{ color: 'var(--color-white)', fontWeight: 700 }}>₱{totalAfterDiscount.toFixed(2)}</span>
+                  <span className="confirm-detail-label" style={{ color: '#988f81', fontWeight: 700 }}>Total Amount</span>
+                  <span className="confirm-detail-value" style={{ color: '#ffffff', fontWeight: 700 }}>₱{totalAfterDiscount.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1210,9 +1215,9 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, bo
                   <>
                     <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'normal', wordBreak: 'break-word', overflow: 'visible' }}>You will receive notifications 15 minutes before your appointment</div>
                     {bookingRef ? (
-                      <div className="ref-box" style={{ marginTop: 6 }}>
-                        <div className="ref-label">Reference number</div>
-                        <div className="ref-code">{bookingRef}</div>
+                      <div className="ref-box" style={{ marginTop: 6, background: themeIsLight ? '#f4efe9' : 'rgba(221, 144, 29, 0.08)', border: themeIsLight ? '1px solid #e6dfd6' : undefined }}>
+                        <div className="ref-label" style={{ color: receiptLabel }}>Reference number</div>
+                        <div className="ref-code" style={{ color: themeIsLight ? '#1C1816' : '#dd901d' }}>{bookingRef}</div>
                       </div>
                     ) : null}
                   </>
