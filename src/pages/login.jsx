@@ -87,6 +87,14 @@ const UsersIcon = () => (
   </svg>
 );
 
+const getLoginInputKind = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "empty";
+  if (raw.includes("@")) return "email";
+  if (/^[\d\s()+-]+$/.test(raw)) return "phone";
+  return "unknown";
+};
+
 const ChartIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <path d="M3 3v18h18" stroke="#dd901d" strokeWidth="1.6" strokeLinecap="round" />
@@ -224,13 +232,16 @@ export const LogIn = () => {
 
   const validate = () => {
     const e = {};
+    const inputKind = getLoginInputKind(email);
     if (!email) {
       e.email = "Email or phone number is required";
-    } else if (email.includes("@")) {
+    } else if (inputKind === "email") {
       if (!/\S+@\S+\.\S+/.test(email)) e.email = "Enter a valid email";
-    } else {
+    } else if (inputKind === "phone") {
       const digitsOnly = email.replace(/\D/g, "");
       if (digitsOnly.length < 10) e.email = "Enter a valid phone number";
+    } else {
+      e.email = "Enter a valid email or phone number";
     }
     if (!password)                         e.password = "Password is required";
     return e;
@@ -248,8 +259,8 @@ export const LogIn = () => {
       const apiUrl = import.meta.env.VITE_API_URL || '';
 
       // Determine whether input is email or phone and send appropriate field
-      const isInputEmail = String(email).includes('@');
-      const payload = isInputEmail
+      const inputKind = getLoginInputKind(email);
+      const payload = inputKind === 'email'
         ? { email: String(email).trim().toLowerCase(), password }
         : { phone: String(email).replace(/\D/g, ''), password };
 
@@ -567,7 +578,7 @@ export const LogIn = () => {
         <div className="field-box">
           <span className="field-label">Email or Phone Number</span>
           <div className={`login-input-inner ${errors.email ? "has-error" : ""}`}>
-            {String(email || "").trim() === "" ? <UsersIcon /> : String(email || "").includes('@') ? <MailIcon /> : <PhoneIcon />}
+            {getLoginInputKind(email) === "empty" || getLoginInputKind(email) === "unknown" ? <UsersIcon /> : getLoginInputKind(email) === "email" ? <MailIcon /> : <PhoneIcon />}
             <input
               type="text"
               value={email}

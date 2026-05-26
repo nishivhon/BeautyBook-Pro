@@ -295,11 +295,33 @@ export default function CustomerDashboard() {
 		return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 	};
 
+	const getAppointmentDateTime = (appointment) => {
+		if (!appointment?.date) return null;
+		const timeValue = appointment.time ? convertTo24Hour(String(appointment.time)) : '00:00';
+		const dateTime = new Date(`${appointment.date}T${timeValue}`);
+		return Number.isNaN(dateTime.getTime()) ? null : dateTime;
+	};
+
+	const isFutureAppointment = (appointment) => {
+		const dateTime = getAppointmentDateTime(appointment);
+		return !!dateTime && dateTime > new Date();
+	};
+
 	// Helper function to determine appointment status
 	const getAppointmentStatus = (appointmentDate) => {
 		const today = new Date().toISOString().split('T')[0];
 		return appointmentDate === today ? 'today' : 'upcoming';
 	};
+
+	const visibleUpcomingAppointments = [...(appointments || [])]
+		.filter((appointment) => appointment && !appointment.cancelled && isFutureAppointment(appointment))
+		.sort((left, right) => {
+			const leftTime = getAppointmentDateTime(left)?.getTime() || 0;
+			const rightTime = getAppointmentDateTime(right)?.getTime() || 0;
+			return leftTime - rightTime;
+		});
+
+	const nextUpcomingAppointment = visibleUpcomingAppointments[0] || null;
 
 	// Handle cancel appointment button click
 	const handleInitiateCancelAppointment = (appointment) => {
@@ -415,31 +437,31 @@ export default function CustomerDashboard() {
 		<section className="cdb-section cdb-section-appointments cdb-mounted">
 		<div className="cdb-card">
 			<h2 className="cdb-section-title">Upcoming Appointment</h2>
-			{appointments && appointments.length > 0 && !appointments[0]?.cancelled ? (
+			{nextUpcomingAppointment ? (
 				<div className="confirm-card">
 					<div className="confirm-service-row">
 						<div className="confirm-service-left">
 							<div className="confirm-svc-text">
-								<span className="confirm-svc-name">{String(appointments[0].category || 'General')}</span>
-								<span className="confirm-svc-duration">{String(appointments[0].duration || '1 hour')}</span>
+								<span className="confirm-svc-name">{String(nextUpcomingAppointment.category || 'General')}</span>
+								<span className="confirm-svc-duration">{String(nextUpcomingAppointment.duration || '1 hour')}</span>
 							</div>
 						</div>
 						<div className="confirm-svc-meta">
 							<span className="confirm-svc-datetime">
-								{appointments[0].date ? new Date(appointments[0].date).toLocaleDateString() : 'TBD'} · {String(appointments[0].time || '')}
+								{nextUpcomingAppointment.date ? new Date(nextUpcomingAppointment.date).toLocaleDateString() : 'TBD'} · {String(nextUpcomingAppointment.time || '')}
 							</span>
-							<span className="confirm-svc-price">₱{typeof appointments[0].price === 'number' ? appointments[0].price.toFixed(2) : '0.00'}</span>
+							<span className="confirm-svc-price">₱{typeof nextUpcomingAppointment.price === 'number' ? nextUpcomingAppointment.price.toFixed(2) : '0.00'}</span>
 						</div>
 					</div>
 
-					{appointments[0].service && (
+					{nextUpcomingAppointment.service && (
 						<>
 							<div style={{ marginBottom: 12 }}>
 								<div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-tan)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 8 }}>Services Selected</div>
 								<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 									<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-										<span style={{ color: 'var(--color-light)' }}>{String(appointments[0].service || 'Service')}</span>
-										<span style={{ color: 'var(--color-tan)' }}>₱{typeof appointments[0].price === 'number' ? appointments[0].price.toFixed(2) : '0.00'}</span>
+										<span style={{ color: 'var(--color-light)' }}>{String(nextUpcomingAppointment.service || 'Service')}</span>
+										<span style={{ color: 'var(--color-tan)' }}>₱{typeof nextUpcomingAppointment.price === 'number' ? nextUpcomingAppointment.price.toFixed(2) : '0.00'}</span>
 									</div>
 								</div>
 							</div>
@@ -447,25 +469,25 @@ export default function CustomerDashboard() {
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Name</span>
-										<span className="confirm-detail-value">{String(appointments[0].customerName || '')}</span>
+										<span className="confirm-detail-value">{String(nextUpcomingAppointment.customerName || '')}</span>
 									</div>
 								</div>
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Email</span>
-										<span className="confirm-detail-value">{String(appointments[0].email || '')}</span>
+										<span className="confirm-detail-value">{String(nextUpcomingAppointment.email || '')}</span>
 									</div>
 								</div>
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Phone</span>
-										<span className="confirm-detail-value">{String(appointments[0].phone || '')}</span>
+										<span className="confirm-detail-value">{String(nextUpcomingAppointment.phone || '')}</span>
 									</div>
 								</div>
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Stylist</span>
-										<span className="confirm-detail-value">{String(appointments[0].stylist || 'Unassigned')}</span>
+										<span className="confirm-detail-value">{String(nextUpcomingAppointment.stylist || 'Unassigned')}</span>
 									</div>
 								</div>
 							</div>
@@ -473,30 +495,18 @@ export default function CustomerDashboard() {
 					)}
 
 					<div className="confirm-bottom-row">
-						<div className="confirm-ref-pill">Ref. No.: {String(appointments[0].refNo || appointments[0].id || '')}</div>
+						<div className="confirm-ref-pill">Ref. No.: {String(nextUpcomingAppointment.refNo || nextUpcomingAppointment.id || '')}</div>
 						<div className="confirm-reminder-box">
 							<p className="confirm-reminder-text">You'll receive a reminder 15 minutes before your appointment.</p>
 						</div>
 					</div>
 
 					<div className="cdb-appointment-actions">
-						{canCancelAppointment(appointments[0].date, appointments[0].time) ? (
-							<button className="cdb-btn cdb-btn-secondary" onClick={() => handleInitiateCancelAppointment(appointments[0])} style={{ flex: 1 }}>Cancel Appointment</button>
+						{canCancelAppointment(nextUpcomingAppointment.date, nextUpcomingAppointment.time) ? (
+							<button className="cdb-btn cdb-btn-secondary" onClick={() => handleInitiateCancelAppointment(nextUpcomingAppointment)} style={{ flex: 1 }}>Cancel Appointment</button>
 						) : (
 							<div className="cdb-appointment-cancel-warning">Cannot cancel within 2 hours of appointment</div>
 						)}
-					</div>
-				</div>
-			) : appointments && appointments.length > 0 && appointments[0]?.cancelled ? (
-				<div className="cdb-appointment-receipt cdb-appointment-cancelled">
-					<div className="cdb-appointment-header">
-						<h3 className="cdb-appointment-title">{appointments[0].service}</h3>
-						<span className="cdb-appointment-status" style={{ background: 'rgba(152, 143, 129, 0.15)', color: 'var(--color-tan)' }}>
-							Cancelled
-						</span>
-					</div>
-					<div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--color-tan)', fontSize: '14px' }}>
-						This appointment has been cancelled.
 					</div>
 				</div>
 			) : (
