@@ -4,6 +4,7 @@ import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { AddClientModal } from "../../components/modal/superadmin/add_client_modal";
+import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -119,6 +120,8 @@ export default function SuperAdminClientsDashboard() {
   const [showToast, setShowToast] = useState(false);
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
   const [selectedClients, setSelectedClients] = useState(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeletingClients, setIsDeletingClients] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return document.documentElement.getAttribute('data-theme') !== 'light';
   });
@@ -232,13 +235,26 @@ export default function SuperAdminClientsDashboard() {
       return;
     }
 
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmRemoveClients = async () => {
+    if (selectedClients.size === 0) {
+      setShowDeleteConfirm(false);
+      return;
+    }
+
     try {
-      setLoading(true);
+      setIsDeletingClients(true);
       const clientIds = Array.from(selectedClients);
       
       // Delete each selected client
       for (const clientId of clientIds) {
-        await fetch(`/api/customers/${clientId}`, { method: 'DELETE' });
+        const response = await fetch(`/api/customers/delete?id=${encodeURIComponent(clientId)}`, { method: 'DELETE' });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(body?.error || body?.details || `Failed to delete client ${clientId}`);
+        }
       }
 
       // Remove from UI
@@ -249,12 +265,13 @@ export default function SuperAdminClientsDashboard() {
       }));
       
       setSelectedClients(new Set());
+      setShowDeleteConfirm(false);
       displayToast(`${clientIds.length} client(s) removed successfully`);
     } catch (error) {
       console.error('[Clients] Error removing clients:', error);
       displayToast('Failed to remove clients');
     } finally {
-      setLoading(false);
+      setIsDeletingClients(false);
     }
   };
 
@@ -520,6 +537,22 @@ export default function SuperAdminClientsDashboard() {
         isOpen={isAddClientModalOpen}
         onClose={handleCloseAddClientModal}
         onSave={handleAddNewClient}
+      />
+
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Client Account?"
+        message={selectedClients.size > 1
+          ? `Are you sure you want to delete these ${selectedClients.size} client accounts? This will remove them from the database.`
+          : 'Are you sure you want to delete this client account? This will remove it from the database.'}
+        confirmText={isDeletingClients ? 'Deleting…' : 'Delete'}
+        cancelText="Keep Client"
+        onConfirm={confirmRemoveClients}
+        onCancel={() => {
+          if (!isDeletingClients) {
+            setShowDeleteConfirm(false);
+          }
+        }}
       />
 
       {/* ─── TOAST ─── */}
