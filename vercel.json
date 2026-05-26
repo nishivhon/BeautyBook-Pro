@@ -12,5 +12,8 @@
   }, {
     "path": "/api/cron/sync-daily-staff-stats",
     "schedule": "1 16 * * *"
+  }, {
+    "path": "/api/cron/sync-coupon-statuses",
+    "schedule": "3 16 * * *"
   }]
 }

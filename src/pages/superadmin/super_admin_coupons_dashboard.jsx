@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
+import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
 // Tag icon (Heroicons outline style)
 const TagIcon = ({ color = "currentColor" }) => (
@@ -50,8 +51,10 @@ const FilterIcon = ({ size = 16, color = "currentColor" }) => (
 // Status badge colors
 const statusColors = {
   Active: { bg: "#27ae60", color: "#fff" },
+  Inactive: { bg: "#6b6157", color: "#fff" },
   Expired: { bg: "#7f8c8d", color: "#fff" },
   Upcoming: { bg: "#f39c12", color: "#fff" },
+  Deleted: { bg: "#8a6f5a", color: "#fff" },
   Disabled: { bg: "#e74c3c", color: "#fff" },
 };
 
@@ -62,79 +65,16 @@ function formatDate(dateStr) {
   return d.toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 }
 
-// Mock coupons data
-const mockCoupons = [
-  {
-    id: 1,
-    code: "WELCOME10",
-    valueType: "Percentage",
-    value: 10,
-    description: "10% off for new customers",
-    startDate: "2025-01-01",
-    endDate: "2025-12-31",
-    maxUses: 100,
-    timesUsed: 45,
-    status: "Active",
-    createdAt: "2024-12-01",
-    lastUpdated: "2025-01-01"
-  },
-  {
-    id: 2,
-    code: "SAVE20",
-    valueType: "Percentage",
-    value: 20,
-    description: "20% off on all services",
-    startDate: "2025-03-01",
-    endDate: "2025-06-30",
-    maxUses: 50,
-    timesUsed: 32,
-    status: "Active",
-    createdAt: "2025-02-01",
-    lastUpdated: "2025-03-01"
-  },
-  {
-    id: 3,
-    code: "FREESHIP",
-    valueType: "Fixed Amount",
-    value: 150,
-    description: "₱150 off on total bill",
-    startDate: "2025-02-01",
-    endDate: "2025-05-31",
-    maxUses: 200,
-    timesUsed: 78,
-    status: "Active",
-    createdAt: "2025-01-15",
-    lastUpdated: "2025-02-01"
-  },
-  {
-    id: 4,
-    code: "EXPIRED50",
-    valueType: "Percentage",
-    value: 50,
-    description: "50% off holiday promo",
-    startDate: "2024-12-01",
-    endDate: "2024-12-31",
-    maxUses: 100,
-    timesUsed: 100,
-    status: "Expired",
-    createdAt: "2024-11-01",
-    lastUpdated: "2024-12-01"
-  },
-  {
-    id: 5,
-    code: "COMINGSOON",
-    valueType: "Fixed Amount",
-    value: 200,
-    description: "Summer special discount",
-    startDate: "2025-06-01",
-    endDate: "2025-08-31",
-    maxUses: 150,
-    timesUsed: 0,
-    status: "Upcoming",
-    createdAt: "2025-05-01",
-    lastUpdated: "2025-05-15"
-  }
-];
+const normalizeCouponStatus = (status) => {
+  const value = String(status || "").trim().toLowerCase();
+  if (!value) return "Active";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+};
+
+const normalizeCouponValueType = (valueType) => {
+  const value = String(valueType || "").trim().toLowerCase();
+  return value === "percentage" ? "Percentage" : "Fixed Amount";
+};
 
 // Sidebar nav items (copy from clients dashboard, add Coupons)
 const NAV_ITEMS = [
@@ -147,21 +87,23 @@ const NAV_ITEMS = [
   { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
 ];
 
-const STATUS_TABS = ["All", "Active", "Expired", "Upcoming"];
+const STATUS_TABS = ["All", "Active", "Expired", "Upcoming", "Deleted"];
 
 export default function SuperAdminCouponsDashboard() {
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState("coupons");
   const [isDarkMode, setIsDarkMode] = useState(() => document.documentElement.getAttribute('data-theme') !== 'light');
   const [searchQuery, setSearchQuery] = useState("");
+  const [couponsData, setCouponsData] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [selectedCoupons, setSelectedCoupons] = useState(new Set());
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("Active");
   const [filterOpen, setFilterOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showBulkBar, setShowBulkBar] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const [pendingBulkAction, setPendingBulkAction] = useState(null);
+  const [isBulkMutating, setIsBulkMutating] = useState(false);
 
   useEffect(() => {
     const handleThemeChange = () => {
@@ -172,9 +114,60 @@ export default function SuperAdminCouponsDashboard() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const fetchCoupons = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/coupons/read?includeDeleted=true');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch coupons: ${response.status}`);
+        }
+
+        const body = await response.json();
+        const rows = Array.isArray(body?.data) ? body.data : [];
+
+        setCouponsData(rows.map((coupon) => ({
+          id: coupon.id,
+          code: coupon.code || '',
+          valueType: normalizeCouponValueType(coupon.value_type || coupon.discount_type),
+          value: coupon.value ?? 0,
+          description: coupon.description || '—',
+          startDate: coupon.start_date || coupon.created_at || null,
+          endDate: coupon.end_date || null,
+          maxUses: coupon.max_uses ?? 0,
+          timesUsed: coupon.number_of_uses ?? 0,
+          status: coupon.is_deleted ? 'Deleted' : normalizeCouponStatus(coupon.status),
+          isDeleted: Boolean(coupon.is_deleted),
+          createdAt: coupon.created_at || null,
+          lastUpdated: coupon.updated_at || coupon.created_at || null,
+        })));
+      } catch (error) {
+        console.error('[SuperAdminCoupons] Failed to fetch coupons:', error);
+        setCouponsData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCoupons();
+  }, []);
+
   // Filtered coupons
-  const filteredCoupons = mockCoupons.filter(coupon => {
-    const matchesStatus = statusFilter === "All" || coupon.status === statusFilter;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const filteredCoupons = couponsData.filter(coupon => {
+    const isExpired = coupon.endDate && new Date(coupon.endDate) < todayStart;
+    const isUpcoming = coupon.startDate && new Date(coupon.startDate) > todayStart;
+    const matchesStatus =
+      statusFilter === "All" ||
+      (statusFilter === "Deleted"
+        ? coupon.isDeleted
+        : statusFilter === "Expired"
+          ? isExpired && !coupon.isDeleted
+          : statusFilter === "Upcoming"
+            ? isUpcoming && !coupon.isDeleted
+          : coupon.status === statusFilter);
     const matchesSearch =
       coupon.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       coupon.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -201,31 +194,94 @@ export default function SuperAdminCouponsDashboard() {
     });
   };
 
+  const updateCouponsInState = (updatedCoupons) => {
+    const updatedMap = new Map((updatedCoupons || []).map((coupon) => [coupon.id, coupon]));
+    setCouponsData((prev) => prev.map((coupon) => updatedMap.get(coupon.id) || coupon));
+  };
+
   // Bulk actions
-  const handleBulkDelete = () => setShowDeleteConfirm(true);
-  const handleBulkDeactivate = () => setShowDeactivateConfirm(true);
-  const handleBulkActivate = () => {
-    setShowToast(true);
-    setToastMessage("Selected coupons activated");
-    setTimeout(() => setShowToast(false), 2200);
-    // TODO: Actually update status in real data
-    setSelectedCoupons(new Set());
-  };
-  const confirmBulkDelete = () => {
-    setShowDeleteConfirm(false);
-    setShowToast(true);
-    setToastMessage("Selected coupons deleted");
-    setTimeout(() => setShowToast(false), 2200);
-    // TODO: Actually delete in real data
-    setSelectedCoupons(new Set());
-  };
-  const confirmBulkDeactivate = () => {
-    setShowDeactivateConfirm(false);
-    setShowToast(true);
-    setToastMessage("Selected coupons deactivated");
-    setTimeout(() => setShowToast(false), 2200);
-    // TODO: Actually update status in real data
-    setSelectedCoupons(new Set());
+  const handleBulkDelete = () => setPendingBulkAction("delete");
+  const handleBulkDeactivate = () => setPendingBulkAction("deactivate");
+  const handleBulkActivate = () => setPendingBulkAction("activate");
+
+  const confirmBulkAction = async () => {
+    if (!pendingBulkAction || selectedCoupons.size === 0) {
+      setPendingBulkAction(null);
+      return;
+    }
+
+    setIsBulkMutating(true);
+
+    try {
+      const couponIds = Array.from(selectedCoupons);
+      const apiUrl = import.meta.env.VITE_API_URL || "";
+
+      if (pendingBulkAction === "delete") {
+        for (const couponId of couponIds) {
+          const response = await fetch(`${apiUrl}/coupons/delete`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: couponId }),
+          });
+
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(body?.error || body?.details || `Failed to delete coupon ${couponId}`);
+          }
+        }
+
+        setCouponsData((prev) => prev.filter((coupon) => !selectedCoupons.has(coupon.id)));
+        setToastMessage("Selected coupons deleted");
+      } else {
+        const nextStatus = pendingBulkAction === "activate" ? "active" : "inactive";
+        const updatedCoupons = [];
+
+        for (const couponId of couponIds) {
+          const response = await fetch(`${apiUrl}/coupons/update`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: couponId, status: nextStatus }),
+          });
+
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(body?.error || body?.details || `Failed to update coupon ${couponId}`);
+          }
+
+          if (body?.data) {
+            updatedCoupons.push({
+              id: body.data.id,
+              code: body.data.code || '',
+              valueType: normalizeCouponValueType(body.data.value_type || body.data.discount_type),
+              value: body.data.value ?? 0,
+              description: body.data.description || '—',
+              startDate: body.data.start_date || body.data.created_at || null,
+              endDate: body.data.end_date || null,
+              maxUses: body.data.max_uses ?? 0,
+              timesUsed: body.data.number_of_uses ?? 0,
+              status: normalizeCouponStatus(body.data.status),
+              createdAt: body.data.created_at || null,
+              lastUpdated: body.data.updated_at || body.data.created_at || null,
+            });
+          }
+        }
+
+        updateCouponsInState(updatedCoupons);
+        setToastMessage(pendingBulkAction === "activate" ? "Selected coupons activated" : "Selected coupons deactivated");
+      }
+
+      setSelectedCoupons(new Set());
+      setPendingBulkAction(null);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2200);
+    } catch (error) {
+      console.error('[SuperAdminCoupons] Bulk action failed:', error);
+      setToastMessage(error.message || 'Failed to update coupons');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2600);
+    } finally {
+      setIsBulkMutating(false);
+    }
   };
 
   // Table columns
@@ -266,7 +322,7 @@ export default function SuperAdminCouponsDashboard() {
             <div className="panel-title">
               {searchQuery || statusFilter !== "All"
                 ? `Search Results (${filteredCoupons.length})`
-                : `All Coupons (${mockCoupons.length})`}
+                : `All Coupons (${couponsData.length})`}
             </div>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               {/* Search */}
@@ -274,7 +330,10 @@ export default function SuperAdminCouponsDashboard() {
                 type="text"
                 placeholder="Search by code or description..."
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={e => {
+                  setSearchQuery(e.target.value);
+                  setSelectedCoupons(new Set());
+                }}
                 style={{
                   padding: '8px 12px 8px 32px',
                   borderRadius: 6,
@@ -323,24 +382,13 @@ export default function SuperAdminCouponsDashboard() {
                         type="button"
                         onClick={() => {
                           setStatusFilter(status);
+                          setSelectedCoupons(new Set());
                           setFilterOpen(false);
                         }}
                       >
                         {status}
                       </button>
                     ))}
-                    {statusFilter !== 'All' && (
-                      <button
-                        className="staff-filter-clear"
-                        type="button"
-                        onClick={() => {
-                          setStatusFilter('All');
-                          setFilterOpen(false);
-                        }}
-                      >
-                        Clear Filter
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
@@ -410,6 +458,9 @@ export default function SuperAdminCouponsDashboard() {
 
           {/* Table */}
           <div style={{ marginTop: 0, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            {loading ? (
+              <div className="container-empty-state">Loading coupon data...</div>
+            ) : (
             <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
               <thead>
                 <tr>
@@ -479,6 +530,7 @@ export default function SuperAdminCouponsDashboard() {
                 )}
               </tbody>
             </table>
+            )}
           </div>
         </div>
         {/* Toast */}
@@ -497,38 +549,23 @@ export default function SuperAdminCouponsDashboard() {
             backdropFilter: 'blur(10px)'
           }}>{toastMessage}</div>
         )}
-        {/* Delete confirmation dialog */}
-        {showDeleteConfirm && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 2000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <div style={{ background: '#fff', color: '#1a1a1a', borderRadius: 10, padding: 32, minWidth: 320, boxShadow: '0 4px 32px rgba(0,0,0,0.12)' }}>
-              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 12 }}>Delete Coupons?</div>
-              <div style={{ fontSize: 14, marginBottom: 24 }}>Are you sure you want to delete {selectedCoupons.size} coupon{selectedCoupons.size > 1 ? 's' : ''}? This action cannot be undone.</div>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button onClick={() => setShowDeleteConfirm(false)} style={{ padding: '6px 18px', borderRadius: 6, border: 'none', background: '#bbb', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-                <button onClick={confirmBulkDelete} style={{ padding: '6px 18px', borderRadius: 6, border: 'none', background: '#e74c3c', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Delete</button>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Deactivate confirmation dialog */}
-        {showDeactivateConfirm && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 2000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <div style={{ background: '#fff', color: '#1a1a1a', borderRadius: 10, padding: 32, minWidth: 320, boxShadow: '0 4px 32px rgba(0,0,0,0.12)' }}>
-              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 12 }}>Deactivate Coupons?</div>
-              <div style={{ fontSize: 14, marginBottom: 24 }}>Are you sure you want to deactivate {selectedCoupons.size} coupon{selectedCoupons.size > 1 ? 's' : ''}?</div>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button onClick={() => setShowDeactivateConfirm(false)} style={{ padding: '6px 18px', borderRadius: 6, border: 'none', background: '#bbb', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-                <button onClick={confirmBulkDeactivate} style={{ padding: '6px 18px', borderRadius: 6, border: 'none', background: '#7f8c8d', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Deactivate</button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmationDialog
+          isOpen={Boolean(pendingBulkAction)}
+          title={pendingBulkAction === 'delete' ? 'Delete Coupons?' : pendingBulkAction === 'activate' ? 'Activate Coupons?' : 'Deactivate Coupons?'}
+          message={pendingBulkAction === 'delete'
+            ? `Are you sure you want to delete ${selectedCoupons.size} coupon${selectedCoupons.size > 1 ? 's' : ''}?`
+            : pendingBulkAction === 'activate'
+              ? `Are you sure you want to activate ${selectedCoupons.size} coupon${selectedCoupons.size > 1 ? 's' : ''}?`
+              : `Are you sure you want to deactivate ${selectedCoupons.size} coupon${selectedCoupons.size > 1 ? 's' : ''}?`}
+          confirmText={isBulkMutating ? 'Saving…' : pendingBulkAction === 'delete' ? 'Delete' : pendingBulkAction === 'activate' ? 'Activate' : 'Deactivate'}
+          cancelText="Cancel"
+          onConfirm={confirmBulkAction}
+          onCancel={() => {
+            if (!isBulkMutating) {
+              setPendingBulkAction(null);
+            }
+          }}
+        />
       </div>
     </DashboardShell>
   );
