@@ -130,99 +130,6 @@ export default function CustomerProfilePage() {
     return errors;
   };
 
-  const getContactQueue = (currentProfile, nextProfile) => {
-    const queue = [];
-
-    const currentEmail = normalizeEmail(getPrimaryValue(currentProfile?.emails));
-    const nextEmail = normalizeEmail(getPrimaryValue(nextProfile?.emails));
-    if (nextEmail && nextEmail !== currentEmail) {
-      queue.push({ type: "email", value: nextEmail });
-    }
-
-    const currentPhone = normalizePhone(getPrimaryValue(currentProfile?.phones));
-    const nextPhone = normalizePhone(getPrimaryValue(nextProfile?.phones));
-    if (nextPhone && nextPhone !== currentPhone) {
-      queue.push({ type: "phone", value: nextPhone });
-    }
-
-    return queue;
-  };
-
-  const buildProfilePayload = (sourceProfile) => ({
-    ...sourceProfile,
-    name: String(sourceProfile?.name || "").trim(),
-    emails: toSingleItemArray(getPrimaryValue(sourceProfile?.emails)),
-    phones: toSingleItemArray(getPrimaryValue(sourceProfile?.phones)),
-  });
-
-  const saveProfileToDatabase = async (profileToSave) => {
-    if (!profile?.id) {
-      showToast({ message: "Missing customer account information.", type: "error" });
-      return false;
-    }
-
-    setIsSubmittingProfile(true);
-    try {
-      const cleanedProfile = buildProfilePayload(profileToSave);
-      const apiUrl = import.meta.env.VITE_API_URL || "";
-      const response = await fetch(`${apiUrl}/customers/update`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerId: profile.id,
-          name: cleanedProfile.name,
-          email: normalizeEmail(getPrimaryValue(cleanedProfile.emails)),
-          phone: normalizePhone(getPrimaryValue(cleanedProfile.phones)),
-          histories: cleanedProfile.histories || profile.histories || [],
-          notificationPreference: cleanedProfile.notificationPreference || profile.notificationPreference || "",
-        }),
-      });
-
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(body?.error || body?.details || "Failed to save profile changes.");
-      }
-
-      const updatedCustomer = body.customer || body.data || body;
-      const updatedProfile = {
-        ...profile,
-        ...cleanedProfile,
-        name: updatedCustomer?.name || cleanedProfile.name,
-        emails: updatedCustomer?.email ? [updatedCustomer.email] : cleanedProfile.emails,
-        phones: updatedCustomer?.phone ? [updatedCustomer.phone] : cleanedProfile.phones,
-        histories: updatedCustomer?.histories || cleanedProfile.histories || profile.histories || [],
-        notificationPreference: (function() {
-          const pref = updatedCustomer?.notif_pref || updatedCustomer?.notificationPreference || cleanedProfile.notificationPreference || profile.notificationPreference || "";
-          if (!pref) return "";
-          const val = String(pref).trim();
-          if (val === 'email' || val === 'sms') return val;
-          if (val.includes('@')) return 'email';
-          if (/\d/.test(val)) return 'sms';
-          return "";
-        })(),
-      };
-
-      setProfile(updatedProfile);
-      setTempProfile(updatedProfile);
-      setIsEditingProfile(false);
-      setPendingProfileUpdate(null);
-      setVerificationQueue([]);
-      setShowOtpModal(false);
-      setOtpError("");
-      setOtpTarget("");
-      setOtpRequestField(null);
-      setIsSendingOtp(false);
-      showToast({ message: "Profile details saved successfully!", type: "success" });
-      return true;
-    } catch (error) {
-      console.error("[CustomerProfile] Save failed:", error);
-      showToast({ message: error.message || "Failed to save profile details.", type: "error" });
-      return false;
-    } finally {
-      setIsSubmittingProfile(false);
-    }
-  };
-
   const sendOtpForContact = async (contact) => {
     const apiUrl = import.meta.env.VITE_API_URL || "";
     const endpoint = contact.type === "email"
@@ -253,44 +160,6 @@ export default function CustomerProfilePage() {
       setOtpTarget(contact.value);
       setOtpSessionKey((current) => current + 1);
       setShowOtpModal(true);
-      return true;
-    } catch (error) {
-      console.error("[CustomerProfile] OTP send failed:", error);
-      showToast({ message: error.message || `Failed to send ${contact.type} OTP.`, type: "error" });
-      return false;
-    } finally {
-      setIsSubmittingProfile(false);
-      setIsSendingOtp(false);
-      setOtpRequestField(null);
-    }
-  };
-
-  const handleOtpVerified = async (otp) => {
-    const currentContact = verificationQueue[0];
-    if (!currentContact) return;
-
-    setOtpLoading(true);
-    setOtpError("");
-
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || "";
-      const endpoint = currentContact.type === "email"
-        ? `${apiUrl}/auth/verify-email-otp`
-        : `${apiUrl}/sms/verify-otp`;
-      const payload = currentContact.type === "email"
-        ? { email: currentContact.value, otp: otp.replace(/\s/g, "") }
-        : { phone: currentContact.value, otp: otp.replace(/\s/g, "") };
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(body?.error || "Invalid OTP. Please try again.");
-      }
 
       const remaining = verificationQueue.slice(1);
       setVerificationQueue(remaining);
@@ -400,57 +269,7 @@ export default function CustomerProfilePage() {
   const handleAddEmail = () => setTempProfile((prev) => ({ ...prev, emails: [...prev.emails, ""] }));
   const handleAddPhone = () => setTempProfile((prev) => ({ ...prev, phones: [...prev.phones, ""] }));
 
-  const renderCheckButton = (isDirty, label) => (
-    otpRequestField === label && isSendingOtp ? (
-      <div
-        aria-label={`${label} OTP sending`}
-        style={{
-          position: "absolute",
-          right: 8,
-          top: "50%",
-          transform: "translateY(-50%)",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 38,
-          height: 38,
-          flexShrink: 0,
-          pointerEvents: "none",
-        }}
-      >
-        <FieldSpinner />
-      </div>
-    ) : (
-    <button
-      type="button"
-      onClick={() => handleSaveProfile(label)}
-      disabled={!isDirty || isSubmittingProfile}
-      aria-label={`${label} changed, save updates`}
-      title={isDirty ? `Save ${label} changes` : `${label} unchanged`}
-      style={{
-        position: "absolute",
-        right: 8,
-        top: "50%",
-        transform: "translateY(-50%)",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: 38,
-        height: 38,
-        borderRadius: 10,
-        border: "none",
-        background: "transparent",
-        color: "#22c55e",
-        opacity: isDirty ? 1 : 0.28,
-        cursor: isDirty && !isSubmittingProfile ? "pointer" : "default",
-        flexShrink: 0,
-        transition: "all 0.2s ease",
-      }}
-    >
-      <SaveIcon color="#22c55e" />
-    </button>
-    )
-  );
+  // Removed per-field check icon save buttons. All changes are now saved with the Save Changes button at the bottom.
 
   const profileAvatar = (
     <div className="cdb-avatar cdb-avatar-dashboard cdb-avatar-profile" style={avatarStyle} aria-label={`${profile.name || "Customer"} avatar`}>
@@ -554,48 +373,35 @@ export default function CustomerProfilePage() {
                       </div>
                     </div>
                   </div>
-
                   <div>
                     <label className="cdb-field-label">Name</label>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <input className="cdb-input" style={{ flex: 1 }} value={tempProfile.name} onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })} />
-                      {renderCheckButton(isNameDirty, "name")}
-                    </div>
+                    <input className="cdb-input" style={{ flex: 1 }} value={tempProfile.name} onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })} />
                     {validationErrors.name && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.name}</p>}
                   </div>
-
                   <div>
                     <label className="cdb-field-label">Email</label>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <input
-                        className="cdb-input"
-                        style={{ flex: 1 }}
-                        type="email"
-                        value={getPrimaryValue(tempProfile.emails)}
-                        onChange={(e) => setTempProfile({ ...tempProfile, emails: toSingleItemArray(e.target.value) })}
-                        placeholder="Enter email address"
-                      />
-                      {renderCheckButton(isEmailDirty, "email")}
-                    </div>
+                    <input
+                      className="cdb-input"
+                      style={{ flex: 1 }}
+                      type="email"
+                      value={getPrimaryValue(tempProfile.emails)}
+                      onChange={(e) => setTempProfile({ ...tempProfile, emails: toSingleItemArray(e.target.value) })}
+                      placeholder="Enter email address"
+                    />
                     {validationErrors.contact && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.contact}</p>}
                   </div>
-
                   <div>
                     <label className="cdb-field-label">Phone</label>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <input
-                        className="cdb-input"
-                        style={{ flex: 1 }}
-                        maxLength="11"
-                        value={getPrimaryValue(tempProfile.phones)}
-                        onChange={(e) => setTempProfile({ ...tempProfile, phones: toSingleItemArray(e.target.value) })}
-                        placeholder="Enter phone number"
-                      />
-                      {renderCheckButton(isPhoneDirty, "phone")}
-                    </div>
+                    <input
+                      className="cdb-input"
+                      style={{ flex: 1 }}
+                      maxLength="11"
+                      value={getPrimaryValue(tempProfile.phones)}
+                      onChange={(e) => setTempProfile({ ...tempProfile, phones: toSingleItemArray(e.target.value) })}
+                      placeholder="Enter phone number"
+                    />
                     {validationErrors.contact && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.contact}</p>}
                   </div>
-
                   <div>
                     <label className="cdb-field-label">Notification Preference</label>
                     {getPrimaryValue(tempProfile.emails) && getPrimaryValue(tempProfile.phones) ? (
@@ -622,9 +428,21 @@ export default function CustomerProfilePage() {
                     )}
                     {validationErrors.notificationPreference && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px" }}>{validationErrors.notificationPreference}</p>}
                   </div>
-
-                  <div className="cdb-action-row" style={{ marginTop: 4 }}>
-                    <button className="cdb-btn cdb-btn-danger-outline" onClick={handleCancelEdit}>Cancel</button>
+                  <div className="cdb-action-row" style={{ display: 'flex', flexDirection: 'row', gap: 10, justifyContent: 'flex-end', marginTop: 'auto' }}>
+                    <button
+                      className="cdb-btn cdb-btn-edit"
+                      onClick={handleSaveProfile}
+                      disabled={isSubmittingProfile}
+                    >
+                      {isSubmittingProfile ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      className="cdb-btn cdb-btn-edit"
+                      onClick={handleCancelEdit}
+                      disabled={isSubmittingProfile}
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -638,67 +456,71 @@ export default function CustomerProfilePage() {
                       </div>
                     </div>
                   </div>
-                  <div className="cdb-profile-edit-col" style={{ height: "500px", overflowY: "auto" }}>
-                    <div className="cdb-profile-edit-left">
-                      <div className="cdb-form-section">
-                        <label className="cdb-field-label">Name</label>
-                        <div style={{ position: "relative" }}>
-                          <input className="cdb-input" style={{ width: "100%", paddingRight: "58px" }} value={tempProfile.name} onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })} />
-                          {renderCheckButton(isNameDirty, "name")}
+                  <div className="cdb-profile-edit-col" style={{ height: "500px", display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ flex: 1, overflowY: "auto", paddingRight: "8px" }}>
+                      <div className="cdb-profile-edit-left">
+                        <div className="cdb-form-section">
+                          <label className="cdb-field-label">Name</label>
+                          <input className="cdb-input" style={{ width: "100%" }} value={tempProfile.name} onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })} />
+                          {validationErrors.name && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.name}</p>}
                         </div>
-                        {validationErrors.name && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.name}</p>}
-                      </div>
-
-                      <div className="cdb-form-section">
-                        <label className="cdb-field-label">Email</label>
-                        <div style={{ position: "relative" }}>
+                        <div className="cdb-form-section">
+                          <label className="cdb-field-label">Email</label>
                           <input
                             className="cdb-input"
-                            style={{ width: "100%", paddingRight: "58px" }}
+                            style={{ width: "100%" }}
                             type="email"
                             value={getPrimaryValue(tempProfile.emails)}
                             onChange={(e) => setTempProfile({ ...tempProfile, emails: toSingleItemArray(e.target.value) })}
                             placeholder="Enter email address"
                           />
-                          {renderCheckButton(isEmailDirty, "email")}
+                          {validationErrors.contact && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.contact}</p>}
                         </div>
-                        {validationErrors.contact && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.contact}</p>}
-                      </div>
-
-                      <div className="cdb-form-section">
-                        <label className="cdb-field-label">Phone</label>
-                        <div style={{ position: "relative" }}>
+                        <div className="cdb-form-section">
+                          <label className="cdb-field-label">Phone</label>
                           <input
                             className="cdb-input"
-                            style={{ width: "100%", paddingRight: "58px" }}
+                            style={{ width: "100%" }}
                             maxLength="11"
                             value={getPrimaryValue(tempProfile.phones)}
                             onChange={(e) => setTempProfile({ ...tempProfile, phones: toSingleItemArray(e.target.value) })}
                             placeholder="Enter phone number"
                           />
-                          {renderCheckButton(isPhoneDirty, "phone")}
+                          {validationErrors.contact && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.contact}</p>}
                         </div>
-                        {validationErrors.contact && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.contact}</p>}
+                      </div>
+                      <div className="cdb-profile-edit-right">
+                        <div className="cdb-form-section">
+                          <label className="cdb-field-label">Notification Preference</label>
+                          {getPrimaryValue(tempProfile.emails) && getPrimaryValue(tempProfile.phones) ? (
+                            <div className="cdb-pref-edit-row">
+                              <button type="button" className={`cdb-pref-option ${tempProfile.notificationPreference === "email" ? "active" : ""}`} onClick={() => handleChangeNotifPref("email")}><EmailIcon /> Email</button>
+                              <button type="button" className={`cdb-pref-option ${tempProfile.notificationPreference === "sms" ? "active" : ""}`} onClick={() => handleChangeNotifPref("sms")}><SMSIcon /> SMS</button>
+                            </div>
+                          ) : (
+                            <p className="cdb-muted-text">Add both an email and phone to set notification preferences.</p>
+                          )}
+                          {validationErrors.notificationPreference && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px" }}>{validationErrors.notificationPreference}</p>}
+                        </div>
                       </div>
                     </div>
-
-                    <div className="cdb-profile-edit-right">
-                      <div className="cdb-form-section">
-                        <label className="cdb-field-label">Notification Preference</label>
-                        {getPrimaryValue(tempProfile.emails) && getPrimaryValue(tempProfile.phones) ? (
-                          <div className="cdb-pref-edit-row">
-                            <button type="button" className={`cdb-pref-option ${tempProfile.notificationPreference === "email" ? "active" : ""}`} onClick={() => handleChangeNotifPref("email")}><EmailIcon /> Email</button>
-                            <button type="button" className={`cdb-pref-option ${tempProfile.notificationPreference === "sms" ? "active" : ""}`} onClick={() => handleChangeNotifPref("sms")}><SMSIcon /> SMS</button>
-                          </div>
-                        ) : (
-                          <p className="cdb-muted-text">Add both an email and phone to set notification preferences.</p>
-                        )}
-                        {validationErrors.notificationPreference && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px" }}>{validationErrors.notificationPreference}</p>}
-                      </div>
-
-                      <div className="cdb-action-row">
-                        <button className="cdb-btn cdb-btn-danger-outline" onClick={handleCancelEdit}>Cancel</button>
-                      </div>
+                    <div className="cdb-action-row" style={{ display: 'flex', flexDirection: 'row', gap: 16, justifyContent: 'flex-end', alignItems: 'center', marginTop: 'auto', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                      <button
+                        className="cdb-btn cdb-btn-edit"
+                        style={{ minWidth: 120, padding: '10px 24px', fontWeight: 600, fontSize: 16, borderRadius: 6 }}
+                        onClick={handleSaveProfile}
+                        disabled={isSubmittingProfile}
+                      >
+                        {isSubmittingProfile ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        className="cdb-btn cdb-btn-edit"
+                        style={{ minWidth: 120, padding: '10px 24px', fontWeight: 600, fontSize: 16, borderRadius: 6 }}
+                        onClick={handleCancelEdit}
+                        disabled={isSubmittingProfile}
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
                 </div>
