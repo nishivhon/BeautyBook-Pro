@@ -424,7 +424,7 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenServiceModal, select
   </button>
 );
 
-export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showPromoCode = true }) => {
+export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showPromoCode = true, isWalkIn = false }) => {
   const [selectedServices, setSelectedServices] = useState([]);
   
   // Dynamic modal state
@@ -444,6 +444,19 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [promoCode, setPromoCode] = useState("");
+  const cancelDialogConfig = isWalkIn
+    ? {
+        title: "Cancel Walk-in?",
+        message: "Are you sure you want to cancel? Your walk-in progress will be lost.",
+        confirmText: "Yes, Cancel Walk-in",
+        cancelText: "Keep Going",
+      }
+    : {
+        title: "Cancel Booking?",
+        message: "Are you sure you want to cancel? Your booking progress will be lost.",
+        confirmText: "Yes, Cancel Booking",
+        cancelText: "Keep Booking",
+      };
   const [sortedServices, setSortedServices] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [dynamicCategoryKeywordsMap, setDynamicCategoryKeywordsMap] = useState({});
@@ -785,10 +798,24 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   }, [selectedServices]);
 
   const handleExitRequest = () => {
+    if (isWalkIn) {
+      onCancel?.();
+      return;
+    }
+
     setShowBackdropConfirm(true);
   };
 
   const handleBack = () => {
+    onBack?.();
+  };
+
+  const handleCancelClick = () => {
+    if (isWalkIn) {
+      onCancel?.();
+      return;
+    }
+
     setShowCancelConfirm(true);
   };
 
@@ -884,7 +911,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
           data-theme="dark"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setShowBackdropConfirm(true);
+              handleExitRequest();
             }
           }}
           style={{
@@ -969,7 +996,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
 
           <div style={{ display: "flex", gap: "12px", width: "100%" }}>
             <button
-              onClick={() => setShowCancelConfirm(true)}
+              onClick={handleCancelClick}
               style={{
                 flex: 1,
                 padding: "12px 16px",
@@ -1015,10 +1042,10 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
       {/* Cancel Confirmation Dialogs */}
       <ConfirmationDialog
         isOpen={showBackdropConfirm}
-        title="Cancel Booking?"
-        message="Are you sure you want to cancel? Your booking progress will be lost."
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
+        title={cancelDialogConfig.title}
+        message={cancelDialogConfig.message}
+        confirmText={cancelDialogConfig.confirmText}
+        cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowBackdropConfirm(false);
           onCancel?.();
@@ -1027,10 +1054,10 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
       />
       <ConfirmationDialog
         isOpen={showCancelConfirm}
-        title="Cancel Booking?"
-        message="Are you sure you want to cancel? Your booking progress will be lost."
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
+        title={cancelDialogConfig.title}
+        message={cancelDialogConfig.message}
+        confirmText={cancelDialogConfig.confirmText}
+        cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowCancelConfirm(false);
           onCancel?.();

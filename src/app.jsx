@@ -18,6 +18,7 @@ import SuperAdminServicesDashboard from './pages/superadmin/super_admin_services
 import SuperAdminLogsDashboard from './pages/superadmin/super_admin_logs_dashboard'
 import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security_dashboard'
 import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage_edit_dashboard'
+import SuperAdminCouponsDashboard from './pages/superadmin/super_admin_coupons_dashboard'
 import CustomerDashboard from './pages/customer/customer_dashboard'
 import CustomerProfilePage from './pages/customer/customer_profile'
 import CustomerHistoryPage from './pages/customer/customer_history'
@@ -165,6 +166,14 @@ function App() {
             element={
               <ProtectedRoute requiredRole="super admin">
                 <SuperAdminLandingPageEditor />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/superadmin/coupons"
+            element={
+              <ProtectedRoute requiredRole="super admin">
+                <SuperAdminCouponsDashboard />
               </ProtectedRoute>
             }
           />

@@ -45,6 +45,13 @@ const ShieldIcon = ({ color = "currentColor" }) => (
   </svg>
 );
 
+const TagIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.293 10.293l-7.586-7.586A1 1 0 008.586 2H4a2 2 0 00-2 2v4.586a1 1 0 00.293.707l7.586 7.586a2 2 0 002.828 0l4.586-4.586a2 2 0 000-2.828z" stroke={color} strokeWidth="1.5"/>
+    <circle cx="6.5" cy="6.5" r="1.5" fill={color} />
+  </svg>
+);
+
 const GlobeIcon = ({ color = "currentColor" }) => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="9" cy="9" r="7" stroke={color} strokeWidth="1.6"/>
@@ -147,8 +154,9 @@ const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
   { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
   { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
-  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
+  { id: "coupons", label: "Coupons", icon: DatabaseIcon, path: "/superadmin/coupons" },
   { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
+  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
   { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
   // { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
 ];
@@ -352,8 +360,8 @@ export default function SuperAdminSecurityDashboard() {
           <div className="dashboard-panel superadmin-fixed-panel">
             {/* Panel header */}
             <div className="panel-header">
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", color: "#0c0a09" }}>
-                <ShieldIcon color="#0c0a09" /> Security Overview
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px" }}>
+                <ShieldIcon color="currentColor" /> Security Overview
               </div>
               <button onClick={handleDownloadLog} className="btn-ghost">
                 ↓ Download Log
@@ -392,10 +400,10 @@ export default function SuperAdminSecurityDashboard() {
 
           {/* Security Settings Panel */}
           <div className="dashboard-panel">
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", color: "#0c0a09", marginBottom: "16px" }}>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <rect x="2" y="8" width="14" height="9" rx="2" stroke="#0c0a09" strokeWidth="1.3"/>
-                <path d="M5 8V6a4 4 0 018 0v2" stroke="#0c0a09" strokeWidth="1.3" strokeLinecap="round"/>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", marginBottom: "16px" }}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ color: "currentColor" }}>
+                <rect x="2" y="8" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.3"/>
+                <path d="M5 8V6a4 4 0 018 0v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
               </svg>
               Security Settings
             </div>

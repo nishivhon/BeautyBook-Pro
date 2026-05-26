@@ -432,6 +432,20 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const cancelDialogConfig = isWalkIn
+    ? {
+        title: "Cancel Walk-in?",
+        message: "Are you sure you want to cancel? Your walk-in progress will be lost.",
+        confirmText: "Yes, Cancel Walk-in",
+        cancelText: "Keep Going",
+      }
+    : {
+        title: "Cancel Booking?",
+        message: "Are you sure you want to cancel? Your booking progress will be lost.",
+        confirmText: "Yes, Cancel Booking",
+        cancelText: "Keep Booking",
+      };
+
   useEffect(() => {
     if (typeof document === 'undefined') return;
     if (document.getElementById(BOOKING_MODAL_THEME_STYLE_ID)) return;
@@ -618,10 +632,20 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
   };
 
   const handleCancelClick = () => {
+    if (isWalkIn) {
+      onCancel?.();
+      return;
+    }
+
     setShowConfirmCancel(true);
   };
 
   const handleExitRequest = () => {
+    if (isWalkIn) {
+      onCancel?.();
+      return;
+    }
+
     setShowBackdropConfirm(true);
   };
 
@@ -748,10 +772,10 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
       {/* Cancel Confirmation Dialogs */}
       <ConfirmationDialog
         isOpen={showBackdropConfirm}
-        title="Cancel Booking?"
-        message="Are you sure you want to cancel? Your booking progress will be lost."
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
+        title={cancelDialogConfig.title}
+        message={cancelDialogConfig.message}
+        confirmText={cancelDialogConfig.confirmText}
+        cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowBackdropConfirm(false);
           onCancel?.();
@@ -760,10 +784,10 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
       />
       <ConfirmationDialog
         isOpen={showConfirmCancel}
-        title="Cancel Booking?"
-        message="Are you sure you want to cancel? Your booking progress will be lost."
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
+        title={cancelDialogConfig.title}
+        message={cancelDialogConfig.message}
+        confirmText={cancelDialogConfig.confirmText}
+        cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowConfirmCancel(false);
           onCancel?.();
