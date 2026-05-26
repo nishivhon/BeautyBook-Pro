@@ -404,7 +404,7 @@ export function CustomerShell({ activeNav, profile, children }) {
               {sidebarExpanded && <span>Book Appointment</span>}
             </button>
           )}
-          onLogoutConfirm={handleLogout}
+          onLogoutConfirm={confirmLogout}
           logoutTitle="Log Out?"
           logoutMessage="Are you sure you want to log out of your customer dashboard?"
           logoutConfirmText="Yes, Log Out"
