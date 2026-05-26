@@ -7,6 +7,10 @@ const supabase = createClient(
 );
 
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+const normalizeRole = (value) => {
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase().replace(/[-_]+/g, ' ');
+};
 
 export default async (req, res) => {
   if (req.method !== 'POST') {
@@ -14,11 +18,12 @@ export default async (req, res) => {
   }
 
   try {
-    const { email, currentPassword, newPassword, confirmPassword } = req.body;
+    const { email, role, currentPassword, newPassword, confirmPassword } = req.body;
     const normalizedEmail = normalizeEmail(email);
+    const normalizedRole = normalizeRole(role);
 
-    if (!normalizedEmail || !currentPassword || !newPassword || !confirmPassword) {
-      return res.status(400).json({ error: 'Email, current password, new password, and confirm password are required' });
+    if ((!normalizedEmail && !normalizedRole) || !currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: 'Email or role, current password, new password, and confirm password are required' });
     }
 
     if (newPassword !== confirmPassword) {
@@ -29,11 +34,17 @@ export default async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters long' });
     }
 
-    const { data: credential, error } = await supabase
+    let credentialQuery = supabase
       .from('secured_credentials')
-      .select('id, email, password_hash')
-      .eq('email', normalizedEmail)
-      .maybeSingle();
+      .select('id, email, password_hash');
+
+    if (normalizedEmail) {
+      credentialQuery = credentialQuery.eq('email', normalizedEmail);
+    } else {
+      credentialQuery = credentialQuery.eq('role', normalizedRole);
+    }
+
+    const { data: credential, error } = await credentialQuery.maybeSingle();
 
     if (error || !credential) {
       return res.status(404).json({ error: 'Credential not found' });

@@ -6,6 +6,10 @@ const supabase = createClient(
 );
 
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+const normalizeRole = (value) => {
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase().replace(/[-_]+/g, ' ');
+};
 
 export default async (req, res) => {
   if (req.method !== 'GET') {
@@ -14,16 +18,23 @@ export default async (req, res) => {
 
   try {
     const email = normalizeEmail(req.query.email);
+    const role = normalizeRole(req.query.role);
 
-    if (!email) {
-      return res.status(400).json({ error: 'email query parameter is required' });
+    if (!email && !role) {
+      return res.status(400).json({ error: 'email or role query parameter is required' });
     }
 
-    const { data: credential, error } = await supabase
+    let query = supabase
       .from('secured_credentials')
-      .select('id, email, role, last_password_change_at, failed_logins, last_login, updated_at')
-      .eq('email', email)
-      .single();
+      .select('id, email, role, last_password_change_at, failed_logins, last_login, updated_at');
+
+    if (email) {
+      query = query.eq('email', email);
+    } else {
+      query = query.eq('role', role);
+    }
+
+    const { data: credential, error } = await query.single();
 
     if (error || !credential) {
       return res.status(404).json({ error: 'Credential not found' });

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
-import { getOperatorSession } from "../../services/operatorAuth";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 
 
@@ -129,6 +128,11 @@ const initialSecurityItems = [
   { label: "System Maintenance", status: "Disabled", enabled: false, Icon: SystemMaintenanceIcon },
 ];
 
+const SECURITY_PANELS = [
+  { panelKey: 'super-admin', role: 'super admin', title: 'Super Admin Security Settings' },
+  { panelKey: 'admin', role: 'admin', title: 'Admin Security Settngs' },
+];
+
 const formatDateTime = (value) => {
   if (!value) return "Not available";
   const date = new Date(value);
@@ -201,11 +205,21 @@ export default function SuperAdminSecurityDashboard() {
   const [whitelistInput, setWhitelistInput] = useState("");
   const [showWarningBanner, setShowWarningBanner] = useState(false);
   const [showCountdownBanner, setShowCountdownBanner] = useState(false);
-  const [securitySummary, setSecuritySummary] = useState({
-    lastLogin: null,
-    failedLogins: [],
-    failedLoginCount: 0,
-    lastPasswordChangeAt: null,
+  const [securitySummaries, setSecuritySummaries] = useState({
+    'super admin': {
+      lastLogin: null,
+      failedLogins: [],
+      failedLoginCount: 0,
+      lastPasswordChangeAt: null,
+      email: '',
+    },
+    admin: {
+      lastLogin: null,
+      failedLogins: [],
+      failedLoginCount: 0,
+      lastPasswordChangeAt: null,
+      email: '',
+    },
   });
   const [securitySummaryLoading, setSecuritySummaryLoading] = useState(false);
   const [expandedSecurityRow, setExpandedSecurityRow] = useState(null);
@@ -234,30 +248,32 @@ export default function SuperAdminSecurityDashboard() {
 
   useEffect(() => {
     const fetchSecuritySummary = async () => {
-      const session = getOperatorSession();
-      const email = session?.email;
-
-      if (!email) return;
-
       setSecuritySummaryLoading(true);
       try {
         const apiBase = typeof window !== 'undefined' && window.location.hostname === 'localhost'
           ? 'http://localhost:3000/api'
           : '/api';
 
-        const response = await fetch(`${apiBase}/operators/security-summary?email=${encodeURIComponent(email)}`);
-        const result = await response.json().catch(() => ({}));
+        const summaries = await Promise.all(
+          SECURITY_PANELS.map(async ({ role }) => {
+            const response = await fetch(`${apiBase}/operators/security-summary?role=${encodeURIComponent(role)}`);
+            const result = await response.json().catch(() => ({}));
 
-        if (!response.ok) {
-          throw new Error(result.error || 'Failed to load security summary');
-        }
+            if (!response.ok) {
+              throw new Error(result.error || `Failed to load security summary for ${role}`);
+            }
 
-        setSecuritySummary({
-          lastLogin: result.data?.last_login || null,
-          failedLogins: Array.isArray(result.data?.failed_logins) ? result.data.failed_logins : [],
-          failedLoginCount: result.data?.failed_login_count || 0,
-          lastPasswordChangeAt: result.data?.last_password_change_at || null,
-        });
+            return [role, {
+              lastLogin: result.data?.last_login || null,
+              failedLogins: Array.isArray(result.data?.failed_logins) ? result.data.failed_logins : [],
+              failedLoginCount: result.data?.failed_login_count || 0,
+              lastPasswordChangeAt: result.data?.last_password_change_at || null,
+              email: result.data?.email || '',
+            }];
+          })
+        );
+
+        setSecuritySummaries(Object.fromEntries(summaries));
       } catch (error) {
         console.error('[SecuritySummary] Error:', error.message);
       } finally {
@@ -312,14 +328,14 @@ export default function SuperAdminSecurityDashboard() {
     setPasswordChangeMessage('');
   };
 
-  const handleChangePasswordSubmit = async (e) => {
+  const handleChangePasswordSubmit = async (e, targetRole) => {
     e.preventDefault();
 
-    const session = getOperatorSession();
-    const email = session?.email;
+    const summary = securitySummaries[targetRole];
+    const email = summary?.email;
 
     if (!email) {
-      setPasswordChangeError('No operator session found. Please log in again.');
+      setPasswordChangeError(`No credential row found for ${targetRole}.`);
       return;
     }
 
@@ -359,9 +375,12 @@ export default function SuperAdminSecurityDashboard() {
         throw new Error(result.error || 'Failed to change password');
       }
 
-      setSecuritySummary(prev => ({
+      setSecuritySummaries(prev => ({
         ...prev,
-        lastPasswordChangeAt: result.data?.last_password_change_at || new Date().toISOString(),
+        [targetRole]: {
+          ...(prev[targetRole] || {}),
+          lastPasswordChangeAt: result.data?.last_password_change_at || new Date().toISOString(),
+        },
       }));
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setPasswordChangeMessage('Password updated successfully.');
@@ -478,8 +497,8 @@ export default function SuperAdminSecurityDashboard() {
     );
   };
 
-  const renderChangePasswordDetails = () => (
-    <form onSubmit={handleChangePasswordSubmit} style={{ display: 'grid', gap: '12px' }}>
+  const renderChangePasswordDetails = (targetRole) => (
+    <form onSubmit={(event) => handleChangePasswordSubmit(event, targetRole)} style={{ display: 'grid', gap: '12px' }}>
       <div style={{ display: 'grid', gap: '6px' }}>
         <label style={{ color: '#D4C5B9', fontSize: '12px', fontWeight: 600 }}>Current Password</label>
         <input
@@ -584,114 +603,71 @@ export default function SuperAdminSecurityDashboard() {
       {/* ─── SIDEBAR & HEADER HANDLED BY DASHBOARDSHELL ─── */}
 
       <div className="superadmin-page-content" style={{ paddingTop: '20px' }}>
-          <div className="dashboard-panel" style={{ marginBottom: '16px' }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", marginBottom: "16px" }}>
-              <ShieldIcon color="currentColor" />
-              Super Admin Security Settings
-            </div>
+        {SECURITY_PANELS.map(({ panelKey, role, title }) => {
+          const summary = securitySummaries[role] || {
+            lastLogin: null,
+            failedLogins: [],
+            failedLoginCount: 0,
+            lastPasswordChangeAt: null,
+          };
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
-              {renderSecurityRow(
-                'super-admin',
-                'changePassword',
-                'Change Password',
-                securitySummaryLoading ? 'Loading password change data…' : 'Tap to view password age and reminder details',
-                securitySummaryLoading ? 'Loading…' : formatDateTime(securitySummary.lastPasswordChangeAt),
-                <div>
-                  <div style={{ marginBottom: '10px' }}><strong>Last changed:</strong> {formatDateTime(securitySummary.lastPasswordChangeAt)}</div>
-                  {renderChangePasswordDetails()}
-                </div>
-              )}
-              {renderSecurityRow(
-                'super-admin',
-                'lastLogin',
-                'Last Login',
-                buildDeviceLabel(securitySummary.lastLogin),
-                securitySummaryLoading ? 'Loading…' : formatDateTime(securitySummary.lastLogin?.logged_in_at),
-                <div>
-                  <div><strong>Logged in at:</strong> {formatDateTime(securitySummary.lastLogin?.logged_in_at)}</div>
-                  <div><strong>Device:</strong> {formatDeviceSummary(securitySummary.lastLogin)}</div>
-                </div>
-              )}
-              {renderSecurityRow(
-                'super-admin',
-                'failedLogins',
-                'Failed Login Attempts',
-                buildFailedLoginLabel(securitySummary.failedLogins),
-                securitySummaryLoading ? 'Loading…' : `${securitySummary.failedLoginCount} attempts`,
-                <div>
-                  <div style={{ marginBottom: '8px' }}><strong>Total attempts:</strong> {securitySummary.failedLoginCount}</div>
-                  {getRecentFailedLoginEntries(securitySummary.failedLogins).length > 0 ? (
-                    <div style={{ display: 'grid', gap: '10px' }}>
-                      {getRecentFailedLoginEntries(securitySummary.failedLogins).map((attempt, index) => (
-                        <div key={`${attempt.attempted_at || index}`} style={{ padding: '10px 12px', borderRadius: '8px', background: 'rgba(35, 29, 26, 0.55)', border: '1px solid rgba(152, 143, 129, 0.12)' }}>
-                          <div><strong>Time:</strong> {formatDateTime(attempt.attempted_at)}</div>
-                          <div><strong>Device:</strong> {formatDeviceSummary(attempt.device)}</div>
-                          <div><strong>Reason:</strong> {attempt.reason || 'failed_auth'}</div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div>No failed attempts to display.</div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+          return (
+            <div key={panelKey} className="dashboard-panel" style={{ marginBottom: '16px' }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", marginBottom: panelKey === 'super-admin' ? '16px' : '10px' }}>
+                <ShieldIcon color="currentColor" />
+                {title}
+              </div>
 
-          <div className="dashboard-panel" style={{ marginBottom: '16px' }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", marginBottom: "10px" }}>
-              <ShieldIcon color="currentColor" />
-              Admin Security Settngs
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
+                {renderSecurityRow(
+                  panelKey,
+                  'changePassword',
+                  'Change Password',
+                  securitySummaryLoading ? 'Loading password change data…' : 'Tap to view password age and reminder details',
+                  securitySummaryLoading ? 'Loading…' : formatDateTime(summary.lastPasswordChangeAt),
+                  <div>
+                    <div style={{ marginBottom: '10px' }}><strong>Last changed:</strong> {formatDateTime(summary.lastPasswordChangeAt)}</div>
+                    {renderChangePasswordDetails(role)}
+                  </div>
+                )}
+                {renderSecurityRow(
+                  panelKey,
+                  'lastLogin',
+                  'Last Login',
+                  buildDeviceLabel(summary.lastLogin),
+                  securitySummaryLoading ? 'Loading…' : formatDateTime(summary.lastLogin?.logged_in_at),
+                  <div>
+                    <div><strong>Logged in at:</strong> {formatDateTime(summary.lastLogin?.logged_in_at)}</div>
+                    <div><strong>Device:</strong> {formatDeviceSummary(summary.lastLogin)}</div>
+                  </div>
+                )}
+                {renderSecurityRow(
+                  panelKey,
+                  'failedLogins',
+                  'Failed Login Attempts',
+                  buildFailedLoginLabel(summary.failedLogins),
+                  securitySummaryLoading ? 'Loading…' : `${summary.failedLoginCount} attempts`,
+                  <div>
+                    <div style={{ marginBottom: '8px' }}><strong>Total attempts:</strong> {summary.failedLoginCount}</div>
+                    {getRecentFailedLoginEntries(summary.failedLogins).length > 0 ? (
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        {getRecentFailedLoginEntries(summary.failedLogins).map((attempt, index) => (
+                          <div key={`${attempt.attempted_at || index}`} style={{ padding: '10px 12px', borderRadius: '8px', background: 'rgba(35, 29, 26, 0.55)', border: '1px solid rgba(152, 143, 129, 0.12)' }}>
+                            <div><strong>Time:</strong> {formatDateTime(attempt.attempted_at)}</div>
+                            <div><strong>Device:</strong> {formatDeviceSummary(attempt.device)}</div>
+                            <div><strong>Reason:</strong> {attempt.reason || 'failed_auth'}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div>No failed attempts to display.</div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px", marginTop: "16px" }}>
-              {renderSecurityRow(
-                'admin',
-                'changePassword',
-                'Change Password',
-                securitySummaryLoading ? 'Loading password change data…' : 'Tap to view password age and reminder details',
-                securitySummaryLoading ? 'Loading…' : formatDateTime(securitySummary.lastPasswordChangeAt),
-                <div>
-                  <div style={{ marginBottom: '10px' }}><strong>Last changed:</strong> {formatDateTime(securitySummary.lastPasswordChangeAt)}</div>
-                  {renderChangePasswordDetails()}
-                </div>
-              )}
-              {renderSecurityRow(
-                'admin',
-                'lastLogin',
-                'Last Login',
-                buildDeviceLabel(securitySummary.lastLogin),
-                securitySummaryLoading ? 'Loading…' : formatDateTime(securitySummary.lastLogin?.logged_in_at),
-                <div>
-                  <div><strong>Logged in at:</strong> {formatDateTime(securitySummary.lastLogin?.logged_in_at)}</div>
-                  <div><strong>Device:</strong> {formatDeviceSummary(securitySummary.lastLogin)}</div>
-                </div>
-              )}
-              {renderSecurityRow(
-                'admin',
-                'failedLogins',
-                'Failed Login Attempts',
-                buildFailedLoginLabel(securitySummary.failedLogins),
-                securitySummaryLoading ? 'Loading…' : `${securitySummary.failedLoginCount} attempts`,
-                <div>
-                  <div style={{ marginBottom: '8px' }}><strong>Total attempts:</strong> {securitySummary.failedLoginCount}</div>
-                  {getRecentFailedLoginEntries(securitySummary.failedLogins).length > 0 ? (
-                    <div style={{ display: 'grid', gap: '10px' }}>
-                      {getRecentFailedLoginEntries(securitySummary.failedLogins).map((attempt, index) => (
-                        <div key={`${attempt.attempted_at || index}`} style={{ padding: '10px 12px', borderRadius: '8px', background: 'rgba(35, 29, 26, 0.55)', border: '1px solid rgba(152, 143, 129, 0.12)' }}>
-                          <div><strong>Time:</strong> {formatDateTime(attempt.attempted_at)}</div>
-                          <div><strong>Device:</strong> {formatDeviceSummary(attempt.device)}</div>
-                          <div><strong>Reason:</strong> {attempt.reason || 'failed_auth'}</div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div>No failed attempts to display.</div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+          );
+        })}
 
           <div className="dashboard-panel">
               <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", marginBottom: "16px" }}>
