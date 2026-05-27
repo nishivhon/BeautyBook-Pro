@@ -160,10 +160,79 @@ export default function CustomerProfilePage() {
       setOtpTarget(contact.value);
       setOtpSessionKey((current) => current + 1);
       setShowOtpModal(true);
+      // DO NOT proceed to next contact or save here — wait for user to verify OTP
+      // The next step (sending next OTP or saving) happens in `handleOtpVerified` after verification
+    } catch (error) {
+      console.error("[CustomerProfile] OTP verification failed:", error);
+      const msg = error.message || "Invalid OTP. Please try again.";
+      setOtpError(msg);
+      showToast({ message: msg, type: "error" });
+      // stop the pending save flow on OTP send error
+      setPendingProfileUpdate(null);
+      setVerificationQueue([]);
+      setIsSendingOtp(false);
+      setIsSubmittingProfile(false);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
 
+  // Build payload from temp profile for API requests
+  function buildProfilePayload(p) {
+    return {
+      name: (p.name || "").trim(),
+      emails: getCleanValues(p.emails),
+      phones: getCleanValues(p.phones),
+      notificationPreference: p.notificationPreference,
+    };
+  }
+
+  // Determine which contacts need OTP verification (primary changed)
+  function getContactQueue(currentProfile, nextProfile) {
+    const queue = [];
+    const currentEmail = normalizeEmail(getPrimaryValue(currentProfile.emails));
+    const currentPhone = normalizePhone(getPrimaryValue(currentProfile.phones));
+    const nextEmail = normalizeEmail(getPrimaryValue(nextProfile.emails));
+    const nextPhone = normalizePhone(getPrimaryValue(nextProfile.phones));
+
+    if (nextEmail && nextEmail !== currentEmail) {
+      queue.push({ type: "email", value: nextEmail });
+    }
+    if (nextPhone && nextPhone !== currentPhone) {
+      queue.push({ type: "phone", value: nextPhone });
+    }
+
+    return queue;
+  }
+
+  // Verify OTP and continue the verification queue or save profile
+  async function handleOtpVerified(otp) {
+    const cleanOtp = String(otp || "").replace(/\s/g, "");
+    const apiUrl = import.meta.env.VITE_API_URL || "";
+
+    setOtpLoading(true);
+    try {
+      let endpoint = otpType === "email" ? `${apiUrl}/auth/verify-email-otp` : `${apiUrl}/sms/verify-otp`;
+      const payload = otpType === "email"
+        ? { email: otpTarget || normalizeEmail(getPrimaryValue(tempProfile.emails)), otp: cleanOtp }
+        : { phone: otpTarget || normalizePhone(getPrimaryValue(tempProfile.phones)), otp: cleanOtp };
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.error || body.details || "Invalid OTP. Please try again.");
+      }
+
+      // Verified: proceed to next queued contact or save profile
       const remaining = verificationQueue.slice(1);
       setVerificationQueue(remaining);
       setShowOtpModal(false);
+      setOtpError("");
 
       if (remaining.length > 0) {
         const nextContact = remaining[0];
@@ -179,6 +248,87 @@ export default function CustomerProfilePage() {
       setOtpLoading(false);
     }
   };
+
+  // Persist profile to server
+  async function saveProfileToDatabase(payload) {
+    setIsSubmittingProfile(true);
+    const apiUrl = import.meta.env.VITE_API_URL || "";
+    try {
+      const body = {
+        customerId: profile.id,
+        name: (payload.name || "").trim(),
+        email: normalizeEmail(getPrimaryValue(payload.emails)),
+        phone: normalizePhone(getPrimaryValue(payload.phones)),
+        notificationPreference: payload.notificationPreference,
+      };
+
+      const response = await fetch(`${apiUrl}/customers/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const resBody = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(resBody.error || resBody.details || "Failed to save profile.");
+      }
+
+      const updated = resBody.customer || resBody.data || resBody;
+      if (updated) {
+        const mapEmails = (prevEmails) => {
+          if (typeof updated.email === 'string') {
+            const v = String(updated.email || '').trim();
+            return v ? [v] : [];
+          }
+          if (updated.email === null) return [];
+          return prevEmails;
+        };
+
+        const mapPhones = (prevPhones) => {
+          if (typeof updated.phone === 'string') {
+            const v = String(updated.phone || '').trim();
+            return v ? [v] : [];
+          }
+          if (updated.phone === null) return [];
+          return prevPhones;
+        };
+
+        setProfile((prev) => {
+          return {
+            ...prev,
+            name: updated.name || prev.name,
+            emails: mapEmails(prev.emails),
+            phones: mapPhones(prev.phones),
+            notificationPreference: typeof updated.notif_pref !== 'undefined' ? updated.notif_pref : (updated.notificationPreference || prev.notificationPreference),
+            histories: updated.histories || prev.histories,
+            id: updated.id || prev.id,
+            profilePhoto: updated.profilePhoto || prev.profilePhoto,
+          };
+        });
+
+        setTempProfile((prev) => ({
+          ...prev,
+          name: updated.name || prev.name,
+          emails: mapEmails(prev.emails),
+          phones: mapPhones(prev.phones),
+          notificationPreference: typeof updated.notif_pref !== 'undefined' ? updated.notif_pref : (updated.notificationPreference || prev.notificationPreference),
+          histories: updated.histories || prev.histories,
+          id: updated.id || prev.id,
+        }));
+      }
+
+      setIsEditingProfile(false);
+      setPendingProfileUpdate(null);
+      setVerificationQueue([]);
+      setOtpTarget("");
+      showToast({ message: "Profile updated successfully.", type: "success" });
+    } catch (error) {
+      console.error("[CustomerProfile] Save failed:", error);
+      showToast({ message: error.message || "Failed to save profile.", type: "error" });
+    } finally {
+      setIsSubmittingProfile(false);
+    }
+  }
 
   const handleEditProfile = () => {
     setTempProfile(profile);
@@ -215,7 +365,13 @@ export default function CustomerProfilePage() {
   };
 
   const handleChangeNotifPref = (pref) => {
-    // Determine actual contact value to store (email address or phone number)
+    // If user is editing profile, just change the tempProfile locally (no save)
+    if (isEditingProfile) {
+      setTempProfile((prev) => ({ ...prev, notificationPreference: pref }));
+      return;
+    }
+
+    // Not editing: confirm and save immediately (we need the actual contact value)
     const currentEmail = normalizeEmail(getPrimaryValue(tempProfile.emails) || getPrimaryValue(profile.emails));
     const currentPhone = normalizePhone(getPrimaryValue(tempProfile.phones) || getPrimaryValue(profile.phones));
     const actual = pref === 'email' ? currentEmail : currentPhone;
@@ -246,6 +402,22 @@ export default function CustomerProfilePage() {
       setConfirmationMessage("");
       setPendingNotifPref(null);
       await saveProfileToDatabase(updatedTemp);
+      return;
+    }
+
+    if (confirmationAction === 'delete_email') {
+      setTempProfile((prev) => ({ ...prev, emails: [] }));
+      setShowConfirmation(false);
+      setConfirmationAction(null);
+      setConfirmationMessage("");
+      return;
+    }
+
+    if (confirmationAction === 'delete_phone') {
+      setTempProfile((prev) => ({ ...prev, phones: [] }));
+      setShowConfirmation(false);
+      setConfirmationAction(null);
+      setConfirmationMessage("");
       return;
     }
 
@@ -380,26 +552,40 @@ export default function CustomerProfilePage() {
                   </div>
                   <div>
                     <label className="cdb-field-label">Email</label>
-                    <input
-                      className="cdb-input"
-                      style={{ flex: 1 }}
-                      type="email"
-                      value={getPrimaryValue(tempProfile.emails)}
-                      onChange={(e) => setTempProfile({ ...tempProfile, emails: toSingleItemArray(e.target.value) })}
-                      placeholder="Enter email address"
-                    />
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input
+                        className="cdb-input"
+                        style={{ flex: 1 }}
+                        type="email"
+                        value={getPrimaryValue(tempProfile.emails)}
+                        onChange={(e) => setTempProfile({ ...tempProfile, emails: toSingleItemArray(e.target.value) })}
+                        placeholder="Enter email address"
+                      />
+                      {getPrimaryValue(tempProfile.emails) ? (
+                        <button type="button" title="Delete email" className="cdb-btn" onClick={() => { setConfirmationAction('delete_email'); setConfirmationMessage('Delete this email?'); setShowConfirmation(true); }}>
+                          <CancelIcon />
+                        </button>
+                      ) : null}
+                    </div>
                     {validationErrors.contact && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.contact}</p>}
                   </div>
                   <div>
                     <label className="cdb-field-label">Phone</label>
-                    <input
-                      className="cdb-input"
-                      style={{ flex: 1 }}
-                      maxLength="11"
-                      value={getPrimaryValue(tempProfile.phones)}
-                      onChange={(e) => setTempProfile({ ...tempProfile, phones: toSingleItemArray(e.target.value) })}
-                      placeholder="Enter phone number"
-                    />
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input
+                        className="cdb-input"
+                        style={{ flex: 1 }}
+                        maxLength="11"
+                        value={getPrimaryValue(tempProfile.phones)}
+                        onChange={(e) => setTempProfile({ ...tempProfile, phones: toSingleItemArray(e.target.value) })}
+                        placeholder="Enter phone number"
+                      />
+                      {getPrimaryValue(tempProfile.phones) ? (
+                        <button type="button" title="Delete phone" className="cdb-btn" onClick={() => { setConfirmationAction('delete_phone'); setConfirmationMessage('Delete this phone number?'); setShowConfirmation(true); }}>
+                          <CancelIcon />
+                        </button>
+                      ) : null}
+                    </div>
                     {validationErrors.contact && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.contact}</p>}
                   </div>
                   <div>
@@ -466,26 +652,40 @@ export default function CustomerProfilePage() {
                         </div>
                         <div className="cdb-form-section">
                           <label className="cdb-field-label">Email</label>
-                          <input
-                            className="cdb-input"
-                            style={{ width: "100%" }}
-                            type="email"
-                            value={getPrimaryValue(tempProfile.emails)}
-                            onChange={(e) => setTempProfile({ ...tempProfile, emails: toSingleItemArray(e.target.value) })}
-                            placeholder="Enter email address"
-                          />
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <input
+                              className="cdb-input"
+                              style={{ width: "100%" }}
+                              type="email"
+                              value={getPrimaryValue(tempProfile.emails)}
+                              onChange={(e) => setTempProfile({ ...tempProfile, emails: toSingleItemArray(e.target.value) })}
+                              placeholder="Enter email address"
+                            />
+                            {getPrimaryValue(tempProfile.emails) ? (
+                              <button type="button" title="Delete email" className="cdb-btn" onClick={() => { setConfirmationAction('delete_email'); setConfirmationMessage('Delete this email?'); setShowConfirmation(true); }}>
+                                <CancelIcon />
+                              </button>
+                            ) : null}
+                          </div>
                           {validationErrors.contact && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.contact}</p>}
                         </div>
                         <div className="cdb-form-section">
                           <label className="cdb-field-label">Phone</label>
-                          <input
-                            className="cdb-input"
-                            style={{ width: "100%" }}
-                            maxLength="11"
-                            value={getPrimaryValue(tempProfile.phones)}
-                            onChange={(e) => setTempProfile({ ...tempProfile, phones: toSingleItemArray(e.target.value) })}
-                            placeholder="Enter phone number"
-                          />
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <input
+                              className="cdb-input"
+                              style={{ width: "100%" }}
+                              maxLength="11"
+                              value={getPrimaryValue(tempProfile.phones)}
+                              onChange={(e) => setTempProfile({ ...tempProfile, phones: toSingleItemArray(e.target.value) })}
+                              placeholder="Enter phone number"
+                            />
+                            {getPrimaryValue(tempProfile.phones) ? (
+                              <button type="button" title="Delete phone" className="cdb-btn" onClick={() => { setConfirmationAction('delete_phone'); setConfirmationMessage('Delete this phone number?'); setShowConfirmation(true); }}>
+                                <CancelIcon />
+                              </button>
+                            ) : null}
+                          </div>
                           {validationErrors.contact && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>{validationErrors.contact}</p>}
                         </div>
                       </div>
