@@ -462,54 +462,63 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
       {isExpanded && (
         <div style={getThemeStyles(
           {
-            padding: "12px 16px",
-            backgroundColor: "rgba(20, 17, 15, 0.4)",
-            borderLeft: "3px solid rgba(221, 144, 29, 0.3)",
-            marginBottom: "8px",
-            borderRadius: "0 8px 8px 0"
+            backgroundColor: "rgba(20, 17, 15, 0.5)",
+            borderLeft: "3px solid rgba(221, 144, 29, 0.35)",
+            padding: "16px",
+            marginTop: "8px",
+            borderRadius: "6px",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "16px 24px"
           },
           {
-            padding: "12px 16px",
-            backgroundColor: "rgba(250, 190, 206, 0.3)",
-            borderLeft: "3px solid rgba(213, 210, 211, 0.3)",
-            marginBottom: "8px",
-            borderRadius: "0 8px 8px 0"
+            backgroundColor: "rgba(230, 100, 140, 0.35)",
+            borderLeft: "3px solid rgba(213, 210, 211, 0.35)",
+            padding: "16px",
+            marginTop: "8px",
+            borderRadius: "6px",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "16px 24px"
           }
         )}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <div>
-              <span className="dash-detail-label">Service Selected</span>
-              <span className="dash-detail-value">{details.serviceSelected}</span>
-            </div>
+          <div>
+            <p className="dash-detail-label">Service Selected</p>
+            <p className="dash-detail-value">{details.serviceSelected}</p>
+          </div>
 
-            <div>
-              <span className="dash-detail-label">Current Service</span>
-              <span className="dash-detail-value">{details.currentService}</span>
-            </div>
+          <div>
+            <p className="dash-detail-label">Current Service</p>
+            <p className="dash-detail-value">{details.currentService}</p>
+          </div>
 
-            <div>
-              <span className="dash-detail-label">Starting Time</span>
-              <span className="dash-detail-value">{details.startTime}</span>
-            </div>
+          <div>
+            <p className="dash-detail-label">Starting Time</p>
+            <p className="dash-detail-value">{details.startTime}</p>
+          </div>
 
-            <div>
-              <span className="dash-detail-label">Estimated Time</span>
-              <span className="dash-detail-value">{details.estimatedTime}</span>
-            </div>
+          <div>
+            <p className="dash-detail-label">Estimated Time</p>
+            <p className="dash-detail-value">{details.estimatedTime}</p>
+          </div>
 
-            {isActive && (
+          {isActive && (
+            <div style={{ gridColumn: '1 / -1' }}>
               <button
                 onClick={handleCompleteService}
                 className="dash-complete-btn"
+                style={{ width: '100%' }}
                 onMouseOver={(e) => e.target.style.backgroundColor = "#16a34a"}
                 onMouseOut={(e) => e.target.style.backgroundColor = "#22c55e"}
               >
                 <CheckCircleIcon size={16} color="#fff" />
                 Complete Service
               </button>
-            )}
+            </div>
+          )}
 
-            {showProceedButton && !isActive && (
+          {showProceedButton && !isActive && (
+            <div style={{ gridColumn: '1 / -1' }}>
               <button
                 onClick={handleProceed}
                 disabled={!isProceedEnabled}
@@ -545,8 +554,8 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
                 <ProceedIcon size={14} color="#fff" />
                 Proceed
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </>
