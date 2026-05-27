@@ -191,11 +191,15 @@ export default function CustomerDashboard() {
 
 	console.log('[CustomerDashboard] Final history to display:', history);
 
+	function isMaxUsesReached(coupon) {
+		return coupon.max_uses && coupon.number_of_uses >= coupon.max_uses;
+	}
+
 	// Only show completed (and unrated) transactions in the dashboard "Recent Transaction" section
 	const recentCompleted = history.filter((item) => item.status === 'completed' && !item.rated);
 
-	// Only show unclaimed, non-expired coupons in the dashboard coupons section
-	const recentUnclaimedCoupons = coupons.filter((coupon) => !coupon.claimed && coupon.status !== "expired");
+	// Only show unclaimed, non-expired, non-deleted, and not-maxed-out coupons in the dashboard coupons section
+	const recentUnclaimedCoupons = coupons.filter((coupon) => !coupon.claimed && coupon.status !== "expired" && !coupon.is_deleted && !isMaxUsesReached(coupon));
 
 	const profileInitial = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
 	const profileAvatar = (
@@ -259,9 +263,15 @@ export default function CustomerDashboard() {
 		}
 	};
 
-	const handleClaimCoupon = async (id, code) => {
+	const handleClaimCoupon = async (id, code, coupon) => {
 		if (!profile?.id) {
 			showToast({ message: 'Please log in to claim coupons', type: 'error' });
+			return;
+		}
+
+		// Check if max uses reached
+		if (isMaxUsesReached(coupon)) {
+			showToast({ message: 'This coupon has reached its maximum usage limit', type: 'warning' });
 			return;
 		}
 
@@ -587,10 +597,12 @@ export default function CustomerDashboard() {
 									<div className="cdb-coupon-right" style={isMobile ? { width: '100%', justifyContent: 'flex-start', alignItems: 'stretch' } : undefined}>
 										{coupon.status === "expired" ? (
 											<span className={`cdb-status-badge ${coupon.status}`}>{coupon.status}</span>
+										) : isMaxUsesReached(coupon) ? (
+											<span className="cdb-status-badge expired" title={`Usage limit reached (${coupon.number_of_uses}/${coupon.max_uses})`}>limit reached</span>
 										) : coupon.claimed ? (
 											<span className="cdb-status-badge claimed">claimed</span>
 										) : (
-											<button className="cdb-btn cdb-btn-primary" onClick={() => handleClaimCoupon(coupon.id, coupon.code)} style={isMobile ? { width: '100%' } : undefined}>Claim Coupon</button>
+											<button className="cdb-btn cdb-btn-primary" onClick={() => handleClaimCoupon(coupon.id, coupon.code, coupon)} style={isMobile ? { width: '100%' } : undefined} title={isMaxUsesReached(coupon) ? `Usage limit reached (${coupon.number_of_uses}/${coupon.max_uses})` : ''}>Claim Coupon</button>
 										)}
 									</div>
 								</div>

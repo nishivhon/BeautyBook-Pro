@@ -43,6 +43,12 @@ export default function CustomerCouponsPage() {
       return;
     }
 
+    // Check if max uses reached
+    if (coupon.max_uses && coupon.number_of_uses >= coupon.max_uses) {
+      showToast({ message: 'This coupon has reached its maximum usage limit', type: 'warning' });
+      return;
+    }
+
     try {
       await couponService.claimCoupon(profile.id, coupon.code);
       showToast({ message: `Coupon ${coupon.code} claimed successfully!`, type: 'success' });
@@ -71,6 +77,35 @@ export default function CustomerCouponsPage() {
     return `${start} - ${end}`;
   };
 
+  const isMaxUsesReached = (coupon) => {
+    return coupon.max_uses && coupon.number_of_uses >= coupon.max_uses;
+  };
+
+  const renderStatusBadge = (coupon) => {
+    if (coupon.status === 'expired') {
+      return <span className="cdb-status-badge expired">expired</span>;
+    }
+    if (coupon.isClaimed) {
+      return <span className="cdb-status-badge claimed">claimed</span>;
+    }
+    if (isMaxUsesReached(coupon)) {
+      return <span className="cdb-status-badge expired">limit reached</span>;
+    }
+    return null;
+  };
+
+  const getCouponRank = (coupon) => {
+    if (coupon.status === 'expired') return 3;
+    if (isMaxUsesReached(coupon)) return 2;
+    if (coupon.isClaimed) return 0;
+    return 1;
+  };
+
+  // Filter out deleted coupons and sort
+  const sortedCoupons = [...coupons]
+    .filter(coupon => !coupon.is_deleted)
+    .sort((a, b) => getCouponRank(a) - getCouponRank(b));
+
   return (
     <CustomerShell activeNav="coupons" profile={profile}>
       <section className="cdb-section cdb-mounted">
@@ -87,7 +122,7 @@ export default function CustomerCouponsPage() {
             </div>
           ) : (
             <div className="cdb-grid cdb-grid-coupons">
-              {coupons.map((coupon) => (
+              {sortedCoupons.map((coupon) => (
                 isMobile ? (
                   <div
                     key={coupon.id}
@@ -102,17 +137,15 @@ export default function CustomerCouponsPage() {
                       <p className="cdb-coupon-description">{coupon.description || 'Special discount offer'}</p>
                       <p className="cdb-date-text">Expires: {new Date(coupon.end_date).toLocaleDateString()}</p>
                     </div>
-                    <div className="cdb-coupon-right" style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'stretch' }}>
-                      {coupon.status === "expired" ? (
-                        <span className={`cdb-status-badge ${coupon.status}`}>{coupon.status}</span>
-                      ) : coupon.isClaimed ? (
-                        <span className="cdb-status-badge claimed">claimed</span>
-                      ) : (
+                    <div className="cdb-coupon-right" style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'flex-start' }}>
+                      {renderStatusBadge(coupon) || (
                         <button
                           className="cdb-btn cdb-btn-primary"
                           type="button"
                           onClick={() => handleClaimCoupon(coupon)}
-                          style={{ width: '100%' }}
+                          style={{ width: '100%', opacity: isMaxUsesReached(coupon) ? 0.5 : 1, cursor: isMaxUsesReached(coupon) ? 'not-allowed' : 'pointer' }}
+                          disabled={isMaxUsesReached(coupon)}
+                          title={isMaxUsesReached(coupon) ? `Usage limit reached (${coupon.number_of_uses}/${coupon.max_uses})` : ''}
                         >
                           Claim Coupon
                         </button>
@@ -128,11 +161,13 @@ export default function CustomerCouponsPage() {
                       <p className="cdb-date-text">Valid: {formatDateRange(coupon.start_date, coupon.end_date)}</p>
                     </div>
                     <div className="cdb-coupon-right">
-                      {!coupon.isClaimed && (
+                      {renderStatusBadge(coupon)}
+                      {!coupon.isClaimed && coupon.status !== 'expired' && !isMaxUsesReached(coupon) && (
                         <button 
                           className="cdb-btn cdb-btn-primary" 
                           type="button"
                           onClick={() => handleClaimCoupon(coupon)}
+                          title={isMaxUsesReached(coupon) ? `Usage limit reached (${coupon.number_of_uses}/${coupon.max_uses})` : ''}
                         >
                           Claim
                         </button>

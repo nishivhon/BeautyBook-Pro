@@ -142,13 +142,15 @@ export const validateOperatorCredentials = async (email, password) => {
     if (!response.ok) {
       return {
         success: false,
-        error: result.error || 'Invalid email or password'
+        error: result.error || 'Invalid email or password',
+        status: response.status,
       };
     }
 
     return {
       success: true,
       data: result.data,
+      status: response.status,
     };
   } catch (error) {
     return {

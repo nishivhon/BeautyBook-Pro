@@ -330,9 +330,10 @@ export const LogIn = () => {
           setLoading(false);
         }, 800);
       } else {
-        // Choose message: if customer account explicitly not found, show that message;
-        // otherwise show generic invalid credentials message.
-        if (customerStatus === 404) {
+        const operatorStatus = result.status;
+        const showNotFound = customerStatus === 404 && operatorStatus === 404;
+
+        if (showNotFound) {
           setErrors({ form: customerError || 'Account not found. Please sign up.' });
         } else {
           setErrors({ form: 'Invalid email/phone or password' });

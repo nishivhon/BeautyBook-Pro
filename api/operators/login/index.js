@@ -41,7 +41,7 @@ export default async (req, res) => {
       .single();
 
     if (error || !credential) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(404).json({ error: 'Account not found' });
     }
 
     const passwordMatches = await bcrypt.compare(password, credential.password_hash || '');

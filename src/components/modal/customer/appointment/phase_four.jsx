@@ -745,6 +745,13 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, bo
       console.log('[Phase4] Booking confirmed:', result);
       setIsConfirmed(true);
       setShowConfirmationToast(true);
+      // Notify other parts of the app that appointments have changed
+      try {
+        window.dispatchEvent(new Event('appointmentsUpdated'));
+        console.log('[Phase4] Dispatched appointmentsUpdated event');
+      } catch (e) {
+        console.warn('[Phase4] Failed to dispatch appointmentsUpdated event', e);
+      }
 
       // Attempt to retrieve the created slot/ref from server by customer
       try {
