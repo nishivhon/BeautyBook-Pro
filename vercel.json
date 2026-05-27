@@ -15,5 +15,11 @@
   }, {
     "path": "/api/cron/sync-coupon-statuses",
     "schedule": "3 16 * * *"
+  }, {
+    "path": "/api/cron/appointment-reminders",
+    "schedule": "45 0-8 * * *"
+  }, {
+    "path": "/api/cron/appointment-reminders",
+    "schedule": "15 1-8 * * *"
   }]
 }
