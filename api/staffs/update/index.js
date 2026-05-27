@@ -45,6 +45,29 @@ export default async (req, res) => {
       auth: { persistSession: false }
     });
 
+    const { data: existingStaff, error: existingStaffError } = await supabase
+      .from('staffs')
+      .select('status, in_service')
+      .eq('id', id)
+      .single();
+
+    if (existingStaffError) {
+      console.error('[Staffs:Update] Failed to read existing staff record:', existingStaffError);
+      return res.status(400).json({ error: 'Failed to read staff record', details: existingStaffError.message });
+    }
+
+    const existingInService = typeof existingStaff?.in_service === 'string' ? existingStaff.in_service.trim().toLowerCase() : '';
+    const existingStatus = typeof existingStaff?.status === 'string' ? existingStaff.status.trim().toLowerCase() : '';
+    const isCurrentlyInService = existingInService === 'in-service' || existingStatus === 'in service';
+    const isClockOutRequest = clock_out !== undefined && clock_out !== null && String(clock_out).trim() !== '';
+
+    if (isClockOutRequest && isCurrentlyInService) {
+      return res.status(400).json({
+        error: 'Cannot clock out while staff is in service',
+        details: 'Complete the current service before clocking out.'
+      });
+    }
+
     console.log(`[Staffs:Update] Updating staff ID: ${id}`, { names, category_specialty: normalizedSpecialties, employment, clock_in, clock_out, walk_in, status, in_service, total_clients, done_clients, shouldDisableWalkIn });
 
     // Build update object with only provided fields

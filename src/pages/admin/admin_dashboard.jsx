@@ -1079,7 +1079,7 @@ const SummaryPanel = () => {
           fetch('/api/appointments/read/by-status?status=done'),
           fetch('/api/appointments/read/by-status?status=current'),
           fetch('/api/appointments/read/by-status?status=pending'),
-          fetch('/api/appointments/read/by-status?status=cancelled')
+          fetch(`/api/appointments/read/daily-cancellations?date=${getManilaDateString()}`)
         ]);
 
         const completedData = resCompleted.ok ? await resCompleted.json() : {};
@@ -1091,7 +1091,7 @@ const SummaryPanel = () => {
         const completedCount = completedData.count || (Array.isArray(completedData.appointments) ? completedData.appointments.length : 0);
         const inProgressCount = inProgressData.count || (Array.isArray(inProgressData.appointments) ? inProgressData.appointments.length : 0);
         const pendingCount = pendingData.count || (Array.isArray(pendingData.appointments) ? pendingData.appointments.length : 0);
-        const cancelledCount = cancelledData.count || (Array.isArray(cancelledData.appointments) ? cancelledData.appointments.length : 0);
+        const cancelledCount = cancelledData.totalCancellations || cancelledData.count || 0;
 
         setSummary([
           { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: completedCount },
