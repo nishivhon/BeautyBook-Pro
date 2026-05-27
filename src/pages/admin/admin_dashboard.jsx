@@ -1307,6 +1307,7 @@ export const AdminDashboard = ({ date }) => {
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
   const [doneAppointments, setDoneAppointments] = useState([]);
+  const [bookingNotifications, setBookingNotifications] = useState([]);
   const [stats, setStats] = useState([
     { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: "0",      label: "Today's Appointments" },
     { Icon: QueueIcon,    badge: null,      badgeType: null,    value: "0",       label: "In Queue Now"         },
@@ -1360,6 +1361,55 @@ export const AdminDashboard = ({ date }) => {
     fetchAppointments();
   }, []);
 
+  useEffect(() => {
+    const formatServiceLabel = (services) => {
+      if (!services) return 'a service';
+      if (typeof services === 'string') return services;
+      if (Array.isArray(services)) {
+        const names = services
+          .map((service) => service?.name || service?.title || service?.service || service)
+          .filter(Boolean);
+        return names.length > 0 ? names.join(', ') : 'a service';
+      }
+      if (typeof services === 'object') {
+        return services.name || services.title || services.service || Object.values(services).filter(Boolean).join(', ') || 'a service';
+      }
+      return 'a service';
+    };
+
+    const formatRelativeTime = (value) => {
+      if (!value) return 'Just now';
+      const dateValue = new Date(value);
+      if (Number.isNaN(dateValue.getTime())) return 'Just now';
+
+      const diffMs = Date.now() - dateValue.getTime();
+      const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+      if (diffMinutes < 1) return 'Just now';
+      if (diffMinutes < 60) return `${diffMinutes}m ago`;
+      const diffHours = Math.floor(diffMinutes / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays}d ago`;
+    };
+
+    const fetchBookingNotifications = async () => {
+      try {
+        const response = await fetch('/api/appointments/read/recent-bookings?limit=5');
+        if (!response.ok) {
+          throw new Error('Failed to fetch booking notifications');
+        }
+
+        const result = await response.json();
+        setBookingNotifications(result.notifications || []);
+      } catch (error) {
+        console.error('[AdminDashboard] Error loading booking notifications:', error);
+        setBookingNotifications([]);
+      }
+    };
+
+    fetchBookingNotifications();
+  }, []);
+
   // Calculate stats dynamically
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -1391,39 +1441,7 @@ export const AdminDashboard = ({ date }) => {
     ]);
   }, [currentAppointments, pendingAppointments, doneAppointments]);
 
-  const headerNotifications = useMemo(() => {
-    const recentPending = pendingAppointments.slice(0, 2).map((appointment, index) => ({
-      id: `pending-${appointment.id || index}`,
-      tone: "amber",
-      category: "New booking",
-      title: `${appointment.name || "Customer"} booked ${appointment.service || "a service"}`,
-      description: `${appointment.time || "TBA"} • ${appointment.staff || "Any available stylist"}`,
-      time: "Just now",
-      unread: true,
-    }));
-
-    const recentCurrent = currentAppointments.slice(0, 2).map((appointment, index) => ({
-      id: `current-${appointment.id || index}`,
-      tone: "blue",
-      category: "Live queue",
-      title: `${appointment.name || "Customer"} is now being served`,
-      description: `${appointment.service || "Service"} • ${appointment.staff || "Assigned staff"}`,
-      time: appointment.time || "Today",
-      unread: index === 0,
-    }));
-
-    const recentDone = doneAppointments.slice(0, 1).map((appointment, index) => ({
-      id: `done-${appointment.id || index}`,
-      tone: "green",
-      category: "Completed",
-      title: `${appointment.name || "Customer"} appointment completed`,
-      description: `${appointment.service || "Service"} finished successfully.`,
-      time: "Today",
-      unread: false,
-    }));
-
-    return [...recentPending, ...recentCurrent, ...recentDone].slice(0, 5);
-  }, [currentAppointments, pendingAppointments, doneAppointments]);
+  const headerNotifications = bookingNotifications;
 
   const handleLogout = () => {
     setShowLogoutConfirm(true);
