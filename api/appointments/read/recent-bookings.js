@@ -1,4 +1,4 @@
-import getSupabaseClient from '../utils/supabaseClient.js';
+import { getSupabaseClient } from '../utils/supabaseClient.js';
 
 const TIME_ZONE = 'Asia/Manila';
 

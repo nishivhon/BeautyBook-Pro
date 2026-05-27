@@ -25,8 +25,8 @@ export default async (req, res) => {
   try {
     console.log(`[CancelAppointment] Cancelling appointment id: ${id}`);
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       console.error('[CancelAppointment] Missing Supabase credentials');
@@ -67,6 +67,8 @@ export default async (req, res) => {
         total_price: 0,
         cancellations: (slot.cancellations || 0) + 1,
         status: null,
+        reminder_sent: false,
+        reminder_sent_at: null,
       })
       .eq('id', id)
       .select()

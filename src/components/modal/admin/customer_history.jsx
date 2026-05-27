@@ -17,124 +17,55 @@ const ChevronDownIcon = ({ size = 16, color = "currentColor" }) => (
 );
 
 // ═══════════════════════════════════════════════════════════════════
-// SAMPLE DATA
+// LIVE DATA FETCH
 // ═══════════════════════════════════════════════════════════════════
 
-const CUSTOMER_HISTORY_DATA = [
-  {
-    id: 1,
-    customerName: "Maria Garcia",
-    date: "2024-12-07",
-    time: "2:00 PM - 3:30 PM",
-    service: "Hair Color",
-    duration: "1h 30m",
-    amount: "₱1,200",
-    stylist: "Carlos Reyes",
-    phone: "09123456789",
-    email: "maria@email.com"
-  },
-  {
-    id: 2,
-    customerName: "Sarah Johnson",
-    date: "2024-12-06",
-    time: "10:00 AM - 11:00 AM",
-    service: "Hair Cut",
-    duration: "1h",
-    amount: "₱500",
-    stylist: "Antonio Marquez",
-    phone: "09134567890",
-    email: "sarah@email.com"
-  },
-  {
-    id: 3,
-    customerName: "Roberto Silva",
-    date: "2024-12-05",
-    time: "3:00 PM - 4:30 PM",
-    service: "Deep Tissue Massage",
-    duration: "1h 30m",
-    amount: "₱1,500",
-    stylist: "John Dela Cruz",
-    phone: "09145678901",
-    email: "roberto@email.com"
-  },
-  {
-    id: 4,
-    customerName: "Angela Martinez",
-    date: "2024-12-04",
-    time: "1:00 PM - 2:00 PM",
-    service: "Manicure",
-    duration: "1h",
-    amount: "₱600",
-    stylist: "Daniel Smith",
-    phone: "09156789012",
-    email: "angela@email.com"
-  },
-  {
-    id: 5,
-    customerName: "Pedro Santos",
-    date: "2024-12-03",
-    time: "11:00 AM - 12:30 PM",
-    service: "Facial Treatment",
-    duration: "1h 30m",
-    amount: "₱1,000",
-    stylist: "Mike Santos",
-    phone: "09167890123",
-    email: "pedro@email.com"
-  },
-  {
-    id: 6,
-    customerName: "Maria Fernandez",
-    date: "2024-11-28",
-    time: "2:00 PM - 3:30 PM",
-    service: "Hair Treatment",
-    duration: "1h 30m",
-    amount: "₱900",
-    stylist: "Carlos Reyes",
-    phone: "09178901234",
-    email: "maria.f@email.com"
-  },
-];
+const fetchCustomerHistory = async (staffName, range) => {
+  try {
+    const qs = new URLSearchParams({ staffName: staffName || '', range: range || 'today' });
+    const res = await fetch(`/api/staffs/read/customer-history?${qs.toString()}`);
+    const payload = await res.json().catch(() => null);
+    if (!res.ok) {
+      const msg = payload?.error || `HTTP ${res.status}`;
+      return { data: null, error: String(msg) };
+    }
+    return { data: payload.data || [], error: null };
+  } catch (err) {
+    console.error('[CustomerHistory] Fetch error:', err);
+    return { data: null, error: String(err.message || err) };
+  }
+};
 
 // ═══════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 
 export const CustomerHistoryModal = ({ isOpen, onClose, staffName = null }) => {
-  const [filterType, setFilterType] = useState("all");
+  const [filterType, setFilterType] = useState('today');
   const [expandedCustomer, setExpandedCustomer] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [error, setError] = useState(null);
 
-  const getFilteredData = () => {
-    const today = new Date();
-    let data = CUSTOMER_HISTORY_DATA;
-
-    // Filter by staff if staffName is provided
-    if (staffName) {
-      data = data.filter(item => item.stylist === staffName);
-    }
-
-    if (filterType === "all") return data;
-
-    if (filterType === "today") {
-      return data.filter(item => item.date === today.toISOString().split('T')[0]);
-    }
-
-    if (filterType === "week") {
-      const weekAgo = new Date(today);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return data.filter(item => new Date(item.date) >= weekAgo);
-    }
-
-    if (filterType === "month") {
-      const monthAgo = new Date(today);
-      monthAgo.setMonth(monthAgo.getMonth() - 1);
-      return data.filter(item => new Date(item.date) >= monthAgo);
-    }
-
-    return data;
-  };
-
-  const filteredData = getFilteredData();
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      const result = await fetchCustomerHistory(staffName, filterType);
+      if (cancelled) return;
+      if (result.error) {
+        setHistory([]);
+        setError(result.error);
+      } else {
+        setHistory(result.data || []);
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, staffName, filterType]);
 
   if (!isOpen) return null;
 
@@ -241,22 +172,21 @@ export const CustomerHistoryModal = ({ isOpen, onClose, staffName = null }) => {
 
           {filterOpen && (
             <div style={{
-              position: "absolute",
-              top: "100%",
-              left: "0",
-              marginTop: "8px",
-              backgroundColor: "#1a1a1a",
-              border: "1px solid rgba(221, 144, 29, 0.3)",
-              borderRadius: "8px",
-              overflow: "hidden",
+              position: 'absolute',
+              top: '100%',
+              left: '0',
+              marginTop: '8px',
+              backgroundColor: '#1a1a1a',
+              border: '1px solid rgba(221, 144, 29, 0.3)',
+              borderRadius: '8px',
+              overflow: 'hidden',
               zIndex: 10,
-              minWidth: "150px"
+              minWidth: '150px'
             }}>
               {[
-                { value: "all", label: "All Time" },
-                { value: "today", label: "Today" },
-                { value: "week", label: "This Week" },
-                { value: "month", label: "This Month" }
+                { value: 'today', label: 'Today' },
+                { value: 'week', label: 'This Week' },
+                { value: 'month', label: 'This Month' }
               ].map(({ value, label }) => (
                 <button
                   key={value}
@@ -265,20 +195,18 @@ export const CustomerHistoryModal = ({ isOpen, onClose, staffName = null }) => {
                     setFilterOpen(false);
                   }}
                   style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    backgroundColor: filterType === value ? "rgba(221, 144, 29, 0.2)" : "transparent",
-                    border: "none",
-                    color: filterType === value ? "#dd901d" : "#f5f5f5",
-                    fontSize: "14px",
-                    fontWeight: filterType === value ? "600" : "500",
-                    cursor: "pointer",
-                    fontFamily: "Inter, sans-serif",
-                    transition: "all 0.2s ease",
-                    textAlign: "left"
+                    width: '100%',
+                    padding: '12px 16px',
+                    backgroundColor: filterType === value ? 'rgba(221, 144, 29, 0.2)' : 'transparent',
+                    border: 'none',
+                    color: filterType === value ? '#dd901d' : '#f5f5f5',
+                    fontSize: '14px',
+                    fontWeight: filterType === value ? '600' : '500',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'left'
                   }}
-                  onMouseOver={(e) => !filterType === value && (e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)")}
-                  onMouseOut={(e) => !filterType === value && (e.target.style.backgroundColor = "transparent")}
                 >
                   {label}
                 </button>
@@ -295,205 +223,120 @@ export const CustomerHistoryModal = ({ isOpen, onClose, staffName = null }) => {
           gap: "12px",
           paddingRight: "8px"
         }}>
-          {filteredData.length > 0 ? (
-            filteredData.map((customer) => (
-              <div key={customer.id}>
-                <button
-                  onClick={() => setExpandedCustomer(expandedCustomer === customer.id ? null : customer.id)}
-                  style={{
-                    width: "100%",
-                    padding: "16px",
-                    backgroundColor: "rgba(26, 15, 0, 0.5)",
-                    border: "1px solid rgba(221, 144, 29, 0.3)",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontFamily: "Inter, sans-serif",
-                    transition: "all 0.2s ease",
-                    textAlign: "left"
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                    e.currentTarget.style.backgroundColor = "rgba(26, 15, 0, 0.7)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.3)";
-                    e.currentTarget.style.backgroundColor = "rgba(26, 15, 0, 0.5)";
-                  }}
-                >
-                  <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start"
-                  }}>
-                    <div>
-                      <p style={{
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "#dd901d",
-                        margin: "0 0 4px 0"
-                      }}>{customer.customerName}</p>
-                      <p style={{
-                        fontSize: "13px",
-                        color: "#988f81",
-                        margin: "0 0 4px 0"
-                      }}>{customer.date} • {customer.time}</p>
-                      <p style={{
-                        fontSize: "13px",
-                        color: "#f5f5f5",
-                        margin: "0"
-                      }}>{customer.service} • {customer.amount}</p>
-                    </div>
-                    <div style={{
-                      textAlign: "right"
-                    }}>
-                      <p style={{
-                        fontSize: "13px",
-                        color: "#dd901d",
-                        margin: "0",
-                        fontWeight: "600"
-                      }}>{customer.duration}</p>
-                    </div>
+          {loading ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+              <p style={{ fontSize: '14px', color: '#988f81' }}>Loading...</p>
+            </div>
+          ) : error ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+              <p style={{ fontSize: '14px', color: '#fca5a5' }}>Error: {error}</p>
+            </div>
+          ) : history && history.length > 0 ? (
+            (() => {
+              const visibleHistory = (history || []).filter((item) => item && (item.staff || item.raw?.assigned_staff));
+
+              if (visibleHistory.length === 0) {
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+                    <p style={{ fontSize: '14px', color: '#988f81' }}>No customer history found</p>
                   </div>
-                </button>
+                );
+              }
 
-                {/* Expanded Customer Details */}
-                {expandedCustomer === customer.id && (
-                  <div style={{
-                    backgroundColor: "rgba(221, 144, 29, 0.05)",
-                    borderLeft: "3px solid #dd901d",
-                    padding: "16px",
-                    borderRadius: "6px",
-                    marginTop: "8px",
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "16px"
-                  }}>
-                    <div>
-                      <p style={{
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "#dd901d",
-                        marginBottom: "4px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px"
-                      }}>Stylist</p>
-                      <p style={{
-                        fontSize: "14px",
-                        color: "#f5f5f5",
-                        margin: "0"
-                      }}>{customer.stylist}</p>
-                    </div>
+              return visibleHistory.map((item) => {
+                const id = item.id;
+                const customerName = item.customer || item.raw?.customer_name || item.raw?.client_name || 'Unknown';
+                const date = item.date || '';
+                const time = item.time || '';
+                const service = typeof item.serviceSummary === 'string'
+                  ? item.serviceSummary
+                  : (typeof item.service === 'string' ? item.service : (item.raw?.services ? JSON.stringify(item.raw.services) : 'Service'));
+                const amount = item.amount !== null && item.amount !== undefined ? `₱${Number(item.amount).toFixed(2)}` : '-';
+                const stylist = item.staff || item.raw?.assigned_staff || '-';
+                const phone = item.contact || item.raw?.customer_contact || item.raw?.client_phone || '';
+                const email = item.raw?.customer_email || item.raw?.client_email || '';
 
-                    <div>
-                      <p style={{
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "#dd901d",
-                        marginBottom: "4px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px"
-                      }}>Phone</p>
-                      <p style={{
-                        fontSize: "14px",
-                        color: "#f5f5f5",
-                        margin: "0"
-                      }}>{customer.phone}</p>
-                    </div>
+                return (
+                  <div key={id}>
+                    <button
+                      onClick={() => setExpandedCustomer(expandedCustomer === id ? null : id)}
+                      style={{
+                        width: '100%',
+                        padding: '16px',
+                        backgroundColor: 'rgba(26, 15, 0, 0.5)',
+                        border: '1px solid rgba(221, 144, 29, 0.3)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontFamily: 'Inter, sans-serif',
+                        transition: 'all 0.2s ease',
+                        textAlign: 'left'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(221, 144, 29, 0.6)';
+                        e.currentTarget.style.backgroundColor = 'rgba(26, 15, 0, 0.7)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(221, 144, 29, 0.3)';
+                        e.currentTarget.style.backgroundColor = 'rgba(26, 15, 0, 0.5)';
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 4px 0' }}>
+                            <p style={{ fontSize: '14px', fontWeight: '600', color: '#dd901d', margin: 0 }}>{customerName}</p>
+                            <span style={{ fontSize: '11px', color: '#1a1a1a', backgroundColor: '#dd901d', padding: '4px 8px', borderRadius: '999px', fontWeight: 700 }}>
+                              {item.source === 'appointment' ? 'Appointment' : item.source === 'walkin' ? 'Walk-in' : (item.source || 'Entry')}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: '13px', color: '#988f81', margin: '0 0 4px 0' }}>{date} • {time}</p>
+                          <p style={{ fontSize: '13px', color: '#f5f5f5', margin: '0' }}>{service} • {amount}</p>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <p style={{ fontSize: '13px', color: '#dd901d', margin: '0', fontWeight: '600' }}>{item.status || ''}</p>
+                        </div>
+                      </div>
+                    </button>
 
-                    <div>
-                      <p style={{
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "#dd901d",
-                        marginBottom: "4px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px"
-                      }}>Email</p>
-                      <p style={{
-                        fontSize: "14px",
-                        color: "#f5f5f5",
-                        margin: "0"
-                      }}>{customer.email}</p>
-                    </div>
+                    {expandedCustomer === id && (
+                      <div style={{ backgroundColor: 'rgba(221, 144, 29, 0.05)', borderLeft: '3px solid #dd901d', padding: '16px', borderRadius: '6px', marginTop: '8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Stylist</p>
+                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{stylist}</p>
+                        </div>
 
-                    <div>
-                      <p style={{
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "#dd901d",
-                        marginBottom: "4px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px"
-                      }}>Service</p>
-                      <p style={{
-                        fontSize: "14px",
-                        color: "#f5f5f5",
-                        margin: "0"
-                      }}>{customer.service}</p>
-                    </div>
+                        <div>
+                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phone</p>
+                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{phone}</p>
+                        </div>
 
-                    <div>
-                      <p style={{
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "#dd901d",
-                        marginBottom: "4px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px"
-                      }}>Duration</p>
-                      <p style={{
-                        fontSize: "14px",
-                        color: "#f5f5f5",
-                        margin: "0"
-                      }}>{customer.duration}</p>
-                    </div>
+                        <div>
+                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</p>
+                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{email}</p>
+                        </div>
 
-                    <div>
-                      <p style={{
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "#dd901d",
-                        marginBottom: "4px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px"
-                      }}>Time Slot</p>
-                      <p style={{
-                        fontSize: "14px",
-                        color: "#f5f5f5",
-                        margin: "0"
-                      }}>{customer.time}</p>
-                    </div>
+                        <div>
+                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Service</p>
+                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{service}</p>
+                        </div>
 
-                    <div>
-                      <p style={{
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "#dd901d",
-                        marginBottom: "4px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px"
-                      }}>Amount</p>
-                      <p style={{
-                        fontSize: "14px",
-                        color: "#f5f5f5",
-                        margin: "0"
-                      }}>{customer.amount}</p>
-                    </div>
+                        <div>
+                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Time Slot</p>
+                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{time}</p>
+                        </div>
+
+                        <div>
+                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount</p>
+                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{amount}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))
+                );
+              });
+            })()
           ) : (
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "200px"
-            }}>
-              <p style={{
-                fontSize: "14px",
-                color: "#988f81"
-              }}>No customer history found</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+              <p style={{ fontSize: '14px', color: '#988f81' }}>No customer history found</p>
             </div>
           )}
         </div>

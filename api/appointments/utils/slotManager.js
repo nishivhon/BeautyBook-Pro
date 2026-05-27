@@ -11,8 +11,8 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 function getSupabaseClient() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseKey) {
     throw new Error('Missing Supabase credentials');
   }
@@ -44,6 +44,8 @@ export const bookSlot = async (date, time, customerName = null, customerContact 
       service_est_time: Number(serviceEstTime) || 0,
       total_price: Number(totalPrice) || 0,
       status: 'pending',
+      reminder_sent: false,
+      reminder_sent_at: null,
       updated_at: new Date().toISOString() 
     };
 
@@ -95,6 +97,8 @@ export const releaseSlot = async (date, time) => {
         service_est_time: 0,
         total_price: 0,
         status: 'pending',
+        reminder_sent: false,
+        reminder_sent_at: null,
         updated_at: new Date().toISOString() 
       })
       .eq('date', date)
@@ -213,6 +217,7 @@ export const updateSlotStatus = async (date, time, newStatus) => {
       .from('available_slots')
       .update({ 
         status: newStatus,
+        ...(newStatus === 'cancelled' ? { reminder_sent: false, reminder_sent_at: null } : {}),
         updated_at: new Date().toISOString(),
         ...(cancellations !== undefined ? { cancellations } : {})
       })

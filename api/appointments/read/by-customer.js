@@ -48,8 +48,8 @@ export default async (req, res) => {
   try {
     console.log(`[AppointmentsByCustomer] Fetching appointments for email: ${email}, phone: ${phone}`);
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
     console.log(`[AppointmentsByCustomer] Supabase URL: ${supabaseUrl ? 'loaded' : 'MISSING'}`);
     console.log(`[AppointmentsByCustomer] Supabase Key: ${supabaseKey ? 'loaded' : 'MISSING'}`);
