@@ -6,6 +6,7 @@ import { EditServiceModal } from "../../components/modal/admin/edit_service";
 import CouponModal from "../../components/modal/admin/coupon_modal";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { ToastViewport, useToast } from "../../components/toast";
 
 // ═══════════════════════════════════════════════════════════════════
 // DARK MODE HELPER
@@ -567,6 +568,7 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardServices = ({ date }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -922,6 +924,7 @@ export const AdminDashboardServices = ({ date }) => {
       className="super-admin-container admin-dashboard-page"
       style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
     >
+      <ToastViewport />
       {/* Sidebar */}
       <AdminSidebar 
         activeNav={activeNav}

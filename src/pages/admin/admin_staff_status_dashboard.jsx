@@ -7,6 +7,7 @@ import { StatusUpdateModal } from "../../components/modal/admin/status_update";
 import { ManageServiceModal } from "../../components/modal/admin/manage_service";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { ToastViewport, useToast } from "../../components/toast";
 
 // ═══════════════════════════════════════════════════════════════════
 // DARK MODE HELPER
@@ -20,6 +21,8 @@ const isDarkMode = () => {
 const getThemeStyles = (darkStyles, lightStyles) => {
   return isDarkMode() ? darkStyles : lightStyles;
 };
+
+// Portal removed because the walk-in control now updates via a single toggle button.
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -494,9 +497,8 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [expandedStaff, setExpandedStaff] = useState(null);
-  const [staff, setStaff] = useState(staffList);
+  const [staff, setStaff] = useState(Array.isArray(staffList) ? staffList : []);
   const [walkInStatus, setWalkInStatus] = useState({});
-  const [openDropdown, setOpenDropdown] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ 
     isOpen: false, 
     title: "", 
@@ -508,6 +510,12 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
 
   // Update staff when staffList changes
   useEffect(() => {
+    if (!Array.isArray(staffList)) {
+      setStaff([]);
+      setWalkInStatus({});
+      return;
+    }
+
     setStaff(staffList);
     // Initialize walk-in status from the actual walk_in column
     const initialWalkInStatus = {};
@@ -641,149 +649,37 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
           ) : filteredStaff.length > 0 ? (
             filteredStaff.map((s, i) => (
             <div key={i}>
-              <div className="staff-member-row">
+              <div className="staff-member-row no-hover">
                 <div className="staff-member-left">
                   <div className="staff-member-avatar">{s.initial}</div>
                   <span className="staff-member-name">{s.name}</span>
-                  {/* Walk-In Status Dropdown */}
-                  {s.status === "Available" && (
+                  {/* Walk-In Status Toggle */}
+                      {s.status === "Available" && (
                     <div style={{ position: "relative", marginLeft: "12px" }}>
                       <button
-                        onClick={() => setOpenDropdown(openDropdown === s.name ? null : s.name)}
+                        type="button"
+                        onClick={() => {
+                          const isAccepting = walkInStatus[s.name] === "Accepting";
+                          setConfirmModal({
+                            isOpen: true,
+                            title: "Confirm Walk-In Status",
+                            message: isAccepting
+                              ? `Prevent ${s.name} from accepting walk-ins?`
+                              : `Allow ${s.name} to accept walk-ins?`,
+                            action: isAccepting ? "walk_in_reject" : "walk_in_accept",
+                            staffName: s.name,
+                            staffId: s.id
+                          });
+                        }}
                         className={`walkin-chip ${walkInStatus[s.name] === "Accepting" ? 'walkin-accept' : 'walkin-reject'}`}
+                        aria-pressed={walkInStatus[s.name] === "Accepting"}
+                        title={walkInStatus[s.name] === "Accepting"
+                          ? `Click to stop accepting walk-ins for ${s.name}`
+                          : `Click to allow ${s.name} to accept walk-ins`}
                       >
                         {walkInStatus[s.name] === "Accepting" ? "Accepting Walk-In" : "Not Accepting"}
                       </button>
                       
-                      {/* Dropdown Menu */}
-                      {openDropdown === s.name && (
-                        <div
-                          style={getThemeStyles(
-                            {
-                              position: "absolute",
-                              top: "100%",
-                              left: "0",
-                              marginTop: "4px",
-                              backgroundColor: "rgba(20, 17, 15, 0.96)",
-                              border: "1px solid rgba(221, 144, 29, 0.2)",
-                              borderRadius: "6px",
-                              minWidth: "180px",
-                              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-                              zIndex: 100,
-                              overflow: "hidden",
-                            },
-                            {
-                              position: "absolute",
-                              top: "100%",
-                              left: "0",
-                              marginTop: "4px",
-                              backgroundColor: "#ffffff",
-                              border: "1px solid rgba(213, 210, 211, 0.7)",
-                              borderRadius: "6px",
-                              minWidth: "180px",
-                              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
-                              zIndex: 100,
-                              overflow: "hidden",
-                            }
-                          )}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            onClick={() => {
-                              setConfirmModal({
-                                isOpen: true,
-                                title: "Confirm Walk-In Status",
-                                message: `Allow ${s.name} to accept walk-ins?`,
-                                action: "walk_in_accept",
-                                staffName: s.name,
-                                staffId: s.id
-                              });
-                            }}
-                            style={getThemeStyles(
-                              {
-                                width: "100%",
-                                padding: "10px 14px",
-                                backgroundColor: walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.1)" : "transparent",
-                                border: "none",
-                                textAlign: "left",
-                                color: "#f5f5f5",
-                                fontSize: "13px",
-                                fontFamily: "Inter, sans-serif",
-                                cursor: "pointer",
-                                transition: "all 0.2s ease",
-                              },
-                              {
-                                width: "100%",
-                                padding: "10px 14px",
-                                backgroundColor: walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.08)" : "transparent",
-                                border: "none",
-                                textAlign: "left",
-                                color: "#0c0a09",
-                                fontSize: "13px",
-                                fontFamily: "Inter, sans-serif",
-                                cursor: "pointer",
-                                transition: "all 0.2s ease",
-                              }
-                            )}
-                            onMouseEnter={(e) => {
-                              e.target.style.backgroundColor = "rgba(34, 197, 94, 0.15)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.backgroundColor = walkInStatus[s.name] === "Accepting" ? "rgba(34, 197, 94, 0.1)" : "transparent";
-                            }}
-                          >
-                            Accepting Walk-In
-                          </button>
-                          <button
-                            onClick={() => {
-                              setConfirmModal({
-                                isOpen: true,
-                                title: "Confirm Walk-In Status",
-                                message: `Prevent ${s.name} from accepting walk-ins?`,
-                                action: "walk_in_reject",
-                                staffName: s.name,
-                                staffId: s.id
-                              });
-                            }}
-                            style={getThemeStyles(
-                              {
-                                width: "100%",
-                                padding: "10px 14px",
-                                backgroundColor: walkInStatus[s.name] === "Not Accepting" ? "rgba(239, 68, 68, 0.1)" : "transparent",
-                                border: "none",
-                                borderTop: "1px solid rgba(221, 144, 29, 0.1)",
-                                textAlign: "left",
-                                color: "#f5f5f5",
-                                fontSize: "13px",
-                                fontFamily: "Inter, sans-serif",
-                                cursor: "pointer",
-                                transition: "all 0.2s ease",
-                              },
-                              {
-                                width: "100%",
-                                padding: "10px 14px",
-                                backgroundColor: walkInStatus[s.name] === "Not Accepting" ? "rgba(239, 68, 68, 0.08)" : "transparent",
-                                border: "none",
-                                borderTop: "1px solid rgba(221, 144, 29, 0.08)",
-                                textAlign: "left",
-                                color: "#0c0a09",
-                                fontSize: "13px",
-                                fontFamily: "Inter, sans-serif",
-                                cursor: "pointer",
-                                transition: "all 0.2s ease",
-                              }
-                            )}
-                            onMouseEnter={(e) => {
-                              e.target.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.backgroundColor = walkInStatus[s.name] === "Not Accepting" ? "rgba(239, 68, 68, 0.1)" : "transparent";
-                            }}
-                          >
-                            Not Accepting Walk-In
-                          </button>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -941,225 +837,107 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
         </div>
       )}
       
-      {/* Confirmation Modal */}
-      {confirmModal.isOpen && (
-        <div 
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.85)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2000,
-            fontFamily: "Inter, sans-serif",
-          }}
-          onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-        >
-          <div
-            style={getThemeStyles(
-              {
-                backgroundColor: "rgba(10, 9, 8, 0.95)",
-                borderRadius: "12px",
-                padding: "32px",
-                maxWidth: "400px",
-                width: "90%",
-                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.9)",
-                border: "1px solid rgba(221, 144, 29, 0.2)",
-              },
-              {
-                backgroundColor: "#ffffff",
-                borderRadius: "12px",
-                padding: "32px",
-                maxWidth: "400px",
-                width: "90%",
-                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.12)",
-                border: "1px solid rgba(213, 210, 211, 0.6)",
-              }
-            )}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={getThemeStyles(
-              {
-                fontSize: "18px",
-                fontWeight: "700",
-                color: "#f5f5f5",
-                margin: "0 0 12px 0"
-              },
-              {
-                fontSize: "18px",
-                fontWeight: "700",
-                color: "#0c0a09",
-                margin: "0 0 12px 0"
-              }
-            )}>
-              {confirmModal.title}
-            </h3>
-            
-            <p style={getThemeStyles(
-              {
-                fontSize: "14px",
-                color: "#988f81",
-                margin: "0 0 24px 0",
-                lineHeight: "1.5"
-              },
-              {
-                fontSize: "14px",
-                color: "#666",
-                margin: "0 0 24px 0",
-                lineHeight: "1.5"
-              }
-            )}>
-              {confirmModal.message}
-            </p>
-
-            <div style={{ display: "flex", gap: "12px" }}>
-              <button
-                onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-                style={getThemeStyles(
-                  {
-                    flex: 1,
-                    padding: "12px 16px",
-                    backgroundColor: "transparent",
-                    border: "1px solid rgba(221, 144, 29, 0.3)",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#988f81",
-                    transition: "all 0.2s ease",
-                    fontFamily: "Inter, sans-serif",
-                  },
-                  {
-                    flex: 1,
-                    padding: "12px 16px",
-                    backgroundColor: "transparent",
-                    border: "1px solid rgba(213, 210, 211, 0.4)",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#666",
-                    transition: "all 0.2s ease",
-                    fontFamily: "Inter, sans-serif",
-                  }
-                )}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                  e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.3)";
-                  e.currentTarget.style.backgroundColor = "transparent";
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  setConfirmModal({ ...confirmModal, isOpen: false });
-                  
-                  const isClockIn = confirmModal.action === "clock_in";
-                  const isClockOut = confirmModal.action === "clock_out";
-                  const isWalkInAccept = confirmModal.action === "walk_in_accept";
-                  const isWalkInReject = confirmModal.action === "walk_in_reject";
-                  
-                  try {
-                    if (isClockIn || isClockOut) {
-                      // Format time as HH:MM:SS in 24-hour format
-                      const now = new Date();
-                      const timeString = now.toLocaleTimeString('en-GB', { 
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        second: '2-digit',
-                        hour12: false 
-                      });
-                      
-                      // Update local state
-                      const updatedStaff = staff.map(staffMember => 
-                        staffMember.name === confirmModal.staffName 
-                          ? { 
-                              ...staffMember, 
-                              status: isClockIn ? "Available" : "Absent",
-                              statusClass: isClockIn ? "staff-status-green" : "staff-status-tan",
-                              subStatus: isClockIn ? "Available" : "Not clocked in",
-                              clock_in: isClockIn ? timeString : staffMember.clock_in,
-                              clock_out: isClockOut ? timeString : staffMember.clock_out
-                            }
-                          : staffMember
-                      );
-                      setStaff(updatedStaff);
-                      
-                      // Update database
-                      const updatePayload = {
-                        id: confirmModal.staffId,
-                      };
-                      
-                      if (isClockIn) {
-                        updatePayload.clock_in = timeString;
-                      } else if (isClockOut) {
-                        updatePayload.clock_out = timeString;
-                      }
-                      
-                      await fetch('/api/staffs/update', {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(updatePayload)
-                      });
-                      
-                      onStaffStatusUpdate?.(confirmModal.staffName, isClockIn ? "Available" : "Absent");
-                    } else if (isWalkInAccept || isWalkInReject) {
-                      const currentStaff = staff.find(member => member.name === confirmModal.staffName);
-                      if (isWalkInAccept && currentStaff?.details?.availableForWalkIn === false) {
-                        alert(`${confirmModal.staffName} cannot accept walk-ins while currently in service.`);
-                        return;
-                      }
-
-                      setWalkInStatus({ ...walkInStatus, [confirmModal.staffName]: isWalkInAccept ? "Accepting" : "Not Accepting" });
-                      setOpenDropdown(null);
-                      
-                      await fetch('/api/staffs/update', {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          id: confirmModal.staffId,
-                          walk_in: isWalkInAccept ? true : false
-                        })
-                      });
+      {/* Confirmation Dialog - Using Customer Dashboard Style */}
+      <ConfirmationDialog
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Confirm"
+        cancelText="Cancel"
+        onConfirm={async () => {
+          setConfirmModal({ ...confirmModal, isOpen: false });
+          
+          const isClockIn = confirmModal.action === "clock_in";
+          const isClockOut = confirmModal.action === "clock_out";
+          const isWalkInAccept = confirmModal.action === "walk_in_accept";
+          const isWalkInReject = confirmModal.action === "walk_in_reject";
+          
+          try {
+            if (isClockIn || isClockOut) {
+              // Format time as HH:MM:SS in 24-hour format
+              const now = new Date();
+              const timeString = now.toLocaleTimeString('en-GB', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: false 
+              });
+              
+              // Update local state
+              const updatedStaff = staff.map(staffMember => 
+                staffMember.name === confirmModal.staffName 
+                  ? { 
+                      ...staffMember, 
+                      status: isClockIn ? "Available" : "Absent",
+                      statusClass: isClockIn ? "staff-status-green" : "staff-status-tan",
+                      subStatus: isClockIn ? "Available" : "Not clocked in",
+                      clock_in: isClockIn ? timeString : staffMember.clock_in,
+                      clock_out: isClockOut ? timeString : staffMember.clock_out
                     }
-                  } catch (error) {
-                    console.error('Error updating staff:', error);
-                  }
-                }}
-                style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  backgroundColor: "#dd901d",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#fff",
-                  transition: "all 0.2s ease",
-                  fontFamily: "Inter, sans-serif",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#e89f2d";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#dd901d";
-                }}
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                  : staffMember
+              );
+              setStaff(updatedStaff);
+              
+              // Update database
+              const updatePayload = {
+                id: confirmModal.staffId,
+              };
+              
+              if (isClockIn) {
+                updatePayload.clock_in = timeString;
+              } else if (isClockOut) {
+                updatePayload.clock_out = timeString;
+              }
+              
+              await fetch('/api/staffs/update', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatePayload)
+              });
+              
+              onStaffStatusUpdate?.(confirmModal.staffName, isClockIn ? "Available" : "Absent");
+            } else if (isWalkInAccept || isWalkInReject) {
+              const currentStaff = staff.find(member => member.name === confirmModal.staffName);
+              if (isWalkInAccept && currentStaff?.status !== "Available") {
+                showToast({
+                  message: `${confirmModal.staffName} can only accept walk-ins when available.`,
+                  type: 'warning',
+                  duration: 3000
+                });
+                return;
+              }
+
+              const updatedStaff = staff.map(member =>
+                member.name === confirmModal.staffName
+                  ? {
+                      ...member,
+                      walk_in: isWalkInAccept,
+                      details: {
+                        ...member.details,
+                        availableForWalkIn: isWalkInAccept
+                      }
+                    }
+                  : member
+              );
+
+              setStaff(updatedStaff);
+              setWalkInStatus({ ...walkInStatus, [confirmModal.staffName]: isWalkInAccept ? "Accepting" : "Not Accepting" });
+              
+              await fetch('/api/staffs/update', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: confirmModal.staffId,
+                  walk_in: isWalkInAccept ? true : false
+                })
+              });
+            }
+          } catch (error) {
+            console.error('Error updating staff:', error);
+          }
+        }}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+      />
     </div>
   );
 };
@@ -1203,6 +981,7 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardStaffStatus = ({ date }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1527,14 +1306,22 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       const staffMember = staff.find(s => s.name === staffName);
       if (!staffMember || !staffMember.id) {
         console.error(`Staff member ${staffName} not found or has no id`);
-        alert(`Error: Staff member ${staffName} not found`);
+        showToast({
+          message: `Error: Staff member ${staffName} not found`,
+          type: 'error',
+          duration: 3000
+        });
         return;
       }
 
       // Validate at least one category is selected
       if (!selectedCategories || selectedCategories.length === 0) {
         console.warn('[Admin:ManageService] No categories selected');
-        alert('Please select at least one specialty');
+        showToast({
+          message: 'Please select at least one specialty',
+          type: 'warning',
+          duration: 3000
+        });
         return;
       }
 
@@ -1563,7 +1350,11 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       if (!response.ok) {
         const error = await response.json();
         console.error(`[Admin:ManageService] Failed to update specialties: ${error.error}`, error.details);
-        alert(`Failed to update specialties: ${error.error}`);
+        showToast({
+          message: `Failed to update specialties: ${error.error}`,
+          type: 'error',
+          duration: 3000
+        });
         return;
       }
 
@@ -1577,10 +1368,18 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       fetchStaff();
       
       // Show success message
-      alert(`Successfully updated ${staffName}'s specialties to: ${selectedCategoryNames.join(', ')}`);
+      showToast({
+        message: `Successfully updated ${staffName}'s specialties to: ${selectedCategoryNames.join(', ')}`,
+        type: 'success',
+        duration: 2000
+      });
     } catch (error) {
       console.error(`[Admin:ManageService] Error updating specialties:`, error);
-      alert(`Error updating specialties: ${error.message}`);
+      showToast({
+        message: `Error updating specialties: ${error.message}`,
+        type: 'error',
+        duration: 3000
+      });
     }
   };
 
@@ -1616,6 +1415,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       className="super-admin-container admin-dashboard-page"
       style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
     >
+      <ToastViewport />
       {/* Sidebar */}
       <AdminSidebar 
         activeNav={activeNav}

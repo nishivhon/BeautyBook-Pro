@@ -4,6 +4,7 @@ import { logoutOperator } from "../../services/operatorAuth";
 import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { ToastViewport, useToast } from "../../components/toast";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 
 // ═══════════════════════════════════════════════════════════════════
@@ -345,6 +346,7 @@ const PageMetrics = ({ stats }) => (
 );
 
 const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
+  const { showToast } = useToast();
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
@@ -440,10 +442,18 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
       // Remove from current appointments silently
       setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
       
-      alert(`✓ Service marked as done!`);
+      showToast({
+        message: '✓ Service marked as done!',
+        type: 'success',
+        duration: 2000
+      });
     } catch (error) {
       console.error(`Error completing service:`, error);
-      alert('Failed to complete service: ' + error.message);
+      showToast({
+        message: 'Failed to complete service: ' + error.message,
+        type: 'error',
+        duration: 3000
+      });
     }
   };
 
@@ -1250,6 +1260,7 @@ const CouponsPanel = () => {
 
 export const AdminDashboard = ({ date }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [proceedConfirmId, setProceedConfirmId] = useState(null);
@@ -1420,7 +1431,11 @@ export const AdminDashboard = ({ date }) => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('[AdminDashboard] Error response:', errorData);
-        alert(`API Error: ${errorData.error || response.statusText}\n${errorData.details || ''}`);
+        showToast({
+          message: `API Error: ${errorData.error || response.statusText}`,
+          type: 'error',
+          duration: 3000
+        });
         throw new Error(`Failed to move appointment to current: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
@@ -1445,11 +1460,19 @@ export const AdminDashboard = ({ date }) => {
 
       // Close dialog and show success
       setProceedConfirmId(null);
-      alert(`✓ Status updated! History sync: ${result.historyUpdated ? 'YES' : 'NO'}`);
+      showToast({
+        message: `✓ Status updated!`,
+        type: 'success',
+        duration: 2000
+      });
     } catch (error) {
       console.error('[AdminDashboard] Error moving appointment:', error);
       console.error('[AdminDashboard] Full error:', error.toString());
-      alert('Failed to move appointment. Please try again.');
+      showToast({
+        message: 'Failed to move appointment. Please try again.',
+        type: 'error',
+        duration: 3000
+      });
     }
   };
 
@@ -1463,6 +1486,7 @@ export const AdminDashboard = ({ date }) => {
       className="super-admin-container admin-dashboard-page"
       style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
     >
+      <ToastViewport />
       {/* Sidebar */}
       <div
         inert={showWalkInModal ? "" : undefined}

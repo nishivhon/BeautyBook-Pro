@@ -4,6 +4,7 @@ import { logoutOperator } from "../../services/operatorAuth";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { ToastViewport, useToast } from "../../components/toast";
 
 // ═══════════════════════════════════════════════════════════════════
 // DARK MODE HELPER
@@ -529,6 +530,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
 /* ── Live Queue panel ── */
 const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAppointments, setPendingAppointments, onOpenWalkInModal, onProceedClick, refreshTrigger = 0 }) => {
+  const { showToast } = useToast();
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -634,10 +636,18 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
       // Remove from current appointments locally and trigger refresh
       setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
       setExpandedItemId(null);
-      alert(`✓ Service completed! Status updated to done.`);
+      showToast({
+        message: '✓ Service completed! Status updated to done.',
+        type: 'success',
+        duration: 2000
+      });
     } catch (error) {
       console.error(`[LiveQueue] Error completing service:`, error);
-      alert('Failed to mark service as complete: ' + error.message);
+      showToast({
+        message: 'Failed to mark service as complete: ' + error.message,
+        type: 'error',
+        duration: 3000
+      });
     }
   };
 
@@ -1048,6 +1058,7 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardLiveStatus = ({ date }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [proceedConfirmId, setProceedConfirmId] = useState(null);
@@ -1110,14 +1121,22 @@ export const AdminDashboardLiveStatus = ({ date }) => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('[LiveQueue] Error response:', errorData);
-        alert(`API Error: ${errorData.error || response.statusText}\n${errorData.details || ''}`);
+        showToast({
+          message: `API Error: ${errorData.error || response.statusText}`,
+          type: 'error',
+          duration: 3000
+        });
         throw new Error(`Failed to move appointment to current: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
       const result = await response.json();
       console.log(`[LiveQueue] Appointment moved to current:`, result);
       console.log(`[LiveQueue] History synced:`, result.historyUpdated, result.historyUpdateReason);
-      alert(`✓ Status updated! History sync: ${result.historyUpdated ? 'YES' : 'NO'}`);
+      showToast({
+        message: '✓ Status updated!',
+        type: 'success',
+        duration: 2000
+      });
 
       // Refresh the queue panels so they reflect the updated database state
       setQueueRefreshTrigger((prev) => prev + 1);
@@ -1128,7 +1147,11 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     } catch (error) {
       console.error('[LiveQueue] Error moving appointment:', error);
       console.error('[LiveQueue] Full error:', error.toString());
-      alert('Failed to move appointment. Please try again.');
+      showToast({
+        message: 'Failed to move appointment. Please try again.',
+        type: 'error',
+        duration: 3000
+      });
     }
   };
 
@@ -1166,6 +1189,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
       className="super-admin-container admin-dashboard-page"
       style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
     >
+      <ToastViewport />
       {/* Sidebar */}
       <div
         inert={showWalkInModal ? "" : undefined}
