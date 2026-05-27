@@ -520,7 +520,8 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
     // Initialize walk-in status from the actual walk_in column
     const initialWalkInStatus = {};
     staffList.forEach(member => {
-      initialWalkInStatus[member.name] = member.walk_in ? "Accepting" : "Not Accepting";
+      const isInService = String(member.status || member.in_service || '').trim().toLowerCase() === 'in service';
+      initialWalkInStatus[member.name] = !isInService && member.walk_in ? "Accepting" : "Not Accepting";
     });
     setWalkInStatus(initialWalkInStatus);
   }, [staffList]);
@@ -762,9 +763,18 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
 
                   {/* Clock-In & Manage Service Buttons */}
                   <div style={{ gridColumn: "1 / -1", marginTop: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    {(() => {
+                      const isAbsent = s.status === "Absent";
+                      const isInService = Boolean(s.isInService);
+
+                      return (
                     <button
                       onClick={() => {
-                        const isClockIn = s.status === "Absent";
+                        if (isInService) {
+                          return;
+                        }
+
+                        const isClockIn = isAbsent;
                         setConfirmModal({
                           isOpen: true,
                           title: isClockIn ? "Confirm Clock In" : "Confirm Clock Out",
@@ -776,28 +786,36 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                       }}
                       style={{
                         padding: "10px 16px",
-                        backgroundColor: s.status === "Absent" ? "#22c55e" : "#ef4444",
+                        backgroundColor: isInService ? "#9ca3af" : isAbsent ? "#22c55e" : "#ef4444",
                         border: "none",
                         borderRadius: "8px",
                         color: "#fff",
                         fontSize: "13px",
                         fontWeight: "600",
-                        cursor: "pointer",
+                        cursor: isInService ? "not-allowed" : "pointer",
                         transition: "all 0.2s ease",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "6px",
+                        opacity: isInService ? 0.7 : 1,
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = s.status === "Absent" ? "#16a34a" : "#dc2626";
+                        if (!isInService) {
+                          e.target.style.backgroundColor = isAbsent ? "#16a34a" : "#dc2626";
+                        }
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = s.status === "Absent" ? "#22c55e" : "#ef4444";
+                        if (!isInService) {
+                          e.target.style.backgroundColor = isAbsent ? "#22c55e" : "#ef4444";
+                        }
                       }}
+                      disabled={isInService}
                     >
-                      {s.status === "Absent" ? "Clock In" : "Clock Out"}
+                      {isInService ? "In Service" : isAbsent ? "Clock In" : "Clock Out"}
                     </button>
+                      );
+                    })()}
                     <button
                       onClick={() => onOpenManageServiceModal(s)}
                       style={{
@@ -1117,11 +1135,18 @@ export const AdminDashboardStaffStatus = ({ date }) => {
         // Get clock in/out values
         const hasClockIn = s.clock_in && s.clock_in.trim() && s.clock_in !== '—';
         const hasClockOut = s.clock_out && s.clock_out.trim() && s.clock_out !== '—';
+        const isInService = inServiceValue === 'in-service';
 
         console.log(`Processing staff: ${staffName} | clock_in: ${s.clock_in} | clock_out: ${s.clock_out} | in_service: ${inServiceValue}`);
 
-        // Priority 1: Check clock in/out status
-        if (hasClockIn && !hasClockOut) {
+        // Priority 1: Check in_service column for specific statuses
+        if (isInService) {
+          status = 'In Service';
+          statusClass = 'staff-status-blue';
+          subStatus = 'Serving: ' + (s.current_client || 'Client');
+        }
+        // Priority 2: Check clock in/out status
+        else if (hasClockIn && !hasClockOut) {
           // Clocked in and not clocked out → Available
           status = 'Available';
           statusClass = 'staff-status-green';
@@ -1131,12 +1156,6 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           status = 'Clocked out';
           statusClass = 'staff-status-tan';
           subStatus = 'Clocked out';
-        } 
-        // Priority 2: Check in_service column for specific statuses
-        else if (inServiceValue === 'in-service') {
-          status = 'In Service';
-          statusClass = 'staff-status-blue';
-          subStatus = 'Serving: ' + (s.current_client || 'Client');
         } else if (inServiceValue === 'on-break') {
           status = 'On Break';
           statusClass = 'staff-status-amber';
@@ -1163,7 +1182,8 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           id: s.id,
           initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
           name: staffName,
-          walk_in: Boolean(s.walk_in),
+          isInService,
+          walk_in: isInService ? false : Boolean(s.walk_in),
           status: status,
           statusClass: statusClass,
           subStatus: subStatus,
@@ -1180,7 +1200,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
             totalClients: s.total_clients || 0,
             doneClients: s.done_clients || 0,
             totalWalkIns: s.total_walk_in || 0,
-            availableForWalkIn: Boolean(s.walk_in)
+            availableForWalkIn: inServiceValue === 'in-service' ? false : Boolean(s.walk_in)
           }
         };
       });

@@ -5,6 +5,37 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 );
 
+const getPhtDateString = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === 'year')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const day = parts.find((part) => part.type === 'day')?.value;
+
+  return `${year}-${month}-${day}`;
+};
+
+const getCouponLifecycleStatus = (startDate, endDate) => {
+  const today = getPhtDateString();
+  const normalizedStartDate = String(startDate || '').slice(0, 10);
+  const normalizedEndDate = String(endDate || '').slice(0, 10);
+
+  if (normalizedEndDate && normalizedEndDate < today) {
+    return 'expired';
+  }
+
+  if (normalizedStartDate && normalizedStartDate > today) {
+    return 'inactive';
+  }
+
+  return 'active';
+};
+
 export default async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -20,8 +51,7 @@ export default async (req, res) => {
       description,
       start_date,
       end_date,
-      max_uses,
-      status
+      max_uses
     } = req.body;
 
     // Validate required fields
@@ -46,7 +76,7 @@ export default async (req, res) => {
       start_date,
       end_date,
       max_uses: max_uses ? Number(max_uses) : null,
-      status: status || 'active',
+      status: getCouponLifecycleStatus(start_date, end_date),
       number_of_uses: 0,
       is_deleted: false
     };

@@ -230,6 +230,13 @@ const SUMMARY = [
   { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: 0  },
 ];
 
+const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Manila',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date());
+
 // ═══════════════════════════════════════════════════════════════════
 // SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
@@ -354,6 +361,43 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
+  const normalizeQueueItemTime = (appointment) => appointment?.time || appointment?.time_slot || '';
+
+  const formatTimeToAmPm = (timeValue) => {
+    if (!timeValue) return 'N/A';
+
+    const timeString = String(timeValue).trim();
+    const timePart = timeString.includes('T')
+      ? timeString.split('T')[1]?.split('.')[0]
+      : timeString;
+
+    const [hours = '0', minutes = '00'] = timePart.split(':');
+    const hourNumber = Number.parseInt(hours, 10);
+
+    if (Number.isNaN(hourNumber)) return 'N/A';
+
+    const period = hourNumber >= 12 ? 'PM' : 'AM';
+    const hour12 = String(hourNumber % 12 || 12).padStart(2, '0');
+
+    return `${hour12}:${minutes.padStart(2, '0')} ${period}`;
+  };
+
+  const getQueueItemId = (itemId) => String(itemId || '').replace(/^walkin-/, '');
+
   // Fetch appointments data on component mount
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -362,7 +406,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         setError(null);
 
         // Get today's date
-        const today = new Date().toISOString().split('T')[0];
+        const today = getManilaDateString();
         console.log('[LiveQueue] Fetching for date:', today);
 
         // Fetch current appointments
@@ -413,20 +457,81 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     };
 
     fetchAppointments();
+
+    const handleQueueStatusChanged = (event) => {
+      const detail = event?.detail || {};
+      const normalizedId = String(detail.id || '').replace(/^walkin-/, '');
+      if (!normalizedId || !detail.status) return;
+
+      if (detail.status === 'current') {
+        if (detail.isWalkIn) {
+          setWalkInAppointments((prev) => prev.map((walkIn) => (
+            String(walkIn.id) === normalizedId ? { ...walkIn, status: 'current' } : walkIn
+          )));
+          return;
+        }
+
+        setPendingAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+        setCurrentAppointments((prev) => {
+          if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
+          return [
+            ...prev,
+            {
+              id: normalizedId,
+              name: detail.name || 'Customer',
+              staff: detail.staff || 'Any available',
+              service: detail.service || 'Service',
+              time: detail.time || '',
+              date: detail.date || today,
+              status: 'current',
+            },
+          ];
+        });
+        return;
+      }
+
+      if (detail.status === 'done') {
+        if (detail.isWalkIn) {
+          setWalkInAppointments((prev) => prev.filter((walkIn) => String(walkIn.id) !== normalizedId));
+        } else {
+          setCurrentAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+          setDoneAppointments((prev) => {
+            if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
+            return [
+              ...prev,
+              {
+                id: normalizedId,
+                name: detail.name || 'Customer',
+                staff: detail.staff || 'Any available',
+                service: detail.service || 'Service',
+                time: detail.time || '',
+                date: detail.date || today,
+                status: 'done',
+              },
+            ];
+          });
+        }
+      }
+    };
+
+    window.addEventListener('live-queue:status-changed', handleQueueStatusChanged);
+    return () => window.removeEventListener('live-queue:status-changed', handleQueueStatusChanged);
     
-    return () => {};
   }, []);
 
   const handleCompleteService = async (itemId, customerName, service) => {
     try {
       console.log(`Service completed for ${customerName}: ${service}`);
       console.log(`Updating appointment ${itemId} status to 'done'`);
+
+      const normalizedId = getQueueItemId(itemId);
+      const wasWalkIn = String(itemId || '').startsWith('walkin-');
       
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: itemId,
+          id: normalizedId,
           status: 'done'
         })
       });
@@ -439,8 +544,22 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
       const result = await response.json();
       console.log(`Service completion result:`, result);
       
-      // Remove from current appointments silently
-      setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
+      // Remove the completed row from the live queue immediately
+      if (wasWalkIn) {
+        setWalkInAppointments(prev => prev.filter((apt) => String(apt.id) !== normalizedId));
+      } else {
+        setCurrentAppointments(prev => prev.filter((apt) => String(apt.id) !== normalizedId));
+      }
+
+      window.dispatchEvent(new CustomEvent('live-queue:status-changed', {
+        detail: {
+          id: normalizedId,
+          status: 'done',
+          isWalkIn: wasWalkIn,
+          name: customerName,
+          service,
+        },
+      }));
       
       showToast({
         message: '✓ Service marked as done!',
@@ -459,15 +578,6 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
   // Transform appointments to queue item format
   const formatQueueItems = (appointments, type) => {
-    const formatTimeToAmPm = (time24) => {
-      if (!time24) return '';
-      const [hours, minutes] = time24.split(':');
-      const hour = parseInt(hours, 10);
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const hour12 = hour % 12 || 12;
-      return `${hour12}:${minutes}${ampm}`;
-    };
-
     return appointments.map((apt, index) => {
       // Extract service name - should come from API now
       const serviceName = apt.service || 'Service';
@@ -484,7 +594,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         details: {
           serviceSelected: serviceName,
           currentService: type === 'active' ? 'In Progress' : 'Pending',
-          startTime: apt.time,
+          startTime: formatTimeToAmPm(apt.time),
           estimatedTime: '45 mins'
         }
       };
@@ -516,7 +626,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         details: {
           serviceSelected: serviceNames,
           currentService: isCurrentType ? 'In Progress' : 'Pending',
-          startTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          startTime: formatTimeToAmPm(walkin.time || walkin.time_slot || walkin.start_time || new Date().toISOString()),
           estimatedTime: '45 mins'
         },
         isWalkIn: true
@@ -538,7 +648,6 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const allCurrentItems = [...currentItems, ...currentWalkInItems];
   
   // Filter pending items to only show today's appointments with actual bookings (not empty slots)
-  const today = new Date().toISOString().split('T')[0];
   const todayPendingAppointments = pendingAppointments.filter(apt => 
     apt.date === today && apt.name && apt.name !== 'Unknown'
   );
@@ -980,7 +1089,7 @@ const SummaryPanel = () => {
           fetch('/api/appointments/read/by-status?status=done'),
           fetch('/api/appointments/read/by-status?status=current'),
           fetch('/api/appointments/read/by-status?status=pending'),
-          fetch('/api/appointments/read/by-status?status=cancelled')
+          fetch(`/api/appointments/read/daily-cancellations?date=${getManilaDateString()}`)
         ]);
 
         const completedData = resCompleted.ok ? await resCompleted.json() : {};
@@ -992,7 +1101,7 @@ const SummaryPanel = () => {
         const completedCount = completedData.count || (Array.isArray(completedData.appointments) ? completedData.appointments.length : 0);
         const inProgressCount = inProgressData.count || (Array.isArray(inProgressData.appointments) ? inProgressData.appointments.length : 0);
         const pendingCount = pendingData.count || (Array.isArray(pendingData.appointments) ? pendingData.appointments.length : 0);
-        const cancelledCount = cancelledData.count || (Array.isArray(cancelledData.appointments) ? cancelledData.appointments.length : 0);
+        const cancelledCount = cancelledData.totalCancellations || cancelledData.count || 0;
 
         setSummary([
           { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: completedCount },
@@ -1048,13 +1157,14 @@ const CouponsPanel = () => {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState(null);
+  const [selectedFilter, setSelectedFilter] = useState('active');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchAllCoupons = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/coupons/available');
+        const response = await fetch('/api/coupons/read?includeDeleted=true');
         if (!response.ok) throw new Error('Failed to fetch coupons');
         const result = await response.json();
         setCoupons(result.data || []);
@@ -1080,10 +1190,12 @@ const CouponsPanel = () => {
   const getCouponStatus = (coupon) => {
     const now = new Date();
     const start = coupon.start_date ? new Date(coupon.start_date) : null;
-    const end = coupon.expiration_date ? new Date(coupon.expiration_date) : null;
-    if (coupon.status === 'inactive') return 'inactive';
-    if (start && now < start) return 'upcoming';
+    const endDateValue = coupon.end_date || coupon.expiration_date;
+    const end = endDateValue ? new Date(endDateValue) : null;
+    if (coupon.is_deleted) return 'deleted';
     if (end && now > end) return 'expired';
+    if (start && now < start) return 'upcoming';
+    if (coupon.status === 'inactive') return 'inactive';
     return 'active';
   };
 
@@ -1101,28 +1213,51 @@ const CouponsPanel = () => {
 
   // Dropdown options (match coupon statuses)
   const filterOptions = [
-    { key: null, label: 'All Coupons' },
     { key: 'active', label: 'Active Only' },
+    { key: 'inactive', label: 'Inactive Only' },
     { key: 'expired', label: 'Expired Only' },
     { key: 'upcoming', label: 'Upcoming Only' },
+    { key: 'deleted', label: 'Deleted Only' },
   ];
 
   // Filter and sort coupons
   const filteredCoupons = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
     let filtered = coupons.map(c => ({ ...c, _status: getCouponStatus(c) }));
+
+    if (normalizedQuery) {
+      filtered = filtered.filter((coupon) => {
+        const searchableText = [
+          coupon.code,
+          coupon.description,
+          coupon.value_type,
+          coupon.start_date,
+          coupon.end_date,
+          coupon.expiration_date,
+          coupon.status,
+          coupon._status,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return searchableText.includes(normalizedQuery);
+      });
+    }
+
     if (selectedFilter) filtered = filtered.filter(c => c._status === selectedFilter);
     filtered.sort((a, b) => {
-      const order = { upcoming: 0, active: 1, expired: 2, inactive: 3 };
+      const order = { upcoming: 0, active: 1, inactive: 2, expired: 3, deleted: 4 };
       if (order[a._status] !== order[b._status]) return order[a._status] - order[b._status];
-      const aExp = a.expiration_date ? new Date(a.expiration_date) : new Date(0);
-      const bExp = b.expiration_date ? new Date(b.expiration_date) : new Date(0);
+      const aExp = (a.end_date || a.expiration_date) ? new Date(a.end_date || a.expiration_date) : new Date(0);
+      const bExp = (b.end_date || b.expiration_date) ? new Date(b.end_date || b.expiration_date) : new Date(0);
       return bExp - aExp;
     });
     return filtered;
-  }, [coupons, selectedFilter]);
+  }, [coupons, searchQuery, selectedFilter]);
 
   const handleFilterSelect = (key) => {
-    setSelectedFilter(selectedFilter === key ? null : key);
+    setSelectedFilter(key);
     setFilterOpen(false);
   };
 
@@ -1148,6 +1283,25 @@ const CouponsPanel = () => {
         <div className="dash-panel-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <h2 className="dash-panel-title">Coupons List</h2>
           <div className="dash-panel-buttons" style={{ marginLeft: 'auto', position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              id="admin-coupons-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search coupons"
+              aria-label="Search coupons"
+              style={{
+                width: 220,
+                borderRadius: 10,
+                border: '1px solid rgba(221, 144, 29, 0.22)',
+                background: isDarkMode() ? 'rgba(20, 17, 15, 0.45)' : '#fff',
+                color: textColor,
+                padding: '10px 12px',
+                fontSize: 13,
+                outline: 'none',
+                marginRight: 10,
+              }}
+            />
             <button
               className="staff-filter-btn"
               aria-label="Filter"
@@ -1167,14 +1321,6 @@ const CouponsPanel = () => {
                     {opt.label}
                   </button>
                 ))}
-                {selectedFilter && (
-                  <button
-                    className="staff-filter-clear"
-                    onClick={() => setSelectedFilter(null)}
-                  >
-                    Clear Filter
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -1191,10 +1337,21 @@ const CouponsPanel = () => {
           No coupons found
         </div>
       ) : (
-        <div className="dash-coupons-list live-queue-scroll-limited" style={{ maxHeight: "420px", minHeight: "220px", padding: "12px 0", paddingRight: "12px" }}>
+        <div
+          className="dash-coupons-list live-queue-scroll-limited"
+          style={{
+            maxHeight: "420px",
+            minHeight: "220px",
+            padding: "12px 0",
+            paddingRight: "12px",
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            scrollbarGutter: 'stable',
+          }}
+        >
           {filteredCoupons.map((coupon) => {
             const status = coupon._status;
-            const muted = status === 'expired' || status === 'inactive';
+            const muted = status === 'expired' || status === 'inactive' || status === 'deleted';
             const couponRowStyle = getThemeStyles(
               {
                 padding: '12px',
@@ -1229,13 +1386,15 @@ const CouponsPanel = () => {
               >
                 <div className="flex items-center gap-2 justify-between">
                   <div className="font-semibold text-base" style={{ color: textColor }}>{coupon.code}</div>
-                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadge(status)}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
+                </div>
+                <div className="text-sm" style={{ color: labelColor }}>
+                  {coupon.description || 'No description provided'}
                 </div>
                 <div className="flex items-center gap-2 justify-between">
                   <span style={{ color: labelColor }}>{formatDiscount(coupon)} OFF</span>
-                  {coupon.expiration_date && (
+                  {(coupon.end_date || coupon.expiration_date) && (
                     <span className="text-xs" style={{ color: tertiaryColor }}>
-                      Expires: {new Date(coupon.expiration_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      Expires: {new Date(coupon.end_date || coupon.expiration_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   )}
                 </div>
@@ -1268,11 +1427,13 @@ export const AdminDashboard = ({ date }) => {
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
   const [doneAppointments, setDoneAppointments] = useState([]);
+  const [walkInLogs, setWalkInLogs] = useState([]);
+  const [bookingNotifications, setBookingNotifications] = useState([]);
   const [stats, setStats] = useState([
-    { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: "0",      label: "Today's Appointments" },
-    { Icon: QueueIcon,    badge: null,      badgeType: null,    value: "0",       label: "In Queue Now"         },
-    { Icon: RevenueIcon,  badge: "+15%",    badgeType: "green", value: "₱12,450", label: "Revenue Today"        },
-    { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
+    { Icon: CalendarIcon, badge: null, badgeType: null, value: '0', label: "Total Appointments Today" },
+    { Icon: UserGroupIcon, badge: null, badgeType: null, value: '0', label: "Total Walk In" },
+    { Icon: QueueIcon,     badge: null, badgeType: null, value: '0', label: "In Queue" },
+    { Icon: RevenueIcon,   badge: null, badgeType: null, value: '₱0', label: "Total Revenue" },
   ]);
   const [activeNav, setActiveNav] = useState("home");
   const [mounted, setMounted] = useState(false);
@@ -1290,6 +1451,8 @@ export const AdminDashboard = ({ date }) => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
+        const today = getManilaDateString();
+
         // Fetch current appointments
         const currentRes = await fetch('/api/appointments/read/by-status?status=current');
         if (currentRes.ok) {
@@ -1313,6 +1476,14 @@ export const AdminDashboard = ({ date }) => {
           const done = doneData.appointments || [];
           setDoneAppointments(done);
         }
+
+        const walkInRes = await fetch(`/api/appointments/walk-in-logs?date=${today}`);
+        if (walkInRes.ok) {
+          const walkInData = await walkInRes.json();
+          setWalkInLogs(Array.isArray(walkInData) ? walkInData : []);
+        } else {
+          setWalkInLogs([]);
+        }
       } catch (err) {
         console.error('Error fetching appointments:', err);
       }
@@ -1321,14 +1492,96 @@ export const AdminDashboard = ({ date }) => {
     fetchAppointments();
   }, []);
 
+  useEffect(() => {
+    const formatServiceLabel = (services) => {
+      if (!services) return 'a service';
+      if (typeof services === 'string') return services;
+      if (Array.isArray(services)) {
+        const names = services
+          .map((service) => service?.name || service?.title || service?.service || service)
+          .filter(Boolean);
+        return names.length > 0 ? names.join(', ') : 'a service';
+      }
+      if (typeof services === 'object') {
+        return services.name || services.title || services.service || Object.values(services).filter(Boolean).join(', ') || 'a service';
+      }
+      return 'a service';
+    };
+
+    const formatRelativeTime = (value) => {
+      if (!value) return 'Just now';
+      const dateValue = new Date(value);
+      if (Number.isNaN(dateValue.getTime())) return 'Just now';
+
+      const diffMs = Date.now() - dateValue.getTime();
+      const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+      if (diffMinutes < 1) return 'Just now';
+      if (diffMinutes < 60) return `${diffMinutes}m ago`;
+      const diffHours = Math.floor(diffMinutes / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays}d ago`;
+    };
+
+    const fetchBookingNotifications = async () => {
+      try {
+        const response = await fetch('/api/appointments/read/recent-bookings?limit=5');
+        if (!response.ok) {
+          throw new Error('Failed to fetch booking notifications');
+        }
+
+        const result = await response.json();
+        setBookingNotifications(result.notifications || []);
+      } catch (error) {
+        console.error('[AdminDashboard] Error loading booking notifications:', error);
+        setBookingNotifications([]);
+      }
+    };
+
+    fetchBookingNotifications();
+
+    const handleWalkInCreated = (event) => {
+      const detail = event?.detail || {};
+      if (!detail.id) return;
+
+      setWalkInLogs((prev) => {
+        if (prev.some((item) => String(item.id) === String(detail.id))) return prev;
+        return [{ id: detail.id, ...detail }, ...prev];
+      });
+
+      const createdAt = detail.createdAt || new Date().toISOString();
+      const timeAgo = 'Just now';
+
+      const newNotification = {
+        id: detail.id,
+        tone: 'amber',
+        category: 'New booking',
+        title: `${detail.name || 'Customer'} booked ${detail.service || 'a service'}`,
+        description: `${detail.staff || 'Any available stylist'} • Walk-in`,
+        time: timeAgo,
+        unread: true,
+        createdAt,
+      };
+
+      setBookingNotifications((prev) => {
+        const next = [newNotification, ...prev.filter((item) => String(item.id) !== String(detail.id))];
+        return next.slice(0, 5);
+      });
+    };
+
+    window.addEventListener('admin:walkin-created', handleWalkInCreated);
+    return () => window.removeEventListener('admin:walkin-created', handleWalkInCreated);
+  }, []);
+
   // Calculate stats dynamically
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getManilaDateString();
     
     console.log('[AdminDash] Today:', today);
     console.log('[AdminDash] Current appointments:', currentAppointments.map(a => ({ name: a.name, date: a.date })));
     console.log('[AdminDash] Pending appointments:', pendingAppointments.map(a => ({ name: a.name, date: a.date })));
     console.log('[AdminDash] Done appointments:', doneAppointments.map(a => ({ name: a.name, date: a.date })));
+    console.log('[AdminDash] Walk-ins today:', walkInLogs.length);
     
     // Total appointments for today (current + pending + done)
     const todayAppointments = [
@@ -1338,53 +1591,86 @@ export const AdminDashboard = ({ date }) => {
     ];
     
     const totalToday = todayAppointments.length;
-    
-    // Pending/In Queue count for today (only pending status)
-    const inQueueCount = pendingAppointments.filter(apt => apt.date === today).length;
 
-    console.log('[AdminDash] Total today:', totalToday, 'In queue:', inQueueCount);
+    const totalWalkIns = walkInLogs.length;
+
+    const inQueueCount = [
+      ...currentAppointments.filter(apt => apt.date === today),
+      ...pendingAppointments.filter(apt => apt.date === today),
+      ...walkInLogs.filter((walkIn) => {
+        const walkInStatus = String(walkIn.status || '').toLowerCase();
+        if (walkInStatus && !['current', 'pending'].includes(walkInStatus)) return false;
+        const walkInDate = walkIn.date || walkIn.created_at?.split('T')[0] || walkIn.createdAt?.split('T')[0];
+        return walkInDate === today;
+      }),
+    ].length;
+
+    const totalRevenue = doneAppointments
+      .filter(apt => apt.date === today)
+      .reduce((sum, apt) => sum + (Number(apt.price || apt.total_price || 0) || 0), 0);
+
+    console.log('[AdminDash] Total today:', totalToday, 'Walk-ins:', totalWalkIns, 'In queue:', inQueueCount, 'Revenue:', totalRevenue);
 
     setStats([
-      { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: totalToday.toString(),      label: "Today's Appointments" },
-      { Icon: QueueIcon,    badge: null,      badgeType: null,    value: inQueueCount.toString(),       label: "In Queue Now"         },
-      { Icon: RevenueIcon,  badge: "+15%",    badgeType: "green", value: "₱12,450", label: "Revenue Today"        },
-      { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
+      { Icon: CalendarIcon, badge: null, badgeType: null, value: totalToday.toString(), label: "Total Appointments Today" },
+      { Icon: UserGroupIcon, badge: null, badgeType: null, value: totalWalkIns.toString(), label: "Total Walk In" },
+      { Icon: QueueIcon, badge: null, badgeType: null, value: inQueueCount.toString(), label: "In Queue" },
+      { Icon: RevenueIcon, badge: null, badgeType: null, value: `₱${Number(totalRevenue).toLocaleString('en-PH')}`, label: "Total Revenue" },
     ]);
-  }, [currentAppointments, pendingAppointments, doneAppointments]);
+  }, [currentAppointments, pendingAppointments, doneAppointments, walkInLogs]);
 
-  const headerNotifications = useMemo(() => {
-    const recentPending = pendingAppointments.slice(0, 2).map((appointment, index) => ({
-      id: `pending-${appointment.id || index}`,
-      tone: "amber",
-      category: "New booking",
-      title: `${appointment.name || "Customer"} booked ${appointment.service || "a service"}`,
-      description: `${appointment.time || "TBA"} • ${appointment.staff || "Any available stylist"}`,
-      time: "Just now",
-      unread: true,
-    }));
+  useEffect(() => {
+    const handleQueueStatusChanged = (event) => {
+      const detail = event?.detail || {};
+      const normalizedId = String(detail.id || '').replace(/^walkin-/, '');
+      if (!normalizedId || !detail.status || detail.isWalkIn) return;
 
-    const recentCurrent = currentAppointments.slice(0, 2).map((appointment, index) => ({
-      id: `current-${appointment.id || index}`,
-      tone: "blue",
-      category: "Live queue",
-      title: `${appointment.name || "Customer"} is now being served`,
-      description: `${appointment.service || "Service"} • ${appointment.staff || "Assigned staff"}`,
-      time: appointment.time || "Today",
-      unread: index === 0,
-    }));
+      const baseDate = detail.date || new Date().toISOString().split('T')[0];
 
-    const recentDone = doneAppointments.slice(0, 1).map((appointment, index) => ({
-      id: `done-${appointment.id || index}`,
-      tone: "green",
-      category: "Completed",
-      title: `${appointment.name || "Customer"} appointment completed`,
-      description: `${appointment.service || "Service"} finished successfully.`,
-      time: "Today",
-      unread: false,
-    }));
+      if (detail.status === 'current') {
+        setPendingAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+        setCurrentAppointments((prev) => {
+          if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
+          return [
+            ...prev,
+            {
+              id: normalizedId,
+              name: detail.name || 'Customer',
+              staff: detail.staff || 'Any available',
+              service: detail.service || 'Service',
+              time: detail.time || '',
+              date: baseDate,
+              status: 'current',
+            },
+          ];
+        });
+      }
 
-    return [...recentPending, ...recentCurrent, ...recentDone].slice(0, 5);
-  }, [currentAppointments, pendingAppointments, doneAppointments]);
+      if (detail.status === 'done') {
+        setCurrentAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+        setDoneAppointments((prev) => {
+          if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
+          return [
+            ...prev,
+            {
+              id: normalizedId,
+              name: detail.name || 'Customer',
+              staff: detail.staff || 'Any available',
+              service: detail.service || 'Service',
+              time: detail.time || '',
+              date: baseDate,
+              status: 'done',
+            },
+          ];
+        });
+      }
+    };
+
+    window.addEventListener('live-queue:status-changed', handleQueueStatusChanged);
+    return () => window.removeEventListener('live-queue:status-changed', handleQueueStatusChanged);
+  }, []);
+
+  const headerNotifications = bookingNotifications;
 
   const handleLogout = () => {
     setShowLogoutConfirm(true);
@@ -1445,10 +1731,6 @@ export const AdminDashboard = ({ date }) => {
       
       // Update local state instead of reloading page
       if (isWalkIn) {
-        // Move walk-in from pending to current
-        setWalkInAppointments(prev => 
-          prev.map(w => w.id === apiId ? { ...w, status: 'current' } : w)
-        );
       } else {
         // Move appointment from pending to current
         setCurrentAppointments(prev => [
@@ -1457,6 +1739,17 @@ export const AdminDashboard = ({ date }) => {
         ]);
         setPendingAppointments(prev => prev.filter(apt => apt.id !== apiId));
       }
+
+      window.dispatchEvent(new CustomEvent('live-queue:status-changed', {
+        detail: {
+          id: apiId,
+          status: 'current',
+          isWalkIn,
+          name: proceedConfirmData?.name,
+          staff: proceedConfirmData?.staff,
+          service: proceedConfirmData?.service,
+        },
+      }));
 
       // Close dialog and show success
       setProceedConfirmId(null);

@@ -35,12 +35,6 @@ const CheckIcon = ({ size = 14, color = "currentColor" }) => (
   </svg>
 );
 
-const notificationItems = [
-  { id: 1, tone: "amber", category: "New booking", title: "Jake Quaker booked Haircut", description: "Scheduled for today at 9:00 AM with Any Available Stylist.", time: "2m ago", unread: true },
-  { id: 2, tone: "blue", category: "Booking change", title: "Maria Garcia rescheduled her appointment", description: "Moved to 10:30 AM and updated the service notes.", time: "14m ago", unread: true },
-  { id: 3, tone: "green", category: "Live queue", title: "Juan Dela Cruz moved to In Progress", description: "The live queue and dashboard queue were refreshed.", time: "28m ago", unread: false },
-];
-
 const settingsItems = [
   { id: "profile-view", label: "Profile settings", description: "View your account details and role." },
 ];
@@ -54,29 +48,19 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
   const wrapperRef = useRef(null);
   const [openMenu, setOpenMenu] = useState(null);
   const [settingsView, setSettingsView] = useState("main");
-  const [notifications, setNotifications] = useState(notificationItems);
+  const [notifications, setNotifications] = useState([]);
   const { themeMode, toggleTheme } = useThemeScope("staff");
 
   const session = getOperatorSession();
 
-  const notificationSeed = externalNotifications.length > 0 ? externalNotifications : notificationItems;
+  const notificationSeed = externalNotifications;
   const notificationSeedKey = useMemo(() => notificationSeed.map((item) => `${item.id}-${item.title}-${item.time}-${item.unread ? 1 : 0}`).join("|"), [notificationSeed]);
   const unreadCount = useMemo(() => notifications.filter((item) => item.unread).length, [notifications]);
   const profileDisplayUsername = getDisplayUsername(session);
   const profileRole = session?.role || "Administrator";
 
   useEffect(() => {
-    const mapped = (notificationSeed || []).map((item) => {
-      const text = `${item.category || ""} ${item.title || ""} ${item.description || ""}`.toLowerCase();
-      const newBookingRe = /\b(pending appointment|upcoming booking|appointment created|new appointment|booked|new booking)\b/;
-      const bookingChangeRe = /\b(resched|rescheduled|reschedule|cancelled|canceled|cancellation|modified|updated|change|booking change)\b/;
-
-      if (newBookingRe.test(text)) return { ...item, category: "New booking" };
-      if (bookingChangeRe.test(text)) return { ...item, category: "Booking change" };
-      return null;
-    }).filter(Boolean);
-
-    setNotifications(mapped);
+    setNotifications(notificationSeed || []);
   }, [notificationSeedKey]);
 
   useEffect(() => {
