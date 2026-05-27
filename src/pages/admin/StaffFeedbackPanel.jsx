@@ -1,75 +1,91 @@
-import React from "react";
-
-// --- Helper Data and Components ---
-const mockFeedback = [
-  {
-    staffId: 1,
-    name: "Antonio Marquez",
-    rating: 4.5,
-    reviewCount: 24
-  },
-  {
-    staffId: 2,
-    name: "Carlos Reyes",
-    rating: 4.2,
-    reviewCount: 18
-  },
-  {
-    staffId: 3,
-    name: "Daniel Smith",
-    rating: 0,
-    reviewCount: 0
-  },
-  {
-    staffId: 4,
-    name: "John Dela Cruz",
-    rating: 3.8,
-    reviewCount: 9
-  },
-  {
-    staffId: 6,
-    name: "Sample Stylist",
-    rating: 4.8,
-    reviewCount: 16
-  },
-  {
-    staffId: 5,
-    name: "Mike Santos",
-    rating: 4.9,
-    reviewCount: 31
-  }
-];
+import React, { useEffect, useMemo, useState } from "react";
 
 // Dummy StarRating fallback to prevent parse error
 function StarRating({ rating, reviewCount }) {
-  return <span>{rating} ★ ({reviewCount})</span>;
+  return <span>{Number(rating || 0).toFixed(2)} ★ ({reviewCount})</span>;
 }
 
-const StaffFeedbackPanel = ({ staff, loading }) => {
-  // Map staff to feedback, fallback to 0 rating if not found
-  const feedbackList = staff && staff.length > 0
-    ? staff.map(s => {
-        const found = mockFeedback.find(f => f.name === s.name);
-        return {
-          staffId: s.id || `staff-${s.name}`,
-          name: s.name,
-          rating: found ? found.rating : 0,
-          reviewCount: found ? found.reviewCount : 0,
-        };
-      })
-    : mockFeedback;
+const getStaffKey = (name) => String(name || "").trim().toLowerCase();
 
-  const displayFeedbackList = feedbackList.some(f => f.rating > 0)
-    ? feedbackList
-    : [
-        ...feedbackList,
-        {
-          staffId: "sample-feedback",
-          name: "Sample Stylist",
-          rating: 4.8,
-          reviewCount: 16,
-        },
-      ];
+const StaffFeedbackPanel = ({ staff, loading }) => {
+  const [feedbackData, setFeedbackData] = useState([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(true);
+  const [feedbackError, setFeedbackError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchFeedback = async () => {
+      setFeedbackLoading(true);
+      setFeedbackError("");
+
+      try {
+        const response = await fetch('/api/staffs/read/feedback');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch staff feedback: ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (!active) return;
+
+        setFeedbackData(Array.isArray(result?.feedback) ? result.feedback : []);
+      } catch (error) {
+        if (!active) return;
+        setFeedbackData([]);
+        setFeedbackError(error.message || 'Failed to fetch staff feedback');
+      } finally {
+        if (active) setFeedbackLoading(false);
+      }
+    };
+
+    fetchFeedback();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const feedbackMap = useMemo(() => {
+    const map = new Map();
+    for (const entry of feedbackData) {
+      const key = getStaffKey(entry?.staff);
+      if (key) map.set(key, entry);
+    }
+    return map;
+  }, [feedbackData]);
+
+  const feedbackList = useMemo(() => {
+    const mappedStaff = Array.isArray(staff) ? staff : [];
+    const merged = mappedStaff.map((member, index) => {
+      const staffName = String(member?.name || member?.names || '').trim() || 'Unknown';
+      const matched = feedbackMap.get(getStaffKey(staffName));
+
+      return {
+        staffId: member?.id || `staff-${index}-${staffName}`,
+        name: staffName,
+        rating: Number(matched?.averageRating || 0),
+        reviewCount: Number(matched?.reviewCount || 0),
+      };
+    });
+
+    const knownNames = new Set(merged.map((entry) => getStaffKey(entry.name)));
+    const extras = feedbackData
+      .filter((entry) => !knownNames.has(getStaffKey(entry?.staff)))
+      .map((entry, index) => ({
+        staffId: `history-staff-${index}-${entry.staff}`,
+        name: entry.staff,
+        rating: Number(entry.averageRating || 0),
+        reviewCount: Number(entry.reviewCount || 0),
+      }));
+
+    return [...merged, ...extras].sort((a, b) => {
+      if (b.rating !== a.rating) return b.rating - a.rating;
+      if (b.reviewCount !== a.reviewCount) return b.reviewCount - a.reviewCount;
+      return a.name.localeCompare(b.name);
+    });
+  }, [staff, feedbackMap, feedbackData]);
+
+  const isLoading = loading || feedbackLoading;
 
   return (
     <div className="staff-feedback-panel staff-list-panel mt-6">
@@ -77,13 +93,13 @@ const StaffFeedbackPanel = ({ staff, loading }) => {
         <h2 className="staff-list-title">Staff Feedback</h2>
       </div>
       {/* Loading State */}
-      {loading ? (
+      {isLoading ? (
         <div className="py-8 text-center text-gray-500 dark:text-gray-400">Loading staff feedback...</div>
       ) : feedbackList.length === 0 ? (
         <div className="container-empty-state">No staff feedback available</div>
       ) : (
         <div className="staff-member-scroll-limited">
-          {displayFeedbackList.map((f, i) => (
+          {feedbackList.map((f, i) => (
             <div key={f.staffId || i} className="staff-member-row flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="staff-member-avatar" style={{ marginRight: '12px' }}>{f.name?.charAt(0) || '?'}</div>
@@ -100,8 +116,11 @@ const StaffFeedbackPanel = ({ staff, loading }) => {
           ))}
         </div>
       )}
+      {!isLoading && feedbackError ? (
+        <div className="mt-2 text-xs text-amber-500">{feedbackError}</div>
+      ) : null}
     </div>
   );
 };
 
-export { mockFeedback, StaffFeedbackPanel };
+export { StaffFeedbackPanel };
