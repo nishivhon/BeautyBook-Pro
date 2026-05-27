@@ -278,6 +278,9 @@ export const LogIn = () => {
         body: JSON.stringify(payload),
       });
 
+      let customerStatus = null;
+      let customerError = null;
+
       if (customerResponse.ok) {
         const customerResult = await customerResponse.json();
         const customer = customerResult.data;
@@ -298,6 +301,14 @@ export const LogIn = () => {
           setLoading(false);
         }, 800);
         return;
+      } else {
+        customerStatus = customerResponse.status;
+        try {
+          const errBody = await customerResponse.json().catch(() => ({}));
+          customerError = errBody.error || null;
+        } catch (e) {
+          customerError = null;
+        }
       }
 
       // Fallback to operator login
@@ -319,11 +330,17 @@ export const LogIn = () => {
           setLoading(false);
         }, 800);
       } else {
-        setErrors({ form: result.error || "Login failed. Please try again." });
+        // Choose message: if customer account explicitly not found, show that message;
+        // otherwise show generic invalid credentials message.
+        if (customerStatus === 404) {
+          setErrors({ form: customerError || 'Account not found. Please sign up.' });
+        } else {
+          setErrors({ form: 'Invalid email/phone or password' });
+        }
         setLoading(false);
       }
     } catch (error) {
-      setErrors({ form: "An error occurred. Please try again." });
+      setErrors({ form: 'An error occurred. Please try again.' });
       setLoading(false);
     }
   };
