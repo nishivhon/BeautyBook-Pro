@@ -131,6 +131,32 @@ const ProceedIcon = ({ size = 14, color = "#fff" }) => (
   </svg>
 );
 
+const CalendarIcon = ({ size = 20, color = "#dd901d" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect x="3" y="4" width="18" height="18" rx="3" stroke={color} strokeWidth="1.8" />
+    <path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="8" cy="15" r="1" fill={color} />
+    <circle cx="12" cy="15" r="1" fill={color} />
+    <circle cx="16" cy="15" r="1" fill={color} />
+  </svg>
+);
+
+const QueueIcon = ({ size = 20, color = "#dd901d" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <circle cx="9" cy="5" r="2" stroke={color} strokeWidth="1.8" />
+    <circle cx="9" cy="12" r="2" stroke={color} strokeWidth="1.8" />
+    <circle cx="9" cy="19" r="2" stroke={color} strokeWidth="1.8" />
+    <path d="M13 5h8M13 12h8M13 19h8" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
+const RevenueIcon = ({ size = 20, color = "#dd901d" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <line x1="12" y1="1" x2="12" y2="23" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 // ═══════════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════════
@@ -188,11 +214,12 @@ const NAV_ITEMS = [
   { id: "staff-status", label: "Staff Status", icon: UserGroupIcon },
 ];
 
-const STATS = [
-  { Icon: CheckCircleIcon, iconColor: "#22c55e", value: "16", label: "Completed",   labelClass: "live-stat-label-green" },
-  { Icon: InProgressIcon,  iconColor: "#4387ef", value: "3",  label: "In Progress", labelClass: "live-stat-label-blue"  },
-  { Icon: CancelledIcon,   iconColor: "#ef4444", value: "2",  label: "Cancelled",   labelClass: "live-stat-label-red"   },
-];
+const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Manila',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date());
 
 // Queue sections: type = "active" | "waiting" | "cancelled"
 const QUEUE_SECTIONS = [
@@ -354,9 +381,9 @@ const PageTitle = () => {
 };
 
 /* ── Metric cards for hero section ── */
-const PageMetrics = () => (
+const PageMetrics = ({ stats }) => (
   <div className="live-stats-row">
-    {STATS.map(({ Icon, iconColor, value, label, labelClass }, i) => (
+    {stats.map(({ Icon, iconColor, value, label, labelClass }, i) => (
       <div key={i} className="dash-stat-card">
         <div className="dash-stat-top">
           <div className="dash-stat-icon-box">
@@ -1057,6 +1084,8 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   const [scheduleRefreshTrigger, setScheduleRefreshTrigger] = useState(0);
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [doneAppointments, setDoneAppointments] = useState([]);
+  const [walkInLogs, setWalkInLogs] = useState([]);
   const [queueRefreshTrigger, setQueueRefreshTrigger] = useState(0);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
@@ -1137,6 +1166,60 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     return () => clearTimeout(t);
   }, []);
 
+  useEffect(() => {
+    const fetchMetricsSources = async () => {
+      try {
+        const today = getManilaDateString();
+
+        const [doneRes, walkInRes] = await Promise.all([
+          fetch('/api/appointments/read/by-status?status=done'),
+          fetch(`/api/appointments/walk-in-logs?date=${today}`),
+        ]);
+
+        const doneData = doneRes.ok ? await doneRes.json() : {};
+        const walkInData = walkInRes.ok ? await walkInRes.json() : [];
+
+        setDoneAppointments(doneData.appointments || []);
+        setWalkInLogs(Array.isArray(walkInData) ? walkInData : []);
+      } catch (error) {
+        console.error('[LiveStatus] Error fetching metric sources:', error);
+        setDoneAppointments([]);
+        setWalkInLogs([]);
+      }
+    };
+
+    fetchMetricsSources();
+  }, [queueRefreshTrigger, currentAppointments, pendingAppointments]);
+
+  const metricsStats = useMemo(() => {
+    const today = getManilaDateString();
+
+    const totalAppointmentsToday = [
+      ...currentAppointments.filter((apt) => apt.date === today),
+      ...pendingAppointments.filter((apt) => apt.date === today),
+      ...doneAppointments.filter((apt) => apt.date === today),
+    ].length;
+
+    const totalWalkIn = walkInLogs.length;
+
+    const inQueue = [
+      ...currentAppointments.filter((apt) => apt.date === today),
+      ...pendingAppointments.filter((apt) => apt.date === today),
+      ...walkInLogs.filter((walkIn) => {
+        const walkInStatus = String(walkIn.status || '').toLowerCase();
+        if (walkInStatus && !['current', 'pending'].includes(walkInStatus)) return false;
+        const walkInDate = walkIn.date || walkIn.created_at?.split('T')[0] || walkIn.createdAt?.split('T')[0];
+        return walkInDate === today;
+      }),
+    ].length;
+
+    return [
+      { Icon: CalendarIcon, iconColor: '#dd901d', value: totalAppointmentsToday.toString(), label: 'Total Appointments Today', labelClass: 'dash-stat-label' },
+      { Icon: UserGroupIcon, iconColor: '#dd901d', value: totalWalkIn.toString(), label: 'Total Walk In', labelClass: 'dash-stat-label' },
+      { Icon: QueueIcon, iconColor: '#dd901d', value: inQueue.toString(), label: 'In Queue', labelClass: 'dash-stat-label' },
+    ];
+  }, [currentAppointments, pendingAppointments, doneAppointments, walkInLogs]);
+
   const headerNotifications = useMemo(() => {
     const currentFeed = currentAppointments.slice(0, 2).map((apt, index) => ({
       id: `current-${apt.id || index}`,
@@ -1206,7 +1289,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
         <main className="dashboard-main">
           {/* Metrics Cards - Hero Section */}
           <div style={{ marginTop: '20px', marginBottom: '20px' }}>
-            <PageMetrics />
+            <PageMetrics stats={metricsStats} />
           </div>
 
         <div className="live-page-grid">
