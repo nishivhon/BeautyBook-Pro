@@ -401,7 +401,7 @@ const PageMetrics = ({ stats }) => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick }) => {
+const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -414,7 +414,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
   const handleCompleteService = () => {
     if (onCompleteService) {
-      onCompleteService(id, name, service);
+      onCompleteService(id, name, service, staff);
     }
   };
 
@@ -562,39 +562,35 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [walkInAppointments, setWalkInAppointments] = useState([]);
+  const [completeConfirmId, setCompleteConfirmId] = useState(null);
+  const [completeConfirmData, setCompleteConfirmData] = useState(null);
 
-  // Fetch appointments data on component mount
+  // Fetch appointments data on component mount and when refreshTrigger changes
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Get today's date
-        const today = new Date().toISOString().split('T')[0];
-        console.log('[LiveQueue] Fetching data for date:', today);
+        // Get today's date in Manila timezone
+        const today = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Manila',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(new Date());
 
         // Fetch current appointments
         const currentRes = await fetch('/api/appointments/read/by-status?status=current');
         const currentData = await currentRes.json();
-        
+
         // Fetch pending appointments
         const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
         const pendingData = await pendingRes.json();
 
         // Fetch walk-in logs for today
-        console.log('[LiveQueue] Fetching walk-ins from:', `/api/appointments/walk-in-logs?date=${today}`);
         const walkInRes = await fetch(`/api/appointments/walk-in-logs?date=${today}`);
-        console.log('[LiveQueue] Walk-in response status:', walkInRes.status);
-        
-        if (!walkInRes.ok) {
-          console.error('[LiveQueue] Walk-in API error:', walkInRes.status, walkInRes.statusText);
-          const errorText = await walkInRes.text();
-          console.error('[LiveQueue] Error details:', errorText);
-        }
-        
         const walkInData = await walkInRes.json();
-        console.log('[LiveQueue] Raw walk-in data:', walkInData);
 
         if (currentData.success) {
           setCurrentAppointments(currentData.appointments || []);
@@ -604,13 +600,10 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
         }
         if (walkInRes.ok && Array.isArray(walkInData)) {
           setWalkInAppointments(walkInData);
-          console.log('[LiveQueue] Fetched walk-ins for today:', walkInData.length, 'items');
         } else {
-          console.log('[LiveQueue] No walk-ins data or not ok response');
           setWalkInAppointments([]);
         }
       } catch (err) {
-        console.error('Error fetching appointments:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -618,8 +611,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
     };
 
     fetchAppointments();
-    
-    return () => {};
+    // No auto-refresh interval. Only refresh on trigger.
   }, [refreshTrigger]);
 
   const handleExpandToggle = (id) => {
@@ -676,6 +668,11 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
         duration: 3000
       });
     }
+  };
+
+  const requestCompleteService = (itemId, customerName, service, staffName = "") => {
+    setCompleteConfirmId(itemId);
+    setCompleteConfirmData({ name: customerName, service, staff: staffName });
   };
 
   // Transform appointments to queue item format
@@ -753,7 +750,8 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   ];
 
   return (
-    <div className="live-queue-panel">
+    <>
+      <div className="live-queue-panel">
       {/* Header */}
       <div className="dash-panel-header">
         <div className="dash-panel-title-row">
@@ -845,7 +843,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
                           {...item}
                           isExpanded={expandedItemId === item.id}
                           onExpandToggle={handleExpandToggle}
-                          onCompleteService={handleCompleteService}
+                          onCompleteService={requestCompleteService}
                           showProceedButton={isUpNext}
                           isProceedEnabled={ii < 3}
                           onProceedClick={(id, name, service) => handleProceedClick(id, name, service, item.staff)}
@@ -859,7 +857,30 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
           )}
         </div>
       )}
-    </div>
+      </div>
+
+      {completeConfirmId && (
+        <ConfirmationDialog
+          isOpen={true}
+          title="Complete Service?"
+          message={`Are you sure you want to mark ${completeConfirmData?.name}'s service as complete?`}
+          confirmText="Yes, Complete"
+          cancelText="Cancel"
+          onConfirm={async () => {
+            try {
+              await handleCompleteService(completeConfirmId, completeConfirmData?.name, completeConfirmData?.service, completeConfirmData?.staff);
+            } finally {
+              setCompleteConfirmId(null);
+              setCompleteConfirmData(null);
+            }
+          }}
+          onCancel={() => {
+            setCompleteConfirmId(null);
+            setCompleteConfirmData(null);
+          }}
+        />
+      )}
+    </>
   );
 };
 
@@ -1124,9 +1145,40 @@ export const AdminDashboardLiveStatus = ({ date }) => {
 
   const handleAddWalkIn = (walkInData) => {
     console.log("Walk-in added:", walkInData);
-    // Here you can integrate with your API or state management
-    // For now, just logging the data
+    setQueueRefreshTrigger((prev) => prev + 1);
+    setScheduleRefreshTrigger((prev) => prev + 1);
   };
+
+  useEffect(() => {
+    const handleExternalRefresh = () => {
+      setQueueRefreshTrigger((prev) => prev + 1);
+      setScheduleRefreshTrigger((prev) => prev + 1);
+    };
+
+    const handleWalkInCreated = (event) => {
+      if (event?.detail?.id) {
+        handleExternalRefresh();
+      }
+    };
+
+    const handleAppointmentsUpdated = () => {
+      handleExternalRefresh();
+    };
+
+    const handleQueueStatusChanged = () => {
+      handleExternalRefresh();
+    };
+
+    window.addEventListener('admin:walkin-created', handleWalkInCreated);
+    window.addEventListener('appointmentsUpdated', handleAppointmentsUpdated);
+    window.addEventListener('live-queue:status-changed', handleQueueStatusChanged);
+
+    return () => {
+      window.removeEventListener('admin:walkin-created', handleWalkInCreated);
+      window.removeEventListener('appointmentsUpdated', handleAppointmentsUpdated);
+      window.removeEventListener('live-queue:status-changed', handleQueueStatusChanged);
+    };
+  }, []);
 
   const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
     try {

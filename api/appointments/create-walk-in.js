@@ -22,7 +22,15 @@ export default async function handler(req, res) {
     }
 
     const supabase = getSupabaseClient();
-    const today = new Date().toISOString().split('T')[0];
+
+    // Use Manila timezone for consistency with frontend
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+
     const assignedStaff = typeof stylist === 'object' ? stylist?.name || stylist?.label || null : stylist || null;
 
     const walkInData = {

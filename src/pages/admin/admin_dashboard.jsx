@@ -375,6 +375,13 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const [walkInAppointments, setWalkInAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [completeConfirmId, setCompleteConfirmId] = useState(null);
+  const [completeConfirmData, setCompleteConfirmData] = useState(null);
+
+  const requestCompleteService = (itemId, customerName, service, staff) => {
+    setCompleteConfirmId(itemId);
+    setCompleteConfirmData({ name: customerName, service, staff });
+  };
 
   const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Manila',
@@ -413,7 +420,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
   const getQueueItemId = (itemId) => String(itemId || '').replace(/^walkin-/, '');
 
-  // Fetch appointments data on component mount
+  // Fetch appointments data on component mount and auto-refresh
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -430,7 +437,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
           throw new Error(`Current appointments fetch failed: ${currentRes.status}`);
         }
         const currentData = await currentRes.json();
-        
+
         // Fetch pending appointments
         const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
         if (!pendingRes.ok) {
@@ -442,11 +449,11 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         console.log('[LiveQueue] Fetching walk-ins from:', `/api/appointments/walk-in-logs?date=${today}`);
         const walkInRes = await fetch(`/api/appointments/walk-in-logs?date=${today}`);
         console.log('[LiveQueue] Walk-in response status:', walkInRes.status);
-        
+
         if (!walkInRes.ok) {
           console.error('[LiveQueue] Walk-in API error:', walkInRes.status, walkInRes.statusText);
         }
-        
+
         const walkInData = await walkInRes.json();
         console.log('[LiveQueue] Walk-in data received:', Array.isArray(walkInData) ? walkInData.length : 'not array', walkInData);
 
@@ -472,6 +479,16 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     };
 
     fetchAppointments();
+
+    const handleWalkInCreated = (event) => {
+      if (event?.detail?.id) {
+        fetchAppointments();
+      }
+    };
+
+    const handleAppointmentsUpdated = () => {
+      fetchAppointments();
+    };
 
     const handleQueueStatusChanged = (event) => {
       const detail = event?.detail || {};
@@ -510,28 +527,20 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
           setWalkInAppointments((prev) => prev.filter((walkIn) => String(walkIn.id) !== normalizedId));
         } else {
           setCurrentAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
-          setDoneAppointments((prev) => {
-            if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
-            return [
-              ...prev,
-              {
-                id: normalizedId,
-                name: detail.name || 'Customer',
-                staff: detail.staff || 'Any available',
-                service: detail.service || 'Service',
-                time: detail.time || '',
-                date: detail.date || today,
-                status: 'done',
-              },
-            ];
-          });
+          // Do not manage doneAppointments here; parent component handles done lists.
         }
       }
     };
 
+    window.addEventListener('admin:walkin-created', handleWalkInCreated);
+    window.addEventListener('appointmentsUpdated', handleAppointmentsUpdated);
     window.addEventListener('live-queue:status-changed', handleQueueStatusChanged);
-    return () => window.removeEventListener('live-queue:status-changed', handleQueueStatusChanged);
-    
+    return () => {
+      window.removeEventListener('admin:walkin-created', handleWalkInCreated);
+      window.removeEventListener('appointmentsUpdated', handleAppointmentsUpdated);
+      window.removeEventListener('live-queue:status-changed', handleQueueStatusChanged);
+    };
+
   }, []);
 
   const handleCompleteService = async (itemId, customerName, service) => {
@@ -869,7 +878,8 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   };
 
   return (
-    <div className="live-queue-panel">
+    <>
+      <div className="live-queue-panel">
       {/* Header */}
       <div className="dash-panel-header">
         <div className="dash-panel-title-row">
@@ -958,7 +968,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
                         <QueueItem 
                           key={ii} 
                           {...item} 
-                          onCompleteService={handleCompleteService}
+                          onCompleteService={requestCompleteService}
                           showProceedButton={isUpNext}
                           isProceedEnabled={ii < 3}
                           onProceedClick={onProceedClick}
@@ -973,6 +983,29 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         </div>
       )}
     </div>
+
+    {completeConfirmId && (
+      <ConfirmationDialog
+        isOpen={true}
+        title="Complete Service?"
+        message={`Are you sure you want to mark ${completeConfirmData?.name}'s service as complete?`}
+        confirmText="Yes, Complete"
+        cancelText="Cancel"
+        onConfirm={async () => {
+          try {
+            await handleCompleteService(completeConfirmId, completeConfirmData?.name, completeConfirmData?.service);
+          } finally {
+            setCompleteConfirmId(null);
+            setCompleteConfirmData(null);
+          }
+        }}
+        onCancel={() => {
+          setCompleteConfirmId(null);
+          setCompleteConfirmData(null);
+        }}
+      />
+    )}
+    </>
   );
 };
 
