@@ -10,7 +10,7 @@ export const couponService = {
    */
   async getCoupons() {
     try {
-      const response = await fetch(`${API_BASE}/coupons/read`);
+      const response = await fetch(`${API_BASE}/coupons/read?includeDeleted=true`);
       if (!response.ok) throw new Error('Failed to fetch coupons');
       const result = await response.json();
       return result.data || [];
