@@ -1038,13 +1038,14 @@ const CouponsPanel = () => {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState(null);
+  const [selectedFilter, setSelectedFilter] = useState('active');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchAllCoupons = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/coupons/available');
+        const response = await fetch('/api/coupons/read?includeDeleted=true');
         if (!response.ok) throw new Error('Failed to fetch coupons');
         const result = await response.json();
         setCoupons(result.data || []);
@@ -1070,10 +1071,12 @@ const CouponsPanel = () => {
   const getCouponStatus = (coupon) => {
     const now = new Date();
     const start = coupon.start_date ? new Date(coupon.start_date) : null;
-    const end = coupon.expiration_date ? new Date(coupon.expiration_date) : null;
-    if (coupon.status === 'inactive') return 'inactive';
-    if (start && now < start) return 'upcoming';
+    const endDateValue = coupon.end_date || coupon.expiration_date;
+    const end = endDateValue ? new Date(endDateValue) : null;
+    if (coupon.is_deleted) return 'deleted';
     if (end && now > end) return 'expired';
+    if (start && now < start) return 'upcoming';
+    if (coupon.status === 'inactive') return 'inactive';
     return 'active';
   };
 
@@ -1091,28 +1094,51 @@ const CouponsPanel = () => {
 
   // Dropdown options (match coupon statuses)
   const filterOptions = [
-    { key: null, label: 'All Coupons' },
     { key: 'active', label: 'Active Only' },
+    { key: 'inactive', label: 'Inactive Only' },
     { key: 'expired', label: 'Expired Only' },
     { key: 'upcoming', label: 'Upcoming Only' },
+    { key: 'deleted', label: 'Deleted Only' },
   ];
 
   // Filter and sort coupons
   const filteredCoupons = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
     let filtered = coupons.map(c => ({ ...c, _status: getCouponStatus(c) }));
+
+    if (normalizedQuery) {
+      filtered = filtered.filter((coupon) => {
+        const searchableText = [
+          coupon.code,
+          coupon.description,
+          coupon.value_type,
+          coupon.start_date,
+          coupon.end_date,
+          coupon.expiration_date,
+          coupon.status,
+          coupon._status,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return searchableText.includes(normalizedQuery);
+      });
+    }
+
     if (selectedFilter) filtered = filtered.filter(c => c._status === selectedFilter);
     filtered.sort((a, b) => {
-      const order = { upcoming: 0, active: 1, expired: 2, inactive: 3 };
+      const order = { upcoming: 0, active: 1, inactive: 2, expired: 3, deleted: 4 };
       if (order[a._status] !== order[b._status]) return order[a._status] - order[b._status];
-      const aExp = a.expiration_date ? new Date(a.expiration_date) : new Date(0);
-      const bExp = b.expiration_date ? new Date(b.expiration_date) : new Date(0);
+      const aExp = (a.end_date || a.expiration_date) ? new Date(a.end_date || a.expiration_date) : new Date(0);
+      const bExp = (b.end_date || b.expiration_date) ? new Date(b.end_date || b.expiration_date) : new Date(0);
       return bExp - aExp;
     });
     return filtered;
-  }, [coupons, selectedFilter]);
+  }, [coupons, searchQuery, selectedFilter]);
 
   const handleFilterSelect = (key) => {
-    setSelectedFilter(selectedFilter === key ? null : key);
+    setSelectedFilter(key);
     setFilterOpen(false);
   };
 
@@ -1138,6 +1164,25 @@ const CouponsPanel = () => {
         <div className="dash-panel-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <h2 className="dash-panel-title">Coupons List</h2>
           <div className="dash-panel-buttons" style={{ marginLeft: 'auto', position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              id="admin-coupons-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search coupons"
+              aria-label="Search coupons"
+              style={{
+                width: 220,
+                borderRadius: 10,
+                border: '1px solid rgba(221, 144, 29, 0.22)',
+                background: isDarkMode() ? 'rgba(20, 17, 15, 0.45)' : '#fff',
+                color: textColor,
+                padding: '10px 12px',
+                fontSize: 13,
+                outline: 'none',
+                marginRight: 10,
+              }}
+            />
             <button
               className="staff-filter-btn"
               aria-label="Filter"
@@ -1157,14 +1202,6 @@ const CouponsPanel = () => {
                     {opt.label}
                   </button>
                 ))}
-                {selectedFilter && (
-                  <button
-                    className="staff-filter-clear"
-                    onClick={() => setSelectedFilter(null)}
-                  >
-                    Clear Filter
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -1181,10 +1218,21 @@ const CouponsPanel = () => {
           No coupons found
         </div>
       ) : (
-        <div className="dash-coupons-list live-queue-scroll-limited" style={{ maxHeight: "420px", minHeight: "220px", padding: "12px 0", paddingRight: "12px" }}>
+        <div
+          className="dash-coupons-list live-queue-scroll-limited"
+          style={{
+            maxHeight: "420px",
+            minHeight: "220px",
+            padding: "12px 0",
+            paddingRight: "12px",
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            scrollbarGutter: 'stable',
+          }}
+        >
           {filteredCoupons.map((coupon) => {
             const status = coupon._status;
-            const muted = status === 'expired' || status === 'inactive';
+            const muted = status === 'expired' || status === 'inactive' || status === 'deleted';
             const couponRowStyle = getThemeStyles(
               {
                 padding: '12px',
@@ -1219,13 +1267,15 @@ const CouponsPanel = () => {
               >
                 <div className="flex items-center gap-2 justify-between">
                   <div className="font-semibold text-base" style={{ color: textColor }}>{coupon.code}</div>
-                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadge(status)}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
+                </div>
+                <div className="text-sm" style={{ color: labelColor }}>
+                  {coupon.description || 'No description provided'}
                 </div>
                 <div className="flex items-center gap-2 justify-between">
                   <span style={{ color: labelColor }}>{formatDiscount(coupon)} OFF</span>
-                  {coupon.expiration_date && (
+                  {(coupon.end_date || coupon.expiration_date) && (
                     <span className="text-xs" style={{ color: tertiaryColor }}>
-                      Expires: {new Date(coupon.expiration_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      Expires: {new Date(coupon.end_date || coupon.expiration_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   )}
                 </div>
