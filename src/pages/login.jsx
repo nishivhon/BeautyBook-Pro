@@ -4,6 +4,7 @@ import { validateOperatorCredentials, loginOperator } from "../services/operator
 import { isMagicLinkValid, getMagicLinkInfo } from "../services/magicLink";
 import { CreateAccountPanel } from "../components/modal/customer/create-account";
 import { Otp } from "../components/modal/customer/otp";
+import { Toast } from "../components/toast";
 import ReactDOM from "react-dom";
 import { PasswordResetModal } from "../components/modal/password_reset_modal";
 import { usePublicTheme } from "../theme/publicThemeContext";
@@ -179,6 +180,8 @@ export const LogIn = () => {
   // OTP modal state for account creation
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpProps, setOtpProps] = useState(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
     // Only check magic link if a token is provided
@@ -469,37 +472,27 @@ export const LogIn = () => {
     }
   };
 
-  // Handle account creation from modal
+  // Handle successful account creation from the signup panel
   const handleAccountCreated = (accountData) => {
-    // Show OTP modal at center of page after account creation
-    setOtpProps({
-      selectedPhone: accountData.phone || "",
-      selectedEmail: accountData.email || "",
-      name: accountData.name || "",
-      otpType: accountData.email ? "email" : "phone",
-      loading: false,
-      error: null,
-      onVerified: (otpValue) => {
-        // After OTP is verified, proceed with login and redirect
-        // Store the new customer profile to localStorage
-        const customerProfile = {
-          name: accountData.name,
-          emails: accountData.email ? [accountData.email] : [],
-          phones: accountData.phone ? [accountData.phone] : [],
-          notificationPreference: "email",
-          profilePhoto: "",
-          id: accountData.id,
-        };
-        localStorage.setItem('customerProfileData', JSON.stringify(customerProfile));
-        loginOperator(accountData.email || accountData.phone, accountData.password, 'customer');
-        setShowOtpModal(false);
-        setTimeout(() => {
-          navigate('/customer/dashboard');
-        }, 1500);
-      },
-      onClose: () => setShowOtpModal(false),
-    });
-    setShowOtpModal(true);
+    const customerProfile = {
+      name: accountData.name,
+      emails: accountData.email ? [accountData.email] : [],
+      phones: accountData.phone ? [accountData.phone] : [],
+      notificationPreference: "email",
+      profilePhoto: "",
+      id: accountData.id,
+    };
+
+    localStorage.setItem('customerProfileData', JSON.stringify(customerProfile));
+    loginOperator(accountData.email || accountData.phone, accountData.password, 'customer');
+    setShowOtpModal(false);
+    setToastMessage("✅ Account created successfully! Redirecting to dashboard...");
+    setShowToast(true);
+
+    setTimeout(() => {
+      setShowToast(false);
+      navigate('/customer/dashboard');
+    }, 1500);
   };
 
   const headingText = {
@@ -1060,7 +1053,7 @@ const InlineOtp = ({ onClose, onVerified, selectedPhone, selectedEmail, otpType 
 
     // Step 2: OTP Verification
     if (forgotStep === 2 && otpSent) {
-      return (
+      return ReactDOM.createPortal(
         <Otp
           onClose={() => {
             setForgotStep(1);
@@ -1075,7 +1068,8 @@ const InlineOtp = ({ onClose, onVerified, selectedPhone, selectedEmail, otpType 
           error={forgotMessage}
           onErrorClear={() => setForgotMessage("")}
           name="User"
-        />
+        />,
+        document.body
       );
     }
 
@@ -1103,24 +1097,12 @@ const InlineOtp = ({ onClose, onVerified, selectedPhone, selectedEmail, otpType 
 
   return (
     <div className="login-root" style={{ height: '100vh', overflow: 'hidden', position: 'relative' }}>
-      {/* OTP Modal Overlay (centered) */}
+      {/* OTP Modal Overlay (centered, always dark, via Portal) */}
       {showOtpModal && otpProps && ReactDOM.createPortal(
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'rgba(0,0,0,0.45)',
-        }}>
-          <Otp {...otpProps} />
-        </div>,
+        <Otp {...otpProps} />,
         document.body
       )}
+      <Toast isVisible={showToast} message={toastMessage} type="success" duration={2500} />
       <div className="login-left" style={{ overflow: 'hidden' }}>
         <GridTexture />
 

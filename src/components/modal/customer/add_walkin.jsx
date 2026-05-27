@@ -11,11 +11,11 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-/* Person silhouette ΓÇö used in "Any available" row */
-const PersonIcon = () => (
+/* Person silhouette — used in "Any available" row */
+const PersonIcon = ({ color = "#1a0f00" }) => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={20} height={20}>
-    <circle cx="12" cy="8" r="4" stroke="#1a0f00" strokeWidth="1.8" fill="none"/>
-    <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#1a0f00" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+    <circle cx="12" cy="8" r="4" stroke={color} strokeWidth="1.8" fill="none"/>
+    <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke={color} strokeWidth="1.8" strokeLinecap="round" fill="none"/>
   </svg>
 );
 
@@ -309,6 +309,11 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
   const [showReceiptReminder, setShowReceiptReminder] = useState(false);
   const [showConfirmationToast, setShowConfirmationToast] = useState(false);
 
+  // Force dark receipt styling in Add Walk-in modal to maintain contrast inside the modal
+  const receiptBg = '#11100d';
+  const receiptText = '#f5f1eb';
+  const receiptLabel = '#988f81';
+
   const WALK_IN_STEPS = [
     { number: 1, label: "Name" },
     { number: 2, label: "Service" },
@@ -338,7 +343,8 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
     }, 0);
 
     return {
-      id: Math.random().toString(36).substr(2, 9).toUpperCase(),
+      // id is generated only upon user confirmation
+      id: null,
       name: walkInName,
       services,
       subtotal,
@@ -425,11 +431,8 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
     setReceiptData(receipt);
     setStep(4);
     
-    // Log to database immediately
-    await logWalkInToDatabase(receipt);
-    
-    // Submit the walk-in to admin dashboard
-    onSubmit({ ...receipt, services: receipt.services });
+    // NOTE: Do NOT log or submit before final confirmation. That will be performed
+    // when the user clicks Confirm so the reference ID can be generated then.
   };
 
   const handleContinue = () => {
@@ -539,9 +542,26 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
   /* Handle final confirmation */
   const handleConfirmWalkin = () => {
-    // Show confirmation toast immediately
+    // Generate a reference id now and persist
+    const newId = Math.random().toString(36).substr(2, 9).toUpperCase();
+    const receiptWithId = { ...receiptData, id: newId };
+    setReceiptData(receiptWithId);
     setShowConfirmationToast(true);
     setIsConfirmed(true);
+
+    // Log to database and notify parent now that user confirmed
+    (async () => {
+      try {
+        await logWalkInToDatabase(receiptWithId);
+      } catch (e) {
+        console.error('[AddWalkIn] Error logging after confirm', e);
+      }
+      try {
+        onSubmit({ ...receiptWithId, services: receiptWithId.services });
+      } catch (e) {
+        console.error('[AddWalkIn] onSubmit error after confirm', e);
+      }
+    })();
   };
 
   /* Generate printable receipt */
@@ -932,9 +952,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                 <div
                   className="confirm-card walkin-dark-receipt"
                   style={{
-                    background: "#11100d",
-                    border: "1px solid rgba(245, 241, 235, 0.08)",
-                    color: "#f5f1eb",
+                    background: receiptBg,
+                    border: '1px solid rgba(245, 241, 235, 0.08)',
+                    color: receiptText,
                     boxShadow: "none",
                   }}
                 >
@@ -946,8 +966,8 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                             <ScissorsIcon />
                           </div>
                           <div className="confirm-svc-text">
-                            <span className="confirm-svc-name">{receiptData.services[0].title}</span>
-                            <span className="confirm-svc-duration">{receiptData.totalDuration} mins</span>
+                            <span className="confirm-svc-name" style={{ color: '#ffffff' }}>{receiptData.services[0].title}</span>
+                            <span className="confirm-svc-duration" style={{ color: '#988f81' }}>{receiptData.totalDuration} mins</span>
                           </div>
                         </div>
                         <div className="confirm-svc-meta">
@@ -970,9 +990,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                               ? formatCurrency(service.price)
                               : (service.price || "₱0.00");
                             return (
-                              <div key={idx} style={{ fontSize: "0.85rem", color: "var(--color-white)", paddingLeft: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div key={idx} style={{ fontSize: "0.85rem", color: '#ffffff', paddingLeft: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <span>• {service.title}</span>
-                                <span style={{ color: "var(--color-tan)" }}>{servicePrice}</span>
+                                <span style={{ color: '#988f81' }}>{servicePrice}</span>
                               </div>
                             );
                           })}
@@ -984,31 +1004,31 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
                   <div className="confirm-details">
                     <div className="confirm-detail-row">
-                      <PersonIcon />
+                      <PersonIcon color="#ffffff" />
                       <div className="confirm-detail-text">
-                        <span className="confirm-detail-label">Name</span>
-                        <span className="confirm-detail-value">{receiptData.name}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Name</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.name}</span>
                       </div>
                     </div>
                     <div className="confirm-detail-row">
                       <StylistIcon />
                       <div className="confirm-detail-text">
-                        <span className="confirm-detail-label">Stylist</span>
-                        <span className="confirm-detail-value">{receiptData.stylist}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Stylist</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.stylist}</span>
                       </div>
                     </div>
                     <div className="confirm-detail-row">
                       <EnvelopeIcon />
                       <div className="confirm-detail-text">
-                        <span className="confirm-detail-label">Date & Time</span>
-                        <span className="confirm-detail-value">{receiptData.timestamp}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Date & Time</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.timestamp}</span>
                       </div>
                     </div>
                     <div className="confirm-detail-row">
                       <DownloadIcon />
                       <div className="confirm-detail-text">
-                        <span className="confirm-detail-label">Duration</span>
-                        <span className="confirm-detail-value">{receiptData.totalDuration} mins</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Duration</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.totalDuration} mins</span>
                       </div>
                     </div>
                   </div>
@@ -1017,30 +1037,26 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
                   <div className="confirm-details">
                     <div className="confirm-detail-row">
-                      <span className="confirm-detail-label">Subtotal</span>
-                      <span className="confirm-detail-value">{formatCurrency(receiptData.subtotal)}</span>
+                      <span className="confirm-detail-label" style={{ color: '#988f81' }}>Subtotal</span>
+                      <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{formatCurrency(receiptData.subtotal)}</span>
                     </div>
                     <div className="confirm-detail-row">
-                      <span className="confirm-detail-label">Total Amount</span>
-                      <span className="confirm-detail-value">{receiptData.price}</span>
+                      <span className="confirm-detail-label" style={{ color: '#988f81' }}>Total Amount</span>
+                      <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.price}</span>
                     </div>
                   </div>
 
                   <Divider />
 
                   {/* Bottom: ref no. + reminder */}
-                  <div className="confirm-bottom-row">
-                    <div
-                      className="confirm-ref-pill"
-                      style={{
-                        background: 'rgba(221,144,29,0.14)',
-                        border: '1px solid rgba(221,144,29,0.45)',
-                        color: '#f5f1eb',
-                        boxShadow: '0 2px 10px rgba(221,144,29,0.28)'
-                      }}
-                    >
-                      Ref. No.: {receiptData.id}
-                    </div>
+                  <div className="confirm-bottom-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                    {!isConfirmed ? (
+                      <div style={{ color: receiptLabel, textAlign: 'center' }}>Reference number will be generated upon confirmation</div>
+                    ) : (
+                      <div className="confirm-ref-pill" style={{ background: 'rgba(221,144,29,0.14)', border: '1px solid rgba(221,144,29,0.45)', color: '#f5f1eb', boxShadow: '0 2px 10px rgba(221,144,29,0.28)' }}>
+                        Ref. No.: {receiptData.id || 'N/A'}
+                      </div>
+                    )}
 
                   </div>
                 </div>

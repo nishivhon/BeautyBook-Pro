@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { logoutOperator } from "../../services/operatorAuth";
 
 // Tag icon (Heroicons outline style)
 const TagIcon = ({ color = "currentColor" }) => (
@@ -284,6 +285,11 @@ export default function SuperAdminCouponsDashboard() {
     }
   };
 
+  const handleLogout = () => {
+    logoutOperator();
+    navigate("/operators/login");
+  };
+
   // Table columns
   const columns = [
     { key: "select", label: "" },
@@ -313,7 +319,11 @@ export default function SuperAdminCouponsDashboard() {
       useSuperAdminHeaderActions={true}
       superAdminNoNotificationsMessage="No recent coupon notifications."
       storageKey="superadminSidebarExpanded"
-      // ...existing props
+      onLogoutConfirm={handleLogout}
+      logoutTitle="Log Out?"
+      logoutMessage="Are you sure you want to log out?"
+      logoutConfirmText="Yes, Log Out"
+      logoutCancelText="Stay Logged In"
     >
       <div className="superadmin-page-content" style={{ paddingTop: 20 }}>
         <div className="dashboard-panel superadmin-fixed-panel">
