@@ -1,4 +1,6 @@
  import { useState, useEffect } from "react";
+import { ConfirmationDialog } from "../shared/confirmation_dialog";
+import Toast from "../../toast";
 
 const CloseIcon = ({ size = 20, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -54,7 +56,7 @@ export const ManageServiceModal = ({ isOpen, staff, onClose, onSave, serviceCate
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [validationErrors, setValidationErrors] = useState([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null); // 'close' or 'save'
+  const [toast, setToast] = useState(null);
 
   // Initialize on mount or when staff changes
   useEffect(() => {
@@ -86,16 +88,15 @@ export const ManageServiceModal = ({ isOpen, staff, onClose, onSave, serviceCate
     setShowConfirmDialog(false);
     setValidationErrors([]);
     onSave(staff.name, selectedCategories);
+    setToast({ message: 'Staff specialties saved successfully.', type: 'success' });
     onClose();
   };
 
   const handleCloseClick = () => {
-    setConfirmAction('close');
     setShowConfirmDialog(true);
   };
 
   const handleCancelClick = () => {
-    setConfirmAction('close');
     setShowConfirmDialog(true);
   };
 
@@ -104,13 +105,20 @@ export const ManageServiceModal = ({ isOpen, staff, onClose, onSave, serviceCate
     if (confirmed) {
       setValidationErrors([]);
       onClose();
+      setToast({ message: 'Changes discarded.', type: 'info' });
     }
-    setConfirmAction(null);
   };
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3800);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   return (
     <>
       <style>{modalScrollbarStyles}</style>
+      {toast && <Toast message={toast.message} type={toast.type} isVisible={Boolean(toast)} />}
       <div 
         style={{
           position: "fixed",
@@ -351,102 +359,15 @@ export const ManageServiceModal = ({ isOpen, staff, onClose, onSave, serviceCate
         </div>
       </div>
 
-      {/* Confirmation Dialog */}
-      {showConfirmDialog && (
-        <div 
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.85)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2000,
-            fontFamily: "Inter, sans-serif",
-          }}
-          onClick={() => handleConfirmClose(false)}
-        >
-          <div
-            style={{
-              backgroundColor: "#1a1a1a",
-              borderRadius: "12px",
-              padding: "32px",
-              maxWidth: "400px",
-              width: "90%",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.9)",
-              border: "1px solid rgba(221, 144, 29, 0.2)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Confirmation Title */}
-            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#f5f5f5", margin: "0 0 12px 0" }}>
-              Discard Changes?
-            </h3>
-            
-            {/* Confirmation Message */}
-            <p style={{ fontSize: "14px", color: "#988f81", margin: "0 0 24px 0", lineHeight: "1.5" }}>
-              Are you sure you want to close this modal? Any unsaved changes will be discarded.
-            </p>
-
-            {/* Confirmation Buttons */}
-            <div style={{ display: "flex", gap: "12px" }}>
-              <button
-                onClick={() => handleConfirmClose(false)}
-                style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  backgroundColor: "transparent",
-                  border: "1px solid rgba(221, 144, 29, 0.3)",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#988f81",
-                  transition: "all 0.2s ease",
-                  fontFamily: "Inter, sans-serif",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.6)";
-                  e.currentTarget.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(221, 144, 29, 0.3)";
-                  e.currentTarget.style.backgroundColor = "transparent";
-                }}
-              >
-                Keep Editing
-              </button>
-              <button
-                onClick={() => handleConfirmClose(true)}
-                style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  backgroundColor: "#ef4444",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#fff",
-                  transition: "all 0.2s ease",
-                  fontFamily: "Inter, sans-serif",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#dc2626";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#ef4444";
-                }}
-              >
-                Discard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationDialog
+        isOpen={showConfirmDialog}
+        title="Discard Changes?"
+        message="Are you sure you want to close this modal? Any unsaved changes will be discarded."
+        confirmText="Discard"
+        cancelText="Keep Editing"
+        onConfirm={() => handleConfirmClose(true)}
+        onCancel={() => handleConfirmClose(false)}
+      />
     </>
   );
 };

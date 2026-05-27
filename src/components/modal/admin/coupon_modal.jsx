@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { couponService } from "../../../services/couponService";
+import { ConfirmationDialog } from "../shared/confirmation_dialog";
+import Toast from "../../toast";
 
 // Generate random coupon code
 const genCode = () => {
@@ -11,49 +13,11 @@ const genCode = () => {
   return code;
 };
 
-// Toast Component
-const Toast = ({ message, type = 'success' }) => (
-  <div style={{
-    position: 'fixed',
-    top: 24,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    padding: '12px 20px',
-    backgroundColor: type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6',
-    color: '#fff',
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: 500,
-    zIndex: 2000,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-    animation: 'slideIn 0.3s ease-out'
-  }}>
-    <style>{`@keyframes slideIn { from { transform: translateX(-50%) translateY(-20px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }`}</style>
-    {message}
-  </div>
-);
-
 const CloseIcon = ({ size = 20, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <path d="M18 6L6 18M6 6l12 12" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
-
-const ConfirmationDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Delete", cancelText = "Cancel" }) => {
-  if (!isOpen) return null;
-  return (
-    <div style={{position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1001, backdropFilter: 'blur(2px)'}}>
-      <div style={{backgroundColor:'#ffffff', padding:'32px 24px', borderRadius:16, width:'90%', maxWidth:360, boxShadow:'0 20px 60px rgba(0,0,0,0.3)', animation:'fade-up 0.3s ease forwards'}}>
-        <h2 style={{margin:0, color:'#1a0f00', fontSize:18, fontWeight:700, textAlign:'center', marginBottom:12, fontFamily:'Inter, sans-serif'}}>{title}</h2>
-        <p style={{color:'#665544', fontSize:14, textAlign:'center', lineHeight:1.5, marginBottom:24, fontFamily:'Inter, sans-serif'}}>{message}</p>
-        <div style={{display:'flex', gap:12, flexDirection:'column'}}>
-          <button onClick={onCancel} style={{padding:'12px 16px', background:'#dd901d', color:'white', border:'none', borderRadius:8, fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'Inter, sans-serif', transition:'all 0.2s ease'}} onMouseEnter={(e)=>{e.target.style.background='#c17a14'; e.target.style.transform='translateY(-2px)';}} onMouseLeave={(e)=>{e.target.style.background='#dd901d'; e.target.style.transform='translateY(0)';}}>{cancelText}</button>
-          <button onClick={onConfirm} style={{padding:'12px 16px', background:'transparent', color:'#dd901d', border:'1.5px solid #dd901d', borderRadius:8, fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'Inter, sans-serif', transition:'all 0.2s ease'}} onMouseEnter={(e)=>{e.target.style.background='rgba(221, 144, 29, 0.1)';}} onMouseLeave={(e)=>{e.target.style.background='transparent';}}>{confirmText}</button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // Local storage key for quick persistence (front-end only)
 const STORAGE_KEY = 'bbp_coupons_v1';
@@ -215,6 +179,7 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
 
       const isNew = !form.id;
       setToast({ message: isNew ? 'Coupon created successfully!' : 'Coupon updated successfully!', type: 'success' });
+      setView('list');
       
       const newForm = JSON.parse(JSON.stringify(emptyForm));
       newForm.code = genCode();
@@ -291,7 +256,7 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
 
   return (
     <>
-      {toast && <Toast message={toast.message} type={toast.type} />}
+      {toast && <Toast message={toast.message} type={toast.type} isVisible={Boolean(toast)} />}
       
       <ConfirmationDialog
         isOpen={showConfirm}

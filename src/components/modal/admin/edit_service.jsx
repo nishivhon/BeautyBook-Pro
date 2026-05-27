@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { ConfirmationDialog } from "../shared/confirmation_dialog";
+import Toast from "../../toast";
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -11,103 +13,6 @@ const CloseIcon = ({ size = 20, color = "currentColor" }) => (
 );
 
 // ═══════════════════════════════════════════════════════════════════
-// CONFIRMATION DIALOG COMPONENT
-// ═══════════════════════════════════════════════════════════════════
-
-const ConfirmationDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Discard", cancelText = "Keep Editing" }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 1001,
-      fontFamily: "Inter, sans-serif"
-    }}>
-      <div style={{
-        backgroundColor: "#1a1a1a",
-        borderRadius: "12px",
-        padding: "24px",
-        width: "90%",
-        maxWidth: "400px",
-        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-        border: "1px solid rgba(221, 144, 29, 0.2)"
-      }}>
-        <h3 style={{
-          fontSize: "18px",
-          fontWeight: "700",
-          color: "#f5f5f5",
-          margin: "0 0 12px 0"
-        }}>{title}</h3>
-        <p style={{
-          fontSize: "14px",
-          color: "#b0ada5",
-          margin: "0 0 24px 0",
-          lineHeight: "1.5"
-        }}>{message}</p>
-        <div style={{
-          display: "flex",
-          gap: "12px",
-          justifyContent: "flex-end"
-        }}>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "transparent",
-              border: "1px solid rgba(221, 144, 29, 0.4)",
-              color: "#dd901d",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: "600",
-              cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
-              transition: "all 0.2s ease"
-            }}
-            onMouseOver={(e) => {
-              e.target.style.backgroundColor = "rgba(221, 144, 29, 0.1)";
-              e.target.style.borderColor = "rgba(221, 144, 29, 0.6)";
-            }}
-            onMouseOut={(e) => {
-              e.target.style.backgroundColor = "transparent";
-              e.target.style.borderColor = "rgba(221, 144, 29, 0.4)";
-            }}
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={onConfirm}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#ef4444",
-              color: "#f5f5f5",
-              border: "none",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: "600",
-              cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
-              transition: "background-color 0.2s ease"
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = "#dc2626"}
-            onMouseOut={(e) => e.target.style.backgroundColor = "#ef4444"}
-          >
-            {confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 
@@ -117,6 +22,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [errors, setErrors] = useState({});
+  const [toast, setToast] = useState(null);
 
   // Sync form data when service changes
   useEffect(() => {
@@ -160,6 +66,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
     setFormData({ name: "", meta: "", available: true, price: "", category: "", estimated_time: "" });
     setInitialFormData(null);
     setErrors({});
+    setToast({ message: isCreating ? "Service added successfully." : "Service saved successfully.", type: "success" });
   };
 
   const validateForm = () => {
@@ -187,6 +94,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
     
     if (pendingAction === "close") {
       onClose();
+      setToast({ message: "Changes discarded.", type: "info" });
     }
     setPendingAction(null);
   };
@@ -201,6 +109,12 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
     setShowConfirmation(true);
   };
 
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3800);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
   const handleRemove = () => {
     if (onRemove && service) {
       onRemove(service);
@@ -208,6 +122,7 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
       setInitialFormData(null);
       setShowConfirmation(false);
       setPendingAction(null);
+      setToast({ message: "Service removed successfully.", type: "success" });
     }
   };
 
@@ -222,11 +137,12 @@ export const EditServiceModal = ({ isOpen, service, onClose, onSave, onRemove, c
         isOpen={showConfirmation}
         title="Discard Changes?"
         message="You have unsaved changes. Are you sure you want to discard them?"
-        onConfirm={handleConfirmDiscard}
-        onCancel={handleCancelConfirm}
         confirmText="Discard"
         cancelText="Keep Editing"
+        onConfirm={handleConfirmDiscard}
+        onCancel={handleCancelConfirm}
       />
+      {toast && <Toast message={toast.message} type={toast.type} isVisible={Boolean(toast)} />}
       <div style={{
         position: "fixed",
         top: 0,
