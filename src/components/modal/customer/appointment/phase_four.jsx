@@ -917,24 +917,28 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, bo
             margin: 16px 0;
           }
           .ref-box { 
-            background: rgba(221, 144, 29, 0.08); 
-            padding: 12px; 
-            border-radius: 8px; 
+            background: #f9f7f4; 
+            padding: 16px; 
+            border-radius: 10px; 
             text-align: center;
-            margin: 16px 0;
+            margin: 20px 0;
+            border: 1px solid #f0ede8;
           }
           .ref-label { 
-            font-size: 10px; 
+            font-size: 9px;
+            font-weight: 700;
             color: #988f81; 
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 4px;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+            display: block;
           }
           .ref-code { 
-            font-size: 18px; 
+            font-size: 20px; 
             font-weight: 700; 
             color: #dd901d; 
-            font-family: 'Courier New', monospace;
+            font-family: 'Courier New', 'Courier', monospace;
+            letter-spacing: 0.5px;
           }
           .footer { 
             text-align: center; 
@@ -1215,9 +1219,9 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, bo
                   <>
                     <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'normal', wordBreak: 'break-word', overflow: 'visible' }}>You will receive notifications 15 minutes before your appointment</div>
                     {bookingRef ? (
-                      <div className="ref-box" style={{ marginTop: 6, background: themeIsLight ? '#f4efe9' : 'rgba(221, 144, 29, 0.08)', border: themeIsLight ? '1px solid #e6dfd6' : undefined }}>
-                        <div className="ref-label" style={{ color: receiptLabel }}>Reference number</div>
-                        <div className="ref-code" style={{ color: themeIsLight ? '#1C1816' : '#dd901d' }}>{bookingRef}</div>
+                      <div className="ref-box">
+                        <div className="ref-label">Reference number</div>
+                        <div className="ref-code">{bookingRef}</div>
                       </div>
                     ) : null}
                   </>
