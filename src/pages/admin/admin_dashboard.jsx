@@ -8,16 +8,30 @@ import { ToastViewport, useToast } from "../../components/toast";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 
 // ═══════════════════════════════════════════════════════════════════
-// DARK MODE HELPER
+// THEME HOOK (reactive to theme changes)
 // ═══════════════════════════════════════════════════════════════════
-const isDarkMode = () => {
-  if (typeof document === 'undefined') return true;
-  const theme = document.documentElement.getAttribute('data-theme');
-  return theme !== 'light';
-};
+import { useSyncExternalStore } from "react";
 
-const getThemeStyles = (darkStyles, lightStyles) => {
-  return isDarkMode() ? darkStyles : lightStyles;
+function getCurrentTheme() {
+  if (typeof document === 'undefined') return 'dark';
+  return document.documentElement.getAttribute('data-theme') || 'dark';
+}
+
+function subscribeTheme(callback) {
+  // Listen for attribute changes on <html>
+  const observer = new MutationObserver(() => callback());
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  return () => observer.disconnect();
+}
+
+function useTheme() {
+  return useSyncExternalStore(subscribeTheme, getCurrentTheme, getCurrentTheme);
+}
+
+const isDarkMode = (theme) => theme !== 'light';
+
+const getThemeStyles = (theme, darkStyles, lightStyles) => {
+  return isDarkMode(theme) ? darkStyles : lightStyles;
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -354,6 +368,7 @@ const PageMetrics = ({ stats }) => (
 
 const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const { showToast } = useToast();
+  const theme = useTheme();
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
@@ -658,7 +673,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   console.log('[LiveQueue] All up next items (appointments + walk-ins):', allUpNextItems.length);
   console.log('[LiveQueue] All current items (appointments + current walk-ins):', allCurrentItems.length);
 
-  // Create queue sections - only include sections with items
+  // Create queue sections - always include both Current and Up Next
   const queueSections = [
     {
       label: "Current",
@@ -668,7 +683,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
       label: "Up Next",
       items: allUpNextItems
     }
-  ].filter(section => section.items.length > 0); // Only show sections with items
+  ];
 
   const QueueItem = ({ id, type, number, name, staff, service, statusTop, statusSub, details, onCompleteService, showProceedButton = false, onProceed, isProceedEnabled = true, onProceedClick, actualId, isWalkIn }) => {
     const isActive = type === "active";
@@ -730,22 +745,31 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         </div>
 
         {isItemExpanded && (
-          <div style={getThemeStyles(
-            {
-              padding: "12px 16px",
-              backgroundColor: "rgba(20, 17, 15, 0.4)",
-              borderLeft: "3px solid rgba(221, 144, 29, 0.3)",
-              marginBottom: "8px",
-              borderRadius: "0 8px 8px 0"
-            },
-            {
-              padding: "12px 16px",
-              backgroundColor: "rgba(250, 190, 206, 0.3)",
-              borderLeft: "3px solid rgba(213, 210, 211, 0.3)",
-              marginBottom: "8px",
-              borderRadius: "0 8px 8px 0"
-            }
-          )}>
+          <div
+            style={getThemeStyles(
+              theme,
+              {
+                backgroundColor: "rgba(20, 17, 15, 0.5)",
+                borderLeft: "3px solid rgba(221, 144, 29, 0.35)",
+                padding: "16px",
+                marginTop: "8px",
+                borderRadius: "6px",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "16px 24px"
+              },
+              {
+                backgroundColor: "rgba(230, 100, 140, 0.35)",
+                borderLeft: "3px solid rgba(213, 210, 211, 0.35)",
+                padding: "16px",
+                marginTop: "8px",
+                borderRadius: "6px",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "16px 24px"
+              }
+            )}
+          >
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div>
                 <span className="dash-detail-label">Service Selected</span>
@@ -766,57 +790,78 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
                 <span className="dash-detail-label">Estimated Time</span>
                 <span className="dash-detail-value">{details.estimatedTime}</span>
               </div>
+            </div>
 
-              {isActive && (
+            {isActive && (
+              <div style={{ gridColumn: '1 / -1' }}>
                 <button
                   onClick={handleCompleteService}
                   className="dash-complete-btn"
+                  style={{ width: '100%' }}
                   onMouseOver={(e) => e.target.style.backgroundColor = "#16a34a"}
                   onMouseOut={(e) => e.target.style.backgroundColor = "#22c55e"}
                 >
                   <CheckCircleIcon size={16} color="#fff" />
                   Complete Service
                 </button>
-              )}
+              </div>
+            )}
 
-              {showProceedButton && !isActive && (
-                <button
-                  onClick={handleProceed}
-                  disabled={!isProceedEnabled}
-                  style={{
-                    width: "100%",
-                    padding: "10px 14px",
-                    background: isProceedEnabled ? "#dd901d" : "#ccc",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "0.9rem",
-                    fontWeight: "600",
-                    cursor: isProceedEnabled ? "pointer" : "not-allowed",
-                    fontFamily: "Inter, sans-serif",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    transition: "all 0.2s ease",
-                    opacity: isProceedEnabled ? 1 : 0.6,
-                  }}
-                  onMouseOver={(e) => {
-                    if (isProceedEnabled) {
-                      e.target.style.backgroundColor = "#c47a14";
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (isProceedEnabled) {
-                      e.target.style.backgroundColor = "#dd901d";
-                    }
-                  }}
-                >
-                  <ProceedIcon size={14} color="#fff" />
-                  Proceed
-                </button>
-              )}
-            </div>
+            {showProceedButton && !isActive && (
+              <div style={{ gridColumn: '1 / -1' }}>
+                {isDarkMode(theme) ? (
+                  <button
+                    onClick={handleProceed}
+                    disabled={!isProceedEnabled}
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      background: isProceedEnabled ? "#dd901d" : "#ccc",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "0.9rem",
+                      fontWeight: "600",
+                      cursor: isProceedEnabled ? "pointer" : "not-allowed",
+                      fontFamily: "Inter, sans-serif",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      transition: "all 0.2s ease",
+                      opacity: isProceedEnabled ? 1 : 0.6,
+                    }}
+                    onMouseOver={e => {
+                      if (isProceedEnabled) e.target.style.backgroundColor = "#c47a14";
+                    }}
+                    onMouseOut={e => {
+                      if (isProceedEnabled) e.target.style.backgroundColor = "#dd901d";
+                    }}
+                  >
+                    <ProceedIcon size={14} color="#fff" />
+                    Proceed
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleProceed}
+                    disabled={!isProceedEnabled}
+                    className="dash-complete-btn"
+                    style={{
+                      width: "100%",
+                      opacity: isProceedEnabled ? 1 : 0.6,
+                      cursor: isProceedEnabled ? 'pointer' : 'not-allowed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <ProceedIcon size={14} color="#fff" />
+                    Proceed
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </>
@@ -1269,9 +1314,10 @@ const CouponsPanel = () => {
   );
 
   // Styling helpers
-  const textColor = isDarkMode() ? '#f5f1eb' : '#0c0a09';
-  const labelColor = isDarkMode() ? '#988f81' : '#666';
-  const tertiaryColor = isDarkMode() ? '#666' : '#999';
+  const theme = useTheme();
+  const textColor = isDarkMode(theme) ? '#f5f1eb' : '#0c0a09';
+  const labelColor = isDarkMode(theme) ? '#988f81' : '#666';
+  const tertiaryColor = isDarkMode(theme) ? '#666' : '#999';
 
 
   // (No old dropdown logic; only staff filter logic is used)
@@ -1294,7 +1340,7 @@ const CouponsPanel = () => {
                 width: 220,
                 borderRadius: 10,
                 border: '1px solid rgba(221, 144, 29, 0.22)',
-                background: isDarkMode() ? 'rgba(20, 17, 15, 0.45)' : '#fff',
+                background: isDarkMode(theme) ? 'rgba(20, 17, 15, 0.45)' : '#fff',
                 color: textColor,
                 padding: '10px 12px',
                 fontSize: 13,
@@ -1353,6 +1399,7 @@ const CouponsPanel = () => {
             const status = coupon._status;
             const muted = status === 'expired' || status === 'inactive' || status === 'deleted';
             const couponRowStyle = getThemeStyles(
+              theme,
               {
                 padding: '12px',
                 marginBottom: '8px',
