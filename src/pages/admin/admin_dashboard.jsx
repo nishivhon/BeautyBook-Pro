@@ -229,6 +229,13 @@ const SUMMARY = [
   { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: 0  },
 ];
 
+const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Manila',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date());
+
 // ═══════════════════════════════════════════════════════════════════
 // SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
@@ -367,6 +374,25 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   }).format(new Date());
 
   const normalizeQueueItemTime = (appointment) => appointment?.time || appointment?.time_slot || '';
+
+  const formatTimeToAmPm = (timeValue) => {
+    if (!timeValue) return 'N/A';
+
+    const timeString = String(timeValue).trim();
+    const timePart = timeString.includes('T')
+      ? timeString.split('T')[1]?.split('.')[0]
+      : timeString;
+
+    const [hours = '0', minutes = '00'] = timePart.split(':');
+    const hourNumber = Number.parseInt(hours, 10);
+
+    if (Number.isNaN(hourNumber)) return 'N/A';
+
+    const period = hourNumber >= 12 ? 'PM' : 'AM';
+    const hour12 = String(hourNumber % 12 || 12).padStart(2, '0');
+
+    return `${hour12}:${minutes.padStart(2, '0')} ${period}`;
+  };
 
   const getQueueItemId = (itemId) => String(itemId || '').replace(/^walkin-/, '');
 
@@ -542,15 +568,6 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
   // Transform appointments to queue item format
   const formatQueueItems = (appointments, type) => {
-    const formatTimeToAmPm = (time24) => {
-      if (!time24) return '';
-      const [hours, minutes] = time24.split(':');
-      const hour = parseInt(hours, 10);
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const hour12 = hour % 12 || 12;
-      return `${hour12}:${minutes}${ampm}`;
-    };
-
     return appointments.map((apt, index) => {
       // Extract service name - should come from API now
       const serviceName = apt.service || 'Service';
@@ -567,7 +584,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         details: {
           serviceSelected: serviceName,
           currentService: type === 'active' ? 'In Progress' : 'Pending',
-          startTime: apt.time,
+          startTime: formatTimeToAmPm(apt.time),
           estimatedTime: '45 mins'
         }
       };
@@ -599,7 +616,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         details: {
           serviceSelected: serviceNames,
           currentService: isCurrentType ? 'In Progress' : 'Pending',
-          startTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          startTime: formatTimeToAmPm(walkin.time || walkin.time_slot || walkin.start_time || new Date().toISOString()),
           estimatedTime: '45 mins'
         },
         isWalkIn: true
@@ -1399,12 +1416,13 @@ export const AdminDashboard = ({ date }) => {
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
   const [doneAppointments, setDoneAppointments] = useState([]);
+  const [walkInLogs, setWalkInLogs] = useState([]);
   const [bookingNotifications, setBookingNotifications] = useState([]);
   const [stats, setStats] = useState([
-    { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: "0",      label: "Today's Appointments" },
-    { Icon: QueueIcon,    badge: null,      badgeType: null,    value: "0",       label: "In Queue Now"         },
-    { Icon: RevenueIcon,  badge: "+15%",    badgeType: "green", value: "₱12,450", label: "Revenue Today"        },
-    { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
+    { Icon: CalendarIcon, badge: null, badgeType: null, value: '0', label: "Total Appointments Today" },
+    { Icon: UserGroupIcon, badge: null, badgeType: null, value: '0', label: "Total Walk In" },
+    { Icon: QueueIcon,     badge: null, badgeType: null, value: '0', label: "In Queue" },
+    { Icon: RevenueIcon,   badge: null, badgeType: null, value: '₱0', label: "Total Revenue" },
   ]);
   const [activeNav, setActiveNav] = useState("home");
   const [mounted, setMounted] = useState(false);
@@ -1422,6 +1440,8 @@ export const AdminDashboard = ({ date }) => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
+        const today = getManilaDateString();
+
         // Fetch current appointments
         const currentRes = await fetch('/api/appointments/read/by-status?status=current');
         if (currentRes.ok) {
@@ -1444,6 +1464,14 @@ export const AdminDashboard = ({ date }) => {
           const doneData = await doneRes.json();
           const done = doneData.appointments || [];
           setDoneAppointments(done);
+        }
+
+        const walkInRes = await fetch(`/api/appointments/walk-in-logs?date=${today}`);
+        if (walkInRes.ok) {
+          const walkInData = await walkInRes.json();
+          setWalkInLogs(Array.isArray(walkInData) ? walkInData : []);
+        } else {
+          setWalkInLogs([]);
         }
       } catch (err) {
         console.error('Error fetching appointments:', err);
@@ -1505,6 +1533,11 @@ export const AdminDashboard = ({ date }) => {
       const detail = event?.detail || {};
       if (!detail.id) return;
 
+      setWalkInLogs((prev) => {
+        if (prev.some((item) => String(item.id) === String(detail.id))) return prev;
+        return [{ id: detail.id, ...detail }, ...prev];
+      });
+
       const createdAt = detail.createdAt || new Date().toISOString();
       const timeAgo = 'Just now';
 
@@ -1531,12 +1564,13 @@ export const AdminDashboard = ({ date }) => {
 
   // Calculate stats dynamically
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getManilaDateString();
     
     console.log('[AdminDash] Today:', today);
     console.log('[AdminDash] Current appointments:', currentAppointments.map(a => ({ name: a.name, date: a.date })));
     console.log('[AdminDash] Pending appointments:', pendingAppointments.map(a => ({ name: a.name, date: a.date })));
     console.log('[AdminDash] Done appointments:', doneAppointments.map(a => ({ name: a.name, date: a.date })));
+    console.log('[AdminDash] Walk-ins today:', walkInLogs.length);
     
     // Total appointments for today (current + pending + done)
     const todayAppointments = [
@@ -1546,19 +1580,33 @@ export const AdminDashboard = ({ date }) => {
     ];
     
     const totalToday = todayAppointments.length;
-    
-    // Pending/In Queue count for today (only pending status)
-    const inQueueCount = pendingAppointments.filter(apt => apt.date === today).length;
 
-    console.log('[AdminDash] Total today:', totalToday, 'In queue:', inQueueCount);
+    const totalWalkIns = walkInLogs.length;
+
+    const inQueueCount = [
+      ...currentAppointments.filter(apt => apt.date === today),
+      ...pendingAppointments.filter(apt => apt.date === today),
+      ...walkInLogs.filter((walkIn) => {
+        const walkInStatus = String(walkIn.status || '').toLowerCase();
+        if (walkInStatus && !['current', 'pending'].includes(walkInStatus)) return false;
+        const walkInDate = walkIn.date || walkIn.created_at?.split('T')[0] || walkIn.createdAt?.split('T')[0];
+        return walkInDate === today;
+      }),
+    ].length;
+
+    const totalRevenue = doneAppointments
+      .filter(apt => apt.date === today)
+      .reduce((sum, apt) => sum + (Number(apt.price || apt.total_price || 0) || 0), 0);
+
+    console.log('[AdminDash] Total today:', totalToday, 'Walk-ins:', totalWalkIns, 'In queue:', inQueueCount, 'Revenue:', totalRevenue);
 
     setStats([
-      { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: totalToday.toString(),      label: "Today's Appointments" },
-      { Icon: QueueIcon,    badge: null,      badgeType: null,    value: inQueueCount.toString(),       label: "In Queue Now"         },
-      { Icon: RevenueIcon,  badge: "+15%",    badgeType: "green", value: "₱12,450", label: "Revenue Today"        },
-      { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
+      { Icon: CalendarIcon, badge: null, badgeType: null, value: totalToday.toString(), label: "Total Appointments Today" },
+      { Icon: UserGroupIcon, badge: null, badgeType: null, value: totalWalkIns.toString(), label: "Total Walk In" },
+      { Icon: QueueIcon, badge: null, badgeType: null, value: inQueueCount.toString(), label: "In Queue" },
+      { Icon: RevenueIcon, badge: null, badgeType: null, value: `₱${Number(totalRevenue).toLocaleString('en-PH')}`, label: "Total Revenue" },
     ]);
-  }, [currentAppointments, pendingAppointments, doneAppointments]);
+  }, [currentAppointments, pendingAppointments, doneAppointments, walkInLogs]);
 
   useEffect(() => {
     const handleQueueStatusChanged = (event) => {

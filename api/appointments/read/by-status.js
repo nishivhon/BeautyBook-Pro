@@ -33,6 +33,7 @@ export default async (req, res) => {
     const appointments = slots.map((slot, index) => {
       // Extract service name from services field (can be string or object)
       let serviceName = 'Service pending';
+      const totalPrice = Number(slot.total_price || 0) || 0;
       
       if (slot.services) {
         if (typeof slot.services === 'string') {
@@ -60,6 +61,8 @@ export default async (req, res) => {
         time: slot.time_slot,
         status: slot.status,
         availability: slot.availability,
+        price: totalPrice,
+        total_price: totalPrice,
         createdAt: slot.created_at,
         updatedAt: slot.updated_at
       };
