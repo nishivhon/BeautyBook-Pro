@@ -326,6 +326,11 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
     return `₱${amount.toFixed(2)}`;
   };
 
+  const formatWalkInReference = (value) => {
+    if (!value) return 'N/A';
+    return String(value).replace(/-/g, '').slice(0, 8).toUpperCase();
+  };
+
   const getSelectedServices = () => phase2Data?.services || [];
 
   const buildWalkInReceipt = (stylistData) => {
@@ -345,6 +350,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
     return {
       // id is generated only upon user confirmation
       id: null,
+      referenceNumber: null,
       name: walkInName,
       services,
       subtotal,
@@ -532,36 +538,45 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
       if (!response.ok) {
         console.error("[AddWalkIn] Failed to log walk-in. Status:", response.status, "Details:", responseText);
+        throw new Error(responseText || 'Failed to log walk-in');
       } else {
         console.log("[AddWalkIn] Walk-in successfully logged to database");
       }
+
+      return responseText ? JSON.parse(responseText) : null;
     } catch (err) {
       console.error("[AddWalkIn] Error logging walk-in:", err);
+      throw err;
     }
   };
 
   /* Handle final confirmation */
-  const handleConfirmWalkin = () => {
-    // Generate a reference id now and persist
-    const newId = Math.random().toString(36).substr(2, 9).toUpperCase();
-    const receiptWithId = { ...receiptData, id: newId };
-    setReceiptData(receiptWithId);
-    setShowConfirmationToast(true);
-    setIsConfirmed(true);
+  const handleConfirmWalkin = async () => {
+    const receiptDraft = { ...receiptData };
 
-    // Log to database and notify parent now that user confirmed
-    (async () => {
+    try {
+      const insertedResponse = await logWalkInToDatabase(receiptDraft);
+      const insertedRow = Array.isArray(insertedResponse?.data) ? insertedResponse.data[0] : insertedResponse?.data;
+      const databaseId = insertedRow?.id || receiptDraft.id;
+      const referenceNumber = formatWalkInReference(databaseId);
+      const receiptWithId = {
+        ...receiptDraft,
+        id: databaseId,
+        referenceNumber,
+      };
+
+      setReceiptData(receiptWithId);
+      setShowConfirmationToast(true);
+      setIsConfirmed(true);
+
       try {
-        await logWalkInToDatabase(receiptWithId);
-      } catch (e) {
-        console.error('[AddWalkIn] Error logging after confirm', e);
-      }
-      try {
-        onSubmit({ ...receiptWithId, services: receiptWithId.services });
+        onSubmit?.(receiptWithId);
       } catch (e) {
         console.error('[AddWalkIn] onSubmit error after confirm', e);
       }
-    })();
+    } catch (e) {
+      console.error('[AddWalkIn] Error logging after confirm', e);
+    }
   };
 
   /* Generate printable receipt */
@@ -797,7 +812,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
           <div class="ref-box">
             <span class="ref-label">Reference Number</span>
-            <div class="ref-code">${receiptData.id || 'N/A'}</div>
+            <div class="ref-code">${receiptData.referenceNumber || formatWalkInReference(receiptData.id) || 'N/A'}</div>
           </div>
 
           <div class="footer">
@@ -1053,8 +1068,8 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                     {!isConfirmed ? (
                       <div style={{ color: receiptLabel, textAlign: 'center' }}>Reference number will be generated upon confirmation</div>
                     ) : (
-                      <div className="confirm-ref-pill" style={{ background: 'rgba(221,144,29,0.14)', border: '1px solid rgba(221,144,29,0.45)', color: '#f5f1eb', boxShadow: '0 2px 10px rgba(221,144,29,0.28)' }}>
-                        Ref. No.: {receiptData.id || 'N/A'}
+                      <div style={{ color: receiptLabel, textAlign: 'center', lineHeight: 1.4, whiteSpace: 'normal', wordBreak: 'break-word', overflow: 'visible' }}>
+                        Reference No.: {receiptData.referenceNumber || formatWalkInReference(receiptData.id) || 'N/A'}
                       </div>
                     )}
 
@@ -1140,7 +1155,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
         <ConfirmationDialog
           isOpen={showReceiptReminder}
           title="Save Your Walk-in Info"
-          message={`Have you saved your receipt and reference number?\n\nReference No.: ${receiptData?.id || "N/A"}\n\nYou'll need this for check-in.`}
+          message={`Have you saved your receipt and reference number?\n\nReference No.: ${receiptData?.referenceNumber || formatWalkInReference(receiptData?.id) || "N/A"}\n\nYou'll need this for check-in.`}
           confirmText="Yes, Saved"
           cancelText="Download Again"
           onConfirm={() => {

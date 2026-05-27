@@ -496,6 +496,9 @@ export default async (req, res) => {
         console.log(`[UpdateStatus] Setting staff ${resolvedStaffName} in_service to 'in-service'`);
       } else if (status === 'done') {
         staffInServiceValue = 'avail';
+        if (isWalkIn) {
+          walkInValue = true;
+        }
         console.log(`[UpdateStatus] Setting staff ${resolvedStaffName} in_service to 'avail'`);
       }
       

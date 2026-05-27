@@ -344,13 +344,20 @@ const PageMetrics = ({ stats }) => (
   </div>
 );
 
-const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
+const LiveQueue = ({ onOpenWalkInModal, onProceedClick, refreshToken = 0 }) => {
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
   const [walkInAppointments, setWalkInAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
 
   // Fetch appointments data on component mount
   useEffect(() => {
@@ -360,7 +367,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         setError(null);
 
         // Get today's date
-        const today = new Date().toISOString().split('T')[0];
+        const today = getManilaDateString();
         console.log('[LiveQueue] Fetching for date:', today);
 
         // Fetch current appointments
@@ -413,7 +420,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     fetchAppointments();
     
     return () => {};
-  }, []);
+  }, [refreshToken]);
 
   const handleCompleteService = async (itemId, customerName, service) => {
     try {
@@ -528,7 +535,12 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const allCurrentItems = [...currentItems, ...currentWalkInItems];
   
   // Filter pending items to only show today's appointments with actual bookings (not empty slots)
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
   const todayPendingAppointments = pendingAppointments.filter(apt => 
     apt.date === today && apt.name && apt.name !== 'Unknown'
   );
@@ -1307,6 +1319,7 @@ export const AdminDashboard = ({ date }) => {
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
   const [doneAppointments, setDoneAppointments] = useState([]);
+  const [liveQueueRefreshToken, setLiveQueueRefreshToken] = useState(0);
   const [bookingNotifications, setBookingNotifications] = useState([]);
   const [stats, setStats] = useState([
     { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: "0",      label: "Today's Appointments" },
@@ -1498,10 +1511,7 @@ export const AdminDashboard = ({ date }) => {
       
       // Update local state instead of reloading page
       if (isWalkIn) {
-        // Move walk-in from pending to current
-        setWalkInAppointments(prev => 
-          prev.map(w => w.id === apiId ? { ...w, status: 'current' } : w)
-        );
+        setLiveQueueRefreshToken((prev) => prev + 1);
       } else {
         // Move appointment from pending to current
         setCurrentAppointments(prev => [
@@ -1509,6 +1519,7 @@ export const AdminDashboard = ({ date }) => {
           ...pendingAppointments.filter(apt => apt.id === apiId)
         ]);
         setPendingAppointments(prev => prev.filter(apt => apt.id !== apiId));
+        setLiveQueueRefreshToken((prev) => prev + 1);
       }
 
       // Close dialog and show success
@@ -1585,6 +1596,7 @@ export const AdminDashboard = ({ date }) => {
           <div className="dash-content-grid">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <LiveQueue 
+                refreshToken={liveQueueRefreshToken}
                 onOpenWalkInModal={() => setShowWalkInModal(true)}
                 onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
                   setProceedConfirmId(id);
