@@ -171,17 +171,29 @@ export default function CustomerDashboard() {
 		
 		// Re-render history by calling the hook logic again
 		if (profile?.histories && Array.isArray(profile.histories) && profile.histories.length > 0) {
-			const transformedHistory = profile.histories.map((item, idx) => ({
-				id: item.id || idx,
-				date: item.date || new Date().toISOString().split('T')[0],
-				service: item.service || 'Service',
-				stylist: item.staff || 'Unknown Stylist',
-				cost: parseFloat(item.price) || 0,
-				status: item.status === 'done' ? 'completed' : item.status === 'current' ? 'upcoming' : item.status || 'pending',
-				rated: item.rated || false,
-				rating: item.rating || 0,
-				rated_at: item.rated_at || null,
-			}));
+			const transformedHistory = profile.histories
+				.map((item, idx) => ({
+					id: item.id || idx,
+					date: item.date || new Date().toISOString().split('T')[0],
+					service: item.service || 'Service',
+					stylist: item.staff || 'Unknown Stylist',
+					cost: parseFloat(item.price) || 0,
+					status: item.status === 'done' ? 'completed' : item.status === 'current' ? 'upcoming' : item.status || 'pending',
+					rated: item.rated || false,
+					rating: item.rating || 0,
+					rated_at: item.rated_at || null,
+				}))
+				.reduce((uniqueHistory, item) => {
+					const existingIndex = uniqueHistory.findIndex((entry) => String(entry.id) === String(item.id));
+
+					if (existingIndex === -1) {
+						uniqueHistory.push(item);
+					} else {
+						uniqueHistory[existingIndex] = item;
+					}
+
+					return uniqueHistory;
+				}, []);
 			console.log('[CustomerDashboard] Transformed history:', transformedHistory);
 			setHistory(transformedHistory);
 		} else {
@@ -192,7 +204,19 @@ export default function CustomerDashboard() {
 	console.log('[CustomerDashboard] Final history to display:', history);
 
 	// Only show completed (and unrated) transactions in the dashboard "Recent Transaction" section
-	const recentCompleted = history.filter((item) => item.status === 'completed' && !item.rated);
+	const recentCompleted = history
+		.filter((item) => item.status === 'completed' && !item.rated)
+		.reduce((uniqueHistory, item) => {
+			const existingIndex = uniqueHistory.findIndex((entry) => String(entry.id) === String(item.id));
+
+			if (existingIndex === -1) {
+				uniqueHistory.push(item);
+		} else {
+				uniqueHistory[existingIndex] = item;
+			}
+
+			return uniqueHistory;
+		}, []);
 
 	// Only show unclaimed, non-expired coupons in the dashboard coupons section
 	const recentUnclaimedCoupons = coupons.filter((coupon) => !coupon.claimed && coupon.status !== "expired");
@@ -534,7 +558,7 @@ export default function CustomerDashboard() {
 					<div className="cdb-grid cdb-grid-history">
 						{recentCompleted && recentCompleted.length > 0 ? (
 							recentCompleted.map((item) => (
-								<div key={item.id} className="cdb-item-card">
+								<div key={`${item.id || 'history'}-${item.date || 'unknown'}-${item.service || 'service'}`} className="cdb-item-card">
 									<div className="cdb-item-left" style={{ minWidth: 0, flex: isMobile ? '1 1 0' : undefined }}>
 										<h3 className="cdb-item-title" style={{ fontSize: isMobile ? '15px' : undefined, whiteSpace: isMobile ? 'normal' : undefined, wordBreak: isMobile ? 'break-word' : undefined }}>{item.service}</h3>
 										<p className="cdb-item-subtitle">{item.stylist} · ${item.cost.toFixed(2)}</p>
