@@ -344,7 +344,7 @@ const PageMetrics = ({ stats }) => (
   </div>
 );
 
-const LiveQueue = ({ onOpenWalkInModal, onProceedClick, refreshToken = 0 }) => {
+const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
@@ -358,6 +358,17 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick, refreshToken = 0 }) => {
     month: '2-digit',
     day: '2-digit',
   }).format(new Date());
+
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
+  const normalizeQueueItemTime = (appointment) => appointment?.time || appointment?.time_slot || '';
+
+  const getQueueItemId = (itemId) => String(itemId || '').replace(/^walkin-/, '');
 
   // Fetch appointments data on component mount
   useEffect(() => {
@@ -418,20 +429,81 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick, refreshToken = 0 }) => {
     };
 
     fetchAppointments();
+
+    const handleQueueStatusChanged = (event) => {
+      const detail = event?.detail || {};
+      const normalizedId = String(detail.id || '').replace(/^walkin-/, '');
+      if (!normalizedId || !detail.status) return;
+
+      if (detail.status === 'current') {
+        if (detail.isWalkIn) {
+          setWalkInAppointments((prev) => prev.map((walkIn) => (
+            String(walkIn.id) === normalizedId ? { ...walkIn, status: 'current' } : walkIn
+          )));
+          return;
+        }
+
+        setPendingAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+        setCurrentAppointments((prev) => {
+          if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
+          return [
+            ...prev,
+            {
+              id: normalizedId,
+              name: detail.name || 'Customer',
+              staff: detail.staff || 'Any available',
+              service: detail.service || 'Service',
+              time: detail.time || '',
+              date: detail.date || today,
+              status: 'current',
+            },
+          ];
+        });
+        return;
+      }
+
+      if (detail.status === 'done') {
+        if (detail.isWalkIn) {
+          setWalkInAppointments((prev) => prev.filter((walkIn) => String(walkIn.id) !== normalizedId));
+        } else {
+          setCurrentAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+          setDoneAppointments((prev) => {
+            if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
+            return [
+              ...prev,
+              {
+                id: normalizedId,
+                name: detail.name || 'Customer',
+                staff: detail.staff || 'Any available',
+                service: detail.service || 'Service',
+                time: detail.time || '',
+                date: detail.date || today,
+                status: 'done',
+              },
+            ];
+          });
+        }
+      }
+    };
+
+    window.addEventListener('live-queue:status-changed', handleQueueStatusChanged);
+    return () => window.removeEventListener('live-queue:status-changed', handleQueueStatusChanged);
     
-    return () => {};
-  }, [refreshToken]);
+  }, []);
 
   const handleCompleteService = async (itemId, customerName, service) => {
     try {
       console.log(`Service completed for ${customerName}: ${service}`);
       console.log(`Updating appointment ${itemId} status to 'done'`);
+
+      const normalizedId = getQueueItemId(itemId);
+      const wasWalkIn = String(itemId || '').startsWith('walkin-');
       
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: itemId,
+          id: normalizedId,
           status: 'done'
         })
       });
@@ -444,8 +516,22 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick, refreshToken = 0 }) => {
       const result = await response.json();
       console.log(`Service completion result:`, result);
       
-      // Remove from current appointments silently
-      setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
+      // Remove the completed row from the live queue immediately
+      if (wasWalkIn) {
+        setWalkInAppointments(prev => prev.filter((apt) => String(apt.id) !== normalizedId));
+      } else {
+        setCurrentAppointments(prev => prev.filter((apt) => String(apt.id) !== normalizedId));
+      }
+
+      window.dispatchEvent(new CustomEvent('live-queue:status-changed', {
+        detail: {
+          id: normalizedId,
+          status: 'done',
+          isWalkIn: wasWalkIn,
+          name: customerName,
+          service,
+        },
+      }));
       
       alert(`✓ Service marked as done!`);
     } catch (error) {
@@ -535,12 +621,6 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick, refreshToken = 0 }) => {
   const allCurrentItems = [...currentItems, ...currentWalkInItems];
   
   // Filter pending items to only show today's appointments with actual bookings (not empty slots)
-  const today = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
   const todayPendingAppointments = pendingAppointments.filter(apt => 
     apt.date === today && apt.name && apt.name !== 'Unknown'
   );
@@ -1319,7 +1399,6 @@ export const AdminDashboard = ({ date }) => {
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
   const [doneAppointments, setDoneAppointments] = useState([]);
-  const [liveQueueRefreshToken, setLiveQueueRefreshToken] = useState(0);
   const [bookingNotifications, setBookingNotifications] = useState([]);
   const [stats, setStats] = useState([
     { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: "0",      label: "Today's Appointments" },
@@ -1421,6 +1500,33 @@ export const AdminDashboard = ({ date }) => {
     };
 
     fetchBookingNotifications();
+
+    const handleWalkInCreated = (event) => {
+      const detail = event?.detail || {};
+      if (!detail.id) return;
+
+      const createdAt = detail.createdAt || new Date().toISOString();
+      const timeAgo = 'Just now';
+
+      const newNotification = {
+        id: detail.id,
+        tone: 'amber',
+        category: 'New booking',
+        title: `${detail.name || 'Customer'} booked ${detail.service || 'a service'}`,
+        description: `${detail.staff || 'Any available stylist'} • Walk-in`,
+        time: timeAgo,
+        unread: true,
+        createdAt,
+      };
+
+      setBookingNotifications((prev) => {
+        const next = [newNotification, ...prev.filter((item) => String(item.id) !== String(detail.id))];
+        return next.slice(0, 5);
+      });
+    };
+
+    window.addEventListener('admin:walkin-created', handleWalkInCreated);
+    return () => window.removeEventListener('admin:walkin-created', handleWalkInCreated);
   }, []);
 
   // Calculate stats dynamically
@@ -1453,6 +1559,57 @@ export const AdminDashboard = ({ date }) => {
       { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
     ]);
   }, [currentAppointments, pendingAppointments, doneAppointments]);
+
+  useEffect(() => {
+    const handleQueueStatusChanged = (event) => {
+      const detail = event?.detail || {};
+      const normalizedId = String(detail.id || '').replace(/^walkin-/, '');
+      if (!normalizedId || !detail.status || detail.isWalkIn) return;
+
+      const baseDate = detail.date || new Date().toISOString().split('T')[0];
+
+      if (detail.status === 'current') {
+        setPendingAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+        setCurrentAppointments((prev) => {
+          if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
+          return [
+            ...prev,
+            {
+              id: normalizedId,
+              name: detail.name || 'Customer',
+              staff: detail.staff || 'Any available',
+              service: detail.service || 'Service',
+              time: detail.time || '',
+              date: baseDate,
+              status: 'current',
+            },
+          ];
+        });
+      }
+
+      if (detail.status === 'done') {
+        setCurrentAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+        setDoneAppointments((prev) => {
+          if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
+          return [
+            ...prev,
+            {
+              id: normalizedId,
+              name: detail.name || 'Customer',
+              staff: detail.staff || 'Any available',
+              service: detail.service || 'Service',
+              time: detail.time || '',
+              date: baseDate,
+              status: 'done',
+            },
+          ];
+        });
+      }
+    };
+
+    window.addEventListener('live-queue:status-changed', handleQueueStatusChanged);
+    return () => window.removeEventListener('live-queue:status-changed', handleQueueStatusChanged);
+  }, []);
 
   const headerNotifications = bookingNotifications;
 
@@ -1511,7 +1668,6 @@ export const AdminDashboard = ({ date }) => {
       
       // Update local state instead of reloading page
       if (isWalkIn) {
-        setLiveQueueRefreshToken((prev) => prev + 1);
       } else {
         // Move appointment from pending to current
         setCurrentAppointments(prev => [
@@ -1519,8 +1675,18 @@ export const AdminDashboard = ({ date }) => {
           ...pendingAppointments.filter(apt => apt.id === apiId)
         ]);
         setPendingAppointments(prev => prev.filter(apt => apt.id !== apiId));
-        setLiveQueueRefreshToken((prev) => prev + 1);
       }
+
+      window.dispatchEvent(new CustomEvent('live-queue:status-changed', {
+        detail: {
+          id: apiId,
+          status: 'current',
+          isWalkIn,
+          name: proceedConfirmData?.name,
+          staff: proceedConfirmData?.staff,
+          service: proceedConfirmData?.service,
+        },
+      }));
 
       // Close dialog and show success
       setProceedConfirmId(null);
@@ -1596,7 +1762,6 @@ export const AdminDashboard = ({ date }) => {
           <div className="dash-content-grid">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <LiveQueue 
-                refreshToken={liveQueueRefreshToken}
                 onOpenWalkInModal={() => setShowWalkInModal(true)}
                 onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
                   setProceedConfirmId(id);

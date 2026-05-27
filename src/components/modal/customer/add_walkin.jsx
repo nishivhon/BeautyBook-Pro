@@ -569,6 +569,20 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
       setShowConfirmationToast(true);
       setIsConfirmed(true);
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('admin:walkin-created', {
+          detail: {
+            id: receiptWithId.id,
+            name: receiptWithId.name,
+            staff: receiptWithId.stylist,
+            service: Array.isArray(receiptWithId.services) && receiptWithId.services.length > 0
+              ? receiptWithId.services.map((service) => service?.title || service?.name || 'Service').join(', ')
+              : 'Walk-in Service',
+            createdAt: insertedRow?.created_at || new Date().toISOString(),
+          },
+        }));
+      }
+
       try {
         onSubmit?.(receiptWithId);
       } catch (e) {
