@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getOperatorSession } from "../../services/operatorAuth";
+import {
+  getSuperAdminNotificationReadCacheKey,
+  getSuperAdminNotificationSessionKey,
+  readSuperAdminNotificationReadCache,
+  writeSuperAdminNotificationReadCache,
+} from "../../services/superadminNotifications";
+import { useThemeScope } from "../../theme/publicThemeContext";
 
 const BellIcon = ({ size = 15, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -34,57 +41,11 @@ const CheckIcon = ({ size = 14, color = "currentColor" }) => (
   </svg>
 );
 
-const defaultNotificationItems = [
-  {
-    id: 1,
-    tone: "green",
-    category: "Client registrations",
-    title: "New customer account created",
-    description: "A new customer completed registration and is now active.",
-    time: "5m ago",
-    unread: true,
-  },
-  {
-    id: 2,
-    tone: "blue",
-    category: "Staff accounts",
-    title: "Staff account created",
-    description: "A new staff profile was added by a Super Administrator.",
-    time: "21m ago",
-    unread: true,
-  },
-  {
-    id: 3,
-    tone: "amber",
-    category: "Security alerts",
-    title: "Multiple failed login attempts",
-    description: "Five failed logins were detected from a single IP address.",
-    time: "47m ago",
-    unread: true,
-  },
-  {
-    id: 4,
-    tone: "blue",
-    category: "Database status",
-    title: "Scheduled database backup completed",
-    description: "Nightly backup finished successfully with no integrity issues.",
-    time: "1h ago",
-    unread: false,
-  },
-];
-
 const settingsItems = [
   { id: "profile-view", label: "Profile settings", description: "View your account details and role." },
 ];
 
-const themeStorageKey = "superAdminThemeMode";
 const profileStorageKey = "superAdminOperatorProfile";
-
-const getInitialTheme = () => {
-  if (typeof window === "undefined") return "dark";
-  const savedTheme = window.localStorage.getItem(themeStorageKey);
-  return savedTheme === "dark" ? "dark" : "light";
-};
 
 const getDisplayUsername = (session) => {
   const emailPrefix = (session?.email || "").split("@")[0];
@@ -92,6 +53,13 @@ const getDisplayUsername = (session) => {
 };
 
 const mapSuperAdminCategory = (item) => {
+  const category = String(item?.category || "").toLowerCase();
+  if (category.includes("client")) return { category: "Client registrations", tone: "green" };
+  if (category.includes("staff")) return { category: "Staff accounts", tone: "blue" };
+  if (category.includes("security")) return { category: "Security alerts", tone: "amber" };
+  if (category.includes("database")) return { category: "Database status", tone: "blue" };
+  if (category.includes("live queue")) return { category: "Live queue", tone: "amber" };
+
   const text = `${item?.category || ""} ${item?.title || ""} ${item?.description || ""}`.toLowerCase();
 
   const clientRe = /\b(new client|new customer|client registration|customer registration|registered|signup|sign up|customer account created|client account created)\b/;
@@ -113,58 +81,57 @@ export function SuperAdminHeaderActions({
   noNotificationsMessage = "No recent super admin activity across client, staff, security, or database events.",
 }) {
   const wrapperRef = useRef(null);
-  const themeTransitionTimerRef = useRef(null);
   const [openMenu, setOpenMenu] = useState(null);
   const [settingsView, setSettingsView] = useState("main");
-  const [themeMode, setThemeMode] = useState(getInitialTheme);
-  const [notifications, setNotifications] = useState(defaultNotificationItems);
+  const { themeMode, toggleTheme } = useThemeScope("staff");
 
   const session = getOperatorSession();
+  const notificationSessionKey = useMemo(() => getSuperAdminNotificationSessionKey(session), [session?.email, session?.role]);
+  const [readNotificationIds, setReadNotificationIds] = useState(() => new Set(readSuperAdminNotificationReadCache(notificationSessionKey).map((id) => String(id))));
 
-  useEffect(
-    () => () => {
-      if (themeTransitionTimerRef.current) {
-        window.clearTimeout(themeTransitionTimerRef.current);
-      }
-      if (typeof document !== "undefined") {
-        document.documentElement.classList.remove("theme-transitioning");
-      }
-    },
-    []
-  );
-
-  const notificationSeed = externalNotifications.length > 0 ? externalNotifications : defaultNotificationItems;
+  const notificationSeed = useMemo(() => externalNotifications, [externalNotifications]);
   const notificationSeedKey = useMemo(
     () => notificationSeed.map((item) => `${item.id}-${item.title}-${item.time}-${item.unread ? 1 : 0}`).join("|"),
     [notificationSeed]
   );
+
+  const notifications = useMemo(() => {
+    const readIds = readNotificationIds;
+
+    return (notificationSeed || [])
+      .map((item) => {
+        const mappedCategory = mapSuperAdminCategory(item);
+        const itemId = String(item?.id ?? "");
+
+        return {
+          ...item,
+          category: mappedCategory?.category || item?.category || "Notification",
+          tone: item.tone || mappedCategory?.tone || "amber",
+          unread: !readIds.has(itemId),
+        };
+      })
+      .filter((item) => item.id !== undefined && item.id !== null && item.id !== "");
+  }, [notificationSeedKey, notificationSeed, readNotificationIds]);
 
   const unreadCount = useMemo(() => notifications.filter((item) => item.unread).length, [notifications]);
   const profileUsername = getDisplayUsername(session);
   const profileRole = session?.role || roleLabel;
 
   useEffect(() => {
-    const mapped = (notificationSeed || [])
-      .map((item) => {
-        const mappedCategory = mapSuperAdminCategory(item);
-        if (!mappedCategory) return null;
-        return {
-          ...item,
-          category: mappedCategory.category,
-          tone: item.tone || mappedCategory.tone,
-        };
-      })
-      .filter(Boolean);
-
-    setNotifications(mapped);
-  }, [notificationSeedKey, notificationSeed]);
+    setReadNotificationIds(new Set(readSuperAdminNotificationReadCache(notificationSessionKey).map((id) => String(id))));
+  }, [notificationSessionKey]);
 
   useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.dataset.theme = themeMode;
-      window.localStorage.setItem(themeStorageKey, themeMode);
-    }
-  }, [themeMode]);
+    if (typeof window === "undefined") return;
+
+    const handleStorage = (event) => {
+      if (event.key !== getSuperAdminNotificationReadCacheKey(notificationSessionKey)) return;
+      setReadNotificationIds(new Set(readSuperAdminNotificationReadCache(notificationSessionKey).map((id) => String(id))));
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [notificationSessionKey]);
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -198,22 +165,19 @@ export function SuperAdminHeaderActions({
     setSettingsView("main");
   };
 
-  const toggleTheme = () => {
-    if (typeof document !== "undefined") {
-      document.documentElement.classList.add("theme-transitioning");
-      if (themeTransitionTimerRef.current) {
-        window.clearTimeout(themeTransitionTimerRef.current);
-      }
-      themeTransitionTimerRef.current = window.setTimeout(() => {
-        document.documentElement.classList.remove("theme-transitioning");
-      }, 500);
-    }
-
-    setThemeMode((mode) => (mode === "dark" ? "light" : "dark"));
+  const markAllNotificationsRead = () => {
+    const nextReadIds = notifications.map((item) => String(item.id));
+    setReadNotificationIds(new Set(nextReadIds));
+    writeSuperAdminNotificationReadCache(notificationSessionKey, nextReadIds);
   };
 
-  const markAllNotificationsRead = () => {
-    setNotifications((items) => items.map((item) => ({ ...item, unread: false })));
+  const markNotificationRead = (notificationId) => {
+    if (!notificationId) return;
+
+    const nextReadIds = new Set(readNotificationIds);
+    nextReadIds.add(String(notificationId));
+    setReadNotificationIds(nextReadIds);
+    writeSuperAdminNotificationReadCache(notificationSessionKey, Array.from(nextReadIds));
   };
 
   const formatRoleLabel = (role) => {
@@ -382,7 +346,10 @@ export function SuperAdminHeaderActions({
                     </div>
                   ) : (
                     notifications.map((notification) => (
-                      <button key={notification.id} type="button" className={`admin-notification-item${notification.unread ? " unread" : ""}`} onClick={closeMenu}>
+                      <button key={notification.id} type="button" className={`admin-notification-item${notification.unread ? " unread" : ""}`} onClick={() => {
+                        markNotificationRead(notification.id);
+                        closeMenu();
+                      }}>
                         <span className={`admin-notification-tone tone-${notification.tone}`} />
                         <div className="admin-notification-copy">
                           <div className="admin-notification-row">
@@ -399,7 +366,7 @@ export function SuperAdminHeaderActions({
                 </div>
 
                 <div className="admin-dropdown-footer">
-                  <span className="admin-dropdown-footnote">Showing client registrations, staff account changes, security alerts, and database status updates.</span>
+                  <span className="admin-dropdown-footnote">Showing security alerts and database status updates.</span>
                 </div>
               </>
             ) : (

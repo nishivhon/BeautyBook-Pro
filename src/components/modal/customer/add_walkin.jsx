@@ -12,14 +12,14 @@ const BackArrowIcon = () => (
 );
 
 /* Person silhouette — used in "Any available" row */
-const PersonIcon = () => (
+const PersonIcon = ({ color = "#1a0f00" }) => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={20} height={20}>
-    <circle cx="12" cy="8" r="4" stroke="#1a0f00" strokeWidth="1.8" fill="none"/>
-    <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#1a0f00" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+    <circle cx="12" cy="8" r="4" stroke={color} strokeWidth="1.8" fill="none"/>
+    <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke={color} strokeWidth="1.8" strokeLinecap="round" fill="none"/>
   </svg>
 );
 
-/* Star — used inline for ratings */
+/* Star ΓÇö used inline for ratings */
 const StarIcon = ({ muted = false }) => (
   <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width={11} height={11} style={{ flexShrink: 0 }}>
     <path
@@ -82,7 +82,7 @@ const ScissorsIcon = () => (
   </svg>
 );
 
-/* Hair Services — broom/brush icon */
+/* Hair Services ΓÇö broom/brush icon */
 const HairIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
     <path d="M6 3c0 0 1 4 1 8s-1 6-1 6" stroke="#1a0f00" strokeWidth="1.6" strokeLinecap="round"/>
@@ -93,7 +93,7 @@ const HairIcon = () => (
   </svg>
 );
 
-/* Nail Services — polish bottle */
+/* Nail Services ΓÇö polish bottle */
 const NailIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
     <rect x="8" y="10" width="8" height="11" rx="2" stroke="#1a0f00" strokeWidth="1.7" fill="none"/>
@@ -103,7 +103,7 @@ const NailIcon = () => (
   </svg>
 );
 
-/* Skincare — face with sparkles */
+/* Skincare ΓÇö face with sparkles */
 const SkincareIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
     <circle cx="12" cy="13" r="7.5" stroke="#1a0f00" strokeWidth="1.6" fill="none"/>
@@ -114,7 +114,7 @@ const SkincareIcon = () => (
   </svg>
 );
 
-/* Massage — hands / wave */
+/* Massage ΓÇö hands / wave */
 const MassageIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
     <path d="M4 14 Q7 10 12 12 Q17 14 20 10" stroke="#1a0f00" strokeWidth="1.7" strokeLinecap="round" fill="none"/>
@@ -123,7 +123,7 @@ const MassageIcon = () => (
   </svg>
 );
 
-/* Premium Services — diamond */
+/* Premium Services ΓÇö diamond */
 const PremiumIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
     <path d="M12 20L3 9h18L12 20z" stroke="#1a0f00" strokeWidth="1.6" strokeLinejoin="round" fill="none"/>
@@ -157,6 +157,7 @@ const BOOKING_MODAL_THEME_CLASS = "booking-modal-theme";
 const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-walkin";
 
 const BOOKING_MODAL_THEME_CSS = `
+@media (max-width: 1024px) {
   .booking-modal-theme,
   .booking-modal-theme * {
     color-scheme: dark;
@@ -181,15 +182,16 @@ const BOOKING_MODAL_THEME_CSS = `
 
   .booking-modal-theme .confirm-card {
     background: #11100d !important;
-    border: 1px solid rgba(221, 144, 29, 0.12) !important;
+    border: 1px solid rgba(245, 241, 235, 0.08) !important;
     color: #f5f1eb !important;
+    box-shadow: none !important;
   }
   /* Override any residual light-theme pink glows for confirm elements */
   .booking-modal-theme .confirm-ref-pill {
     background: rgba(221,144,29,0.14) !important;
     border: 1px solid rgba(221,144,29,0.45) !important;
     color: #f5f1eb !important;
-    box-shadow: 0 2px 10px rgba(221,144,29,0.28) !important;
+    box-shadow: 0 2px 10px rgba(221,144,29,0.05) !important;
   }
 
   .booking-modal-theme .confirm-reminder-box {
@@ -234,9 +236,11 @@ const BOOKING_MODAL_THEME_CSS = `
     scrollbar-width: thin;
     scrollbar-color: rgba(221,144,29,0.9) rgba(19,19,19,0.4);
   }
+
+}
 `;
 
-/* ── Header ── */
+/* ΓöÇΓöÇ Header ΓöÇΓöÇ */
 const ModalHeader = ({ onBack }) => (
   <header className="appt-header">
     <button className="appt-back-btn" onClick={onBack} aria-label="Go back">
@@ -248,7 +252,7 @@ const ModalHeader = ({ onBack }) => (
   </header>
 );
 
-/* ── Progress Indicator ── */
+/* ΓöÇΓöÇ Progress Indicator ΓöÇΓöÇ */
 const ProgressIndicator = ({ currentStep, steps = STEPS }) => (
   <div className="appt-progress">
     <div className="appt-progress-track">
@@ -285,7 +289,7 @@ const ProgressIndicator = ({ currentStep, steps = STEPS }) => (
   </div>
 );
 
-/* ── Thin divider ── */
+/* ΓöÇΓöÇ Thin divider ΓöÇΓöÇ */
 const Divider = () => (
   <div style={{ width: "100%", height: 1, background: "rgba(152,143,129,0.25)", flexShrink: 0 }} />
 );
@@ -305,6 +309,11 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
   const [showReceiptReminder, setShowReceiptReminder] = useState(false);
   const [showConfirmationToast, setShowConfirmationToast] = useState(false);
 
+  // Force dark receipt styling in Add Walk-in modal to maintain contrast inside the modal
+  const receiptBg = '#11100d';
+  const receiptText = '#f5f1eb';
+  const receiptLabel = '#988f81';
+
   const WALK_IN_STEPS = [
     { number: 1, label: "Name" },
     { number: 2, label: "Service" },
@@ -315,6 +324,11 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
   const formatCurrency = (value) => {
     const amount = Number(value) || 0;
     return `₱${amount.toFixed(2)}`;
+  };
+
+  const formatWalkInReference = (value) => {
+    if (!value) return 'N/A';
+    return String(value).replace(/-/g, '').slice(0, 8).toUpperCase();
   };
 
   const getSelectedServices = () => phase2Data?.services || [];
@@ -334,7 +348,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
     }, 0);
 
     return {
-      id: Math.random().toString(36).substr(2, 9).toUpperCase(),
+      // id is generated only upon user confirmation
+      id: null,
+      referenceNumber: null,
       name: walkInName,
       services,
       subtotal,
@@ -421,11 +437,8 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
     setReceiptData(receipt);
     setStep(4);
     
-    // Log to database immediately
-    await logWalkInToDatabase(receipt);
-    
-    // Submit the walk-in to admin dashboard
-    onSubmit({ ...receipt, services: receipt.services });
+    // NOTE: Do NOT log or submit before final confirmation. That will be performed
+    // when the user clicks Confirm so the reference ID can be generated then.
   };
 
   const handleContinue = () => {
@@ -525,19 +538,59 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
       if (!response.ok) {
         console.error("[AddWalkIn] Failed to log walk-in. Status:", response.status, "Details:", responseText);
+        throw new Error(responseText || 'Failed to log walk-in');
       } else {
         console.log("[AddWalkIn] Walk-in successfully logged to database");
       }
+
+      return responseText ? JSON.parse(responseText) : null;
     } catch (err) {
       console.error("[AddWalkIn] Error logging walk-in:", err);
+      throw err;
     }
   };
 
   /* Handle final confirmation */
-  const handleConfirmWalkin = () => {
-    // Show confirmation toast immediately
-    setShowConfirmationToast(true);
-    setIsConfirmed(true);
+  const handleConfirmWalkin = async () => {
+    const receiptDraft = { ...receiptData };
+
+    try {
+      const insertedResponse = await logWalkInToDatabase(receiptDraft);
+      const insertedRow = Array.isArray(insertedResponse?.data) ? insertedResponse.data[0] : insertedResponse?.data;
+      const databaseId = insertedRow?.id || receiptDraft.id;
+      const referenceNumber = formatWalkInReference(databaseId);
+      const receiptWithId = {
+        ...receiptDraft,
+        id: databaseId,
+        referenceNumber,
+      };
+
+      setReceiptData(receiptWithId);
+      setShowConfirmationToast(true);
+      setIsConfirmed(true);
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('admin:walkin-created', {
+          detail: {
+            id: receiptWithId.id,
+            name: receiptWithId.name,
+            staff: receiptWithId.stylist,
+            service: Array.isArray(receiptWithId.services) && receiptWithId.services.length > 0
+              ? receiptWithId.services.map((service) => service?.title || service?.name || 'Service').join(', ')
+              : 'Walk-in Service',
+            createdAt: insertedRow?.created_at || new Date().toISOString(),
+          },
+        }));
+      }
+
+      try {
+        onSubmit?.(receiptWithId);
+      } catch (e) {
+        console.error('[AddWalkIn] onSubmit error after confirm', e);
+      }
+    } catch (e) {
+      console.error('[AddWalkIn] Error logging after confirm', e);
+    }
   };
 
   /* Generate printable receipt */
@@ -773,7 +826,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
           <div class="ref-box">
             <span class="ref-label">Reference Number</span>
-            <div class="ref-code">${receiptData.id || 'N/A'}</div>
+            <div class="ref-code">${receiptData.referenceNumber || formatWalkInReference(receiptData.id) || 'N/A'}</div>
           </div>
 
           <div class="footer">
@@ -815,7 +868,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
   return createPortal(
     <>
-      {/* ── Toast Notifications (Top Fixed Position) ── */}
+      {/* ΓöÇΓöÇ Toast Notifications (Top Fixed Position) ΓöÇΓöÇ */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 999999, pointerEvents: "auto", display: "flex", justifyContent: "center", padding: "20px" }}>
         <Toast 
           message="Walk-in Confirmed!" 
@@ -828,7 +881,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
         className={`appt-overlay walkin-force-dark ${BOOKING_MODAL_THEME_CLASS}`}
         style={{
           ...DARK_MODAL_VARS,
-          zIndex: 10000001,
+            zIndex: 1000,
           backgroundColor: "rgba(0,0,0,0.5)",
           backdropFilter: "blur(2px)",
         }}
@@ -867,12 +920,19 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                     aria-describedby={nameError && nameTouched ? "name-error" : undefined}
                   />
                   {nameError && nameTouched && (
-                    <p id="name-error" className="walkin-error">
+                    <p
+                      id="name-error"
+                      className="walkin-error"
+                      style={{ color: "#ef4444", fontSize: "0.8rem", margin: "4px 0 0 0", fontWeight: "500" }}
+                    >
                       ⚠️ {nameError}
                     </p>
                   )}
                   {!nameError && nameTouched && (
-                    <p style={{ fontSize: "0.8rem", color: "#22c55e", margin: "4px 0 0 0", fontWeight: "500" }}>
+                    <p
+                      className="walkin-success"
+                      style={{ fontSize: "0.8rem", color: "#22c55e", margin: "4px 0 0 0", fontWeight: "500" }}
+                    >
                       ✓ Name is valid
                     </p>
                   )}
@@ -882,17 +942,18 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
             {/* Step 2: Service Selection (Using Phase 2 Component) */}
             {step === 2 && (
-              <AppointmentFormPhase2
-                onBack={handleBack}
-                onContinue={handlePhase2Continue}
-                onCancel={handleCancelClick}
-                initialData={null}
-                headerTitle="Add Walk-in"
-                stepLabels={WALK_IN_STEPS}
-                showPromoCode={false}
-                isInline
-                isWalkIn
-              />
+                <AppointmentFormPhase2
+                  onBack={handleBack}
+                  onContinue={handlePhase2Continue}
+                  onCancel={handleCancelClick}
+                  onClose={handleClose}
+                  initialData={null}
+                  headerTitle="Add Walk-in"
+                  stepLabels={WALK_IN_STEPS}
+                  showPromoCode={false}
+                  isInline
+                  isWalkIn
+                />
             )}
 
             {/* Step 3: Stylist Selection (Using Phase 3 Component) */}
@@ -902,6 +963,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                   onBack={handleBack}
                   onContinue={handlePhase3Continue}
                   onCancel={handleCancelClick}
+                  onClose={handleClose}
                   initialData={{ services: phase2Data?.services || [] }}
                   headerTitle="Add Walk-in"
                   stepLabels={WALK_IN_STEPS}
@@ -916,7 +978,15 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                 <p className="appt-section-title">Confirm Walk-in</p>
                 <p className="appt-section-sub">Review appointment details</p>
                 
-                <div className="confirm-card">
+                <div
+                  className="confirm-card walkin-dark-receipt"
+                  style={{
+                    background: receiptBg,
+                    border: '1px solid rgba(245, 241, 235, 0.08)',
+                    color: receiptText,
+                    boxShadow: "none",
+                  }}
+                >
                   {receiptData.services.length > 0 && (
                     <>
                       <div className="confirm-service-row">
@@ -925,8 +995,8 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                             <ScissorsIcon />
                           </div>
                           <div className="confirm-svc-text">
-                            <span className="confirm-svc-name">{receiptData.services[0].title}</span>
-                            <span className="confirm-svc-duration">{receiptData.totalDuration} mins</span>
+                            <span className="confirm-svc-name" style={{ color: '#ffffff' }}>{receiptData.services[0].title}</span>
+                            <span className="confirm-svc-duration" style={{ color: '#988f81' }}>{receiptData.totalDuration} mins</span>
                           </div>
                         </div>
                         <div className="confirm-svc-meta">
@@ -949,9 +1019,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                               ? formatCurrency(service.price)
                               : (service.price || "₱0.00");
                             return (
-                              <div key={idx} style={{ fontSize: "0.85rem", color: "var(--color-white)", paddingLeft: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div key={idx} style={{ fontSize: "0.85rem", color: '#ffffff', paddingLeft: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <span>• {service.title}</span>
-                                <span style={{ color: "var(--color-tan)" }}>{servicePrice}</span>
+                                <span style={{ color: '#988f81' }}>{servicePrice}</span>
                               </div>
                             );
                           })}
@@ -963,31 +1033,31 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
                   <div className="confirm-details">
                     <div className="confirm-detail-row">
-                      <PersonIcon />
+                      <PersonIcon color="#ffffff" />
                       <div className="confirm-detail-text">
-                        <span className="confirm-detail-label">Name</span>
-                        <span className="confirm-detail-value">{receiptData.name}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Name</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.name}</span>
                       </div>
                     </div>
                     <div className="confirm-detail-row">
                       <StylistIcon />
                       <div className="confirm-detail-text">
-                        <span className="confirm-detail-label">Stylist</span>
-                        <span className="confirm-detail-value">{receiptData.stylist}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Stylist</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.stylist}</span>
                       </div>
                     </div>
                     <div className="confirm-detail-row">
                       <EnvelopeIcon />
                       <div className="confirm-detail-text">
-                        <span className="confirm-detail-label">Date & Time</span>
-                        <span className="confirm-detail-value">{receiptData.timestamp}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Date & Time</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.timestamp}</span>
                       </div>
                     </div>
                     <div className="confirm-detail-row">
                       <DownloadIcon />
                       <div className="confirm-detail-text">
-                        <span className="confirm-detail-label">Duration</span>
-                        <span className="confirm-detail-value">{receiptData.totalDuration} mins</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Duration</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.totalDuration} mins</span>
                       </div>
                     </div>
                   </div>
@@ -996,30 +1066,26 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
                   <div className="confirm-details">
                     <div className="confirm-detail-row">
-                      <span className="confirm-detail-label">Subtotal</span>
-                      <span className="confirm-detail-value">{formatCurrency(receiptData.subtotal)}</span>
+                      <span className="confirm-detail-label" style={{ color: '#988f81' }}>Subtotal</span>
+                      <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{formatCurrency(receiptData.subtotal)}</span>
                     </div>
                     <div className="confirm-detail-row">
-                      <span className="confirm-detail-label">Total Amount</span>
-                      <span className="confirm-detail-value">{receiptData.price}</span>
+                      <span className="confirm-detail-label" style={{ color: '#988f81' }}>Total Amount</span>
+                      <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.price}</span>
                     </div>
                   </div>
 
                   <Divider />
 
                   {/* Bottom: ref no. + reminder */}
-                  <div className="confirm-bottom-row">
-                    <div
-                      className="confirm-ref-pill"
-                      style={{
-                        background: 'rgba(221,144,29,0.14)',
-                        border: '1px solid rgba(221,144,29,0.45)',
-                        color: '#f5f1eb',
-                        boxShadow: '0 2px 10px rgba(221,144,29,0.28)'
-                      }}
-                    >
-                      Ref. No.: {receiptData.id}
-                    </div>
+                  <div className="confirm-bottom-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                    {!isConfirmed ? (
+                      <div style={{ color: receiptLabel, textAlign: 'center' }}>Reference number will be generated upon confirmation</div>
+                    ) : (
+                      <div style={{ color: receiptLabel, textAlign: 'center', lineHeight: 1.4, whiteSpace: 'normal', wordBreak: 'break-word', overflow: 'visible' }}>
+                        Reference No.: {receiptData.referenceNumber || formatWalkInReference(receiptData.id) || 'N/A'}
+                      </div>
+                    )}
 
                   </div>
                 </div>
@@ -1103,7 +1169,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
         <ConfirmationDialog
           isOpen={showReceiptReminder}
           title="Save Your Walk-in Info"
-          message={`Have you saved your receipt and reference number?\n\nReference No.: ${receiptData?.id || "N/A"}\n\nYou'll need this for check-in.`}
+          message={`Have you saved your receipt and reference number?\n\nReference No.: ${receiptData?.referenceNumber || formatWalkInReference(receiptData?.id) || "N/A"}\n\nYou'll need this for check-in.`}
           confirmText="Yes, Saved"
           cancelText="Download Again"
           onConfirm={() => {

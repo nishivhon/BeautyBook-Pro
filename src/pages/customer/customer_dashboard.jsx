@@ -5,6 +5,39 @@ import { useCustomerCouponsData, useCustomerHistoryData, useCustomerProfileData,
 import { couponService } from "../../services/couponService";
 import { useToast } from "../../components/toast";
 
+const CUSTOMER_CACHE_TTL_MS = 5 * 60 * 1000;
+
+const getCustomerCacheKey = (customerId) => `customerDashboardCache:${customerId}`;
+
+const readCustomerCache = (customerId) => {
+	if (typeof window === "undefined" || !customerId) return null;
+	try {
+		const raw = localStorage.getItem(getCustomerCacheKey(customerId));
+		if (!raw) return null;
+
+		const parsed = JSON.parse(raw);
+		if (!parsed?.savedAt || !parsed?.customer) return null;
+
+		if (Date.now() - parsed.savedAt > CUSTOMER_CACHE_TTL_MS) return null;
+		return parsed.customer;
+	} catch (error) {
+		console.warn("[CustomerDashboard] Failed to read cache:", error);
+		return null;
+	}
+};
+
+const writeCustomerCache = (customerId, customer) => {
+	if (typeof window === "undefined" || !customerId || !customer) return;
+	try {
+		localStorage.setItem(
+			getCustomerCacheKey(customerId),
+			JSON.stringify({ savedAt: Date.now(), customer })
+		);
+	} catch (error) {
+		console.warn("[CustomerDashboard] Failed to write cache:", error);
+	}
+};
+
 const StarIcon = ({ filled = false }) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? "#dd901d" : "none"} xmlns="http://www.w3.org/2000/svg">
     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="#dd901d" strokeWidth="1.6" strokeLinejoin="round" />
@@ -24,13 +57,79 @@ export default function CustomerDashboard() {
 	const [ratingValue, setRatingValue] = useState(0);
 	const [cancelModalOpen, setCancelModalOpen] = useState(false);
 	const [selectedAppointmentToCancel, setSelectedAppointmentToCancel] = useState(null);
+	const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 768 : false));
+	const avatarSize = isMobile ? 70 : 230;
+	const avatarFontSize = isMobile ? 22 : 62;
+	const avatarStyle = {
+		width: avatarSize,
+		height: avatarSize,
+		fontSize: avatarFontSize,
+	};
+	const sectionHeaderStyle = {
+		display: 'flex',
+		flexDirection: 'column',
+		gap: '12px',
+		marginBottom: isMobile ? '16px' : '20px',
+	};
+	const sectionHeaderRowStyle = {
+		display: 'flex',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		gap: '12px',
+	};
+	const sectionHeaderDividerStyle = {
+		width: '100%',
+		height: '1px',
+		backgroundColor: 'rgba(221, 144, 29, 0.12)',
+	};
 
 	// Fetch full customer data from database (including histories)
 	useEffect(() => {
-		const fetchFullCustomerData = async () => {
+		const handleResize = () => setIsMobile(window.innerWidth <= 768);
+		handleResize();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
+
+	useEffect(() => {
+		let isMounted = true;
+
+		const applyCustomerData = (customer) => {
+			if (!customer || !isMounted) return;
+
+			const updatedProfile = {
+				...profile,
+				name: customer.name || profile.name,
+				emails: customer.email ? [customer.email] : profile.emails,
+				phones: customer.phone ? [customer.phone] : profile.phones,
+				histories: customer.histories || [],
+				// Map notif_pref (could be 'email'|'sms' or a contact string) to notificationPreference
+				notificationPreference: (function() {
+					if (!customer?.notif_pref) return profile.notificationPreference || "";
+					const val = String(customer.notif_pref || "").trim();
+					if (val === 'email' || val === 'sms') return val;
+					if (val.includes('@')) return 'email';
+					if (/\d/.test(val)) return 'sms';
+					return profile.notificationPreference || "";
+				})(),
+			};
+
+			console.log('[CustomerDashboard] Updated profile:', updatedProfile);
+			setProfile(updatedProfile);
+			writeCustomerCache(profile.id, customer);
+		};
+
+		const fetchFullCustomerData = async ({ force = false } = {}) => {
 			try {
 				if (!profile?.id) {
 					console.log('[CustomerDashboard] No customer ID in profile, skipping fetch');
+					return;
+				}
+
+				const cachedCustomer = !force ? readCustomerCache(profile.id) : null;
+				if (cachedCustomer) {
+					console.log('[CustomerDashboard] Using cached customer data for ID:', profile.id);
+					applyCustomerData(cachedCustomer);
 					return;
 				}
 
@@ -51,16 +150,7 @@ export default function CustomerDashboard() {
 
 				// Update profile with full data including histories
 				if (customer) {
-					const updatedProfile = {
-						...profile,
-						name: customer.name || profile.name,
-						emails: customer.email ? [customer.email] : profile.emails,
-						phones: customer.phone ? [customer.phone] : profile.phones,
-						histories: customer.histories || [],
-					};
-					
-					console.log('[CustomerDashboard] Updated profile:', updatedProfile);
-					setProfile(updatedProfile);
+					applyCustomerData(customer);
 				}
 			} catch (error) {
 				console.error('[CustomerDashboard] Error fetching customer data:', error);
@@ -69,13 +159,9 @@ export default function CustomerDashboard() {
 
 		fetchFullCustomerData();
 
-		// Set up auto-refresh every 10 seconds to catch status updates from admin
-		const refreshInterval = setInterval(() => {
-			console.log('[CustomerDashboard] Auto-refreshing customer data');
-			fetchFullCustomerData();
-		}, 10000);
-
-		return () => clearInterval(refreshInterval);
+		return () => {
+			isMounted = false;
+		};
 	}, [profile?.id]);
 
 	// Refetch history data when profile changes (to pick up new bookings from histories)
@@ -85,17 +171,29 @@ export default function CustomerDashboard() {
 		
 		// Re-render history by calling the hook logic again
 		if (profile?.histories && Array.isArray(profile.histories) && profile.histories.length > 0) {
-			const transformedHistory = profile.histories.map((item, idx) => ({
-				id: item.id || idx,
-				date: item.date || new Date().toISOString().split('T')[0],
-				service: item.service || 'Service',
-				stylist: item.staff || 'Unknown Stylist',
-				cost: parseFloat(item.price) || 0,
-				status: item.status === 'done' ? 'completed' : item.status === 'current' ? 'upcoming' : item.status || 'pending',
-				rated: item.rated || false,
-				rating: item.rating || 0,
-				rated_at: item.rated_at || null,
-			}));
+			const transformedHistory = profile.histories
+				.map((item, idx) => ({
+					id: item.id || idx,
+					date: item.date || new Date().toISOString().split('T')[0],
+					service: item.service || 'Service',
+					stylist: item.staff || 'Unknown Stylist',
+					cost: parseFloat(item.price) || 0,
+					status: item.status === 'done' ? 'completed' : item.status === 'current' ? 'upcoming' : item.status || 'pending',
+					rated: item.rated || false,
+					rating: item.rating || 0,
+					rated_at: item.rated_at || null,
+				}))
+				.reduce((uniqueHistory, item) => {
+					const existingIndex = uniqueHistory.findIndex((entry) => String(entry.id) === String(item.id));
+
+					if (existingIndex === -1) {
+						uniqueHistory.push(item);
+					} else {
+						uniqueHistory[existingIndex] = item;
+					}
+
+					return uniqueHistory;
+				}, []);
 			console.log('[CustomerDashboard] Transformed history:', transformedHistory);
 			setHistory(transformedHistory);
 		} else {
@@ -105,13 +203,36 @@ export default function CustomerDashboard() {
 
 	console.log('[CustomerDashboard] Final history to display:', history);
 
-	// Only show completed (and unrated) transactions in the dashboard "Recent Transaction" section
-	const recentCompleted = history.filter((item) => item.status === 'completed' && !item.rated);
+	function isMaxUsesReached(coupon) {
+		return coupon.max_uses && coupon.number_of_uses >= coupon.max_uses;
+	}
 
-	// Only show unclaimed, non-expired coupons in the dashboard coupons section
-	const recentUnclaimedCoupons = coupons.filter((coupon) => !coupon.claimed && coupon.status !== "expired");
+	// Only show completed (and unrated) transactions in the dashboard "Recent Transaction" section
+	const recentCompleted = history
+		.filter((item) => item.status === 'completed' && !item.rated)
+		.reduce((uniqueHistory, item) => {
+			const existingIndex = uniqueHistory.findIndex((entry) => String(entry.id) === String(item.id));
+
+			if (existingIndex === -1) {
+				uniqueHistory.push(item);
+		} else {
+				uniqueHistory[existingIndex] = item;
+			}
+
+			return uniqueHistory;
+		}, []);
+
+	// Only show unclaimed, non-expired, non-deleted, and not-maxed-out coupons in the dashboard coupons section
+	const recentUnclaimedCoupons = coupons.filter((coupon) => !coupon.claimed && coupon.status !== "expired" && !coupon.is_deleted && !isMaxUsesReached(coupon));
 
 	const profileInitial = (profile.name || "?").trim().charAt(0).toUpperCase() || "?";
+	const profileAvatar = (
+		<div className="cdb-avatar cdb-avatar-dashboard cdb-avatar-profile" style={avatarStyle} aria-label={`${profile.name || "Customer"} avatar`}>
+			<div className="cdb-avatar-placeholder">
+				<span className="cdb-avatar-initial">{profileInitial}</span>
+			</div>
+		</div>
+	);
 
 
 
@@ -166,9 +287,15 @@ export default function CustomerDashboard() {
 		}
 	};
 
-	const handleClaimCoupon = async (id, code) => {
+	const handleClaimCoupon = async (id, code, coupon) => {
 		if (!profile?.id) {
 			showToast({ message: 'Please log in to claim coupons', type: 'error' });
+			return;
+		}
+
+		// Check if max uses reached
+		if (isMaxUsesReached(coupon)) {
+			showToast({ message: 'This coupon has reached its maximum usage limit', type: 'warning' });
 			return;
 		}
 
@@ -202,11 +329,33 @@ export default function CustomerDashboard() {
 		return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 	};
 
+	const getAppointmentDateTime = (appointment) => {
+		if (!appointment?.date) return null;
+		const timeValue = appointment.time ? convertTo24Hour(String(appointment.time)) : '00:00';
+		const dateTime = new Date(`${appointment.date}T${timeValue}`);
+		return Number.isNaN(dateTime.getTime()) ? null : dateTime;
+	};
+
+	const isFutureAppointment = (appointment) => {
+		const dateTime = getAppointmentDateTime(appointment);
+		return !!dateTime && dateTime > new Date();
+	};
+
 	// Helper function to determine appointment status
 	const getAppointmentStatus = (appointmentDate) => {
 		const today = new Date().toISOString().split('T')[0];
 		return appointmentDate === today ? 'today' : 'upcoming';
 	};
+
+	const visibleUpcomingAppointments = [...(appointments || [])]
+		.filter((appointment) => appointment && !appointment.cancelled && isFutureAppointment(appointment))
+		.sort((left, right) => {
+			const leftTime = getAppointmentDateTime(left)?.getTime() || 0;
+			const rightTime = getAppointmentDateTime(right)?.getTime() || 0;
+			return leftTime - rightTime;
+		});
+
+	const nextUpcomingAppointment = visibleUpcomingAppointments[0] || null;
 
 	// Handle cancel appointment button click
 	const handleInitiateCancelAppointment = (appointment) => {
@@ -264,66 +413,89 @@ export default function CustomerDashboard() {
 				<h2 className="cdb-section-title">My Profile</h2>
 				<>
 					<div className="cdb-grid cdb-grid-profile cdb-grid-avatar">
-									<div className="cdb-profile-avatar-col">
-										<div className="cdb-avatar cdb-avatar-dashboard" aria-label={`${profile.name || "Customer"} avatar`}>
-											<div className="cdb-avatar-placeholder">
-										<span className="cdb-avatar-initial">{profileInitial}</span>
-									</div>
-										</div>
-										</div>
-										<div className="cdb-profile-info-col">
-											<div>
-												<label className="cdb-field-label">Name</label>
-												<p className="cdb-field-value cdb-field-value-lg">{profile.name}</p>
-											</div>
-											<div>
-												<label className="cdb-field-label">Email</label>
-											<p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span style={{ color: "#a3a398" }}>No email added</span>}</p>
-										</div>
-										<div>
-											<label className="cdb-field-label">Phone</label>
-											<p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span style={{ color: "#a3a398" }}>No phone added</span>}</p>
-											</div>
-											<div>
-												<label className="cdb-field-label">Notification Preference</label>
-												<p className="cdb-field-value cdb-field-value-lg">{typeof profile.notificationPreference === 'string' ? profile.notificationPreference.toUpperCase() : (profile.notificationPreference ? 'ENABLED' : 'DISABLED')}</p>
-											</div>
-											<div className="cdb-action-row">
-												<button className="cdb-btn cdb-btn-edit" onClick={() => navigate("/customer/profile")}>Edit Profile</button>
-											</div>
-										</div>
-									</div>
-								</>
-				</div>
+{isMobile ? (
+<div className="cdb-profile-info-col">
+<div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+{profileAvatar}
+</div>
+<div>
+<label className="cdb-field-label">Name</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.name}</p>
+</div>
+<div>
+<label className="cdb-field-label">Email</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span style={{ color: "#a3a398" }}>No email added</span>}</p>
+</div>
+<div>
+<label className="cdb-field-label">Phone</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span style={{ color: "#a3a398" }}>No phone added</span>}</p>
+</div>
+<div>
+<label className="cdb-field-label">Notification Preference</label>
+<p className="cdb-field-value cdb-field-value-lg">{typeof profile.notificationPreference === 'string' ? profile.notificationPreference.toUpperCase() : (profile.notificationPreference ? 'ENABLED' : 'DISABLED')}</p>
+</div>
+<div className="cdb-action-row">
+<button className="cdb-btn cdb-btn-edit" onClick={() => navigate("/customer/profile")}>Edit Profile</button>
+</div>
+</div>
+) : (
+<>
+<div className="cdb-profile-avatar-col">{profileAvatar}</div>
+<div className="cdb-profile-info-col">
+<div>
+<label className="cdb-field-label">Name</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.name}</p>
+</div>
+<div>
+<label className="cdb-field-label">Email</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.emails && profile.emails.length ? profile.emails[0] : <span style={{ color: "#a3a398" }}>No email added</span>}</p>
+</div>
+<div>
+<label className="cdb-field-label">Phone</label>
+<p className="cdb-field-value cdb-field-value-lg">{profile.phones && profile.phones.length ? profile.phones[0] : <span style={{ color: "#a3a398" }}>No phone added</span>}</p>
+</div>
+<div>
+<label className="cdb-field-label">Notification Preference</label>
+<p className="cdb-field-value cdb-field-value-lg">{typeof profile.notificationPreference === 'string' ? profile.notificationPreference.toUpperCase() : (profile.notificationPreference ? 'ENABLED' : 'DISABLED')}</p>
+</div>
+<div className="cdb-action-row">
+<button className="cdb-btn cdb-btn-edit" onClick={() => navigate("/customer/profile")}>Edit Profile</button>
+</div>
+</div>
+</>
+)}
+</div>
+				</>
+					</div>
 			</section>
 		<section className="cdb-section cdb-section-appointments cdb-mounted">
 		<div className="cdb-card">
 			<h2 className="cdb-section-title">Upcoming Appointment</h2>
-			{appointments && appointments.length > 0 && !appointments[0]?.cancelled ? (
+			{nextUpcomingAppointment ? (
 				<div className="confirm-card">
 					<div className="confirm-service-row">
 						<div className="confirm-service-left">
 							<div className="confirm-svc-text">
-								<span className="confirm-svc-name">{String(appointments[0].category || 'General')}</span>
-								<span className="confirm-svc-duration">{String(appointments[0].duration || '1 hour')}</span>
+								<span className="confirm-svc-name">{String(nextUpcomingAppointment.category || 'General')}</span>
+								<span className="confirm-svc-duration">{String(nextUpcomingAppointment.duration || '1 hour')}</span>
 							</div>
 						</div>
 						<div className="confirm-svc-meta">
 							<span className="confirm-svc-datetime">
-								{appointments[0].date ? new Date(appointments[0].date).toLocaleDateString() : 'TBD'} · {String(appointments[0].time || '')}
+								{nextUpcomingAppointment.date ? new Date(nextUpcomingAppointment.date).toLocaleDateString() : 'TBD'} · {String(nextUpcomingAppointment.time || '')}
 							</span>
-							<span className="confirm-svc-price">₱{typeof appointments[0].price === 'number' ? appointments[0].price.toFixed(2) : '0.00'}</span>
+							<span className="confirm-svc-price">₱{typeof nextUpcomingAppointment.price === 'number' ? nextUpcomingAppointment.price.toFixed(2) : '0.00'}</span>
 						</div>
 					</div>
 
-					{appointments[0].service && (
+					{nextUpcomingAppointment.service && (
 						<>
 							<div style={{ marginBottom: 12 }}>
 								<div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-tan)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 8 }}>Services Selected</div>
 								<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 									<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-										<span style={{ color: 'var(--color-light)' }}>{String(appointments[0].service || 'Service')}</span>
-										<span style={{ color: 'var(--color-tan)' }}>₱{typeof appointments[0].price === 'number' ? appointments[0].price.toFixed(2) : '0.00'}</span>
+										<span style={{ color: 'var(--color-light)' }}>{String(nextUpcomingAppointment.service || 'Service')}</span>
+										<span style={{ color: 'var(--color-tan)' }}>₱{typeof nextUpcomingAppointment.price === 'number' ? nextUpcomingAppointment.price.toFixed(2) : '0.00'}</span>
 									</div>
 								</div>
 							</div>
@@ -331,25 +503,25 @@ export default function CustomerDashboard() {
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Name</span>
-										<span className="confirm-detail-value">{String(appointments[0].customerName || '')}</span>
+										<span className="confirm-detail-value">{String(nextUpcomingAppointment.customerName || '')}</span>
 									</div>
 								</div>
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Email</span>
-										<span className="confirm-detail-value">{String(appointments[0].email || '')}</span>
+										<span className="confirm-detail-value">{String(nextUpcomingAppointment.email || '')}</span>
 									</div>
 								</div>
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Phone</span>
-										<span className="confirm-detail-value">{String(appointments[0].phone || '')}</span>
+										<span className="confirm-detail-value">{String(nextUpcomingAppointment.phone || '')}</span>
 									</div>
 								</div>
 								<div className="confirm-detail-row">
 									<div className="confirm-detail-text">
 										<span className="confirm-detail-label">Stylist</span>
-										<span className="confirm-detail-value">{String(appointments[0].stylist || 'Unassigned')}</span>
+										<span className="confirm-detail-value">{String(nextUpcomingAppointment.stylist || 'Unassigned')}</span>
 									</div>
 								</div>
 							</div>
@@ -357,30 +529,18 @@ export default function CustomerDashboard() {
 					)}
 
 					<div className="confirm-bottom-row">
-						<div className="confirm-ref-pill">Ref. No.: {String(appointments[0].refNo || appointments[0].id || '')}</div>
+						<div className="confirm-ref-pill">Ref. No.: {String(nextUpcomingAppointment.refNo || nextUpcomingAppointment.id || '')}</div>
 						<div className="confirm-reminder-box">
 							<p className="confirm-reminder-text">You'll receive a reminder 15 minutes before your appointment.</p>
 						</div>
 					</div>
 
 					<div className="cdb-appointment-actions">
-						{canCancelAppointment(appointments[0].date, appointments[0].time) ? (
-							<button className="cdb-btn cdb-btn-secondary" onClick={() => handleInitiateCancelAppointment(appointments[0])} style={{ flex: 1 }}>Cancel Appointment</button>
+						{canCancelAppointment(nextUpcomingAppointment.date, nextUpcomingAppointment.time) ? (
+							<button className="cdb-btn cdb-btn-secondary" onClick={() => handleInitiateCancelAppointment(nextUpcomingAppointment)} style={{ flex: 1 }}>Cancel Appointment</button>
 						) : (
 							<div className="cdb-appointment-cancel-warning">Cannot cancel within 2 hours of appointment</div>
 						)}
-					</div>
-				</div>
-			) : appointments && appointments.length > 0 && appointments[0]?.cancelled ? (
-				<div className="cdb-appointment-receipt cdb-appointment-cancelled">
-					<div className="cdb-appointment-header">
-						<h3 className="cdb-appointment-title">{appointments[0].service}</h3>
-						<span className="cdb-appointment-status" style={{ background: 'rgba(152, 143, 129, 0.15)', color: 'var(--color-tan)' }}>
-							Cancelled
-						</span>
-					</div>
-					<div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--color-tan)', fontSize: '14px' }}>
-						This appointment has been cancelled.
 					</div>
 				</div>
 			) : (
@@ -394,26 +554,33 @@ export default function CustomerDashboard() {
 		</section>
 			<section className="cdb-section cdb-mounted">
 			<div className="cdb-card">
-				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-					<h2 className="cdb-section-title">Recent Transaction</h2>
-					<div>
-						<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/history")}>View Full Transaction History</button>
+				<header className="cdb-section-head-row" style={sectionHeaderStyle}>
+					<div style={sectionHeaderRowStyle}>
+						<h2 className="cdb-section-title" style={{ fontSize: isMobile ? '16px' : undefined }}>Recent Transaction</h2>
+						<div style={{ flex: isMobile ? 1 : '0 0 auto', marginLeft: isMobile ? undefined : 'auto', textAlign: isMobile ? 'left' : 'right' }}>
+							<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/history")} style={{ padding: isMobile ? '6px 10px' : undefined, fontSize: isMobile ? '11px' : undefined, whiteSpace: 'nowrap' }}>
+								{isMobile ? 'Full History' : 'View Full Transaction History'}
+							</button>
+						</div>
 					</div>
-				</div>
+					<div style={sectionHeaderDividerStyle} />
+				</header>
 					<div className="cdb-grid cdb-grid-history">
 						{recentCompleted && recentCompleted.length > 0 ? (
 							recentCompleted.map((item) => (
-								<div key={item.id} className="cdb-item-card">
-									<div className="cdb-item-left">
-										<h3 className="cdb-item-title">{item.service}</h3>
+								<div key={`${item.id || 'history'}-${item.date || 'unknown'}-${item.service || 'service'}`} className="cdb-item-card">
+									<div className="cdb-item-left" style={{ minWidth: 0, flex: isMobile ? '1 1 0' : undefined }}>
+										<h3 className="cdb-item-title" style={{ fontSize: isMobile ? '15px' : undefined, whiteSpace: isMobile ? 'normal' : undefined, wordBreak: isMobile ? 'break-word' : undefined }}>{item.service}</h3>
 										<p className="cdb-item-subtitle">{item.stylist} · ${item.cost.toFixed(2)}</p>
 										<p className="cdb-date-text">{new Date(item.date).toLocaleDateString()}</p>
 										{item.rated && <div className="cdb-rating-row">{[1, 2, 3, 4, 5].map((star) => <span key={star}>{star <= item.rating ? "★" : "☆"}</span>)}</div>}
 									</div>
-									<div className="cdb-item-right">
+									<div className="cdb-item-right" style={{ flex: isMobile ? '0 0 auto' : undefined }}>
 										<span className={`cdb-status-badge ${item.status === "completed" ? "completed" : "upcoming"}`}>{item.status}</span>
 										{(item.rating === 0 || item.rating === undefined || item.rating === null) && (
-											<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)}>Rate Service</button>
+											<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)} style={{ padding: isMobile ? '8px 12px' : undefined, fontSize: isMobile ? '12px' : undefined, whiteSpace: 'nowrap' }}>
+												Rate Service
+											</button>
 										)}
 									</div>
 								</div>
@@ -429,33 +596,42 @@ export default function CustomerDashboard() {
 
 			<section className="cdb-section cdb-mounted">
 			<div className="cdb-card">
-				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-					<h2 className="cdb-section-title">Coupons</h2>
-					<div>
-						<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/coupons")}>View Full Coupons</button>
+				<header className="cdb-section-head-row" style={sectionHeaderStyle}>
+					<div style={sectionHeaderRowStyle}>
+						<h2 className="cdb-section-title">Coupons</h2>
+						<div>
+							<button className="cdb-btn cdb-btn-secondary cdb-btn-reverse" onClick={() => navigate("/customer/coupons")}>View All Coupons</button>
+						</div>
 					</div>
-				</div>
-					<div className="cdb-grid cdb-grid-coupons">
-						{recentUnclaimedCoupons.map((coupon) => (
-							<div key={coupon.id} className={`cdb-coupon-card ${coupon.status === "expired" ? "expired" : ""}`}>
-								<div className="cdb-coupon-left">
-									<h3 className={`cdb-coupon-title ${coupon.status === "expired" ? "expired" : ""}`}>{coupon.discount}</h3>
-									<p className="cdb-coupon-code">{coupon.code} · {coupon.category}</p>
-									<p className="cdb-coupon-description">{coupon.description}</p>
-									<p className="cdb-date-text">Expires: {new Date(coupon.expiration).toLocaleDateString()}</p>
+					<div style={sectionHeaderDividerStyle} />
+				</header>
+						<div className="cdb-grid cdb-grid-coupons">
+							{recentUnclaimedCoupons.map((coupon) => (
+								<div
+									key={coupon.id}
+									className={`cdb-coupon-card ${coupon.status === "expired" ? "expired" : ""}`}
+									style={isMobile ? { flexDirection: 'column', alignItems: 'flex-start' } : undefined}
+								>
+									<div className="cdb-coupon-left">
+										<h3 className={`cdb-coupon-title ${coupon.status === "expired" ? "expired" : ""}`}>{coupon.discount}</h3>
+										<p className="cdb-coupon-code">{coupon.code} · {coupon.category}</p>
+										<p className="cdb-coupon-description">{coupon.description}</p>
+										<p className="cdb-date-text">Expires: {new Date(coupon.expiration).toLocaleDateString()}</p>
+									</div>
+									<div className="cdb-coupon-right" style={isMobile ? { width: '100%', justifyContent: 'flex-start', alignItems: 'stretch' } : undefined}>
+										{coupon.status === "expired" ? (
+											<span className={`cdb-status-badge ${coupon.status}`}>{coupon.status}</span>
+										) : isMaxUsesReached(coupon) ? (
+											<span className="cdb-status-badge expired" title={`Usage limit reached (${coupon.number_of_uses}/${coupon.max_uses})`}>limit reached</span>
+										) : coupon.claimed ? (
+											<span className="cdb-status-badge claimed">claimed</span>
+										) : (
+											<button className="cdb-btn cdb-btn-primary" onClick={() => handleClaimCoupon(coupon.id, coupon.code, coupon)} style={isMobile ? { width: '100%' } : undefined} title={isMaxUsesReached(coupon) ? `Usage limit reached (${coupon.number_of_uses}/${coupon.max_uses})` : ''}>Claim Coupon</button>
+										)}
+									</div>
 								</div>
-								<div className="cdb-coupon-right">
-									{coupon.status === "expired" ? (
-										<span className={`cdb-status-badge ${coupon.status}`}>{coupon.status}</span>
-									) : coupon.claimed ? (
-										<span className="cdb-status-badge claimed">claimed</span>
-									) : (
-										<button className="cdb-btn cdb-btn-primary" onClick={() => handleClaimCoupon(coupon.id, coupon.code)}>Claim Coupon</button>
-									)}
-								</div>
-							</div>
-						))}
-					</div>
+							))}
+						</div>
 				</div>
 			</section>
 

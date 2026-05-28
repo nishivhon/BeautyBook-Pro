@@ -54,7 +54,8 @@ export const seedAvailableSlots = async () => {
         slots.push({
           date: dateStr,
           time_slot: time,
-          availability: true
+          availability: true,
+          service_est_time: 0,
         });
       });
 
@@ -63,7 +64,8 @@ export const seedAvailableSlots = async () => {
         slots.push({
           date: dateStr,
           time_slot: time,
-          availability: true
+          availability: true,
+          service_est_time: 0,
         });
       });
     }

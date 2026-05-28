@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useThemeScope } from "../../theme/publicThemeContext";
 
 const BellIcon = ({ size = 15, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -27,98 +28,220 @@ const MoonIcon = ({ size = 14, color = "currentColor" }) => (
   </svg>
 );
 
-const CheckIcon = ({ size = 14, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M20 6L9 17l-5-5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+const getApiBase = () => (
+  typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? "http://localhost:3000/api"
+    : "/api"
 );
 
-// Use a dedicated storage key so customer and admin theme preferences remain independent.
-const themeStorageKey = "customerThemeMode";
+const getReadCacheKey = (customerId) => `customerNotificationReadCache:${customerId}`;
+const MANILA_TIME_ZONE = "Asia/Manila";
 
-const getInitialTheme = () => {
-  if (typeof window === "undefined") return "dark";
-  const saved = window.localStorage.getItem(themeStorageKey);
-  return saved === "dark" ? "dark" : "light";
+const readNotificationCache = (customerId) => {
+  if (typeof window === "undefined" || !customerId) return [];
+
+  try {
+    const raw = localStorage.getItem(getReadCacheKey(customerId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.warn("[CustomerHeaderActions] Failed to read notification cache:", error);
+    return [];
+  }
 };
 
-const defaultNotifications = [
-  { id: 1, tone: "green", category: "Appointment confirmed", title: "Appointment confirmed", description: "Your appointment has been confirmed.", time: "Just now", unread: true },
-  { id: 2, tone: "blue", category: "Appointment reminder", title: "Appointment reminder", description: "You have an upcoming appointment.", time: "1h", unread: true },
-  { id: 3, tone: "amber", category: "Appointment cancelled", title: "Appointment cancelled", description: "An appointment was cancelled.", time: "2h", unread: false },
-  { id: 4, tone: "green", category: "Appointment completed", title: "Service completed", description: "Your service was completed and is ready for rating.", time: "Today", unread: false },
-  { id: 5, tone: "green", category: "Coupon awarded", title: "Coupon received", description: "You've been awarded a coupon.", time: "Today", unread: false },
-];
+const writeNotificationCache = (customerId, readIds) => {
+  if (typeof window === "undefined" || !customerId) return;
 
-export function CustomerHeaderActions({ externalNotifications = [], profile = null }) {
+  try {
+    localStorage.setItem(getReadCacheKey(customerId), JSON.stringify(Array.from(new Set(readIds))));
+  } catch (error) {
+    console.warn("[CustomerHeaderActions] Failed to write notification cache:", error);
+  }
+};
+
+const formatCouponTime = (updatedAt) => {
+  if (!updatedAt) return "Recently";
+  const date = new Date(updatedAt);
+  if (Number.isNaN(date.getTime())) return "Recently";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: MANILA_TIME_ZONE,
+  }).format(date);
+};
+
+const buildCouponNotifications = (coupons = []) => {
+  return (Array.isArray(coupons) ? coupons : [])
+    .filter((coupon) => String(coupon?.status || "").toLowerCase() === "active")
+    .map((coupon, index) => ({
+      id: coupon?.id ?? `coupon-${index}`,
+      tone: "green",
+      category: "Coupon added",
+      title: `${coupon?.code || "Coupon"} added`,
+      description: coupon?.description || coupon?.name || "A new coupon was added recently.",
+      time: formatCouponTime(coupon?.updated_at),
+      unread: true,
+      sortAt: coupon?.updated_at || coupon?.created_at || null,
+    }));
+};
+
+const formatAppointmentTime = (date, time24) => {
+  const datePart = date
+    ? new Intl.DateTimeFormat("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        timeZone: MANILA_TIME_ZONE,
+      }).format(new Date(`${date}T00:00:00Z`))
+    : "Upcoming";
+  return datePart;
+};
+
+const formatBookedAtTime = (updatedAt) => {
+  if (!updatedAt) return "";
+  const date = new Date(updatedAt);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: MANILA_TIME_ZONE,
+  }).format(date);
+};
+
+const buildAppointmentNotifications = (appointments = []) => {
+  return (Array.isArray(appointments) ? appointments : [])
+    .filter((appointment) => {
+      const status = String(appointment?.status || "").toLowerCase();
+      return ["pending", "current", "confirmed", "upcoming"].includes(status);
+    })
+    .map((appointment, index) => ({
+      id: `appointment-${appointment?.id ?? index}`,
+      tone: "blue",
+      category: "Appointment confirmed",
+      title: `${appointment?.service || "Service"} booking confirmed`,
+      description: formatAppointmentTime(appointment?.date, appointment?.time_24 || appointment?.time),
+      time: formatBookedAtTime(appointment?.updated_at),
+      unread: true,
+      sortAt: appointment?.updated_at || appointment?.date && appointment?.time_24 ? `${appointment.date}T${appointment.time_24}` : appointment?.date || null,
+    }));
+};
+
+const buildCompletedServiceNotifications = (appointments = []) => {
+  return (Array.isArray(appointments) ? appointments : [])
+    .filter((appointment) => String(appointment?.status || "").toLowerCase() === "done")
+    .map((appointment, index) => ({
+      id: `done-${appointment?.id ?? index}`,
+      tone: "green",
+      category: "Service completed",
+      title: `${appointment?.service || "Service"} completed`,
+      description: `Status: done`,
+      time: formatBookedAtTime(appointment?.updated_at),
+      unread: true,
+      sortAt: appointment?.updated_at || appointment?.date || null,
+    }));
+};
+
+export function CustomerHeaderActions({ externalNotifications = [], profile = null, compact = false }) {
   const wrapperRef = useRef(null);
-  const themeTransitionTimerRef = useRef(null);
   const [openMenu, setOpenMenu] = useState(null);
-  const [themeMode, setThemeMode] = useState(getInitialTheme);
-  const [notifications, setNotifications] = useState(defaultNotifications);
-
+  const [notifications, setNotifications] = useState([]);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 768 : false));
+  const { themeMode, toggleTheme } = useThemeScope("customer");
   const unreadCount = useMemo(() => notifications.filter((n) => n.unread).length, [notifications]);
   const displayName = profile?.name || profile?.email || "Customer";
 
-  useEffect(() => () => {
-    if (themeTransitionTimerRef.current) window.clearTimeout(themeTransitionTimerRef.current);
-    if (typeof document !== "undefined") document.documentElement.classList.remove("theme-transitioning");
-  }, []);
+  const getReadIds = () => readNotificationCache(profile?.id);
+
+  const mergeReadState = (items = []) => {
+    const readIds = new Set(getReadIds().map((id) => String(id)));
+    return (Array.isArray(items) ? items : []).map((item) => ({
+      ...item,
+      unread: !readIds.has(String(item.id)),
+    }));
+  };
 
   useEffect(() => {
-    // externalNotifications may be either pre-shaped UI notifications or raw appointment objects.
-    const seed = Array.isArray(externalNotifications) && externalNotifications.length > 0 ? externalNotifications : defaultNotifications;
+    if (Array.isArray(externalNotifications) && externalNotifications.length > 0) {
+      const mapped = externalNotifications.map((it, idx) => ({
+        id: it?.id ?? `ui-${idx}`,
+        tone: it?.tone || "green",
+        category: it?.category || "Notification",
+        title: it?.title || "Notification",
+        description: it?.description || "",
+        time: it?.time || "",
+        unread: !!it?.unread,
+      }));
 
-    const mapped = (seed || []).map((it, idx) => {
-      // If already has UI fields, pass through
-      if (it && it.category && it.title) {
-        return { ...it, id: it.id ?? `ui-${idx}`, unread: !!it.unread };
-      }
-
-      // If this looks like an appointment object, map it to a customer-friendly notification
-      // Expected appointment shape: { id, date, time, status, service, staff }
-      if (it && (it.date || it.time || it.status || it.service)) {
-        let category = "Appointment";
-        if (it.status === "confirmed" || it.status === "pending") category = "Appointment confirmed";
-        if (it.status === "reminder" || it.status === "upcoming") category = "Appointment reminder";
-        if (it.status === "cancelled") category = "Appointment cancelled";
-        if (it.status === "done" || it.status === "completed") category = "Appointment completed";
-
-        const title = `${category}: ${it.service || "Service"}`;
-        const description = `${it.date ? new Date(it.date).toLocaleDateString() : ""} ${it.time || ""}`.trim();
-        const tone = it.status === "cancelled" ? "amber" : (it.status === "done" || it.status === "completed") ? "green" : "blue";
-
-        return {
-          id: it.id ?? `apt-${idx}`,
-          tone,
-          category,
-          title,
-          description,
-          time: it.time || it.date || "",
-          unread: !!it.unread,
-        };
-      }
-
-      // Generic fallback
-      return { id: `gen-${idx}`, tone: it.tone || "amber", category: it.category || "Info", title: it.title || "Notification", description: it.description || "", time: it.time || "", unread: !!it.unread };
-    });
-
-    // Append mock coupons/promos for UI purposes (replace with real API when available)
-    const mockCouponsAndPromos = [
-      // TODO: Replace with real coupon/promo notification feed (e.g. `/api/customers/:id/notifications`)
-      { id: `mock-coupon-1`, tone: "green", category: "Coupon awarded", title: "You've received a 10% coupon", description: "Use code WELCOME10 on your next visit.", time: "Today", unread: false },
-      { id: `mock-promo-1`, tone: "blue", category: "Promo announcement", title: "Limited promo: 20% off selected services", description: "This week only — book now to save!", time: "2d", unread: false },
-    ];
-
-    setNotifications([...mapped, ...mockCouponsAndPromos]);
-  }, [JSON.stringify(externalNotifications), profile?.id]);
-
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.dataset.theme = themeMode;
-      window.localStorage.setItem(themeStorageKey, themeMode);
+      setNotifications(mapped);
+    } else {
+      setNotifications([]);
     }
-  }, [themeMode]);
+  }, [JSON.stringify(externalNotifications)]);
+
+  useEffect(() => {
+    if (openMenu !== "notifications") return;
+    if (!profile?.id) return;
+
+    let cancelled = false;
+
+    const loadBookingNotifications = async () => {
+      setNotificationLoading(true);
+
+      try {
+        const { emails = [], phones = [] } = profile || {};
+        const email = emails?.[0] || profile?.email || "";
+        const phone = phones?.[0] || profile?.phone || "";
+
+        const baseParams = new URLSearchParams({
+          ...(email ? { email } : {}),
+          ...(phone ? { phone: phone.replace(/\D/g, "") } : {}),
+        });
+
+        const couponPromise = fetch(`${getApiBase()}/coupons/read?recentDays=3&status=active`);
+        const activeAppointmentPromise = email || phone
+          ? fetch(`${getApiBase()}/appointments/read/by-customer?${baseParams.toString()}`)
+          : Promise.resolve(null);
+        const completedAppointmentPromise = email || phone
+          ? fetch(`${getApiBase()}/appointments/read/by-customer?${new URLSearchParams({
+              ...Object.fromEntries(baseParams.entries()),
+              status: "done",
+              days: "7",
+            }).toString()}`)
+          : Promise.resolve(null);
+
+        const [couponResponse, appointmentResponse, completedResponse] = await Promise.all([couponPromise, activeAppointmentPromise, completedAppointmentPromise]);
+        const couponData = couponResponse?.ok ? await couponResponse.json() : null;
+        const appointmentData = appointmentResponse?.ok ? await appointmentResponse.json() : null;
+        const completedData = completedResponse?.ok ? await completedResponse.json() : null;
+
+        const combinedNotifications = [
+          ...buildCouponNotifications(couponData?.data || []),
+          ...buildAppointmentNotifications(appointmentData?.appointments || []),
+          ...buildCompletedServiceNotifications(completedData?.appointments || []),
+        ]
+          .sort((a, b) => new Date(b.sortAt || 0).getTime() - new Date(a.sortAt || 0).getTime())
+          .map(({ sortAt, ...item }) => item);
+
+        const couponNotifications = mergeReadState(combinedNotifications);
+
+        if (!cancelled) {
+          setNotifications(couponNotifications);
+        }
+      } catch (error) {
+        console.error('[CustomerHeaderActions] Failed to load notifications:', error);
+        if (!cancelled) setNotifications([]);
+      } finally {
+        if (!cancelled) setNotificationLoading(false);
+      }
+    };
+    loadBookingNotifications();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [openMenu, profile?.id, profile?.emails, profile?.phones]);
 
   useEffect(() => {
     const handlePointerDown = (event) => { if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setOpenMenu(null); };
@@ -129,35 +252,81 @@ export function CustomerHeaderActions({ externalNotifications = [], profile = nu
     return () => { document.removeEventListener("mousedown", handlePointerDown); document.removeEventListener("touchstart", handlePointerDown); document.removeEventListener("keydown", handleEscape); };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => setIsMobileView(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const toggleMenu = (menu) => { setOpenMenu((prev) => (prev === menu ? null : menu)); };
   const closeMenu = () => { setOpenMenu(null); };
 
-  const toggleTheme = () => {
-    if (typeof document !== "undefined") {
-      document.documentElement.classList.add("theme-transitioning");
-      if (themeTransitionTimerRef.current) window.clearTimeout(themeTransitionTimerRef.current);
-      themeTransitionTimerRef.current = window.setTimeout(() => document.documentElement.classList.remove("theme-transitioning"), 500);
-    }
-    setThemeMode((m) => (m === "dark" ? "light" : "dark"));
+  const mobileDropdownStyle = isMobileView
+    ? {
+        position: "fixed",
+        top: 84,
+        right: 8,
+        left: "auto",
+        width: "min(80vw, 250px)",
+        maxHeight: "calc(100vh - 96px)",
+        padding: 12,
+        zIndex: 13050,
+        overflow: "hidden",
+      }
+    : undefined;
+
+  const notificationListStyle = isMobileView
+    ? { minHeight: 140, maxHeight: 220, overflowY: "scroll", paddingRight: 18, scrollbarGutter: "stable both-edges" }
+    : { minHeight: 220, maxHeight: 360, overflowY: "auto" };
+
+  const markAllReadStyle = isMobileView
+    ? {
+        width: "100%",
+        maxWidth: "100%",
+        textAlign: "left",
+        whiteSpace: "normal",
+        fontSize: "0.75rem",
+        lineHeight: 1.2,
+        fontWeight: 700,
+      }
+    : undefined;
+
+  const markAllNotificationsRead = () => {
+    setNotifications((current) => {
+      const next = current.map((it) => ({ ...it, unread: false }));
+      writeNotificationCache(profile?.id, next.map((it) => it.id));
+      return next;
+    });
   };
 
-  const markAllNotificationsRead = () => setNotifications((n) => n.map((it) => ({ ...it, unread: false })));
+  const markNotificationRead = (notificationId) => {
+    if (!notificationId) return;
+
+    setNotifications((current) => {
+      const next = current.map((it) => (String(it.id) === String(notificationId) ? { ...it, unread: false } : it));
+      const readIds = next.filter((it) => !it.unread).map((it) => it.id);
+      writeNotificationCache(profile?.id, readIds);
+      return next;
+    });
+  };
 
   return (
     <div className="admin-header-actions" ref={wrapperRef}>
-      <button className={`dash-action-btn admin-header-trigger${openMenu === "notifications" ? " active" : ""}`} type="button" onClick={() => toggleMenu("notifications")} aria-expanded={openMenu === "notifications"} aria-haspopup="menu">
+      <button className={`dash-action-btn admin-header-trigger${openMenu === "notifications" ? " active" : ""}`} type="button" onClick={() => toggleMenu("notifications")} aria-expanded={openMenu === "notifications"} aria-haspopup="menu" aria-label="Notifications" title="Notifications">
         <BellIcon size={14} color="currentColor" />
-        Notifications
+        {!compact ? <span>Notifications</span> : null}
         {unreadCount > 0 && <span className="admin-header-badge">{unreadCount}</span>}
       </button>
 
-      <button className={`dash-action-btn admin-header-trigger${openMenu === "settings" ? " active" : ""}`} type="button" onClick={() => toggleMenu("settings")} aria-expanded={openMenu === "settings"} aria-haspopup="menu">
+      <button className={`dash-action-btn admin-header-trigger${openMenu === "settings" ? " active" : ""}`} type="button" onClick={() => toggleMenu("settings")} aria-expanded={openMenu === "settings"} aria-haspopup="menu" aria-label="Settings" title="Settings">
         <SettingsIcon size={14} color="currentColor" />
-        Settings
+        {!compact ? <span>Settings</span> : null}
       </button>
 
       {openMenu && (
-        <div className="admin-header-dropdown" role="menu" aria-label={openMenu === "notifications" ? "Notifications" : "Settings"}>
+        <div className="admin-header-dropdown" role="menu" aria-label={openMenu === "notifications" ? "Notifications" : "Settings"} style={mobileDropdownStyle}>
           {openMenu === "notifications" ? (
             <>
               <div className="admin-dropdown-topbar">
@@ -165,17 +334,24 @@ export function CustomerHeaderActions({ externalNotifications = [], profile = nu
                   <p className="admin-dropdown-eyebrow">Inbox</p>
                   <h3 className="admin-dropdown-title">Recent Notifications</h3>
                 </div>
-                <button type="button" className="admin-dropdown-link admin-mark-read-link" onClick={markAllNotificationsRead}>Mark all as read</button>
+                <button type="button" className="admin-dropdown-link admin-mark-read-link" onClick={markAllNotificationsRead} style={markAllReadStyle}>Mark all as read</button>
               </div>
 
-              <div className="admin-notification-list" style={{ minHeight: 220, maxHeight: 360, overflowY: 'auto' }}>
-                {notifications.length === 0 ? (
+              <div className="admin-notification-list" style={notificationListStyle}>
+                {notificationLoading ? (
                   <div className="admin-notification-empty" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 20, color: 'var(--color-muted, #6b7280)' }}>
-                    You're all caught up! We'll notify you about appointments, coupons, and promos here.
+                    Loading notifications...
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="admin-notification-empty" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 20, color: 'var(--color-muted, #6b7280)' }}>
+                    No recent coupons or appointment confirmations found.
                   </div>
                 ) : (
                   notifications.map((notification) => (
-                    <button key={notification.id} type="button" className={`admin-notification-item${notification.unread ? " unread" : ""}`} onClick={closeMenu}>
+                    <button key={notification.id} type="button" className={`admin-notification-item${notification.unread ? " unread" : ""}`} onClick={() => {
+                      markNotificationRead(notification.id);
+                      closeMenu();
+                    }}>
                       <span className={`admin-notification-tone tone-${notification.tone}`} />
                       <div className="admin-notification-copy">
                         <div className="admin-notification-row">

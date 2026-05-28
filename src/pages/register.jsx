@@ -6,7 +6,6 @@ import { AppointmentFormPhase3 } from "../components/modal/customer/appointment/
 import { AppointmentFormPhase4 } from "../components/modal/customer/appointment/phase_four";
 import { ConfirmationDialog } from "../components/modal/customer/confirmation_dialog";
 import { Toast } from "../components/toast";
-import { Otp } from "../components/modal/customer/otp";
 
 /** Logo scissors mark */
 const LogoMark = () => (
@@ -128,6 +127,12 @@ export const Register = () => {
   const [pendingEmail, setPendingEmail] = useState("");
   const [otpType, setOtpType] = useState("phone"); // "phone" or "email"
   const [toggleHover, setToggleHover] = useState(false); // Track toggle button hover
+  // Inline OTP state (registration flow uses inline OTP form)
+  const INITIAL_OTP_TIME = 600; // 10 minutes
+  const [otpValue, setOtpValue] = useState("");
+  const [otpTimeLeft, setOtpTimeLeft] = useState(INITIAL_OTP_TIME);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
+  const [showOtpExitConfirm, setShowOtpExitConfirm] = useState(false);
 
   // Create a wrapper for navigate that logs and blocks for verified users
   const navigateWithGuard = (path) => {
@@ -379,6 +384,52 @@ export const Register = () => {
       });
   };
 
+  // OTP helpers for inline form
+  useEffect(() => {
+    if (!showOtpModal) return;
+    if (otpTimeLeft <= 0) return;
+    const id = setInterval(() => setOtpTimeLeft((t) => t - 1), 1000);
+    return () => clearInterval(id);
+  }, [showOtpModal, otpTimeLeft]);
+
+  useEffect(() => {
+    // auto-verify when 6 digits entered
+    const clean = otpValue.replace(/\D/g, "");
+    if (clean.length === 6 && otpTimeLeft > 0) {
+      const t = setTimeout(() => handleOtpVerified(otpValue), 250);
+      return () => clearTimeout(t);
+    }
+  }, [otpValue, otpTimeLeft]);
+
+  const handleOtpInput = (e) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 6);
+    const formatted = raw.length > 3 ? `${raw.slice(0,3)} ${raw.slice(3)}` : raw;
+    setOtpValue(formatted);
+    setToastMessage("");
+  };
+
+  const handleResendInlineOtp = async () => {
+    setIsResendingOtp(true);
+    setOtpValue("");
+    setOtpTimeLeft(INITIAL_OTP_TIME);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      let endpoint, body;
+      if (otpType === 'email') {
+        endpoint = `${apiUrl}/auth/send-email-otp`;
+        body = { email: pendingEmail, full_name: pendingName };
+      } else {
+        endpoint = `${apiUrl}/sms/resend-otp`;
+        body = { phone: pendingPhone, name: pendingName };
+      }
+      await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    } catch (err) {
+      console.error('Error resending OTP', err);
+    } finally {
+      setTimeout(() => setIsResendingOtp(false), 1000);
+    }
+  };
+
   const handleCancelBooking = () => {
     // If verified user cancels booking, INVALIDATE THE SESSION - One-time use enforcement
     if (verifiedUser !== null && verifiedUser !== undefined) {
@@ -524,6 +575,13 @@ export const Register = () => {
         allServices = servicesData.map(s => s.title || s.name || s.service);
       }
 
+      const serviceEstTime = Array.isArray(servicesData)
+        ? servicesData.reduce((total, service) => {
+            const minutes = Number(service?.est_time ?? service?.estimated_time ?? service?.duration_minutes ?? service?.duration ?? 0);
+            return total + (Number.isFinite(minutes) ? minutes : 0);
+          }, 0)
+        : 0;
+
       console.log('[Phase4] Services data:', servicesData);
       console.log('[Phase4] Extracted services:', allServices);
       
@@ -543,7 +601,9 @@ export const Register = () => {
         date: appointmentDate,
         time: formattedTime,
         service: servicesList,
-        staff_assigned: stylistName
+        services: Array.isArray(servicesData) ? servicesData : [],
+        staff_assigned: stylistName,
+        service_est_time: serviceEstTime,
       };
 
       console.log('Sending appointment to backend:', appointmentPayload);
@@ -1001,6 +1061,7 @@ export const Register = () => {
               onBack={handleAppointmentBackPhase2}
               onContinue={handlePhase2Continue}
               onCancel={handleCancelBooking}
+              onClose={handleCancelBooking}
               initialData={appointmentData?.services}
             />
           ) : appointmentPhase === 3 ? (
@@ -1008,6 +1069,7 @@ export const Register = () => {
               onBack={handleAppointmentBackPhase3}
               onContinue={handlePhase3Continue}
               onCancel={handleCancelBooking}
+              onClose={handleCancelBooking}
               initialData={appointmentData}
               showTime={false}
               showNext={false}
@@ -1017,6 +1079,7 @@ export const Register = () => {
               onBack={handleAppointmentBackPhase4}
               onConfirm={handlePhase4Confirm}
               onCancel={handleCancelBooking}
+              onClose={handleCancelBooking}
               booking={getFormattedBooking()}
             />
           ) : null}
@@ -1037,21 +1100,61 @@ export const Register = () => {
         onCancel={() => setShowBackdropConfirm(false)}
       />
 
-      {/* OTP Verification Modal */}
+      {/* Inline OTP (registration only) */}
       {showOtpModal && (
-        <Otp
-          onVerified={handleOtpVerified}
-          onClose={() => {
-            setShowOtpModal(false);
-            setPendingPhone("");
-            setPendingEmail("");
-            setPendingName("");
-          }}
-          selectedPhone={otpType === "phone" ? pendingPhone : ""}
-          selectedEmail={otpType === "email" ? pendingEmail : ""}
-          name={pendingName}
-          otpType={otpType}
-        />
+        <div className="otp-inline-card" style={{ maxWidth: 520, margin: '18px auto', background: '#11100d', border: '1px solid rgba(221,144,29,0.08)', borderRadius: 12, padding: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <h3 style={{ margin: 0 }}>{otpType === 'email' ? 'Email Verification' : 'Phone Verification'}</h3>
+            <button onClick={() => setShowOtpExitConfirm(true)} style={{ background: 'transparent', border: 'none', color: '#988f81', cursor: 'pointer' }} aria-label="Close">✕</button>
+          </div>
+          <p style={{ color: '#cfcfcf', marginTop: 0 }}>Enter the 6-digit code sent to <strong style={{ color: '#fff' }}>{otpType === 'email' ? pendingEmail : pendingPhone}</strong></p>
+
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 12 }}>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={otpValue}
+              onChange={handleOtpInput}
+              placeholder="--- ---"
+              maxLength={7}
+              style={{ flex: 1, padding: '12px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: '#14110e', color: '#fff' }}
+              aria-label="Enter OTP code"
+            />
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.85rem', color: '#988f81' }}>Remaining</div>
+              <div style={{ fontWeight: 700, color: otpTimeLeft <= 0 ? '#ef4444' : '#fff' }}>{otpTimeLeft <= 0 ? 'Expired' : `${String(Math.floor(otpTimeLeft/60)).padStart(2,'0')}:${String(otpTimeLeft%60).padStart(2,'0')}`}</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, gap: 12 }}>
+            <button onClick={() => setShowOtpExitConfirm(true)} style={{ flex: 1, padding: '10px 12px', background: 'transparent', border: '1.5px solid #dd901d', color: '#dd901d', borderRadius: 10 }}>Cancel</button>
+            <button onClick={() => handleOtpVerified(otpValue)} disabled={otpValue.replace(/\D/g, '').length < 6} style={{ flex: 1, padding: '10px 12px', background: '#dd901d', border: 'none', color: '#1a0f00', borderRadius: 10 }}>Verify</button>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+            <button onClick={handleResendInlineOtp} disabled={isResendingOtp || (otpTimeLeft > 270)} style={{ background: 'transparent', border: 'none', color: '#988f81', cursor: 'pointer' }}>{isResendingOtp ? 'Sending…' : 'Resend'}</button>
+          </div>
+
+          {showOtpExitConfirm && (
+            <ConfirmationDialog
+              isOpen={showOtpExitConfirm}
+              title="Exit Verification?"
+              message="Are you sure you want to cancel? Your verification will be lost."
+              confirmText="Yes, Exit"
+              cancelText="Continue Verifying"
+              onConfirm={() => {
+                setShowOtpExitConfirm(false);
+                setShowOtpModal(false);
+                setPendingPhone("");
+                setPendingEmail("");
+                setPendingName("");
+                setOtpValue("");
+                setOtpTimeLeft(INITIAL_OTP_TIME);
+              }}
+              onCancel={() => setShowOtpExitConfirm(false)}
+            />
+          )}
+        </div>
       )}
 
       {/* Toast Notification */}

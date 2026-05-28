@@ -1,5 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { usePublicTheme } from "../theme/publicThemeContext";
+import { ThemeToggle } from "../components/public/ThemeToggle";
+
+const HERO_BG_IMAGE_DARK = new URL("../../images/DarkmodeBG.png", import.meta.url).href;
+const HERO_BG_IMAGE_LIGHT = new URL("../../images/LightmodeBG.png", import.meta.url).href;
 
 /* ── NAVBAR logo: scissors <> mark (white strokes on amber bg) ── */
 const LogoMark = () => (
@@ -87,10 +92,19 @@ const SolutionIcon = () => (
 );
 
 /* ── CheckItem for feature lists ── */
-const CheckItem = () => (
-  <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:15,height:15,flexShrink:0}}>
-    <circle cx="8" cy="8" r="7.2" stroke="#dd901d" strokeWidth="1.3" fill="none"/>
-    <path d="M5 8l2.2 2.2L11 5.5" stroke="#dd901d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+const CheckItem = ({ lightMode = false }) => (
+  <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:13,height:13,flexShrink:0}}>
+    {lightMode ? (
+      <>
+        <circle cx="8" cy="8" r="6.25" stroke="#000000" strokeWidth="0.55" vectorEffect="non-scaling-stroke" fill="none" />
+        <path d="M4.95 8.15l2.05 2.05 3.75-4.55" stroke="#000000" strokeWidth="0.65" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+      </>
+    ) : (
+      <>
+        <circle cx="8" cy="8" r="7.2" stroke="#dd901d" strokeWidth="1.3" fill="none" />
+        <path d="M5 8l2.2 2.2L11 5.5" stroke="#dd901d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </>
+    )}
   </svg>
 );
 
@@ -128,17 +142,6 @@ const NavBar = () => {
         </span>
       </div>
 
-      {/* Mobile menu button */}
-      <button 
-        onClick={() => setMenuOpen(!menuOpen)} 
-        className="mobile-menu-btn"
-        aria-label="Toggle menu"
-      >
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:20,height:20}}>
-          <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
-      </button>
-
       {/* Nav links - Desktop */}
       <div className="flex-center-gap-1 nav-links-desktop">
         {[
@@ -154,9 +157,31 @@ const NavBar = () => {
       </div>
 
       {/* CTA - Desktop */}
-      <button onClick={handleBooking} className="btn-primary btn-nav btn-nav-desktop">
-        Login
-      </button>
+      <div
+        className="btn-nav-desktop"
+        style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", flexWrap: "nowrap", gap: 8 }}
+      >
+        <ThemeToggle />
+        <button onClick={handleBooking} className="btn-primary btn-nav">
+          Login
+        </button>
+      </div>
+
+      <div className="mobile-auth-actions">
+        <ThemeToggle className="mobile-theme-toggle" />
+        <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
+          Login
+        </button>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="mobile-menu-btn mobile-menu-btn-inline"
+          aria-label="Toggle menu"
+        >
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:20,height:20}}>
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
+      </div>
 
       {/* Mobile menu */}
       {menuOpen && (
@@ -177,39 +202,38 @@ const NavBar = () => {
               </button>
             ))}
           </div>
-          <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
-            Login
-          </button>
         </div>
       )}
     </nav>
   );
 };
 
-const HeroSection = () => (
-  <section
-    className="hero-section"
-    style={{
-      backgroundImage: "url('/images/DarkmodeBG.png')",
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-      position: 'relative',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: 420,
-      padding: '4.5rem 1.25rem',
-    }}
-  >
-    <div style={{position:'absolute', inset:0, background:'rgba(6,6,6,0.6)', zIndex:0}} />
+const HeroSection = ({ isDesktop }) => {
+  const { themeMode } = usePublicTheme();
+  const heroBackgroundImage = themeMode === "light" ? HERO_BG_IMAGE_LIGHT : HERO_BG_IMAGE_DARK;
 
-    <div style={{position:'relative', zIndex:1, color:'#fff'}}>
+  return (
+    <section
+      className="hero-section"
+      style={{
+        backgroundImage: `linear-gradient(rgba(10, 9, 8, 0.55), rgba(10, 9, 8, 0.72)), url('${heroBackgroundImage}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: isDesktop ? 420 : 'auto',
+        padding: isDesktop ? '4.5rem 1.25rem' : '2.5rem 1rem 2.75rem',
+      }}
+    >
+      <div style={{position:'relative', zIndex:1, color:'var(--color-white)'}}>
       <div className="hero-badge" style={{marginBottom:16}}>
         <span>ABOUT BEAUTYBOOK PRO</span>
       </div>
 
-      <h1 className="hero-title" style={{color:'#fff'}}>
+      <h1 className="hero-title" style={{color:'var(--color-white)'}}>
         Transforming Beauty<br/>
         <span className="accent">Business Management</span>
       </h1>
@@ -217,16 +241,17 @@ const HeroSection = () => (
       <p className="hero-text" style={{marginTop:8}}>
         A modern digital solution built for salons, barbershops, and spas in Sta. Mesa, Manila to streamline appointments, enhance customer experience, and help businesses grow smarter.
       </p>
-    </div>
-  </section>
-);
+      </div>
+    </section>
+  );
+};
 
-const PurposeSection = () => (
-  <section className="section" style={{padding:'4rem 1.5rem 0'}}>
+const PurposeSection = ({ isDesktop }) => (
+  <section className="section" style={{backgroundColor:'var(--bg-secondary)', padding: isDesktop ? '4rem 1.5rem 0' : '2.5rem 20px 0'}}>
     <div className="section-container">
       <h2 className="section-title">Project Purpose</h2>
       <div style={{maxWidth:900, margin:'0 auto'}}>
-        <p className="section-text" style={{fontSize:'1.05rem', lineHeight:1.8, color:'#555', textAlign:'center'}}>
+        <p className="section-text" style={{fontSize:'1.05rem', lineHeight:1.8, color:'var(--color-tan)', textAlign:'center'}}>
           BeautyBook Pro is a web-based digital appointment and customer management system developed as a capstone project by students from the <strong>Polytechnic University of the Philippines Institute of Technology</strong>. It addresses outdated manual scheduling and customer tracking practices used by salons, barbershops, and spas.
         </p>
       </div>
@@ -234,12 +259,12 @@ const PurposeSection = () => (
   </section>
 );
 
-const MissionSection = () => (
-  <section className="section" style={{paddingBottom:'4rem'}}>
+const MissionSection = ({ isDesktop }) => (
+  <section className="section" style={{backgroundColor:'var(--bg-secondary)', padding: isDesktop ? '0 1.5rem 4rem' : '0 20px 2.5rem'}}>
     <div className="section-container">
       <h2 className="section-title">Mission</h2>
       <div style={{maxWidth:900, margin:'0 auto'}}>
-        <p className="section-text" style={{fontSize:'1.05rem', lineHeight:1.8, color:'#555', textAlign:'center'}}>
+        <p className="section-text" style={{fontSize:'1.05rem', lineHeight:1.8, color:'var(--color-tan)', textAlign:'center'}}>
           Our mission is to empower beauty businesses in Sta. Mesa, Manila with an intuitive platform that streamlines appointments, improves communication, and helps deliver exceptional customer experiences through automation and data.
         </p>
       </div>
@@ -247,7 +272,8 @@ const MissionSection = () => (
   </section>
 );
 
-const ProblemSection = () => {
+const ProblemSection = ({ isDesktop }) => {
+  const { themeMode } = usePublicTheme();
   const problems = [
     {icon:<ConflictIcon/>, text:"Scheduling conflicts and double bookings"},
     {icon:<WaitIcon/>, text:"Long customer wait times and poor queue management"},
@@ -258,19 +284,21 @@ const ProblemSection = () => {
   ];
 
   return (
-    <section className="section" style={{backgroundColor:'#0f0d0c', padding:'4rem 1.5rem'}}>
+    <section className="section" style={{backgroundColor:'var(--bg-darker)', paddingTop: isDesktop ? '4rem' : '2.5rem', paddingBottom: isDesktop ? '4rem' : '2.5rem', paddingLeft: isDesktop ? '1.5rem' : '20px', paddingRight: isDesktop ? '1.5rem' : '20px'}}>
       <div className="section-container">
         <h2 className="section-title">The Problem We Solve</h2>
         <p className="section-subtitle">Beauty businesses face real challenges in the digital age</p>
 
-        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'1.25rem', maxWidth:1100, margin:'2.5rem auto 0'}}>
+        <div style={{display:'grid', gridTemplateColumns: isDesktop ? 'repeat(auto-fit, minmax(240px, 1fr))' : 'repeat(2, minmax(0, 1fr))', gap:'1.25rem', maxWidth:1100, margin:'2.5rem auto 0'}}>
           {problems.map((p, i) => (
             <div key={i}
+              className={themeMode === 'light' ? 'step-card' : ''}
               style={{
-                padding:'18px',
-                backgroundColor:'#14110f',
-                border:'1px solid rgba(221,144,29,0.06)',
-                borderRadius:12,
+                padding:'16px',
+                backgroundColor: themeMode === 'light' ? '#dc8a99' : 'var(--bg-card)',
+                border:'1px solid',
+                borderColor: themeMode === 'light' ? 'rgba(243, 139, 166, 0.35)' : 'var(--border-tan-light)',
+                borderRadius:9,
                 display:'flex',
                 flexDirection:'column',
                 alignItems:'center',
@@ -278,23 +306,30 @@ const ProblemSection = () => {
                 gap:12,
                 minHeight:120,
                 justifyContent:'center',
-                transition: 'all 0.25s ease'
+                transition: 'all 0.3s ease',
+                cursor: themeMode === 'light' ? 'pointer' : 'default'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
-                e.currentTarget.style.boxShadow = '0 12px 24px rgba(221, 144, 29, 0.18)';
-                e.currentTarget.style.borderColor = 'rgba(221,144,29,0.6)';
+                if (themeMode === 'light') {
+                  e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 16px 32px rgba(243, 139, 166, 0.28)';
+                  e.currentTarget.style.borderColor = 'rgba(243, 139, 166, 0.65)';
+                } else {
+                  e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 12px 24px rgba(221, 144, 29, 0.18)';
+                  e.currentTarget.style.borderColor = 'rgba(221,144,29,0.6)';
+                }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0) scale(1)';
                 e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.borderColor = 'rgba(221,144,29,0.06)';
+                e.currentTarget.style.borderColor = themeMode === 'light' ? 'rgba(243, 139, 166, 0.35)' : 'rgba(221,144,29,0.06)';
               }}
             >
-              <div style={{width:48, height:48, display:'flex', alignItems:'center', justifyContent:'center', background:'#0b0a09', borderRadius:10}}>
-                <div style={{width:28,height:28,color:'#dd901d'}}>{p.icon}</div>
+              <div style={{width:52, height:52, display:'flex', alignItems:'center', justifyContent:'center', background: themeMode === 'light' ? '#ffffff' : 'var(--bg-darker)', borderRadius:10, border: themeMode === 'light' ? '1px solid rgba(0, 0, 0, 0.08)' : 'none', marginBottom:14}}>
+                <div style={{width:28,height:28,color: themeMode === 'light' ? '#f38ba6' : '#dd901d'}}>{p.icon}</div>
               </div>
-              <p style={{fontSize:'0.9rem', color:'#cfc6b8', fontWeight:500, margin:0}}>{p.text}</p>
+              <p style={{fontSize:'0.9rem', color: themeMode === 'light' ? '#0c0a09' : 'var(--color-tan)', fontWeight:500, margin:0}}>{p.text}</p>
             </div>
           ))}
         </div>
@@ -303,7 +338,8 @@ const ProblemSection = () => {
   );
 };
 
-const SolutionSection = () => {
+const SolutionSection = ({ isDesktop }) => {
+  const { themeMode } = usePublicTheme();
   const features = [
     'Online booking with real-time availability',
     'Automated SMS reminders and notifications',
@@ -314,18 +350,18 @@ const SolutionSection = () => {
   ];
 
   return (
-    <section className="section" style={{padding:'4rem 1.5rem'}}>
+    <section className="section" style={{backgroundColor:'var(--bg-secondary)', paddingTop: isDesktop ? '4rem' : '2.5rem', paddingBottom: isDesktop ? '44px' : '2.5rem', paddingLeft: isDesktop ? '1.5rem' : '20px', paddingRight: isDesktop ? '1.5rem' : '20px'}}>
       <div className="section-container" style={{maxWidth:1100}}>
         <h2 className="section-title">Our Solution</h2>
         <p className="section-subtitle">Comprehensive features designed for modern beauty businesses</p>
 
-        <div style={{maxWidth:1000, margin:'3rem auto', paddingLeft:'75px'}}>
-          <div style={{display:'grid', gridTemplateColumns:'repeat(2, minmax(0, 420px))', gap:'2rem', alignItems:'start', justifyContent:'center'}}>
-            <div>
-              <p style={{fontSize:'1.05rem', lineHeight:1.8, color:'#555', marginBottom:'1rem'}}>
+        <div style={{maxWidth:1000, margin: isDesktop ? '3rem auto' : '1.75rem auto 0', paddingLeft: isDesktop ? '75px' : '0'}}>
+          <div style={{display:'grid', gridTemplateColumns: isDesktop ? 'repeat(2, minmax(0, 420px))' : '1fr', gap: isDesktop ? '2rem' : '1.25rem', alignItems:'start', justifyContent:'center'}}>
+            <div style={{marginTop:'0'}}>
+              <p style={{fontSize:'1.05rem', lineHeight:1.8, color:'var(--color-tan)', marginTop:0, marginBottom:'1rem'}}>
                 BeautyBook Pro combines modern web technologies with established theories such as the Technology Acceptance Model (TAM) and Customer Relationship Management (CRM) principles to deliver a platform tailored to the beauty industry.
               </p>
-              <p style={{fontSize:'0.95rem', color:'#777', fontStyle:'italic'}}>
+              <p style={{fontSize:'0.95rem', color:'var(--color-tan)', fontStyle:'italic'}}>
                 The system focuses on usability and trust to encourage adoption by salon staff and clients while preserving rich customer histories and communication channels.
               </p>
             </div>
@@ -334,8 +370,8 @@ const SolutionSection = () => {
               <div style={{display:'flex', flexDirection:'column', gap:12}}>
                 {features.map((f, i) => (
                   <div key={i} style={{display:'flex', gap:'0.75rem', alignItems:'flex-start'}}>
-                    <CheckItem/>
-                    <span style={{fontSize:'0.95rem', color:'#555'}}>{f}</span>
+                    <CheckItem lightMode={themeMode === 'light'} />
+                    <span style={{fontSize:'0.95rem', color: themeMode === 'light' ? '#0c0a09' : '#555'}}>{f}</span>
                   </div>
                 ))}
               </div>
@@ -347,7 +383,8 @@ const SolutionSection = () => {
   );
 };
 
-const TeamSection = () => {
+const TeamSection = ({ isDesktop }) => {
+  const { themeMode } = usePublicTheme();
   const team = [
     {id:1, name:'Dagodog, Vhon Inishi M.', role:'Project Leader'},
     {id:2, name:'Arejola, Charlie R.', role:'Lead Programmer'},
@@ -356,22 +393,22 @@ const TeamSection = () => {
   ];
 
   return (
-    <section className="section" style={{backgroundColor:'#14110f', padding:'4rem 1.5rem'}}>
+    <section className="section" style={{backgroundColor:'var(--bg-darker)', paddingTop: isDesktop ? '4rem' : '2.5rem', paddingBottom: isDesktop ? '44px' : '2.5rem', paddingLeft: isDesktop ? '1.5rem' : '1rem', paddingRight: isDesktop ? '1.5rem' : '1rem'}}>
       <div className="section-container">
         <h2 className="section-title">Meet The Team</h2>
         <p className="section-subtitle">Passionate PUP IT students behind BeautyBook Pro</p>
 
-        <div style={{display:'grid', gridTemplateColumns:'repeat(2, 220px)', gap:'60px', justifyContent:'center', maxWidth:760, margin:'3rem auto'}}>
+        <div style={{display:'grid', gridTemplateColumns: isDesktop ? 'repeat(2, 220px)' : 'repeat(2, minmax(0, 1fr))', gap: isDesktop ? '60px' : '24px', justifyContent:'center', maxWidth: isDesktop ? 760 : '100%', margin: isDesktop ? '3rem auto' : '1.5rem auto 0'}}>
           {team.map((member) => (
-            <div key={member.id} style={{display:'flex', justifyContent:'center'}}>
-              <div style={{width:220, height:220, borderRadius:10, border:'1px solid rgba(152,143,129,0.15)', background:'#0f0d0c', position:'relative', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center'}}>
-                <div style={{color:'#777'}}>
+            <div key={member.id} style={{display:'flex', justifyContent:'center', width:'100%'}}>
+              <div className="team-card" style={{width: isDesktop ? 220 : '100%', maxWidth: isDesktop ? 220 : 320, height: isDesktop ? 220 : 'auto', aspectRatio: isDesktop ? undefined : '1 / 1', borderRadius:10, border:'1px solid var(--border-tan-light)', background:'var(--bg-card)', position:'relative', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                <div style={{color:'var(--color-tan)'}}>
                   Photo Placeholder
                 </div>
 
                 <div style={{position:'absolute', left:0, right:0, bottom:14, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', pointerEvents:'none'}}>
-                  <h3 style={{fontSize:'1.02rem', fontWeight:600, color:'#fff', margin:0}}>{member.name}</h3>
-                  <p style={{fontSize:'0.85rem', color:'#dd901d', fontWeight:600, margin:'6px 0 0'}}>{member.role}</p>
+                  <h3 style={{fontSize: isDesktop ? '1.02rem' : '0.85rem', fontWeight:600, color:'var(--color-white)', margin:0}}>{member.name}</h3>
+                  <p style={{fontSize:'0.85rem', color: themeMode === 'light' ? '#f38ba6' : '#dd901d', fontWeight:600, margin:'6px 0 0'}}>{member.role}</p>
                 </div>
               </div>
             </div>
@@ -441,12 +478,14 @@ export default function About() {
   return (
     <div className="app-wrapper" style={{ zoom: isDesktop ? '150%' : '100%' }}>
       <NavBar/>
-      <HeroSection/>
-      <PurposeSection/>
-      <MissionSection/>
-      <ProblemSection/>
-      <SolutionSection/>
-      <TeamSection/>
+      <HeroSection isDesktop={isDesktop}/>
+      <div style={{backgroundColor:'var(--bg-secondary)'}}>
+        <PurposeSection isDesktop={isDesktop}/>
+        <MissionSection isDesktop={isDesktop}/>
+      </div>
+      <ProblemSection isDesktop={isDesktop}/>
+      <SolutionSection isDesktop={isDesktop}/>
+      <TeamSection isDesktop={isDesktop}/>
       <FooterSection/>
     </div>
   );

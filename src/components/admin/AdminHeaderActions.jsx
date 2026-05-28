@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getOperatorSession } from "../../services/operatorAuth";
+import { useThemeScope } from "../../theme/publicThemeContext";
 
 const BellIcon = ({ size = 15, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -34,23 +35,9 @@ const CheckIcon = ({ size = 14, color = "currentColor" }) => (
   </svg>
 );
 
-const notificationItems = [
-  { id: 1, tone: "amber", category: "New booking", title: "Jake Quaker booked Haircut", description: "Scheduled for today at 9:00 AM with Any Available Stylist.", time: "2m ago", unread: true },
-  { id: 2, tone: "blue", category: "Booking change", title: "Maria Garcia rescheduled her appointment", description: "Moved to 10:30 AM and updated the service notes.", time: "14m ago", unread: true },
-  { id: 3, tone: "green", category: "Live queue", title: "Juan Dela Cruz moved to In Progress", description: "The live queue and dashboard queue were refreshed.", time: "28m ago", unread: false },
-];
-
 const settingsItems = [
   { id: "profile-view", label: "Profile settings", description: "View your account details and role." },
 ];
-
-const themeStorageKey = "adminThemeMode";
-
-const getInitialTheme = () => {
-  if (typeof window === "undefined") return "dark";
-  const savedTheme = window.localStorage.getItem(themeStorageKey);
-  return savedTheme === "dark" ? "dark" : "light";
-};
 
 const getDisplayUsername = (session) => {
   const emailPrefix = (session?.email || "").split("@")[0];
@@ -59,43 +46,22 @@ const getDisplayUsername = (session) => {
 
 export function AdminHeaderActions({ notifications: externalNotifications = [] }) {
   const wrapperRef = useRef(null);
-  const themeTransitionTimerRef = useRef(null);
   const [openMenu, setOpenMenu] = useState(null);
   const [settingsView, setSettingsView] = useState("main");
-  const [themeMode, setThemeMode] = useState(getInitialTheme);
-  const [notifications, setNotifications] = useState(notificationItems);
+  const [notifications, setNotifications] = useState([]);
+  const { themeMode, toggleTheme } = useThemeScope("staff");
 
   const session = getOperatorSession();
 
-  useEffect(() => () => {
-    if (themeTransitionTimerRef.current) {
-      window.clearTimeout(themeTransitionTimerRef.current);
-    }
-    if (typeof document !== "undefined") {
-      document.documentElement.classList.remove("theme-transitioning");
-    }
-  }, []);
-
-  const notificationSeed = externalNotifications.length > 0 ? externalNotifications : notificationItems;
+  const notificationSeed = externalNotifications;
   const notificationSeedKey = useMemo(() => notificationSeed.map((item) => `${item.id}-${item.title}-${item.time}-${item.unread ? 1 : 0}`).join("|"), [notificationSeed]);
   const unreadCount = useMemo(() => notifications.filter((item) => item.unread).length, [notifications]);
   const profileDisplayUsername = getDisplayUsername(session);
   const profileRole = session?.role || "Administrator";
 
   useEffect(() => {
-    const mapped = (notificationSeed || []).map((item) => {
-      const text = `${item.category || ""} ${item.title || ""} ${item.description || ""}`.toLowerCase();
-      const newBookingRe = /\b(pending appointment|upcoming booking|appointment created|new appointment|booked|new booking)\b/;
-      const bookingChangeRe = /\b(resched|rescheduled|reschedule|cancelled|canceled|cancellation|modified|updated|change|booking change)\b/;
-
-      if (newBookingRe.test(text)) return { ...item, category: "New booking" };
-      if (bookingChangeRe.test(text)) return { ...item, category: "Booking change" };
-      return null;
-    }).filter(Boolean);
-
-    setNotifications(mapped);
+    setNotifications(notificationSeed || []);
   }, [notificationSeedKey]);
-  useEffect(() => { if (typeof document !== "undefined") { document.documentElement.dataset.theme = themeMode; window.localStorage.setItem(themeStorageKey, themeMode); } }, [themeMode]);
 
   useEffect(() => {
     const handlePointerDown = (event) => { if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setOpenMenu(null); };
@@ -108,19 +74,6 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
 
   const toggleMenu = (menu) => { setOpenMenu((prev) => (prev === menu ? null : menu)); setSettingsView("main"); };
   const closeMenu = () => { setOpenMenu(null); setSettingsView("main"); };
-  const toggleTheme = () => {
-    if (typeof document !== "undefined") {
-      document.documentElement.classList.add("theme-transitioning");
-      if (themeTransitionTimerRef.current) {
-        window.clearTimeout(themeTransitionTimerRef.current);
-      }
-      themeTransitionTimerRef.current = window.setTimeout(() => {
-        document.documentElement.classList.remove("theme-transitioning");
-      }, 500);
-    }
-
-    setThemeMode((m) => (m === "dark" ? "light" : "dark"));
-  };
   const markAllNotificationsRead = () => setNotifications((n) => n.map((it) => ({ ...it, unread: false })));
 
   const formatRoleLabel = (role) => {

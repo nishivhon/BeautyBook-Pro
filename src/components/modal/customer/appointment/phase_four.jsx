@@ -1,6 +1,6 @@
-/* ══════════════════════════════════════════
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
    IMPORTS
-══════════════════════════════════════════ */
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../confirmation_dialog";
@@ -28,9 +28,59 @@ const BOOKING_MODAL_THEME_VARS = {
 const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-phase-four-v2";
 
 const BOOKING_MODAL_THEME_CSS = `
+@media (max-width: 1024px) {
   .booking-modal-theme,
   .booking-modal-theme * {
     color-scheme: dark;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-root {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    width: calc(100vw - 32px) !important;
+    max-width: calc(100vw - 32px) !important;
+    height: 520px !important;
+    max-height: 520px !important;
+    overflow: hidden !important;
+  }
+
+  @media (max-width: 480px) {
+    html[data-theme="light"] .booking-modal-theme .appt-root {
+      width: calc(100vw - 24px) !important;
+      height: 480px !important;
+      max-height: 480px !important;
+    }
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-header,
+  html[data-theme="light"] .booking-modal-theme .appt-footer {
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-body {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 12px 12px 10px !important;
+    gap: 12px !important;
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-footer {
+    padding: 10px 12px 12px !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-cancel-btn,
+  html[data-theme="light"] .booking-modal-theme .appt-continue-btn,
+  html[data-theme="light"] .booking-modal-theme .appt-download-receipt-btn {
+    min-height: 40px !important;
   }
 
   .booking-modal-theme .appt-root {
@@ -61,6 +111,7 @@ const BOOKING_MODAL_THEME_CSS = `
   .booking-modal-theme .appt-body {
     background: #070605 !important;
     color: #f5f1eb !important;
+    padding: 0 40px 24px !important;
   }
 
   .booking-modal-theme .appt-back-btn,
@@ -108,6 +159,7 @@ const BOOKING_MODAL_THEME_CSS = `
     border: 1px solid rgba(221, 144, 29, 0.12) !important;
     box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22) !important;
     color: #f5f1eb !important;
+    padding-bottom: 28px !important;
   }
 
   .booking-modal-theme .confirm-service-row,
@@ -231,11 +283,80 @@ const BOOKING_MODAL_THEME_CSS = `
     scrollbar-width: thin;
     scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
   }
+
+}
+
+@media (min-width: 1025px) {
+  html[data-theme="light"] .booking-modal-theme .appt-root {
+    background: #070605 !important;
+    border: 1px solid rgba(221, 144, 29, 0.15) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+    color: #f5f1eb !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-header,
+  html[data-theme="light"] .booking-modal-theme .appt-footer {
+    background: #070605 !important;
+  }
+
+  .booking-modal-theme .appt-root {
+    background: #070605 !important;
+    border: 1px solid rgba(221, 144, 29, 0.15) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-root .confirm-card,
+  .booking-modal-theme .appt-root .confirm-card {
+    background: #11100d !important;
+    color: #f5f1eb !important;
+    border: 1px solid rgba(221, 144, 29, 0.12) !important;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22) !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .confirm-service-row,
+  html[data-theme="light"] .booking-modal-theme .confirm-detail-row,
+  .booking-modal-theme .confirm-service-row,
+  .booking-modal-theme .confirm-detail-row {
+    color: #f5f1eb !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    background: #070605 !important;
+    color: #f5f1eb !important;
+    padding: 0 40px 24px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-track {
+    background: rgba(19, 19, 19, 0.4) !important;
+    border-radius: 10px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.9) !important;
+    border-radius: 10px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 1) !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
+  }
+}
 `;
 
-/* ══════════════════════════════════════════
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
    INLINE SVG ICONS
-══════════════════════════════════════════ */
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 
 /* Scissors icon for the service row */
 const ScissorsIcon = () => (
@@ -301,9 +422,9 @@ const DownloadIcon = () => (
   </svg>
 );
 
-/* ══════════════════════════════════════════
-   DATA — in real app these would be props
-══════════════════════════════════════════ */
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+   DATA ΓÇö in real app these would be props
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 const BOOKING = {
   service:   "Haircut",
   duration:  "30 mins",
@@ -313,7 +434,6 @@ const BOOKING = {
   email:     "quakerjake@gmail.com",
   phone:     "09xxxxxxxxx",
   stylist:   "Any Available Stylist",
-  refNo:     "18xxx-xxxx",
 };
 
 const STEPS = [
@@ -323,11 +443,11 @@ const STEPS = [
   { number: 4, label: "Confirm"  },
 ];
 
-/* ══════════════════════════════════════════
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
    SUB-COMPONENTS
-══════════════════════════════════════════ */
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 
-/* ── Header ── */
+/* ΓöÇΓöÇ Header ΓöÇΓöÇ */
 const BookingHeader = ({ onBack, isConfirmed }) => (
   <header className="appt-header">
     <button 
@@ -345,8 +465,8 @@ const BookingHeader = ({ onBack, isConfirmed }) => (
   </header>
 );
 
-/* ── Progress bar — Phase 4 state ── */
-/* Steps 1, 2, 3 done (✓); all connectors amber; step 4 active */
+/* ΓöÇΓöÇ Progress bar ΓÇö Phase 4 state ΓöÇΓöÇ */
+/* Steps 1, 2, 3 done (Γ£ô); all connectors amber; step 4 active */
 const ProgressIndicator = ({ currentStep = 4 }) => (
   <div className="appt-progress">
     <div className="appt-progress-track">
@@ -384,14 +504,14 @@ const ProgressIndicator = ({ currentStep = 4 }) => (
   </div>
 );
 
-/* ── Thin divider ── */
+/* ΓöÇΓöÇ Thin divider ΓöÇΓöÇ */
 const Divider = () => (
   <div style={{ width: "100%", height: 1, background: "rgba(152,143,129,0.25)", flexShrink: 0 }} />
 );
 
-/* ══════════════════════════════════════════
-   MAIN COMPONENT — Phase 4
-══════════════════════════════════════════ */
+/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+   MAIN COMPONENT ΓÇö Phase 4
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
 const DARK_MODAL_VARS = {
   "--bg-card": "#070605",
   "--bg-dark": "#070605",
@@ -404,12 +524,20 @@ const DARK_MODAL_VARS = {
   colorScheme: "dark",
 };
 
-export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = BOOKING }) => {
+export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, booking = BOOKING }) => {
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showReceiptReminder, setShowReceiptReminder] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showConfirmationToast, setShowConfirmationToast] = useState(false);
+  const [showErrorToast, setShowErrorToast] = useState(false);
+  const [errorToastMessage, setErrorToastMessage] = useState('');
+  const [bookingRef, setBookingRef] = useState(null);
+  // Determine theme (light/dark) at render time to apply readable receipt colors
+  const themeIsLight = typeof document !== 'undefined' && document.documentElement?.getAttribute('data-theme') === 'light';
+  const receiptBg = themeIsLight ? '#FCF9F5' : '#11100d';
+  const receiptText = themeIsLight ? '#1C1816' : '#f5f1eb';
+  const receiptLabel = themeIsLight ? '#6b6b66' : '#988f81';
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -446,6 +574,15 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
       setShowReceiptReminder(true);
     }
   };
+
+  // Escape key should trigger exit/receipt reminder
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') handleExitRequest();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isConfirmed, showReceiptReminder]);
 
   const handleBack = () => {
     onBack?.();
@@ -499,6 +636,37 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
   const discountAmount = Math.max(0, Math.min(subtotal, getCouponDiscountAmount(coupon, subtotal)));
   const totalAfterDiscount = Math.max(0, subtotal - discountAmount);
+  const serviceItems = Array.isArray(booking.rawServices)
+    ? booking.rawServices
+    : (Array.isArray(booking.services) ? booking.services : []);
+  const serviceEstTime = serviceItems.reduce((total, item) => {
+    const minutes = Number(
+      item?.est_time ??
+      item?.estimated_time ??
+      item?.duration_minutes ??
+      item?.duration ??
+      item?.time ??
+      0
+    );
+    return total + (Number.isFinite(minutes) ? minutes : 0);
+  }, 0);
+
+  const formatBookingDateTime = (dateValue, timeValue) => {
+    const dateText = dateValue
+      ? new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Manila',
+          month: 'long',
+          day: 'numeric',
+        }).format(new Date(`${dateValue}T00:00:00`))
+      : '';
+
+    const timeText = timeValue ? String(timeValue).trim().replace(/\s+/g, '') : '';
+
+    if (dateText && timeText) return `${dateText} | ${timeText}`;
+    return dateText || timeText || '';
+  };
+
+  const displayDateTime = bookingData?.dateTime || formatBookingDateTime(bookingData?.date, bookingData?.time);
 
   /* Handle final confirmation */
   const handleConfirmBooking = async () => {
@@ -534,10 +702,13 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
         phone: phone,
         date: booking.date,
         time: booking.time,
+        dateTime: booking.dateTime || formatBookingDateTime(booking.date, booking.time),
         service: serviceList,
+        services: serviceItems,
         staff_assigned: booking.stylist,
         coupon: coupon || null,
-        total_amount: totalAfterDiscount
+        total_amount: totalAfterDiscount,
+        service_est_time: serviceEstTime,
       };
       
       console.log('[Phase4] Booking data:', bookingData);
@@ -566,12 +737,73 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
       
       if (!response.ok) {
         console.error('[Phase4] API error:', result);
+        setErrorToastMessage(result?.error || result?.message || 'Unable to create booking right now.');
+        setShowErrorToast(true);
         return;
       }
       
       console.log('[Phase4] Booking confirmed:', result);
       setIsConfirmed(true);
       setShowConfirmationToast(true);
+      // Notify other parts of the app that appointments have changed
+      try {
+        window.dispatchEvent(new Event('appointmentsUpdated'));
+        console.log('[Phase4] Dispatched appointmentsUpdated event');
+      } catch (e) {
+        console.warn('[Phase4] Failed to dispatch appointmentsUpdated event', e);
+      }
+
+      // Attempt to retrieve the created slot/ref from server by customer
+      try {
+        const email = booking.email?.trim();
+        const phone = booking.phone?.trim()?.replace(/\D/g, "");
+        const params = new URLSearchParams();
+        if (email) params.append('email', email);
+        if (phone) params.append('phone', phone);
+
+        const resp = await fetch(`/api/appointments/read/by-customer?${params.toString()}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          const items = data?.appointments || [];
+          // Try to find exact match by date and time_24 if available
+          const to24 = (t) => {
+            if (!t) return null;
+            const m = String(t).match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+            if (!m) return null;
+            let hh = Number(m[1]);
+            const mm = m[2];
+            const p = m[3].toUpperCase();
+            if (p === 'PM' && hh !== 12) hh += 12;
+            if (p === 'AM' && hh === 12) hh = 0;
+            return `${String(hh).padStart(2,'0')}:${mm}`;
+          };
+
+          const wantedDate = booking.date;
+          const wanted24 = to24(booking.time);
+
+          let found = items.find((it) => {
+            if (!it) return false;
+            if (it.date && wantedDate && it.date === wantedDate) {
+              if (wanted24 && (it.time_24 === wanted24 || String(it.time || '').includes(String(booking.time || '')))) return true;
+              if (!wanted24) return true;
+            }
+            return false;
+          });
+
+          // Fallback: pick the most recently updated item
+          if (!found && items.length > 0) {
+            found = items.sort((a,b) => new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime())[0];
+          }
+
+          if (found) {
+            const ref = String(found.id || found.refNo || found.id).padStart(8, '0');
+            setBookingRef(ref);
+            console.log('[Phase4] Retrieved booking ref:', ref, found);
+          }
+        }
+      } catch (err) {
+        console.warn('[Phase4] Failed to fetch booking ref after confirm:', err);
+      }
       
     } catch (error) {
       console.error('[Phase4] Error confirming booking:', error);
@@ -595,6 +827,8 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
     const receiptDiscount = discountAmount > 0 ? discountAmount.toFixed(2) : null;
     const receiptCouponDescription = coupon?.description || coupon?.discount_description || coupon?.title || coupon?.name || booking?.promoCode || null;
     const receiptTotal = totalAfterDiscount.toFixed(2);
+    const receiptRef = bookingRef || bookingData?.refNo || 'N/A';
+    const receiptDateTime = bookingData?.dateTime || formatBookingDateTime(bookingData?.date, bookingData?.time) || 'Not Selected';
 
     const receiptHTML = `
       <!DOCTYPE html>
@@ -606,16 +840,17 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #f5f5f5; 
+            background: #070605; 
             padding: 20px;
+            color: #f5f1eb;
           }
           .receipt { 
             max-width: 480px; 
             margin: 0 auto; 
-            background: #fff; 
+            background: #11100d; 
             padding: 32px 24px; 
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.45);
           }
           .header { 
             text-align: center; 
@@ -626,7 +861,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           .logo { 
             font-size: 24px; 
             font-weight: 700; 
-            color: #1a0f00; 
+            color: #f5f1eb; 
             margin-bottom: 4px;
           }
           .subtitle { 
@@ -650,7 +885,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             align-items: center;
             margin-bottom: 8px;
             font-size: 14px;
-            color: #1a0f00;
+            color: #f5f1eb;
           }
           .service-name { flex: 1; }
           .service-price { 
@@ -663,7 +898,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             justify-content: space-between;
             font-size: 13px;
             margin-bottom: 8px;
-            color: #1a0f00;
+            color: #f5f1eb;
           }
           .detail-label { 
             color: #988f81; 
@@ -682,7 +917,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             justify-content: space-between;
             font-size: 16px;
             font-weight: 700;
-            color: #1a0f00;
+            color: #f5f1eb;
             padding: 12px 0;
             border-top: 2px solid #dd901d;
             border-bottom: 2px solid #dd901d;
@@ -690,23 +925,27 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           }
           .ref-box { 
             background: #f9f7f4; 
-            padding: 12px; 
-            border-radius: 8px; 
+            padding: 16px; 
+            border-radius: 10px; 
             text-align: center;
-            margin: 16px 0;
+            margin: 20px 0;
+            border: 1px solid #f0ede8;
           }
           .ref-label { 
-            font-size: 10px; 
+            font-size: 9px;
+            font-weight: 700;
             color: #988f81; 
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 4px;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+            display: block;
           }
           .ref-code { 
-            font-size: 18px; 
+            font-size: 20px; 
             font-weight: 700; 
             color: #dd901d; 
-            font-family: 'Courier New', monospace;
+            font-family: 'Courier New', 'Courier', monospace;
+            letter-spacing: 0.5px;
           }
           .footer { 
             text-align: center; 
@@ -746,7 +985,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             <div class="section-title">Appointment Details</div>
             <div class="detail-row">
               <span class="detail-label">Date & Time</span>
-              <span class="detail-value">${bookingData?.dateTime || 'Not Selected'}</span>
+              <span class="detail-value">${receiptDateTime}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Duration</span>
@@ -789,15 +1028,15 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             </div>
           </div>
 
-          <div class="ref-box">
-            <div class="ref-label">Reference Number</div>
-            <div class="ref-code">${bookingData?.refNo || 'N/A'}</div>
+          <div class="section">
+            <div class="section-title">Reference</div>
+            <div class="ref-code">${receiptRef}</div>
           </div>
 
           <div class="footer">
             <p>Please keep this reference number for your records.</p>
-            <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">You will receive a confirmation via email and SMS 15 minutes before your appointment.</p>
-            <p style="margin-top: 12px; color: #dd901d;">Thank you for choosing BeautyBook Pro!</p>
+            <p>You will receive a confirmation via email and SMS 15 minutes before your appointment.</p>
+            <p class="footer-highlight">Thank you for choosing BeautyBook Pro!</p>
           </div>
         </div>
       </body>
@@ -819,13 +1058,19 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
 
   return (
     <>
-      {/* ── Toast Notifications (Top Fixed Position) ── */}
+      {/* ΓöÇΓöÇ Toast Notifications (Top Fixed Position) ΓöÇΓöÇ */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 999999, pointerEvents: "auto", display: "flex", justifyContent: "center", padding: "20px" }}>
         <Toast 
           message="Booking Confirmed!" 
           type="success" 
           duration={2000} 
           isVisible={showConfirmationToast} 
+        />
+        <Toast 
+          message={errorToastMessage || 'Unable to create booking right now.'}
+          type="error"
+          duration={3000}
+          isVisible={showErrorToast}
         />
       </div>
 
@@ -861,7 +1106,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 10000010,
+            zIndex: 1000,
             cursor: !isConfirmed ? "pointer" : "default",
             backgroundColor: "rgba(0, 0, 0, 0.5)",
             backdropFilter: 'blur(2px)',
@@ -872,15 +1117,15 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           <BookingHeader onBack={handleBack} isConfirmed={isConfirmed} />
           <ProgressIndicator currentStep={4} />
 
-          {/* ── Scrollable body ── */}
+          {/* ΓöÇΓöÇ Scrollable body ΓöÇΓöÇ */}
           <div className="appt-body" style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 40px" }}>
             <div className="appt-section-heading">
               <p className="appt-section-title">Confirm Booking</p>
               <p className="appt-section-sub">Review your appointment details</p>
             </div>
 
-            {/* ── Confirmation summary card ── */}
-            <div className="confirm-card">
+            {/* ΓöÇΓöÇ Confirmation summary card ΓöÇΓöÇ */}
+            <div className="confirm-card" style={{ background: receiptBg, color: receiptText }}>
               {services.length > 0 && (
                 <>
                   <div className="confirm-service-row">
@@ -888,13 +1133,13 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
                       <div className="confirm-svc-icon">
                         <ScissorsIcon />
                       </div>
-                      <div className="confirm-svc-text">
-                        <span className="confirm-svc-name">{services[0].title || services[0].name || 'Service'}</span>
-                        <span className="confirm-svc-duration">{totalDuration} mins</span>
+                      <div className="confirm-svc-text" style={{ color: receiptText }}>
+                        <span className="confirm-svc-name" style={{ color: '#ffffff' }}>{services[0].title || services[0].name || 'Service'}</span>
+                        <span className="confirm-svc-duration" style={{ color: receiptLabel }}>{totalDuration} mins</span>
                       </div>
                     </div>
                     <div className="confirm-svc-meta">
-                      <span className="confirm-svc-price">{services[0].price || 'N/A'}</span>
+                      <span className="confirm-svc-price" style={{ color: receiptLabel }}>{services[0].price || 'N/A'}</span>
                     </div>
                   </div>
                   <Divider />
@@ -904,14 +1149,14 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
               {services.length > 0 && (
                 <>
                   <div className="confirm-services-selected">
-                    <div className="confirm-services-title">
+                      <div className="confirm-services-title" style={{ color: receiptLabel }}>
                       Services Selected
                     </div>
                     <div className="confirm-services-list">
-                      {services.map((service, idx) => (
-                        <div key={idx} className="confirm-services-item">
-                          <div className="confirm-services-name">{service.title || service.name || 'Service'}</div>
-                          <div className="confirm-services-price">{service.price || 'N/A'}</div>
+                          {services.map((service, idx) => (
+                        <div key={idx} className="confirm-services-item" style={{ color: receiptText }}>
+                          <div className="confirm-services-name" style={{ color: '#ffffff' }}>{service.title || service.name || 'Service'}</div>
+                          <div className="confirm-services-price" style={{ color: receiptLabel }}>{service.price || 'N/A'}</div>
                         </div>
                       ))}
                     </div>
@@ -924,64 +1169,75 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
                 <div className="confirm-detail-row">
                   <PersonIcon />
                   <div className="confirm-detail-text">
-                    <span className="confirm-detail-label">Name</span>
-                    <span className="confirm-detail-value">{bookingData?.name || 'N/A'}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Name</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{bookingData?.name || 'N/A'}</span>
                   </div>
                 </div>
                 <div className="confirm-detail-row">
                   <StylistIcon />
                   <div className="confirm-detail-text">
-                    <span className="confirm-detail-label">Stylist</span>
-                    <span className="confirm-detail-value">{bookingData?.stylist || 'N/A'}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Stylist</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{bookingData?.stylist || 'N/A'}</span>
                   </div>
                 </div>
                 <div className="confirm-detail-row">
                   <EnvelopeIcon />
                   <div className="confirm-detail-text">
-                    <span className="confirm-detail-label">Date &amp; Time</span>
-                    <span className="confirm-detail-value">{bookingData?.dateTime || 'Not Selected'}</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Date &amp; Time</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{displayDateTime || 'Not Selected'}</span>
                   </div>
                 </div>
                 <div className="confirm-detail-row">
                   <DownloadIcon />
                   <div className="confirm-detail-text">
-                    <span className="confirm-detail-label">Duration</span>
-                    <span className="confirm-detail-value">{totalDuration} mins</span>
+                        <span className="confirm-detail-label" style={{ color: '#988f81' }}>Duration</span>
+                        <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{totalDuration} mins</span>
                   </div>
                 </div>
               </div>
 
               <Divider />
 
-              <div className="confirm-details">
+                <div className="confirm-details">
                 <div className="confirm-detail-row">
-                  <span className="confirm-detail-label">Subtotal</span>
-                  <span className="confirm-detail-value">₱{subtotal.toFixed(2)}</span>
+                  <span className="confirm-detail-label" style={{ color: '#988f81' }}>Subtotal</span>
+                  <span className="confirm-detail-value" style={{ color: '#ffffff' }}>₱{subtotal.toFixed(2)}</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="confirm-detail-row">
-                    <span className="confirm-detail-label">Coupon</span>
-                    <span className="confirm-detail-value">- ₱{discountAmount.toFixed(2)}</span>
+                    <span className="confirm-detail-label" style={{ color: '#988f81' }}>Coupon</span>
+                    <span className="confirm-detail-value" style={{ color: '#ffffff' }}>- ₱{discountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="confirm-detail-row" style={{ paddingTop: 10, paddingBottom: 10, marginTop: 8 }}>
-                  <span className="confirm-detail-label" style={{ color: 'var(--color-white)', fontWeight: 700 }}>Total Amount</span>
-                  <span className="confirm-detail-value" style={{ color: 'var(--color-white)', fontWeight: 700 }}>₱{totalAfterDiscount.toFixed(2)}</span>
+                  <span className="confirm-detail-label" style={{ color: '#988f81', fontWeight: 700 }}>Total Amount</span>
+                  <span className="confirm-detail-value" style={{ color: '#ffffff', fontWeight: 700 }}>₱{totalAfterDiscount.toFixed(2)}</span>
                 </div>
               </div>
 
               <Divider />
 
               <div className="confirm-bottom-row" style={{ flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
-                    <div className="confirm-ref-pill" style={{ background: 'rgba(221, 144, 29, 0.14)', border: '1px solid rgba(221, 144, 29, 0.45)', color: '#f5f1eb', boxShadow: '0 0 0 1px rgba(221, 144, 29, 0.08) inset' }}>
-                  Ref. No.: {bookingData?.refNo || 'N/A'}
-                </div>
-                    <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>You will receive notifications 15 minutes before your appointment</div>
+                {!isConfirmed ? (
+                  <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'normal', wordBreak: 'break-word', overflow: 'visible' }}>
+                    Reference number will be generated upon confirmation
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ color: '#988f81', textAlign: 'center', lineHeight: 1.4, whiteSpace: 'normal', wordBreak: 'break-word', overflow: 'visible' }}>You will receive notifications 15 minutes before your appointment</div>
+                    {bookingRef ? (
+                      <div className="ref-box">
+                        <div className="ref-label">Reference number</div>
+                        <div className="ref-code">{bookingRef}</div>
+                      </div>
+                    ) : null}
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          {/* ── Footer CTA (Inside Modal) ── */}
+          {/* ΓöÇΓöÇ Footer CTA (Inside Modal) ΓöÇΓöÇ */}
           <div 
             className="appt-footer" 
             style={{ 
@@ -1033,7 +1289,7 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
           onConfirm={() => {
             console.log('[Phase4] Booking cancelled confirmed');
             setShowBackdropConfirm(false);
-            onCancel?.();
+            onClose?.();
           }}
           onCancel={() => {
             console.log('[Phase4] Keep booking clicked');
@@ -1047,16 +1303,16 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, booking = B
         <ConfirmationDialog
           isOpen={showReceiptReminder}
           title="Save Your Booking Info"
-          message={`Have you saved your receipt and reference number?\n\nReference No.: ${bookingData?.refNo || "N/A"}\n\nYou'll need this for check-in.`}
+          message={`Have you saved your receipt and reference number?\n\nReference No.: ${bookingRef || bookingData?.refNo || "N/A"}\n\nYou'll need this for check-in.`}
           confirmText="Yes, Saved"
           cancelText="Download Again"
-          onConfirm={() => {
+            onConfirm={() => {
             console.log('[Phase4] Receipt saved confirmed');
             setShowReceiptReminder(false);
             setShowSuccessToast(true);
             // Close the modal after a short delay and stay on the current dashboard page
             setTimeout(() => {
-              onCancel?.();
+              onClose?.();
             }, 2000);
           }}
           onCancel={() => {

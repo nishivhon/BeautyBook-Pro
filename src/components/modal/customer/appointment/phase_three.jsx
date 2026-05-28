@@ -25,9 +25,58 @@ const BOOKING_MODAL_THEME_VARS = {
 const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-phase-three";
 
 const BOOKING_MODAL_THEME_CSS = `
+@media (max-width: 1024px) {
   .booking-modal-theme,
   .booking-modal-theme * {
     color-scheme: dark;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-root {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    width: calc(100vw - 32px) !important;
+    max-width: calc(100vw - 32px) !important;
+    height: 520px !important;
+    max-height: 520px !important;
+    overflow: hidden !important;
+  }
+
+  @media (max-width: 480px) {
+    html[data-theme="light"] .booking-modal-theme .appt-root {
+      width: calc(100vw - 24px) !important;
+      height: 480px !important;
+      max-height: 480px !important;
+    }
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-header,
+  html[data-theme="light"] .booking-modal-theme .appt-footer {
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-body {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 12px 12px 10px !important;
+    gap: 12px !important;
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-footer {
+    padding: 10px 12px 12px !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-cancel-btn,
+  html[data-theme="light"] .booking-modal-theme .appt-continue-btn {
+    min-height: 40px !important;
   }
 
   .booking-modal-theme .appt-root {
@@ -177,6 +226,8 @@ const BOOKING_MODAL_THEME_CSS = `
     scrollbar-width: thin;
     scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
   }
+
+}
 `;
 
 /* ══════════════════════════════════════════
@@ -341,17 +392,7 @@ const AnyRow = ({ isSelected, onSelect }) => (
 
 /* ── Named stylist row ── */
 const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext = true }) => {
-  const statusLabel = stylist.status === "no slots" ? "No Slots" : "Unavailable";
   const hasNextAppointment = Boolean(stylist.nextAppointmentTime);
-
-  const inServiceValue = (stylist.in_service || '').toString().trim().toLowerCase();
-  const isCurrentlyInService = inServiceValue === 'in-service';
-  const isAvailableState = inServiceValue === 'avail' || stylist.status === 'avail';
-  const acceptsWalkIn = stylist.walk_in === true;
-
-  // Custom status messages for walk-in flows
-  const walkInDisabledMessage = isAvailableState && !acceptsWalkIn ? 'Not accepting walk-in' : null;
-  const inServiceMessage = isCurrentlyInService ? 'Currently in-service' : null;
 
   return (
     <button
@@ -373,10 +414,7 @@ const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext =
             {showTime && showNext && <span>•</span>}
             {showNext && <span className="stylist-unavailable-tag">{hasNextAppointment ? `Next: ${formatTimeTo12Hour(stylist.nextAppointmentTime)}` : "No next appointment"}</span>}
           </div>
-          {/* Priority messages: in-service > not-accepting-walkin > generic unavailable */}
-          {isCurrentlyInService && <span className="stylist-unavailable-tag">{inServiceMessage}</span>}
-          {!isCurrentlyInService && walkInDisabledMessage && <span className="stylist-unavailable-tag">{walkInDisabledMessage}</span>}
-          {!isCurrentlyInService && !walkInDisabledMessage && stylist.unavailable && <span className="stylist-unavailable-tag">{statusLabel}</span>}
+          {stylist.unavailable && <span className="stylist-unavailable-tag">Unavailable</span>}
         </div>
       </div>
     </button>
@@ -386,13 +424,27 @@ const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext =
 /* ══════════════════════════════════════════
    MAIN COMPONENT — Phase 3
 ══════════════════════════════════════════ */
-export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showTime = true, showNext = true, isWalkIn = false }) => {
+export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, onClose, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showTime = true, showNext = true, isWalkIn = false }) => {
   const [selected, setSelected] = useState(null);
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [stylists, setStylists] = useState([ANY_STYLIST]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const cancelDialogConfig = isWalkIn
+    ? {
+        title: "Cancel Walk-in?",
+        message: "Are you sure you want to cancel? Your walk-in progress will be lost.",
+        confirmText: "Yes, Cancel Walk-in",
+        cancelText: "Keep Going",
+      }
+    : {
+        title: "Cancel Booking?",
+        message: "Are you sure you want to cancel? Your booking progress will be lost.",
+        confirmText: "Yes, Cancel Booking",
+        cancelText: "Keep Booking",
+      };
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -430,16 +482,21 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
         setLoading(true);
         setError(null);
         
-        const [staffResponse, appointmentsResponse] = await Promise.all([
-          fetchStaffWithAnyOption(),
-          fetch('/api/appointments/read/by-status?status=pending')
-        ]);
+        // Build date to query appointment logs (use ISO date if available)
+        const queryDate = initialData?.schedule?.dateISO || initialData?.schedule?.date || null;
+
+        const staffPromise = fetchStaffWithAnyOption();
+        const apptsPromise = queryDate
+          ? fetch(`/api/appointments/read/by-date?date=${encodeURIComponent(queryDate)}`)
+          : fetch('/api/appointments/read/by-status?status=pending');
+
+        const [staffResponse, appointmentsResponse] = await Promise.all([staffPromise, apptsPromise]);
 
         const response = staffResponse;
         const filteredStaff = response.staff || [];
         let pendingAppointments = [];
 
-        if (appointmentsResponse.ok) {
+        if (appointmentsResponse && appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json();
           pendingAppointments = appointmentsData.appointments || [];
         }
@@ -472,20 +529,12 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
             })
           : filteredStaff;
 
-        const nextAppointmentByStaff = pendingAppointments.reduce((map, appointment) => {
-          if (!appointment?.staff || !appointment?.time) {
-            return map;
-          }
-
+        // Build a map of appointments for quick lookup per staff
+        const apptsByStaff = pendingAppointments.reduce((map, appointment) => {
+          if (!appointment?.staff || !appointment?.time) return map;
           const key = String(appointment.staff).toLowerCase();
-          const existing = map.get(key);
-          const currentMinutes = appointment.time ? Number.parseInt(String(appointment.time).split(':')[0], 10) * 60 + Number.parseInt(String(appointment.time).split(':')[1] || '0', 10) : Number.MAX_SAFE_INTEGER;
-          const existingMinutes = existing?.time ? Number.parseInt(String(existing.time).split(':')[0], 10) * 60 + Number.parseInt(String(existing.time).split(':')[1] || '0', 10) : Number.MAX_SAFE_INTEGER;
-
-          if (!existing || currentMinutes < existingMinutes) {
-            map.set(key, appointment);
-          }
-
+          if (!map.has(key)) map.set(key, []);
+          map.get(key).push(appointment);
           return map;
         }, new Map());
         
@@ -498,21 +547,64 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
           response.any,
           ...staffToShow.map((staff) => {
             const stylist = transformStaffToStylist(staff);
-            const nextAppointment = nextAppointmentByStaff.get(String(staff.names).toLowerCase());
+            const staffKey = String(staff.names).toLowerCase();
 
             // If this is a walk-in flow and the staff doesn't accept walk-ins, or is currently in-service, mark unavailable
             const staffInServiceValue = (staff.in_service || '').toString().trim().toLowerCase();
             const staffIsInService = staffInServiceValue === 'in-service';
             const disabledForWalkIn = isWalkIn && (staff.walk_in === false || staff.walk_in === 0 || staffIsInService);
 
+            // Compute overlap using appointments from both available_slots and appointment_logs
+            let hasOverlap = false;
+
+            try {
+              const requestedTimeStr = initialData?.schedule?.time;
+              if (requestedTimeStr) {
+                const parseTime = (t) => {
+                  if (!t) return null;
+                  // Accept formats like '14:00' or '2:00 PM'
+                  if (t.toLowerCase().includes('am') || t.toLowerCase().includes('pm')) {
+                    const [timePart, period] = String(t).split(' ');
+                    const [h, m] = timePart.split(':').map(Number);
+                    let hh = h;
+                    if (period.toUpperCase() === 'PM' && h !== 12) hh = h + 12;
+                    if (period.toUpperCase() === 'AM' && h === 12) hh = 0;
+                    return hh * 60 + (Number.isFinite(m) ? m : 0);
+                  }
+                  const [hhStr, mmStr] = String(t).split(':');
+                  const hh = Number.parseInt(hhStr, 10) || 0;
+                  const mm = Number.parseInt(mmStr || '0', 10) || 0;
+                  return hh * 60 + mm;
+                };
+
+                const requestedStart = parseTime(requestedTimeStr);
+                const requestedEnd = requestedStart + totalSelectedTime;
+
+                const staffAppts = apptsByStaff.get(staffKey) || [];
+                for (const appt of staffAppts) {
+                  const apptStart = parseTime(appt.time);
+                  const apptDur = Number(appt.service_est_time || 0) || 0;
+                  const apptEnd = apptStart + apptDur;
+
+                  // Overlap if appt starts before requested end AND appt ends after requested start
+                  if (apptStart < requestedEnd && apptEnd > requestedStart) {
+                    hasOverlap = true;
+                    break;
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn('[Phase3] overlap check failed', e);
+            }
+
             return {
               ...stylist,
-              nextAppointmentTime: nextAppointment?.time || null,
-              nextAppointmentName: nextAppointment?.name || null,
+              nextAppointmentTime: (apptsByStaff.get(staffKey) || [])[0]?.time || null,
+              nextAppointmentName: (apptsByStaff.get(staffKey) || [])[0]?.name || null,
               totalSelectedTime,
               walk_in: staff.walk_in === true,
               in_service: staff.in_service,
-              unavailable: stylist.unavailable || disabledForWalkIn || staffIsInService,
+              unavailable: stylist.unavailable || disabledForWalkIn || staffIsInService || hasOverlap,
             };
           })
         ];
@@ -529,7 +621,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
     };
 
     fetchStylists();
-  }, [selectedCategories, totalSelectedTime]);
+  }, [selectedCategories, totalSelectedTime, initialData?.schedule]);
 
   const handleContinue = () => {
     onContinue?.({ stylist: stylists.find((s) => s.id === selected) });
@@ -540,12 +632,31 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
   };
 
   const handleCancelClick = () => {
+    if (isWalkIn) {
+      onCancel?.();
+      return;
+    }
+
     setShowConfirmCancel(true);
   };
 
   const handleExitRequest = () => {
+    if (isWalkIn) {
+      onCancel?.();
+      return;
+    }
+
     setShowBackdropConfirm(true);
   };
+
+  // Escape key triggers confirmation
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') handleExitRequest();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <>
@@ -568,7 +679,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 10000010,
+            zIndex: 1000,
             backgroundColor: "rgba(0,0,0,0.5)",
             backdropFilter: "blur(2px)",
             pointerEvents: 'auto'
@@ -670,25 +781,25 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, initialDat
       {/* Cancel Confirmation Dialogs */}
       <ConfirmationDialog
         isOpen={showBackdropConfirm}
-        title="Cancel Booking?"
-        message="Are you sure you want to cancel? Your booking progress will be lost."
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
+        title={cancelDialogConfig.title}
+        message={cancelDialogConfig.message}
+        confirmText={cancelDialogConfig.confirmText}
+        cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowBackdropConfirm(false);
-          onCancel?.();
+          onClose?.();
         }}
         onCancel={() => setShowBackdropConfirm(false)}
       />
       <ConfirmationDialog
         isOpen={showConfirmCancel}
-        title="Cancel Booking?"
-        message="Are you sure you want to cancel? Your booking progress will be lost."
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
+        title={cancelDialogConfig.title}
+        message={cancelDialogConfig.message}
+        confirmText={cancelDialogConfig.confirmText}
+        cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowConfirmCancel(false);
-          onCancel?.();
+          onClose?.();
         }}
         onCancel={() => setShowConfirmCancel(false)}
       />

@@ -116,41 +116,42 @@ const generateToken = () => {
 
 /**
  * Validate operator credentials
- * Currently a mock validation - connect to API for real validation
+ * Validates against the secured_credentials table through the API
  * 
  * @param {string} email 
  * @param {string} password 
  * @returns {Promise<object>} - User data if valid
  */
 export const validateOperatorCredentials = async (email, password) => {
-  // TODO: Replace with actual API call to backend
-  // This is a mock implementation for demonstration
-  
   try {
-    // Mock operator database
-    const operators = [
-      { email: 'admin@beautybook.pro', password: 'admin123', role: OPERATOR_ROLES.ADMIN },
-      { email: 'staff@beautybook.pro', password: 'staff123', role: OPERATOR_ROLES.STAFF },
-      { email: 'superadmin@beautybook.pro', password: 'superadmin123', role: OPERATOR_ROLES.SUPER_ADMIN },
-      { email: 'customer@beautybook.pro', password: 'customer123', role: 'customer' }, // Temporary customer account
-    ];
+    const apiBase = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+      ? 'http://localhost:3000/api'
+      : '/api';
 
-    const operator = operators.find(op => op.email === email && op.password === password);
-    
-    if (operator) {
-      return {
-        success: true,
-        data: {
-          email: operator.email,
-          role: operator.role
-        }
-      };
-    } else {
+    const response = await fetch(`${apiBase}/operators/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: String(email || '').trim().toLowerCase(),
+        password,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
       return {
         success: false,
-        error: 'Invalid email or password'
+        error: result.error || 'Invalid email or password',
+        status: response.status,
       };
     }
+
+    return {
+      success: true,
+      data: result.data,
+      status: response.status,
+    };
   } catch (error) {
     return {
       success: false,

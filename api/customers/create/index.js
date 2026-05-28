@@ -28,6 +28,68 @@ export default async (req, res) => {
       return res.status(400).json({ error: 'Email or phone is required' });
     }
 
+    // CHECK FOR VERIFIED OTP BEFORE ALLOWING ACCOUNT CREATION
+    console.log('[Customers:Create] Checking for verified OTP...');
+    
+    let otpRecord = null;
+    if (normalizedEmail) {
+      const { data: emailOtps, error: emailError } = await supabase
+        .from('customer_otps')
+        .select('id, email, phone, verified')
+        .eq('email', normalizedEmail)
+        .eq('verified', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (emailError) {
+        console.error('[Customers:Create] Error querying email OTP:', emailError);
+      }
+      
+      if (emailOtps && emailOtps.length > 0) {
+        otpRecord = emailOtps[0];
+        console.log('[Customers:Create] Found verified OTP via email');
+      }
+    }
+
+    if (!otpRecord && normalizedPhone) {
+      let formattedPhone = normalizedPhone;
+      if (!formattedPhone.startsWith('+')) {
+        if (formattedPhone.startsWith('0')) {
+          formattedPhone = '+63' + formattedPhone.substring(1);
+        } else {
+          formattedPhone = '+63' + formattedPhone;
+        }
+      }
+
+      const { data: phoneOtps, error: phoneError } = await supabase
+        .from('customer_otps')
+        .select('id, email, phone, verified')
+        .eq('phone', formattedPhone)
+        .eq('verified', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (phoneError) {
+        console.error('[Customers:Create] Error querying phone OTP:', phoneError);
+      }
+      
+      if (phoneOtps && phoneOtps.length > 0) {
+        otpRecord = phoneOtps[0];
+        console.log('[Customers:Create] Found verified OTP via phone');
+      }
+    }
+
+    // OTP MUST be verified before account creation
+    if (!otpRecord) {
+      console.warn('[Customers:Create] No verified OTP found for:', { email: normalizedEmail, phone: normalizedPhone });
+      return res.status(403).json({
+        error: 'Email/Phone verification required',
+        details: 'Please verify your email or phone with the OTP sent to you before creating an account.'
+      });
+    }
+
+    console.log('[Customers:Create] OTP verified, proceeding with account creation');
+
     const emailCheck = normalizedEmail
       ? await supabase.from('customers_accounts').select('id, name, email, phone').eq('email', normalizedEmail).limit(1)
       : { data: null, error: null };
@@ -68,6 +130,8 @@ export default async (req, res) => {
       password: hashedPassword,
       ...(normalizedEmail && { email: normalizedEmail }),
       ...(normalizedPhone && { phone: normalizedPhone }),
+      // notif_pref should default to the contact used at registration (email preferred)
+      notif_pref: normalizedEmail || normalizedPhone,
       histories: histories || null,
     };
 
@@ -87,13 +151,18 @@ export default async (req, res) => {
       return res.status(400).json({ error: 'Failed to create account', details: error.message });
     }
 
-    // Attempt to remove any lingering OTP records for this contact to keep table clean
+    // Account created successfully - delete the verified OTP record to clean up
     try {
-      if (normalizedEmail) {
-        await deleteOtpByEmail(normalizedEmail);
-      }
-      if (normalizedPhone) {
-        await deleteOtpByPhone(normalizedPhone);
+      const { error: deleteError } = await supabase
+        .from('customer_otps')
+        .delete()
+        .eq('id', otpRecord.id);
+      
+      if (deleteError) {
+        console.warn('[Customers:Create] Failed to delete used OTP:', deleteError.message);
+        // Don't fail account creation if OTP cleanup fails
+      } else {
+        console.log('[Customers:Create] Cleaned up used OTP');
       }
     } catch (deleteErr) {
       console.error('[Customers:Create] Failed to delete OTP after create:', deleteErr.message || deleteErr);

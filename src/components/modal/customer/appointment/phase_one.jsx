@@ -25,9 +25,58 @@ const BOOKING_MODAL_THEME_VARS = {
 const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-phase-one";
 
 const BOOKING_MODAL_THEME_CSS = `
+@media (max-width: 1024px) {
   .booking-modal-theme,
   .booking-modal-theme * {
     color-scheme: dark;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-root {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    width: calc(100vw - 32px) !important;
+    max-width: calc(100vw - 32px) !important;
+    height: 520px !important;
+    max-height: 520px !important;
+    overflow: hidden !important;
+  }
+
+  @media (max-width: 480px) {
+    html[data-theme="light"] .booking-modal-theme .appt-root {
+      width: calc(100vw - 24px) !important;
+      height: 480px !important;
+      max-height: 480px !important;
+    }
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-header,
+  html[data-theme="light"] .booking-modal-theme .appt-root .appt-footer {
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-body {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 12px 12px 10px !important;
+    gap: 12px !important;
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-root .appt-footer {
+    padding: 10px 12px 12px !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-cancel-btn,
+  html[data-theme="light"] .booking-modal-theme .appt-continue-btn {
+    min-height: 40px !important;
   }
 
   .booking-modal-theme .appt-root {
@@ -59,10 +108,70 @@ const BOOKING_MODAL_THEME_CSS = `
     border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
   }
 
+  .booking-modal-theme[data-theme="dark"] .appt-progress {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 14px 40px 12px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-progress-track {
+    display: flex !important;
+    align-items: center !important;
+    width: fit-content !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-progress-item {
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-step-circle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.85rem !important;
+    font-weight: 400 !important;
+    flex-shrink: 0 !important;
+    transition: background 0.25s, color 0.25s !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-step-line {
+    width: 52px !important;
+    height: 2px !important;
+    flex-shrink: 0 !important;
+    transition: background 0.3s !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-progress-labels {
+    display: flex !important;
+    align-items: center !important;
+    width: 360px !important;
+    gap: 0 !important;
+  }
+
+  .booking-modal-theme[data-theme="dark"] .appt-step-label {
+    width: 90px !important;
+    padding: 0 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.72rem !important;
+    font-weight: 300 !important;
+    text-align: center !important;
+    flex-shrink: 0 !important;
+    transition: color 0.25s !important;
+  }
+
   .booking-modal-theme .appt-root .booking-phase-warning {
     width: 100% !important;
     text-align: center !important;
-    color: #ff6b6b !important;
+    color: #ef4343 !important;
     font-size: 0.85rem !important;
     font-weight: 500 !important;
     line-height: 1.25 !important;
@@ -187,6 +296,37 @@ const BOOKING_MODAL_THEME_CSS = `
     scrollbar-width: thin;
     scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
   }
+
+}
+
+@media (min-width: 1025px) {
+  .booking-modal-theme .appt-root .appt-footer {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-footer-top {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-footer-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+    justify-content: flex-end !important;
+    flex-wrap: wrap !important;
+  }
+
+  .booking-modal-theme .appt-root .booking-phase-warning {
+    color: #ef4343 !important;
+  }
+}
 `;
 
 const CalendarSmIcon = () => (
@@ -288,6 +428,27 @@ const ALL_TIME_SLOTS = [
   '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'
 ];
 
+const getManilaDateStr = (date = new Date()) => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Manila',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+}).format(date);
+
+const getCurrentTime24 = () => {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Manila',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(new Date());
+};
+
+const isPastOrCurrentSlotForDate = (dateStr, time24) => {
+  if (!dateStr || !time24) return false;
+  return dateStr === getManilaDateStr() && time24 <= getCurrentTime24();
+};
+
 export const AppointmentForm = ({ onBack, onContinue }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
@@ -330,7 +491,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
     for (let i = 0; i < 5; i++) {
       const currentDate = new Date(today);
       currentDate.setDate(today.getDate() + i);
-      const dateStr = currentDate.toISOString().split('T')[0];
+      const dateStr = getManilaDateStr(currentDate);
       const dayLabel = i === 0 ? "Today" : dayLabels[currentDate.getDay()];
       const dateLabel = `${monthLabels[currentDate.getMonth()]} ${currentDate.getDate()}`;
 
@@ -358,7 +519,9 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
           if (data.success && data.slots && data.slots.length > 0) {
             // Get times that are available (availability = true)
             // Strip seconds from time_24 (convert 10:30:00 to 10:30)
-            const availableTimes = data.slots.map(slot => slot.time_24.split(':').slice(0, 2).join(':'));
+            const availableTimes = data.slots
+              .map(slot => slot.time_24.split(':').slice(0, 2).join(':'))
+              .filter(time => !isPastOrCurrentSlotForDate(selectedDateObj.date, time));
             console.log(`[Phase1] Available times: ${availableTimes.join(', ')}`);
             // Unavailable times are ones NOT in the available list
             const unavailable = ALL_TIME_SLOTS.filter(time => !availableTimes.includes(time));
@@ -466,7 +629,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              zIndex: 10000010,
+              zIndex: 1000,
               backgroundColor: "rgba(0,0,0,0.5)",
               backdropFilter: "blur(2px)",
               pointerEvents: 'auto'
@@ -666,7 +829,9 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
               </p>
             ) : (
               ALL_TIME_SLOTS.map((time, i) => {
-                const isDisabled = unavailableTimes.includes(time);
+                  const selectedDateObj = selectedDate !== null ? dateOptions[selectedDate] : null;
+                  const isPastOrCurrentToday = selectedDateObj ? isPastOrCurrentSlotForDate(selectedDateObj.date, time) : false;
+                  const isDisabled = unavailableTimes.includes(time) || isPastOrCurrentToday;
                 const handleTimeSelect = () => {
                   if (isDisabled) {
                     // Show shake animation and toast
@@ -687,8 +852,9 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                     }}
                     className={`appt-time-chip${selectedTime === i ? " selected" : ""}${isDisabled ? " disabled" : ""}`}
                     aria-pressed={selectedTime === i}
+                    disabled={isDisabled}
                     style={{
-                      ...(isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "auto" } : { pointerEvents: "auto" }),
+                      ...(isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "none" } : { pointerEvents: "auto" }),
                       ...(shakingTimeSlot === i ? { animation: "shake 0.6s ease-in-out" } : {}),
                     }}
                   >

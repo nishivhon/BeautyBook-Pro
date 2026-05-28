@@ -1,7 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePublicTheme } from "../theme/publicThemeContext";
+import { ThemeToggle } from "../components/public/ThemeToggle";
 
-const HERO_BG_IMAGE = "/images/DarkmodeBG.png";
+const HERO_BG_IMAGE_DARK = new URL("../../images/DarkmodeBG.png", import.meta.url).href;
+const HERO_BG_IMAGE_LIGHT = new URL("../../images/LightmodeBG.png", import.meta.url).href;
 
 const STEP_IMAGES = {
   booking: new URL(
@@ -63,10 +66,54 @@ const SparkleIcon = () => (
   </svg>
 );
 
-const CheckItem = () => (
-  <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 15, height: 15, flexShrink: 0 }}>
-    <circle cx="8" cy="8" r="7.2" stroke="#dd901d" strokeWidth="1.3" fill="none" />
-    <path d="M5 8l2.2 2.2L11 5.5" stroke="#dd901d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+const CheckItem = ({ lightMode = false }) => (
+  <svg
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: 13, height: 13, flexShrink: 0 }}
+  >
+    {lightMode ? (
+      <>
+        <circle
+          cx="8"
+          cy="8"
+          r="6.25"
+          stroke="#f38ba6"
+          strokeWidth="0.55"
+          vectorEffect="non-scaling-stroke"
+          fill="none"
+        />
+        <path
+          d="M4.95 8.15l2.05 2.05 3.75-4.55"
+          stroke="#f38ba6"
+          strokeWidth="0.65"
+          vectorEffect="non-scaling-stroke"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </>
+    ) : (
+      <>
+        <circle
+          cx="8"
+          cy="8"
+          r="7.15"
+          stroke="#dd901d"
+          strokeWidth="0.6"
+          vectorEffect="non-scaling-stroke"
+          fill="none"
+        />
+        <path
+          d="M5.25 8.1l2 2L10.8 5.9"
+          stroke="#dd901d"
+          strokeWidth="0.7"
+          vectorEffect="non-scaling-stroke"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </>
+    )}
   </svg>
 );
 
@@ -211,12 +258,6 @@ function Navbar() {
         <span className="brand-name">BeautyBook Pro</span>
       </div>
 
-      <button onClick={() => setMenuOpen(!menuOpen)} className="mobile-menu-btn" aria-label="Toggle menu">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 20, height: 20 }}>
-          <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      </button>
-
       <div className="flex-center-gap-1 nav-links-desktop">
         {NAV_ITEMS.map((item) => (
           <button key={item.label} onClick={() => handleNavClick(item)} className="nav-link">
@@ -225,9 +266,27 @@ function Navbar() {
         ))}
       </div>
 
-      <button onClick={handleBooking} className="btn-primary btn-nav btn-nav-desktop">
-        Login
-      </button>
+      <div
+        className="btn-nav-desktop"
+        style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", flexWrap: "nowrap", gap: 8 }}
+      >
+        <ThemeToggle />
+        <button onClick={handleBooking} className="btn-primary btn-nav">
+          Login
+        </button>
+      </div>
+
+      <div className="mobile-auth-actions">
+        <ThemeToggle className="mobile-theme-toggle" />
+        <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
+          Login
+        </button>
+        <button onClick={() => setMenuOpen(!menuOpen)} className="mobile-menu-btn mobile-menu-btn-inline" aria-label="Toggle menu">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 20, height: 20 }}>
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
 
       {menuOpen && (
         <div className="mobile-menu">
@@ -238,9 +297,6 @@ function Navbar() {
               </button>
             ))}
           </div>
-          <button onClick={handleBooking} className="btn-primary btn-nav btn-mobile-cta">
-            Login
-          </button>
         </div>
       )}
     </nav>
@@ -249,13 +305,15 @@ function Navbar() {
 
 function HeroSection() {
   const navigate = useNavigate();
+  const { themeMode } = usePublicTheme();
+  const heroBackgroundImage = themeMode === "light" ? HERO_BG_IMAGE_LIGHT : HERO_BG_IMAGE_DARK;
 
   return (
     <section
       id="hero"
       className="hero-section"
       style={{
-        backgroundImage: `linear-gradient(rgba(10, 9, 8, 0.55), rgba(10, 9, 8, 0.72)), url('${HERO_BG_IMAGE}')`,
+        backgroundImage: `linear-gradient(rgba(10, 9, 8, 0.55), rgba(10, 9, 8, 0.72)), url('${heroBackgroundImage}')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -268,7 +326,7 @@ function HeroSection() {
         style={{
           position: "relative",
           zIndex: 6,
-          color: "#fff",
+          color: themeMode === "light" ? "#0c0a09" : "#fff",
           maxWidth: 920,
           margin: "0 auto",
           display: "flex",
@@ -301,6 +359,9 @@ function HeroSection() {
 }
 
 function JourneyStep({ step, index }) {
+  const { themeMode } = usePublicTheme();
+  const isLightMode = themeMode === "light";
+
   return (
     <section className="hiw-section">
       <div className="section-container">
@@ -329,7 +390,7 @@ function JourneyStep({ step, index }) {
             <ul className="hiw-list">
               {step.bullets.map((bullet) => (
                 <li key={bullet} className="hiw-item">
-                  <span className="hiw-item-icon"><CheckItem /></span>
+                  <span className="hiw-item-icon"><CheckItem lightMode={isLightMode} /></span>
                   <p className="hiw-copy-text" style={{ fontSize: "0.9rem", lineHeight: 1.65 }}>
                     {bullet}
                   </p>
@@ -401,6 +462,7 @@ function Footer() {
 }
 
 export default function HowItWorksPage() {
+  const { themeMode } = usePublicTheme();
 
 
   useLayoutEffect(() => {
@@ -422,7 +484,14 @@ export default function HowItWorksPage() {
   }, []);
 
   return (
-    <main className="hiw-page-root" style={{ background: "#060505", minHeight: "100vh", width: "100%" }}>
+    <main
+      className="hiw-page-root"
+      style={{
+        background: themeMode === "light" ? "#f5f0e8" : "#060505",
+        minHeight: "100vh",
+        width: "100%",
+      }}
+    >
       <Navbar />
       <HeroSection />
       <JourneySection />

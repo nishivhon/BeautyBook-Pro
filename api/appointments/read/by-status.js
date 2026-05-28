@@ -1,5 +1,13 @@
 import { getSlotsByStatus } from '../utils/slotManager.js';
 
+const getManilaDateString = () =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+
 export default async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -21,8 +29,8 @@ export default async (req, res) => {
   try {
     console.log(`[Appointments] Fetching appointments with status: ${status}`);
     
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
+    // Get today's date in Philippine Time (YYYY-MM-DD)
+    const today = getManilaDateString();
     
     // Fetch slots by status for today
     const slots = await getSlotsByStatus(status, today, today);
@@ -33,6 +41,7 @@ export default async (req, res) => {
     const appointments = slots.map((slot, index) => {
       // Extract service name from services field (can be string or object)
       let serviceName = 'Service pending';
+      const totalPrice = Number(slot.total_price || 0) || 0;
       
       if (slot.services) {
         if (typeof slot.services === 'string') {
@@ -60,6 +69,8 @@ export default async (req, res) => {
         time: slot.time_slot,
         status: slot.status,
         availability: slot.availability,
+        price: totalPrice,
+        total_price: totalPrice,
         createdAt: slot.created_at,
         updatedAt: slot.updated_at
       };

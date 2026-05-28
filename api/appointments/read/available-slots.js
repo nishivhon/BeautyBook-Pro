@@ -20,6 +20,24 @@ function convertTo12HourFormat(time24) {
   return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
+function getManilaDateStr(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+}
+
+function getManilaTime24(date = new Date()) {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Manila',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(date);
+}
+
 export default async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -64,7 +82,13 @@ export default async (req, res) => {
     console.log(`[AvailableSlots] Found ${slots?.length || 0} available slots`);
 
     // Format time slots to 12-hour format
-    const formattedSlots = slots.map(slot => ({
+    const currentDate = getManilaDateStr();
+    const currentTime = getManilaTime24();
+    const filteredSlots = date === currentDate
+      ? slots.filter(slot => slot.time_slot.slice(0, 5) > currentTime)
+      : slots;
+
+    const formattedSlots = filteredSlots.map(slot => ({
       id: slot.id,
       time: convertTo12HourFormat(slot.time_slot),
       time_24: slot.time_slot,

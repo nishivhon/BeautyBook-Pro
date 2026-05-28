@@ -437,7 +437,11 @@ export default async (req, res) => {
     // Update the appropriate table
     const updateQuery = supabase
       .from(isWalkIn ? 'walk_in_logs' : 'available_slots')
-      .update({ status, updated_at: new Date().toISOString() })
+      .update({
+        status,
+        ...(isWalkIn ? {} : (status === 'cancelled' ? { reminder_sent: false, reminder_sent_at: null } : {})),
+        updated_at: new Date().toISOString()
+      })
       .eq('id', isWalkIn ? normalizedWalkInId : id)
       .select();
 
@@ -496,6 +500,7 @@ export default async (req, res) => {
         console.log(`[UpdateStatus] Setting staff ${resolvedStaffName} in_service to 'in-service'`);
       } else if (status === 'done') {
         staffInServiceValue = 'avail';
+        walkInValue = true;
         console.log(`[UpdateStatus] Setting staff ${resolvedStaffName} in_service to 'avail'`);
       }
       

@@ -93,12 +93,14 @@ const PAGE_META = {
 export function CustomerShell({ activeNav, profile, children }) {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 768 : false));
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem("customerSidebarExpanded");
     return saved !== null ? JSON.parse(saved) : true;
   });
 
   const [showAppointment, setShowAppointment] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [appointmentData, setAppointmentData] = useState(null);
   const [appointmentPhase, setAppointmentPhase] = useState(1);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
@@ -112,6 +114,14 @@ export function CustomerShell({ activeNav, profile, children }) {
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => setIsMobileViewport(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const todayDate = useMemo(
@@ -188,6 +198,11 @@ export function CustomerShell({ activeNav, profile, children }) {
   };
 
   const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(false);
     logoutOperator();
     navigate("/");
   };
@@ -232,6 +247,15 @@ export function CustomerShell({ activeNav, profile, children }) {
     const scheduleInfo = appointmentData?.schedule;
     const servicesData = appointmentData?.services; // Now guaranteed to be array
     const stylistName = appointmentData?.stylist?.name || "Any Available Stylist";
+    const bookingDateISO = scheduleInfo?.dateISO || scheduleInfo?.date?.date || scheduleInfo?.date || null;
+    const bookingDateLabel = bookingDateISO
+      ? new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Manila',
+          month: 'long',
+          day: 'numeric',
+        }).format(new Date(`${bookingDateISO}T00:00:00`))
+      : (scheduleInfo?.date?.date || scheduleInfo?.dateLabel || "Not Selected");
+    const bookingTimeLabel = scheduleInfo?.time || scheduleInfo?.timeLabel || "N/A";
 
     let allServices = servicesData || [];
 
@@ -246,9 +270,10 @@ export function CustomerShell({ activeNav, profile, children }) {
     }));
 
     return {
+      rawServices: allServices,
       services: formattedServices,
-      dateTime: `${scheduleInfo?.date?.date || "Not Selected"} | ${scheduleInfo?.time || "N/A"}`,
-      date: scheduleInfo?.dateISO || scheduleInfo?.date?.date || null,
+      dateTime: `${bookingDateLabel} | ${bookingTimeLabel}`,
+      date: bookingDateISO,
       time: scheduleInfo?.time || null,
       name: profile?.name || "",
       email: profile?.emails?.[0] || "",
@@ -270,6 +295,13 @@ export function CustomerShell({ activeNav, profile, children }) {
       console.log("[Phase4] API URL:", apiUrl);
       
       const booking = formatBooking();
+      const serviceEstTime = Array.isArray(booking.rawServices)
+        ? booking.rawServices.reduce((total, service) => {
+            const minutes = Number(service?.est_time ?? service?.estimated_time ?? service?.duration_minutes ?? service?.duration ?? 0);
+            return total + (Number.isFinite(minutes) ? minutes : 0);
+          }, 0)
+        : 0;
+
       const payload = {
         name: booking.name,
         email: booking.email,
@@ -277,7 +309,9 @@ export function CustomerShell({ activeNav, profile, children }) {
         date: booking.date,
         time: booking.time,
         service: booking.services.map((s) => s.title).join(", ") || "General Service",
+        services: booking.rawServices,
         staff_assigned: booking.stylist,
+        service_est_time: serviceEstTime,
       };
 
       const response = await fetch(`${apiUrl}/appointments/create`, {
@@ -362,7 +396,7 @@ export function CustomerShell({ activeNav, profile, children }) {
           subtitle={`BeautyBook Pro · ${todayDate} · ${PAGE_META[activeNav].subtitle}`}
           profile={profile}
           notifications={[]}
-          headerExtraActions={<CustomerHeaderActions externalNotifications={appointments || []} profile={profile} />}
+          headerExtraActions={<CustomerHeaderActions externalNotifications={appointments || []} profile={profile} compact={isMobileViewport} />}
           storageKey="customerSidebarExpanded"
           sidebarExtraAction={(
             <button onClick={handleBookAppointmentClick} className="nav-button cdb-book-nav-btn" title="Book Appointment" type="button">
@@ -370,14 +404,32 @@ export function CustomerShell({ activeNav, profile, children }) {
               {sidebarExpanded && <span>Book Appointment</span>}
             </button>
           )}
-          onLogoutConfirm={handleLogout}
+          onLogoutConfirm={confirmLogout}
           logoutTitle="Log Out?"
           logoutMessage="Are you sure you want to log out of your customer dashboard?"
           logoutConfirmText="Yes, Log Out"
           logoutCancelText="Stay Logged In"
           profileActionLabel="Edit Profile"
           profileActionPath="/customer/profile"
+          enableMobileDrawer
+          showHeaderPageMeta={!isMobileViewport}
         >
+          {isMobileViewport ? (
+            <section className="cdb-page-meta-section">
+              <h1
+                className="cdb-page-meta-title"
+                style={{ fontSize: "1.12rem", lineHeight: 1.16 }}
+              >
+                {PAGE_META[activeNav].title}
+              </h1>
+              <p
+                className="cdb-page-meta-subtitle"
+                style={{ fontSize: "0.82rem", lineHeight: 1.3 }}
+              >
+                BeautyBook Pro · {todayDate} · {PAGE_META[activeNav].subtitle}
+              </p>
+            </section>
+          ) : null}
           {children}
         </DashboardShell>
 
@@ -405,6 +457,7 @@ export function CustomerShell({ activeNav, profile, children }) {
               onBack={() => setAppointmentPhase(1)}
               onContinue={handlePhase2Continue}
               onCancel={handleCancelBooking}
+              onClose={handleCancelBooking}
               initialData={appointmentData || {}}
             />
           ) : appointmentPhase === 3 ? (
@@ -412,7 +465,8 @@ export function CustomerShell({ activeNav, profile, children }) {
               onBack={handleBackPhase3}
               onContinue={handlePhase3Continue}
               onCancel={handleCancelBooking}
-              initialData={{ services: appointmentData?.services || [] }}
+              onClose={handleCancelBooking}
+              initialData={{ services: appointmentData?.services || [], schedule: appointmentData?.schedule || {} }}
               showTime={false}
               showNext={false}
             />
@@ -421,6 +475,7 @@ export function CustomerShell({ activeNav, profile, children }) {
               onBack={() => setAppointmentPhase(3)}
               onConfirm={handlePhase4Confirm}
               onCancel={handleCancelBooking}
+              onClose={handleCancelBooking}
               booking={formatBooking()}
             />
           ) : null}
@@ -438,6 +493,16 @@ export function CustomerShell({ activeNav, profile, children }) {
           handleCancelBooking();
         }}
         onCancel={() => setShowBackdropConfirm(false)}
+      />
+
+      <ConfirmationDialog
+        isOpen={showLogoutConfirm}
+        title="Log Out?"
+        message="Are you sure you want to log out of your account?"
+        confirmText="Yes, Log Out"
+        cancelText="Stay Logged In"
+        onConfirm={() => confirmLogout()}
+        onCancel={() => setShowLogoutConfirm(false)}
       />
     </>
   );

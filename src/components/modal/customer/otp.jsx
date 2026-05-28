@@ -34,10 +34,37 @@ const CloseIcon = () => (
   </svg>
 );
 
+/* ── Spinner icon for loading state ── */
+const SpinnerIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="otp-spinner">
+    <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
+    <path d="M12 2a10 10 0 0110 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+  </svg>
+);
+
 /* ══════════════════════════════════════════
    OTP MODAL COMPONENT
 ══════════════════════════════════════════ */
-export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, otpType = "phone" }) => {
+export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, otpType = "phone", loading = false, error = null, onErrorClear = null }) => {
+    // Escape key closes modal
+    useEffect(() => {
+      const handleEsc = (e) => {
+        if (e.key === "Escape") {
+          onClose?.();
+        }
+      };
+      window.addEventListener("keydown", handleEsc);
+      return () => window.removeEventListener("keydown", handleEsc);
+    }, [onClose]);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   const INITIAL_TIME = 600; // 10 minutes
   const [timeLeft,   setTimeLeft]   = useState(INITIAL_TIME);
   const [otpValue,   setOtpValue]   = useState("");
@@ -51,6 +78,13 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
     const id = setInterval(() => setTimeLeft((t) => t - 1), 1000);
     return () => clearInterval(id);
   }, [timeLeft]);
+
+  /* Reset verification flag when error is cleared to allow retry */
+  useEffect(() => {
+    if (!error) {
+      verifiedRef.current = false;
+    }
+  }, [error]);
 
   /* auto-verify when 6 digits are entered */
   useEffect(() => {
@@ -128,6 +162,10 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
     const raw = e.target.value.replace(/\D/g, "").slice(0, 6);
     const formatted = raw.length > 3 ? `${raw.slice(0, 3)} ${raw.slice(3)}` : raw;
     setOtpValue(formatted);
+    // Clear error when user starts typing a new OTP
+    if (onErrorClear) {
+      onErrorClear();
+    }
   };
 
   /* handle Enter key press to verify OTP */
@@ -141,16 +179,34 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
   const isComplete = otpValue.replace(/\s/g, "").length === 6;
 
   return (
-    /* backdrop */
-    <div 
-      className="otp-overlay"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          setShowConfirmDialog(true);
-        }
-      }}
-      style={{ pointerEvents: "auto" }}
-    >
+    <>
+      {/* backdrop */}
+      <div 
+        className="otp-overlay"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowConfirmDialog(true);
+          }
+        }}
+        style={{
+          pointerEvents: "auto",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 2147483647,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          height: "100%",
+          minHeight: "100vh",
+          background: "rgba(0, 0, 0, 0.82)",
+          backdropFilter: "blur(4px)",
+          padding: "16px",
+        }}
+      >
 
       {/* modal card */}
       <div 
@@ -159,12 +215,25 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
         aria-modal="true" 
         aria-labelledby="otp-title"
         onClick={(e) => e.stopPropagation()}
-        style={{ pointerEvents: "auto" }}
+        style={{
+          pointerEvents: "auto",
+          position: "relative",
+          width: "min(520px, calc(100vw - 32px))",
+          maxWidth: "520px",
+          minWidth: "320px",
+          background: "#131212",
+          color: "#f5f1eb",
+          borderRadius: "18px",
+          border: "1px solid rgba(221, 144, 29, 0.22)",
+          boxShadow: "0 32px 90px rgba(0, 0, 0, 0.72)",
+          overflow: "hidden",
+          margin: "0 auto",
+        }}
       >
 
         {/* ── Header ── */}
-        <header className="otp-header">
-          <h1 id="otp-title" className="otp-header-title">
+        <header className="otp-header" style={{ background: '#1d1815', color: '#ffffff' }}>
+          <h1 id="otp-title" className="otp-header-title" style={{ color: '#ffffff' }}>
             {otpType === "email" ? "Email Verification" : "Phone Verification"}
           </h1>
           <button
@@ -177,7 +246,7 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
         </header>
 
         {/* ── Body ── */}
-        <div className="otp-body">
+        <div className="otp-body" style={{ background: '#131212', color: '#f5f1eb' }}>
 
           {/* Instruction */}
           <p className="otp-instruction">
@@ -210,7 +279,22 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
             </div>
           </div>
 
-          {/* Meta row */}
+          {/* Error message */}
+          {error && (
+            <div style={{
+              padding: "10px 12px",
+              marginBottom: "12px",
+              backgroundColor: "rgba(239, 68, 68, 0.1)",
+              border: "1px solid #ef4444",
+              borderRadius: "6px",
+              color: "#ef4444",
+              fontSize: "0.9rem",
+              textAlign: "center",
+              animation: "fadeIn 0.3s ease-in"
+            }}>
+              {error}
+            </div>
+          )}
           <div className="otp-meta-row">
             {/* timer */}
             <div className="otp-meta-left">
@@ -243,6 +327,7 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
             <button
               className="otp-btn-cancel"
               onClick={handleCancel}
+              disabled={loading}
               aria-label="Cancel verification"
             >
               Cancel
@@ -250,10 +335,25 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
             <button
               className="otp-btn-verify"
               onClick={handleVerify}
-              disabled={!isComplete || isExpired}
+              disabled={!isComplete || isExpired || loading}
               aria-label="Verify OTP code"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                opacity: loading ? 0.7 : 1,
+                cursor: loading ? "not-allowed" : "pointer",
+              }}
             >
-              Verify
+              {loading ? (
+                <>
+                  <SpinnerIcon />
+                  Verifying...
+                </>
+              ) : (
+                "Verify"
+              )}
             </button>
           </div>
 
@@ -277,7 +377,8 @@ export const Otp = ({ onClose, onVerified, selectedPhone, name, selectedEmail, o
           />
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

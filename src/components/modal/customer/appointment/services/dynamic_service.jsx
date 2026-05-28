@@ -24,9 +24,62 @@ const BOOKING_MODAL_THEME_VARS = {
 const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-dynamic-service";
 
 const BOOKING_MODAL_THEME_CSS = `
+@media (max-width: 768px) {
   .booking-modal-theme,
   .booking-modal-theme * {
     color-scheme: dark;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-root {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    width: min(960px, calc(100vw - 32px)) !important;
+    max-width: calc(100vw - 32px) !important;
+    height: 520px !important;
+    max-height: 520px !important;
+    overflow: hidden !important;
+  }
+
+  @media (max-width: 480px) {
+    html[data-theme="light"] .booking-modal-theme .appt-root {
+      width: calc(100vw - 24px) !important;
+      height: 480px !important;
+      max-height: 480px !important;
+    }
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-header,
+  html[data-theme="light"] .booking-modal-theme .appt-footer,
+  html[data-theme="light"] .booking-modal-theme .booking-service-footer {
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-body {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 16px 16px 12px !important;
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .booking-service-footer {
+    padding: 12px 16px !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .booking-service-footer > div {
+    gap: 10px !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-cancel-btn,
+  html[data-theme="light"] .booking-modal-theme .appt-continue-btn {
+    min-height: 44px !important;
   }
 
   .booking-modal-theme .appt-root {
@@ -77,15 +130,47 @@ const BOOKING_MODAL_THEME_CSS = `
   }
 
   .booking-modal-theme .appt-progress {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 14px 40px 12px !important;
+    flex-shrink: 0 !important;
     background: rgba(12, 10, 9, 0.6) !important;
     border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-progress-track {
+    display: flex !important;
+    align-items: center !important;
+    width: fit-content !important;
+  }
+
+  .booking-modal-theme .appt-progress-item {
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .booking-modal-theme .appt-step-circle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.85rem !important;
+    font-weight: 400 !important;
+    flex-shrink: 0 !important;
+    transition: background 0.25s, color 0.25s !important;
   }
 
   .booking-modal-theme .appt-body {
     flex: 1 !important;
     min-height: 0 !important;
     overflow-y: auto !important;
-    padding: 28px 40px 20px !important;
+    padding: 16px 16px 12px !important;
     background: #070605 !important;
     color: #f5f1eb !important;
   }
@@ -124,6 +209,31 @@ const BOOKING_MODAL_THEME_CSS = `
 
   .booking-modal-theme .appt-step-line.done {
     background: #dd901d !important;
+  }
+
+  .booking-modal-theme .appt-step-line {
+    width: 52px !important;
+    height: 2px !important;
+    flex-shrink: 0 !important;
+    transition: background 0.3s !important;
+  }
+
+  .booking-modal-theme .appt-progress-labels {
+    display: flex !important;
+    align-items: center !important;
+    width: 360px !important;
+    gap: 0 !important;
+  }
+
+  .booking-modal-theme .appt-step-label {
+    width: 90px !important;
+    padding: 0 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.72rem !important;
+    font-weight: 300 !important;
+    text-align: center !important;
+    flex-shrink: 0 !important;
+    transition: color 0.25s !important;
   }
 
   .booking-modal-theme .svc-list-row {
@@ -194,6 +304,123 @@ const BOOKING_MODAL_THEME_CSS = `
     scrollbar-width: thin;
     scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
   }
+
+}
+
+@media (max-width: 768px) {
+  .booking-modal-theme,
+  .booking-modal-theme * {
+    color-scheme: dark;
+  }
+
+  .booking-modal-theme .appt-root {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    width: min(960px, calc(100vw - 32px)) !important;
+    max-width: calc(100vw - 32px) !important;
+    height: 520px !important;
+    max-height: 520px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  @media (max-width: 480px) {
+    .booking-modal-theme .appt-root {
+      width: calc(100vw - 24px) !important;
+      height: 480px !important;
+      max-height: 480px !important;
+    }
+  }
+
+  .booking-modal-theme .appt-header,
+  .booking-modal-theme .appt-footer,
+  .booking-modal-theme .booking-service-footer {
+    background: #070605 !important;
+  }
+
+  .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 16px 16px 12px !important;
+    background: #070605 !important;
+  }
+
+  .booking-modal-theme .booking-service-footer {
+    padding: 12px 16px !important;
+  }
+
+  .booking-modal-theme .booking-service-footer > div {
+    gap: 10px !important;
+  }
+
+  .booking-modal-theme .appt-cancel-btn,
+  .booking-modal-theme .appt-continue-btn {
+    min-height: 44px !important;
+  }
+
+  .booking-modal-theme .appt-footer,
+  .booking-modal-theme .booking-service-footer {
+    flex-shrink: 0 !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .booking-modal-theme .appt-root {
+    width: 900px !important;
+    height: 650px !important;
+    max-width: 90vw !important;
+    max-height: 85vh !important;
+    overflow: hidden !important;
+  }
+
+  .booking-modal-theme .appt-body {
+    overflow-y: auto !important;
+  }
+
+  .booking-modal-theme .appt-footer,
+  .booking-modal-theme .booking-service-footer {
+    flex-shrink: 0 !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar,
+  .booking-modal-theme .svc-list::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-track,
+  .booking-modal-theme .svc-list::-webkit-scrollbar-track {
+    background: rgba(19, 19, 19, 0.4) !important;
+    border-radius: 10px !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb,
+  .booking-modal-theme .svc-list::-webkit-scrollbar-thumb {
+    background: rgba(221, 144, 29, 0.9) !important;
+    border-radius: 10px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  .booking-modal-theme .appt-body::-webkit-scrollbar-thumb:hover,
+  .booking-modal-theme .svc-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(221, 144, 29, 1) !important;
+  }
+
+  .booking-modal-theme .appt-body,
+  .booking-modal-theme .svc-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(221, 144, 29, 0.9) rgba(19, 19, 19, 0.4);
+  }
+}
 `;
 
 /* Back arrow */
@@ -203,25 +430,26 @@ const BackArrowIcon = () => (
   </svg>
 );
 
+/* ── Step labels for progress bar ── */
 const STEPS = [
   { number: 1, label: "Schedule" },
-  { number: 2, label: "Service"  },
-  { number: 3, label: "Stylist"  },
-  { number: 4, label: "Confirm"  },
+  { number: 2, label: "Service" },
+  { number: 3, label: "Stylist" },
+  { number: 4, label: "Confirm" },
 ];
 
-// Format service data for display
+// Format service data for display and selection tracking
 const formatService = (service) => ({
   id: service.id,
   title: service.service_name,
-  desc: service.description,
-  price: parseFloat(service.price), // Keep as number for API
-  est_time: parseInt(service.est_time), // Keep as number for API
-  displayPrice: `₱${parseFloat(service.price).toFixed(2)}`, // For display only
-  displayTime: `${service.est_time} min`, // For display only
+  desc: service.description ?? service.service_desc ?? "",
+  price: `₱${parseFloat(service.price).toFixed(2)}`,
+  estTime: `${service.est_time} min`,
+  est_time: parseInt(service.est_time, 10),
+  displayPrice: `₱${parseFloat(service.price).toFixed(2)}`,
+  displayTime: `${service.est_time} min`,
   category: service.category,
 });
-
 /* ── Header — shows the service category name ── */
 const ServiceHeader = ({ title, onBack, isSaving = false }) => (
   <header className="appt-header">
@@ -439,7 +667,7 @@ export const DynamicServiceModal = ({
 
   const modalContent = (
     <div
-      className={`appt-backdrop ${BOOKING_MODAL_THEME_CLASS}`}
+      className={`appt-backdrop ${BOOKING_MODAL_THEME_CLASS} booking-service-modal`}
       data-theme="dark"
       onClick={handleBackgroundClick}
       style={{
@@ -452,14 +680,14 @@ export const DynamicServiceModal = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 10000010,
+        zIndex: 1000,
         backgroundColor: "rgba(0,0,0,0.5)",
         backdropFilter: "blur(2px)",
         pointerEvents: 'auto'
       }}
     >
       <div
-        className="appt-root"
+        className="appt-root booking-service-modal"
         onClick={(e) => e.stopPropagation()}
         style={{
           ...BOOKING_MODAL_THEME_VARS,
@@ -551,6 +779,15 @@ export const DynamicServiceModal = ({
       </div>
     </div>
   );
+
+  // Escape key should trigger exit request
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') handleExitRequest();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <>

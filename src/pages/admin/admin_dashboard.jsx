@@ -4,19 +4,34 @@ import { logoutOperator } from "../../services/operatorAuth";
 import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { ToastViewport, useToast } from "../../components/toast";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 
 // ═══════════════════════════════════════════════════════════════════
-// DARK MODE HELPER
+// THEME HOOK (reactive to theme changes)
 // ═══════════════════════════════════════════════════════════════════
-const isDarkMode = () => {
-  if (typeof document === 'undefined') return true;
-  const theme = document.documentElement.getAttribute('data-theme');
-  return theme !== 'light';
-};
+import { useSyncExternalStore } from "react";
 
-const getThemeStyles = (darkStyles, lightStyles) => {
-  return isDarkMode() ? darkStyles : lightStyles;
+function getCurrentTheme() {
+  if (typeof document === 'undefined') return 'dark';
+  return document.documentElement.getAttribute('data-theme') || 'dark';
+}
+
+function subscribeTheme(callback) {
+  // Listen for attribute changes on <html>
+  const observer = new MutationObserver(() => callback());
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  return () => observer.disconnect();
+}
+
+function useTheme() {
+  return useSyncExternalStore(subscribeTheme, getCurrentTheme, getCurrentTheme);
+}
+
+const isDarkMode = (theme) => theme !== 'light';
+
+const getThemeStyles = (theme, darkStyles, lightStyles) => {
+  return isDarkMode(theme) ? darkStyles : lightStyles;
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -229,6 +244,13 @@ const SUMMARY = [
   { Icon: CancelledIcon,   color: "#ef4444", label: "Cancelled",   value: 0  },
 ];
 
+const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Manila',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date());
+
 // ═══════════════════════════════════════════════════════════════════
 // SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
@@ -345,14 +367,60 @@ const PageMetrics = ({ stats }) => (
 );
 
 const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
+  const { showToast } = useToast();
+  const theme = useTheme();
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
   const [walkInAppointments, setWalkInAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [completeConfirmId, setCompleteConfirmId] = useState(null);
+  const [completeConfirmData, setCompleteConfirmData] = useState(null);
 
-  // Fetch appointments data on component mount
+  const requestCompleteService = (itemId, customerName, service, staff) => {
+    setCompleteConfirmId(itemId);
+    setCompleteConfirmData({ name: customerName, service, staff });
+  };
+
+  const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
+  const normalizeQueueItemTime = (appointment) => appointment?.time || appointment?.time_slot || '';
+
+  const formatTimeToAmPm = (timeValue) => {
+    if (!timeValue) return 'N/A';
+
+    const timeString = String(timeValue).trim();
+    const timePart = timeString.includes('T')
+      ? timeString.split('T')[1]?.split('.')[0]
+      : timeString;
+
+    const [hours = '0', minutes = '00'] = timePart.split(':');
+    const hourNumber = Number.parseInt(hours, 10);
+
+    if (Number.isNaN(hourNumber)) return 'N/A';
+
+    const period = hourNumber >= 12 ? 'PM' : 'AM';
+    const hour12 = String(hourNumber % 12 || 12).padStart(2, '0');
+
+    return `${hour12}:${minutes.padStart(2, '0')} ${period}`;
+  };
+
+  const getQueueItemId = (itemId) => String(itemId || '').replace(/^walkin-/, '');
+
+  // Fetch appointments data on component mount and auto-refresh
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -360,7 +428,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         setError(null);
 
         // Get today's date
-        const today = new Date().toISOString().split('T')[0];
+        const today = getManilaDateString();
         console.log('[LiveQueue] Fetching for date:', today);
 
         // Fetch current appointments
@@ -369,7 +437,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
           throw new Error(`Current appointments fetch failed: ${currentRes.status}`);
         }
         const currentData = await currentRes.json();
-        
+
         // Fetch pending appointments
         const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
         if (!pendingRes.ok) {
@@ -381,11 +449,11 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         console.log('[LiveQueue] Fetching walk-ins from:', `/api/appointments/walk-in-logs?date=${today}`);
         const walkInRes = await fetch(`/api/appointments/walk-in-logs?date=${today}`);
         console.log('[LiveQueue] Walk-in response status:', walkInRes.status);
-        
+
         if (!walkInRes.ok) {
           console.error('[LiveQueue] Walk-in API error:', walkInRes.status, walkInRes.statusText);
         }
-        
+
         const walkInData = await walkInRes.json();
         console.log('[LiveQueue] Walk-in data received:', Array.isArray(walkInData) ? walkInData.length : 'not array', walkInData);
 
@@ -411,20 +479,83 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     };
 
     fetchAppointments();
-    
-    return () => {};
+
+    const handleWalkInCreated = (event) => {
+      if (event?.detail?.id) {
+        fetchAppointments();
+      }
+    };
+
+    const handleAppointmentsUpdated = () => {
+      fetchAppointments();
+    };
+
+    const handleQueueStatusChanged = (event) => {
+      const detail = event?.detail || {};
+      const normalizedId = String(detail.id || '').replace(/^walkin-/, '');
+      if (!normalizedId || !detail.status) return;
+
+      if (detail.status === 'current') {
+        if (detail.isWalkIn) {
+          setWalkInAppointments((prev) => prev.map((walkIn) => (
+            String(walkIn.id) === normalizedId ? { ...walkIn, status: 'current' } : walkIn
+          )));
+          return;
+        }
+
+        setPendingAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+        setCurrentAppointments((prev) => {
+          if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
+          return [
+            ...prev,
+            {
+              id: normalizedId,
+              name: detail.name || 'Customer',
+              staff: detail.staff || 'Any available',
+              service: detail.service || 'Service',
+              time: detail.time || '',
+              date: detail.date || today,
+              status: 'current',
+            },
+          ];
+        });
+        return;
+      }
+
+      if (detail.status === 'done') {
+        if (detail.isWalkIn) {
+          setWalkInAppointments((prev) => prev.filter((walkIn) => String(walkIn.id) !== normalizedId));
+        } else {
+          setCurrentAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+          // Do not manage doneAppointments here; parent component handles done lists.
+        }
+      }
+    };
+
+    window.addEventListener('admin:walkin-created', handleWalkInCreated);
+    window.addEventListener('appointmentsUpdated', handleAppointmentsUpdated);
+    window.addEventListener('live-queue:status-changed', handleQueueStatusChanged);
+    return () => {
+      window.removeEventListener('admin:walkin-created', handleWalkInCreated);
+      window.removeEventListener('appointmentsUpdated', handleAppointmentsUpdated);
+      window.removeEventListener('live-queue:status-changed', handleQueueStatusChanged);
+    };
+
   }, []);
 
   const handleCompleteService = async (itemId, customerName, service) => {
     try {
       console.log(`Service completed for ${customerName}: ${service}`);
       console.log(`Updating appointment ${itemId} status to 'done'`);
+
+      const normalizedId = getQueueItemId(itemId);
+      const wasWalkIn = String(itemId || '').startsWith('walkin-');
       
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: itemId,
+          id: normalizedId,
           status: 'done'
         })
       });
@@ -437,27 +568,40 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
       const result = await response.json();
       console.log(`Service completion result:`, result);
       
-      // Remove from current appointments silently
-      setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
+      // Remove the completed row from the live queue immediately
+      if (wasWalkIn) {
+        setWalkInAppointments(prev => prev.filter((apt) => String(apt.id) !== normalizedId));
+      } else {
+        setCurrentAppointments(prev => prev.filter((apt) => String(apt.id) !== normalizedId));
+      }
+
+      window.dispatchEvent(new CustomEvent('live-queue:status-changed', {
+        detail: {
+          id: normalizedId,
+          status: 'done',
+          isWalkIn: wasWalkIn,
+          name: customerName,
+          service,
+        },
+      }));
       
-      alert(`✓ Service marked as done!`);
+      showToast({
+        message: '✓ Service marked as done!',
+        type: 'success',
+        duration: 2000
+      });
     } catch (error) {
       console.error(`Error completing service:`, error);
-      alert('Failed to complete service: ' + error.message);
+      showToast({
+        message: 'Failed to complete service: ' + error.message,
+        type: 'error',
+        duration: 3000
+      });
     }
   };
 
   // Transform appointments to queue item format
   const formatQueueItems = (appointments, type) => {
-    const formatTimeToAmPm = (time24) => {
-      if (!time24) return '';
-      const [hours, minutes] = time24.split(':');
-      const hour = parseInt(hours, 10);
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const hour12 = hour % 12 || 12;
-      return `${hour12}:${minutes}${ampm}`;
-    };
-
     return appointments.map((apt, index) => {
       // Extract service name - should come from API now
       const serviceName = apt.service || 'Service';
@@ -474,7 +618,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         details: {
           serviceSelected: serviceName,
           currentService: type === 'active' ? 'In Progress' : 'Pending',
-          startTime: apt.time,
+          startTime: formatTimeToAmPm(apt.time),
           estimatedTime: '45 mins'
         }
       };
@@ -506,7 +650,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         details: {
           serviceSelected: serviceNames,
           currentService: isCurrentType ? 'In Progress' : 'Pending',
-          startTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          startTime: formatTimeToAmPm(walkin.time || walkin.time_slot || walkin.start_time || new Date().toISOString()),
           estimatedTime: '45 mins'
         },
         isWalkIn: true
@@ -528,7 +672,6 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const allCurrentItems = [...currentItems, ...currentWalkInItems];
   
   // Filter pending items to only show today's appointments with actual bookings (not empty slots)
-  const today = new Date().toISOString().split('T')[0];
   const todayPendingAppointments = pendingAppointments.filter(apt => 
     apt.date === today && apt.name && apt.name !== 'Unknown'
   );
@@ -539,7 +682,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   console.log('[LiveQueue] All up next items (appointments + walk-ins):', allUpNextItems.length);
   console.log('[LiveQueue] All current items (appointments + current walk-ins):', allCurrentItems.length);
 
-  // Create queue sections - only include sections with items
+  // Create queue sections - always include both Current and Up Next
   const queueSections = [
     {
       label: "Current",
@@ -549,7 +692,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
       label: "Up Next",
       items: allUpNextItems
     }
-  ].filter(section => section.items.length > 0); // Only show sections with items
+  ];
 
   const QueueItem = ({ id, type, number, name, staff, service, statusTop, statusSub, details, onCompleteService, showProceedButton = false, onProceed, isProceedEnabled = true, onProceedClick, actualId, isWalkIn }) => {
     const isActive = type === "active";
@@ -611,22 +754,31 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         </div>
 
         {isItemExpanded && (
-          <div style={getThemeStyles(
-            {
-              padding: "12px 16px",
-              backgroundColor: "rgba(20, 17, 15, 0.4)",
-              borderLeft: "3px solid rgba(221, 144, 29, 0.3)",
-              marginBottom: "8px",
-              borderRadius: "0 8px 8px 0"
-            },
-            {
-              padding: "12px 16px",
-              backgroundColor: "rgba(250, 190, 206, 0.3)",
-              borderLeft: "3px solid rgba(213, 210, 211, 0.3)",
-              marginBottom: "8px",
-              borderRadius: "0 8px 8px 0"
-            }
-          )}>
+          <div
+            style={getThemeStyles(
+              theme,
+              {
+                backgroundColor: "rgba(20, 17, 15, 0.5)",
+                borderLeft: "3px solid rgba(221, 144, 29, 0.35)",
+                padding: "16px",
+                marginTop: "8px",
+                borderRadius: "6px",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "16px 24px"
+              },
+              {
+                backgroundColor: "rgba(230, 100, 140, 0.35)",
+                borderLeft: "3px solid rgba(213, 210, 211, 0.35)",
+                padding: "16px",
+                marginTop: "8px",
+                borderRadius: "6px",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "16px 24px"
+              }
+            )}
+          >
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div>
                 <span className="dash-detail-label">Service Selected</span>
@@ -647,57 +799,78 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
                 <span className="dash-detail-label">Estimated Time</span>
                 <span className="dash-detail-value">{details.estimatedTime}</span>
               </div>
+            </div>
 
-              {isActive && (
+            {isActive && (
+              <div style={{ gridColumn: '1 / -1' }}>
                 <button
                   onClick={handleCompleteService}
                   className="dash-complete-btn"
+                  style={{ width: '100%' }}
                   onMouseOver={(e) => e.target.style.backgroundColor = "#16a34a"}
                   onMouseOut={(e) => e.target.style.backgroundColor = "#22c55e"}
                 >
                   <CheckCircleIcon size={16} color="#fff" />
                   Complete Service
                 </button>
-              )}
+              </div>
+            )}
 
-              {showProceedButton && !isActive && (
-                <button
-                  onClick={handleProceed}
-                  disabled={!isProceedEnabled}
-                  style={{
-                    width: "100%",
-                    padding: "10px 14px",
-                    background: isProceedEnabled ? "#dd901d" : "#ccc",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "0.9rem",
-                    fontWeight: "600",
-                    cursor: isProceedEnabled ? "pointer" : "not-allowed",
-                    fontFamily: "Inter, sans-serif",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    transition: "all 0.2s ease",
-                    opacity: isProceedEnabled ? 1 : 0.6,
-                  }}
-                  onMouseOver={(e) => {
-                    if (isProceedEnabled) {
-                      e.target.style.backgroundColor = "#c47a14";
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (isProceedEnabled) {
-                      e.target.style.backgroundColor = "#dd901d";
-                    }
-                  }}
-                >
-                  <ProceedIcon size={14} color="#fff" />
-                  Proceed
-                </button>
-              )}
-            </div>
+            {showProceedButton && !isActive && (
+              <div style={{ gridColumn: '1 / -1' }}>
+                {isDarkMode(theme) ? (
+                  <button
+                    onClick={handleProceed}
+                    disabled={!isProceedEnabled}
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      background: isProceedEnabled ? "#dd901d" : "#ccc",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "0.9rem",
+                      fontWeight: "600",
+                      cursor: isProceedEnabled ? "pointer" : "not-allowed",
+                      fontFamily: "Inter, sans-serif",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      transition: "all 0.2s ease",
+                      opacity: isProceedEnabled ? 1 : 0.6,
+                    }}
+                    onMouseOver={e => {
+                      if (isProceedEnabled) e.target.style.backgroundColor = "#c47a14";
+                    }}
+                    onMouseOut={e => {
+                      if (isProceedEnabled) e.target.style.backgroundColor = "#dd901d";
+                    }}
+                  >
+                    <ProceedIcon size={14} color="#fff" />
+                    Proceed
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleProceed}
+                    disabled={!isProceedEnabled}
+                    className="dash-complete-btn"
+                    style={{
+                      width: "100%",
+                      opacity: isProceedEnabled ? 1 : 0.6,
+                      cursor: isProceedEnabled ? 'pointer' : 'not-allowed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <ProceedIcon size={14} color="#fff" />
+                    Proceed
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </>
@@ -705,7 +878,8 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   };
 
   return (
-    <div className="live-queue-panel">
+    <>
+      <div className="live-queue-panel">
       {/* Header */}
       <div className="dash-panel-header">
         <div className="dash-panel-title-row">
@@ -794,7 +968,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
                         <QueueItem 
                           key={ii} 
                           {...item} 
-                          onCompleteService={handleCompleteService}
+                          onCompleteService={requestCompleteService}
                           showProceedButton={isUpNext}
                           isProceedEnabled={ii < 3}
                           onProceedClick={onProceedClick}
@@ -809,6 +983,29 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         </div>
       )}
     </div>
+
+    {completeConfirmId && (
+      <ConfirmationDialog
+        isOpen={true}
+        title="Complete Service?"
+        message={`Are you sure you want to mark ${completeConfirmData?.name}'s service as complete?`}
+        confirmText="Yes, Complete"
+        cancelText="Cancel"
+        onConfirm={async () => {
+          try {
+            await handleCompleteService(completeConfirmId, completeConfirmData?.name, completeConfirmData?.service);
+          } finally {
+            setCompleteConfirmId(null);
+            setCompleteConfirmData(null);
+          }
+        }}
+        onCancel={() => {
+          setCompleteConfirmId(null);
+          setCompleteConfirmData(null);
+        }}
+      />
+    )}
+    </>
   );
 };
 
@@ -970,7 +1167,7 @@ const SummaryPanel = () => {
           fetch('/api/appointments/read/by-status?status=done'),
           fetch('/api/appointments/read/by-status?status=current'),
           fetch('/api/appointments/read/by-status?status=pending'),
-          fetch('/api/appointments/read/by-status?status=cancelled')
+          fetch(`/api/appointments/read/daily-cancellations?date=${getManilaDateString()}`)
         ]);
 
         const completedData = resCompleted.ok ? await resCompleted.json() : {};
@@ -982,7 +1179,7 @@ const SummaryPanel = () => {
         const completedCount = completedData.count || (Array.isArray(completedData.appointments) ? completedData.appointments.length : 0);
         const inProgressCount = inProgressData.count || (Array.isArray(inProgressData.appointments) ? inProgressData.appointments.length : 0);
         const pendingCount = pendingData.count || (Array.isArray(pendingData.appointments) ? pendingData.appointments.length : 0);
-        const cancelledCount = cancelledData.count || (Array.isArray(cancelledData.appointments) ? cancelledData.appointments.length : 0);
+        const cancelledCount = cancelledData.totalCancellations || cancelledData.count || 0;
 
         setSummary([
           { Icon: CheckCircleIcon, color: "#22c55e", label: "Completed",   value: completedCount },
@@ -1033,28 +1230,32 @@ const AnalyticsPanel = () => (
   </div>
 );
 
+
 const CouponsPanel = () => {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState('active');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const fetchAvailableCoupons = async () => {
+    const fetchAllCoupons = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/coupons/available');
+        const response = await fetch('/api/coupons/read?includeDeleted=true');
         if (!response.ok) throw new Error('Failed to fetch coupons');
         const result = await response.json();
         setCoupons(result.data || []);
       } catch (err) {
-        console.error('Error loading available coupons:', err);
+        console.error('Error loading coupons:', err);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchAvailableCoupons();
+    fetchAllCoupons();
   }, []);
 
+  // Helper: format discount
   const formatDiscount = (coupon) => {
     if (coupon.value_type === 'percentage') {
       return `${coupon.value}%`;
@@ -1063,90 +1264,225 @@ const CouponsPanel = () => {
     }
   };
 
-  const CouponIcon = ({ size = 20, color = "#dd901d" }) => (
+  // Helper: get coupon status
+  const getCouponStatus = (coupon) => {
+    const now = new Date();
+    const start = coupon.start_date ? new Date(coupon.start_date) : null;
+    const endDateValue = coupon.end_date || coupon.expiration_date;
+    const end = endDateValue ? new Date(endDateValue) : null;
+    if (coupon.is_deleted) return 'deleted';
+    if (end && now > end) return 'expired';
+    if (start && now < start) return 'upcoming';
+    if (coupon.status === 'inactive') return 'inactive';
+    return 'active';
+  };
+
+  // Helper: badge color
+  const statusBadge = (status) => {
+    switch (status) {
+      case 'active': return 'bg-green-500 text-white';
+      case 'expired': return 'bg-gray-400 text-white';
+      case 'upcoming': return 'bg-amber-400 text-white';
+      case 'inactive': return 'bg-red-400 text-white';
+      default: return 'bg-gray-300 text-black';
+    }
+  };
+
+
+  // Dropdown options (match coupon statuses)
+  const filterOptions = [
+    { key: 'active', label: 'Active Only' },
+    { key: 'inactive', label: 'Inactive Only' },
+    { key: 'expired', label: 'Expired Only' },
+    { key: 'upcoming', label: 'Upcoming Only' },
+    { key: 'deleted', label: 'Deleted Only' },
+  ];
+
+  // Filter and sort coupons
+  const filteredCoupons = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    let filtered = coupons.map(c => ({ ...c, _status: getCouponStatus(c) }));
+
+    if (normalizedQuery) {
+      filtered = filtered.filter((coupon) => {
+        const searchableText = [
+          coupon.code,
+          coupon.description,
+          coupon.value_type,
+          coupon.start_date,
+          coupon.end_date,
+          coupon.expiration_date,
+          coupon.status,
+          coupon._status,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return searchableText.includes(normalizedQuery);
+      });
+    }
+
+    if (selectedFilter) filtered = filtered.filter(c => c._status === selectedFilter);
+    filtered.sort((a, b) => {
+      const order = { upcoming: 0, active: 1, inactive: 2, expired: 3, deleted: 4 };
+      if (order[a._status] !== order[b._status]) return order[a._status] - order[b._status];
+      const aExp = (a.end_date || a.expiration_date) ? new Date(a.end_date || a.expiration_date) : new Date(0);
+      const bExp = (b.end_date || b.expiration_date) ? new Date(b.end_date || b.expiration_date) : new Date(0);
+      return bExp - aExp;
+    });
+    return filtered;
+  }, [coupons, searchQuery, selectedFilter]);
+
+  const handleFilterSelect = (key) => {
+    setSelectedFilter(key);
+    setFilterOpen(false);
+  };
+
+  // Filter icon (from staff status page)
+  const FilterIcon = ({ size = 16, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="5" width="9" height="14" rx="2" stroke={color} strokeWidth="1.8" />
-      <rect x="12" y="5" width="9" height="14" rx="2" stroke={color} strokeWidth="1.8" />
-      <line x1="12" y1="5" x2="12" y2="19" stroke={color} strokeWidth="1.8" strokeDasharray="2,2" />
-      <circle cx="7.5" cy="9" r="1.5" fill={color} />
-      <circle cx="16.5" cy="15" r="1.5" fill={color} />
+      <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 
+  // Styling helpers
+  const theme = useTheme();
+  const textColor = isDarkMode(theme) ? '#f5f1eb' : '#0c0a09';
+  const labelColor = isDarkMode(theme) ? '#988f81' : '#666';
+  const tertiaryColor = isDarkMode(theme) ? '#666' : '#999';
+
+
+  // (No old dropdown logic; only staff filter logic is used)
+
   return (
-    <div className="dash-sidebar-panel">
-      <div className="dash-sidebar-header">
-        <h3 className="dash-sidebar-title">Available Coupons</h3>
-        {!loading && coupons.length > 0 && (
-          <span style={{ fontSize: '12px', color: '#dd901d', fontWeight: 600 }}>
-            {coupons.length}
-          </span>
-        )}
+    <div className="live-queue-panel">
+      {/* Header */}
+      <div className="dash-panel-header" style={{ position: 'relative' }}>
+        <div className="dash-panel-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <h2 className="dash-panel-title">Coupons List</h2>
+          <div className="dash-panel-buttons" style={{ marginLeft: 'auto', position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              id="admin-coupons-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search coupons"
+              aria-label="Search coupons"
+              style={{
+                width: 220,
+                borderRadius: 10,
+                border: '1px solid rgba(221, 144, 29, 0.22)',
+                background: isDarkMode(theme) ? 'rgba(20, 17, 15, 0.45)' : '#fff',
+                color: textColor,
+                padding: '10px 12px',
+                fontSize: 13,
+                outline: 'none',
+                marginRight: 10,
+              }}
+            />
+            <button
+              className="staff-filter-btn"
+              aria-label="Filter"
+              onClick={() => setFilterOpen(!filterOpen)}
+              style={{ marginLeft: 'auto' }}
+            >
+              <FilterIcon size={15} color="currentColor" />
+            </button>
+            {filterOpen && (
+              <div className="staff-filter-dropdown" style={{ position: 'absolute', top: '110%', right: 0, zIndex: 10, minWidth: 180 }}>
+                {filterOptions.map(opt => (
+                  <button
+                    key={opt.key ?? 'all'}
+                    className={`staff-filter-option${selectedFilter === opt.key ? ' active' : ''}`}
+                    onClick={() => handleFilterSelect(opt.key)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      
+
+      {/* Loading State */}
       {loading ? (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13 }}>
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13, minHeight: 120 }}>
           Loading coupons...
         </div>
-      ) : coupons.length === 0 ? (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13 }}>
-          No available coupons
+      ) : filteredCoupons.length === 0 ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: 13, minHeight: 120 }}>
+          No coupons found
         </div>
       ) : (
-        <div className="dash-coupons-list live-queue-scroll-limited" style={{ maxHeight: "280px", padding: "12px 0", paddingRight: "12px" }}>
-          {coupons.map((coupon) => {
+        <div
+          className="dash-coupons-list live-queue-scroll-limited"
+          style={{
+            maxHeight: "420px",
+            minHeight: "220px",
+            padding: "12px 0",
+            paddingRight: "12px",
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            scrollbarGutter: 'stable',
+          }}
+        >
+          {filteredCoupons.map((coupon) => {
+            const status = coupon._status;
+            const muted = status === 'expired' || status === 'inactive' || status === 'deleted';
             const couponRowStyle = getThemeStyles(
+              theme,
               {
                 padding: '12px',
                 marginBottom: '8px',
-                background: 'rgba(20, 17, 15, 0.5)',
+                background: muted ? 'rgba(20, 17, 15, 0.25)' : 'rgba(20, 17, 15, 0.5)',
                 borderRadius: 6,
-                border: '1px solid rgba(221, 144, 29, 0.2)',
+                border: muted ? '1px solid #444' : '1px solid rgba(221, 144, 29, 0.2)',
                 fontSize: 13,
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start'
+                flexDirection: 'column',
+                gap: '4px',
+                transition: 'background 0.2s, border 0.2s',
               },
               {
                 padding: '12px',
                 marginBottom: '8px',
-                background: '#ffffff',
+                background: muted ? 'rgba(243, 139, 166, 0.15)' : 'rgba(243, 139, 166, 0.5)',
                 borderRadius: 6,
-                border: '1px solid rgba(213, 210, 211, 0.2)',
+                border: muted ? '1px solid #ddd' : '1px solid rgba(255, 255, 255, 0.6)',
                 fontSize: 13,
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start'
+                flexDirection: 'column',
+                gap: '4px',
+                transition: 'background 0.2s, border 0.2s',
               }
             );
-            const textColor = isDarkMode() ? '#f5f1eb' : '#0c0a09';
-            const labelColor = isDarkMode() ? '#988f81' : '#666';
-            const tertiaryColor = isDarkMode() ? '#666' : '#999';
-            const bgBoxColor = isDarkMode() ? 'rgba(221, 144, 29, 0.15)' : 'rgba(221, 144, 29, 0.1)';
-            
             return (
-              <div key={coupon.id} style={couponRowStyle}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, color: textColor, marginBottom: 4 }}>
-                    {formatDiscount(coupon)} OFF
-                  </div>
-                  <div style={{ color: labelColor, fontSize: 12, marginBottom: 2 }}>
-                    Code: <span style={{ fontFamily: 'monospace', fontWeight: 500, color: textColor }}>{coupon.code}</span>
-                  </div>
-                  <div style={{ color: tertiaryColor, fontSize: 11 }}>
-                    Claims: {coupon.number_of_uses}{coupon.max_uses ? ` / ${coupon.max_uses}` : ''}
-                  </div>
+              <div
+                key={coupon.id}
+                style={couponRowStyle}
+                className="group hover:shadow-md"
+              >
+                <div className="flex items-center gap-2 justify-between">
+                  <div className="font-semibold text-base" style={{ color: textColor }}>{coupon.code}</div>
                 </div>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  width: 28,
-                  height: 28,
-                  background: bgBoxColor,
-                  borderRadius: 4
-                }}>
-                  <CouponIcon size={16} color="#dd901d" />
+                <div className="text-sm" style={{ color: labelColor }}>
+                  {coupon.description || 'No description provided'}
+                </div>
+                <div className="flex items-center gap-2 justify-between">
+                  <span style={{ color: labelColor }}>{formatDiscount(coupon)} OFF</span>
+                  {(coupon.end_date || coupon.expiration_date) && (
+                    <span className="text-xs" style={{ color: tertiaryColor }}>
+                      Expires: {new Date(coupon.end_date || coupon.expiration_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 justify-between text-xs" style={{ color: tertiaryColor }}>
+                  <span>Claims: {coupon.number_of_uses}{coupon.max_uses ? ` / ${coupon.max_uses}` : ''}</span>
+                  {coupon.start_date && status === 'upcoming' && (
+                    <span className="italic text-amber-600">Starts: {new Date(coupon.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  )}
                 </div>
               </div>
             );
@@ -1163,6 +1499,7 @@ const CouponsPanel = () => {
 
 export const AdminDashboard = ({ date }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [proceedConfirmId, setProceedConfirmId] = useState(null);
@@ -1170,11 +1507,13 @@ export const AdminDashboard = ({ date }) => {
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
   const [doneAppointments, setDoneAppointments] = useState([]);
+  const [walkInLogs, setWalkInLogs] = useState([]);
+  const [bookingNotifications, setBookingNotifications] = useState([]);
   const [stats, setStats] = useState([
-    { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: "0",      label: "Today's Appointments" },
-    { Icon: QueueIcon,    badge: null,      badgeType: null,    value: "0",       label: "In Queue Now"         },
-    { Icon: RevenueIcon,  badge: "+15%",    badgeType: "green", value: "₱12,450", label: "Revenue Today"        },
-    { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
+    { Icon: CalendarIcon, badge: null, badgeType: null, value: '0', label: "Total Appointments Today" },
+    { Icon: UserGroupIcon, badge: null, badgeType: null, value: '0', label: "Total Walk In" },
+    { Icon: QueueIcon,     badge: null, badgeType: null, value: '0', label: "In Queue" },
+    { Icon: RevenueIcon,   badge: null, badgeType: null, value: '₱0', label: "Total Revenue" },
   ]);
   const [activeNav, setActiveNav] = useState("home");
   const [mounted, setMounted] = useState(false);
@@ -1192,6 +1531,8 @@ export const AdminDashboard = ({ date }) => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
+        const today = getManilaDateString();
+
         // Fetch current appointments
         const currentRes = await fetch('/api/appointments/read/by-status?status=current');
         if (currentRes.ok) {
@@ -1215,6 +1556,14 @@ export const AdminDashboard = ({ date }) => {
           const done = doneData.appointments || [];
           setDoneAppointments(done);
         }
+
+        const walkInRes = await fetch(`/api/appointments/walk-in-logs?date=${today}`);
+        if (walkInRes.ok) {
+          const walkInData = await walkInRes.json();
+          setWalkInLogs(Array.isArray(walkInData) ? walkInData : []);
+        } else {
+          setWalkInLogs([]);
+        }
       } catch (err) {
         console.error('Error fetching appointments:', err);
       }
@@ -1223,14 +1572,96 @@ export const AdminDashboard = ({ date }) => {
     fetchAppointments();
   }, []);
 
+  useEffect(() => {
+    const formatServiceLabel = (services) => {
+      if (!services) return 'a service';
+      if (typeof services === 'string') return services;
+      if (Array.isArray(services)) {
+        const names = services
+          .map((service) => service?.name || service?.title || service?.service || service)
+          .filter(Boolean);
+        return names.length > 0 ? names.join(', ') : 'a service';
+      }
+      if (typeof services === 'object') {
+        return services.name || services.title || services.service || Object.values(services).filter(Boolean).join(', ') || 'a service';
+      }
+      return 'a service';
+    };
+
+    const formatRelativeTime = (value) => {
+      if (!value) return 'Just now';
+      const dateValue = new Date(value);
+      if (Number.isNaN(dateValue.getTime())) return 'Just now';
+
+      const diffMs = Date.now() - dateValue.getTime();
+      const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+      if (diffMinutes < 1) return 'Just now';
+      if (diffMinutes < 60) return `${diffMinutes}m ago`;
+      const diffHours = Math.floor(diffMinutes / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays}d ago`;
+    };
+
+    const fetchBookingNotifications = async () => {
+      try {
+        const response = await fetch('/api/appointments/read/recent-bookings?limit=5');
+        if (!response.ok) {
+          throw new Error('Failed to fetch booking notifications');
+        }
+
+        const result = await response.json();
+        setBookingNotifications(result.notifications || []);
+      } catch (error) {
+        console.error('[AdminDashboard] Error loading booking notifications:', error);
+        setBookingNotifications([]);
+      }
+    };
+
+    fetchBookingNotifications();
+
+    const handleWalkInCreated = (event) => {
+      const detail = event?.detail || {};
+      if (!detail.id) return;
+
+      setWalkInLogs((prev) => {
+        if (prev.some((item) => String(item.id) === String(detail.id))) return prev;
+        return [{ id: detail.id, ...detail }, ...prev];
+      });
+
+      const createdAt = detail.createdAt || new Date().toISOString();
+      const timeAgo = 'Just now';
+
+      const newNotification = {
+        id: detail.id,
+        tone: 'amber',
+        category: 'New booking',
+        title: `${detail.name || 'Customer'} booked ${detail.service || 'a service'}`,
+        description: `${detail.staff || 'Any available stylist'} • Walk-in`,
+        time: timeAgo,
+        unread: true,
+        createdAt,
+      };
+
+      setBookingNotifications((prev) => {
+        const next = [newNotification, ...prev.filter((item) => String(item.id) !== String(detail.id))];
+        return next.slice(0, 5);
+      });
+    };
+
+    window.addEventListener('admin:walkin-created', handleWalkInCreated);
+    return () => window.removeEventListener('admin:walkin-created', handleWalkInCreated);
+  }, []);
+
   // Calculate stats dynamically
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getManilaDateString();
     
     console.log('[AdminDash] Today:', today);
     console.log('[AdminDash] Current appointments:', currentAppointments.map(a => ({ name: a.name, date: a.date })));
     console.log('[AdminDash] Pending appointments:', pendingAppointments.map(a => ({ name: a.name, date: a.date })));
     console.log('[AdminDash] Done appointments:', doneAppointments.map(a => ({ name: a.name, date: a.date })));
+    console.log('[AdminDash] Walk-ins today:', walkInLogs.length);
     
     // Total appointments for today (current + pending + done)
     const todayAppointments = [
@@ -1240,53 +1671,86 @@ export const AdminDashboard = ({ date }) => {
     ];
     
     const totalToday = todayAppointments.length;
-    
-    // Pending/In Queue count for today (only pending status)
-    const inQueueCount = pendingAppointments.filter(apt => apt.date === today).length;
 
-    console.log('[AdminDash] Total today:', totalToday, 'In queue:', inQueueCount);
+    const totalWalkIns = walkInLogs.length;
+
+    const inQueueCount = [
+      ...currentAppointments.filter(apt => apt.date === today),
+      ...pendingAppointments.filter(apt => apt.date === today),
+      ...walkInLogs.filter((walkIn) => {
+        const walkInStatus = String(walkIn.status || '').toLowerCase();
+        if (walkInStatus && !['current', 'pending'].includes(walkInStatus)) return false;
+        const walkInDate = walkIn.date || walkIn.created_at?.split('T')[0] || walkIn.createdAt?.split('T')[0];
+        return walkInDate === today;
+      }),
+    ].length;
+
+    const totalRevenue = doneAppointments
+      .filter(apt => apt.date === today)
+      .reduce((sum, apt) => sum + (Number(apt.price || apt.total_price || 0) || 0), 0);
+
+    console.log('[AdminDash] Total today:', totalToday, 'Walk-ins:', totalWalkIns, 'In queue:', inQueueCount, 'Revenue:', totalRevenue);
 
     setStats([
-      { Icon: CalendarIcon, badge: "+3",      badgeType: "green", value: totalToday.toString(),      label: "Today's Appointments" },
-      { Icon: QueueIcon,    badge: null,      badgeType: null,    value: inQueueCount.toString(),       label: "In Queue Now"         },
-      { Icon: RevenueIcon,  badge: "+15%",    badgeType: "green", value: "₱12,450", label: "Revenue Today"        },
-      { Icon: ClockIcon,    badge: "-5 mins", badgeType: "blue",  value: "18 mins", label: "Avg. Waiting Time"    },
+      { Icon: CalendarIcon, badge: null, badgeType: null, value: totalToday.toString(), label: "Total Appointments Today" },
+      { Icon: UserGroupIcon, badge: null, badgeType: null, value: totalWalkIns.toString(), label: "Total Walk In" },
+      { Icon: QueueIcon, badge: null, badgeType: null, value: inQueueCount.toString(), label: "In Queue" },
+      { Icon: RevenueIcon, badge: null, badgeType: null, value: `₱${Number(totalRevenue).toLocaleString('en-PH')}`, label: "Total Revenue" },
     ]);
-  }, [currentAppointments, pendingAppointments, doneAppointments]);
+  }, [currentAppointments, pendingAppointments, doneAppointments, walkInLogs]);
 
-  const headerNotifications = useMemo(() => {
-    const recentPending = pendingAppointments.slice(0, 2).map((appointment, index) => ({
-      id: `pending-${appointment.id || index}`,
-      tone: "amber",
-      category: "New booking",
-      title: `${appointment.name || "Customer"} booked ${appointment.service || "a service"}`,
-      description: `${appointment.time || "TBA"} • ${appointment.staff || "Any available stylist"}`,
-      time: "Just now",
-      unread: true,
-    }));
+  useEffect(() => {
+    const handleQueueStatusChanged = (event) => {
+      const detail = event?.detail || {};
+      const normalizedId = String(detail.id || '').replace(/^walkin-/, '');
+      if (!normalizedId || !detail.status || detail.isWalkIn) return;
 
-    const recentCurrent = currentAppointments.slice(0, 2).map((appointment, index) => ({
-      id: `current-${appointment.id || index}`,
-      tone: "blue",
-      category: "Live queue",
-      title: `${appointment.name || "Customer"} is now being served`,
-      description: `${appointment.service || "Service"} • ${appointment.staff || "Assigned staff"}`,
-      time: appointment.time || "Today",
-      unread: index === 0,
-    }));
+      const baseDate = detail.date || new Date().toISOString().split('T')[0];
 
-    const recentDone = doneAppointments.slice(0, 1).map((appointment, index) => ({
-      id: `done-${appointment.id || index}`,
-      tone: "green",
-      category: "Completed",
-      title: `${appointment.name || "Customer"} appointment completed`,
-      description: `${appointment.service || "Service"} finished successfully.`,
-      time: "Today",
-      unread: false,
-    }));
+      if (detail.status === 'current') {
+        setPendingAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+        setCurrentAppointments((prev) => {
+          if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
+          return [
+            ...prev,
+            {
+              id: normalizedId,
+              name: detail.name || 'Customer',
+              staff: detail.staff || 'Any available',
+              service: detail.service || 'Service',
+              time: detail.time || '',
+              date: baseDate,
+              status: 'current',
+            },
+          ];
+        });
+      }
 
-    return [...recentPending, ...recentCurrent, ...recentDone].slice(0, 5);
-  }, [currentAppointments, pendingAppointments, doneAppointments]);
+      if (detail.status === 'done') {
+        setCurrentAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+        setDoneAppointments((prev) => {
+          if (prev.some((apt) => String(apt.id) === normalizedId)) return prev;
+          return [
+            ...prev,
+            {
+              id: normalizedId,
+              name: detail.name || 'Customer',
+              staff: detail.staff || 'Any available',
+              service: detail.service || 'Service',
+              time: detail.time || '',
+              date: baseDate,
+              status: 'done',
+            },
+          ];
+        });
+      }
+    };
+
+    window.addEventListener('live-queue:status-changed', handleQueueStatusChanged);
+    return () => window.removeEventListener('live-queue:status-changed', handleQueueStatusChanged);
+  }, []);
+
+  const headerNotifications = bookingNotifications;
 
   const handleLogout = () => {
     setShowLogoutConfirm(true);
@@ -1333,7 +1797,11 @@ export const AdminDashboard = ({ date }) => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('[AdminDashboard] Error response:', errorData);
-        alert(`API Error: ${errorData.error || response.statusText}\n${errorData.details || ''}`);
+        showToast({
+          message: `API Error: ${errorData.error || response.statusText}`,
+          type: 'error',
+          duration: 3000
+        });
         throw new Error(`Failed to move appointment to current: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
@@ -1343,10 +1811,6 @@ export const AdminDashboard = ({ date }) => {
       
       // Update local state instead of reloading page
       if (isWalkIn) {
-        // Move walk-in from pending to current
-        setWalkInAppointments(prev => 
-          prev.map(w => w.id === apiId ? { ...w, status: 'current' } : w)
-        );
       } else {
         // Move appointment from pending to current
         setCurrentAppointments(prev => [
@@ -1356,13 +1820,32 @@ export const AdminDashboard = ({ date }) => {
         setPendingAppointments(prev => prev.filter(apt => apt.id !== apiId));
       }
 
+      window.dispatchEvent(new CustomEvent('live-queue:status-changed', {
+        detail: {
+          id: apiId,
+          status: 'current',
+          isWalkIn,
+          name: proceedConfirmData?.name,
+          staff: proceedConfirmData?.staff,
+          service: proceedConfirmData?.service,
+        },
+      }));
+
       // Close dialog and show success
       setProceedConfirmId(null);
-      alert(`✓ Status updated! History sync: ${result.historyUpdated ? 'YES' : 'NO'}`);
+      showToast({
+        message: `✓ Status updated!`,
+        type: 'success',
+        duration: 2000
+      });
     } catch (error) {
       console.error('[AdminDashboard] Error moving appointment:', error);
       console.error('[AdminDashboard] Full error:', error.toString());
-      alert('Failed to move appointment. Please try again.');
+      showToast({
+        message: 'Failed to move appointment. Please try again.',
+        type: 'error',
+        duration: 3000
+      });
     }
   };
 
@@ -1376,6 +1859,7 @@ export const AdminDashboard = ({ date }) => {
       className="super-admin-container admin-dashboard-page"
       style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
     >
+      <ToastViewport />
       {/* Sidebar */}
       <div
         inert={showWalkInModal ? "" : undefined}

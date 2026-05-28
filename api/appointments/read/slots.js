@@ -1,5 +1,13 @@
 import { getSlotsByStatus } from '../utils/slotManager.js';
 
+const getManilaDateString = () =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+
 export default async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -8,8 +16,8 @@ export default async (req, res) => {
   try {
     console.log('[Slots] Fetching all available slots for today');
     
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
+    // Get today's date in Philippine Time (YYYY-MM-DD)
+    const today = getManilaDateString();
     
     // Fetch all available slots for today (status = 'pending' means not yet served)
     const slots = await getSlotsByStatus('pending', today, today);

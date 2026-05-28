@@ -4,6 +4,7 @@ import { logoutOperator } from "../../services/operatorAuth";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { ToastViewport, useToast } from "../../components/toast";
 
 // ═══════════════════════════════════════════════════════════════════
 // DARK MODE HELPER
@@ -131,6 +132,32 @@ const ProceedIcon = ({ size = 14, color = "#fff" }) => (
   </svg>
 );
 
+const CalendarIcon = ({ size = 20, color = "#dd901d" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect x="3" y="4" width="18" height="18" rx="3" stroke={color} strokeWidth="1.8" />
+    <path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="8" cy="15" r="1" fill={color} />
+    <circle cx="12" cy="15" r="1" fill={color} />
+    <circle cx="16" cy="15" r="1" fill={color} />
+  </svg>
+);
+
+const QueueIcon = ({ size = 20, color = "#dd901d" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <circle cx="9" cy="5" r="2" stroke={color} strokeWidth="1.8" />
+    <circle cx="9" cy="12" r="2" stroke={color} strokeWidth="1.8" />
+    <circle cx="9" cy="19" r="2" stroke={color} strokeWidth="1.8" />
+    <path d="M13 5h8M13 12h8M13 19h8" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
+const RevenueIcon = ({ size = 20, color = "#dd901d" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <line x1="12" y1="1" x2="12" y2="23" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 // ═══════════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════════
@@ -188,11 +215,12 @@ const NAV_ITEMS = [
   { id: "staff-status", label: "Staff Status", icon: UserGroupIcon },
 ];
 
-const STATS = [
-  { Icon: CheckCircleIcon, iconColor: "#22c55e", value: "16", label: "Completed",   labelClass: "live-stat-label-green" },
-  { Icon: InProgressIcon,  iconColor: "#4387ef", value: "3",  label: "In Progress", labelClass: "live-stat-label-blue"  },
-  { Icon: CancelledIcon,   iconColor: "#ef4444", value: "2",  label: "Cancelled",   labelClass: "live-stat-label-red"   },
-];
+const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Manila',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date());
 
 // Queue sections: type = "active" | "waiting" | "cancelled"
 const QUEUE_SECTIONS = [
@@ -354,9 +382,9 @@ const PageTitle = () => {
 };
 
 /* ── Metric cards for hero section ── */
-const PageMetrics = () => (
+const PageMetrics = ({ stats }) => (
   <div className="live-stats-row">
-    {STATS.map(({ Icon, iconColor, value, label, labelClass }, i) => (
+    {stats.map(({ Icon, iconColor, value, label, labelClass }, i) => (
       <div key={i} className="dash-stat-card">
         <div className="dash-stat-top">
           <div className="dash-stat-icon-box">
@@ -373,7 +401,7 @@ const PageMetrics = () => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick }) => {
+const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -386,7 +414,7 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
   const handleCompleteService = () => {
     if (onCompleteService) {
-      onCompleteService(id, name, service);
+      onCompleteService(id, name, service, staff);
     }
   };
 
@@ -434,54 +462,63 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
       {isExpanded && (
         <div style={getThemeStyles(
           {
-            padding: "12px 16px",
-            backgroundColor: "rgba(20, 17, 15, 0.4)",
-            borderLeft: "3px solid rgba(221, 144, 29, 0.3)",
-            marginBottom: "8px",
-            borderRadius: "0 8px 8px 0"
+            backgroundColor: "rgba(20, 17, 15, 0.5)",
+            borderLeft: "3px solid rgba(221, 144, 29, 0.35)",
+            padding: "16px",
+            marginTop: "8px",
+            borderRadius: "6px",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "16px 24px"
           },
           {
-            padding: "12px 16px",
-            backgroundColor: "rgba(250, 190, 206, 0.3)",
-            borderLeft: "3px solid rgba(213, 210, 211, 0.3)",
-            marginBottom: "8px",
-            borderRadius: "0 8px 8px 0"
+            backgroundColor: "rgba(230, 100, 140, 0.35)",
+            borderLeft: "3px solid rgba(213, 210, 211, 0.35)",
+            padding: "16px",
+            marginTop: "8px",
+            borderRadius: "6px",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "16px 24px"
           }
         )}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <div>
-              <span className="dash-detail-label">Service Selected</span>
-              <span className="dash-detail-value">{details.serviceSelected}</span>
-            </div>
+          <div>
+            <p className="dash-detail-label">Service Selected</p>
+            <p className="dash-detail-value">{details.serviceSelected}</p>
+          </div>
 
-            <div>
-              <span className="dash-detail-label">Current Service</span>
-              <span className="dash-detail-value">{details.currentService}</span>
-            </div>
+          <div>
+            <p className="dash-detail-label">Current Service</p>
+            <p className="dash-detail-value">{details.currentService}</p>
+          </div>
 
-            <div>
-              <span className="dash-detail-label">Starting Time</span>
-              <span className="dash-detail-value">{details.startTime}</span>
-            </div>
+          <div>
+            <p className="dash-detail-label">Starting Time</p>
+            <p className="dash-detail-value">{details.startTime}</p>
+          </div>
 
-            <div>
-              <span className="dash-detail-label">Estimated Time</span>
-              <span className="dash-detail-value">{details.estimatedTime}</span>
-            </div>
+          <div>
+            <p className="dash-detail-label">Estimated Time</p>
+            <p className="dash-detail-value">{details.estimatedTime}</p>
+          </div>
 
-            {isActive && (
+          {isActive && (
+            <div style={{ gridColumn: '1 / -1' }}>
               <button
                 onClick={handleCompleteService}
                 className="dash-complete-btn"
+                style={{ width: '100%' }}
                 onMouseOver={(e) => e.target.style.backgroundColor = "#16a34a"}
                 onMouseOut={(e) => e.target.style.backgroundColor = "#22c55e"}
               >
                 <CheckCircleIcon size={16} color="#fff" />
                 Complete Service
               </button>
-            )}
+            </div>
+          )}
 
-            {showProceedButton && !isActive && (
+          {showProceedButton && !isActive && (
+            <div style={{ gridColumn: '1 / -1' }}>
               <button
                 onClick={handleProceed}
                 disabled={!isProceedEnabled}
@@ -517,8 +554,8 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
                 <ProceedIcon size={14} color="#fff" />
                 Proceed
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </>
@@ -529,43 +566,40 @@ const QueueItem = ({ id, type, number, name, service, statusTop, statusSub, deta
 
 /* ── Live Queue panel ── */
 const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAppointments, setPendingAppointments, onOpenWalkInModal, onProceedClick, refreshTrigger = 0 }) => {
+  const { showToast } = useToast();
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [walkInAppointments, setWalkInAppointments] = useState([]);
+  const [completeConfirmId, setCompleteConfirmId] = useState(null);
+  const [completeConfirmData, setCompleteConfirmData] = useState(null);
 
-  // Fetch appointments data on component mount
+  // Fetch appointments data on component mount and when refreshTrigger changes
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Get today's date
-        const today = new Date().toISOString().split('T')[0];
-        console.log('[LiveQueue] Fetching data for date:', today);
+        // Get today's date in Manila timezone
+        const today = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Manila',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(new Date());
 
         // Fetch current appointments
         const currentRes = await fetch('/api/appointments/read/by-status?status=current');
         const currentData = await currentRes.json();
-        
+
         // Fetch pending appointments
         const pendingRes = await fetch('/api/appointments/read/by-status?status=pending');
         const pendingData = await pendingRes.json();
 
         // Fetch walk-in logs for today
-        console.log('[LiveQueue] Fetching walk-ins from:', `/api/appointments/walk-in-logs?date=${today}`);
         const walkInRes = await fetch(`/api/appointments/walk-in-logs?date=${today}`);
-        console.log('[LiveQueue] Walk-in response status:', walkInRes.status);
-        
-        if (!walkInRes.ok) {
-          console.error('[LiveQueue] Walk-in API error:', walkInRes.status, walkInRes.statusText);
-          const errorText = await walkInRes.text();
-          console.error('[LiveQueue] Error details:', errorText);
-        }
-        
         const walkInData = await walkInRes.json();
-        console.log('[LiveQueue] Raw walk-in data:', walkInData);
 
         if (currentData.success) {
           setCurrentAppointments(currentData.appointments || []);
@@ -575,13 +609,10 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
         }
         if (walkInRes.ok && Array.isArray(walkInData)) {
           setWalkInAppointments(walkInData);
-          console.log('[LiveQueue] Fetched walk-ins for today:', walkInData.length, 'items');
         } else {
-          console.log('[LiveQueue] No walk-ins data or not ok response');
           setWalkInAppointments([]);
         }
       } catch (err) {
-        console.error('Error fetching appointments:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -589,8 +620,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
     };
 
     fetchAppointments();
-    
-    return () => {};
+    // No auto-refresh interval. Only refresh on trigger.
   }, [refreshTrigger]);
 
   const handleExpandToggle = (id) => {
@@ -634,11 +664,24 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
       // Remove from current appointments locally and trigger refresh
       setCurrentAppointments(prev => prev.filter(apt => apt.id !== itemId));
       setExpandedItemId(null);
-      alert(`✓ Service completed! Status updated to done.`);
+      showToast({
+        message: '✓ Service completed! Status updated to done.',
+        type: 'success',
+        duration: 2000
+      });
     } catch (error) {
       console.error(`[LiveQueue] Error completing service:`, error);
-      alert('Failed to mark service as complete: ' + error.message);
+      showToast({
+        message: 'Failed to mark service as complete: ' + error.message,
+        type: 'error',
+        duration: 3000
+      });
     }
+  };
+
+  const requestCompleteService = (itemId, customerName, service, staffName = "") => {
+    setCompleteConfirmId(itemId);
+    setCompleteConfirmData({ name: customerName, service, staff: staffName });
   };
 
   // Transform appointments to queue item format
@@ -716,7 +759,8 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   ];
 
   return (
-    <div className="live-queue-panel">
+    <>
+      <div className="live-queue-panel">
       {/* Header */}
       <div className="dash-panel-header">
         <div className="dash-panel-title-row">
@@ -808,7 +852,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
                           {...item}
                           isExpanded={expandedItemId === item.id}
                           onExpandToggle={handleExpandToggle}
-                          onCompleteService={handleCompleteService}
+                          onCompleteService={requestCompleteService}
                           showProceedButton={isUpNext}
                           isProceedEnabled={ii < 3}
                           onProceedClick={(id, name, service) => handleProceedClick(id, name, service, item.staff)}
@@ -822,7 +866,30 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
           )}
         </div>
       )}
-    </div>
+      </div>
+
+      {completeConfirmId && (
+        <ConfirmationDialog
+          isOpen={true}
+          title="Complete Service?"
+          message={`Are you sure you want to mark ${completeConfirmData?.name}'s service as complete?`}
+          confirmText="Yes, Complete"
+          cancelText="Cancel"
+          onConfirm={async () => {
+            try {
+              await handleCompleteService(completeConfirmId, completeConfirmData?.name, completeConfirmData?.service, completeConfirmData?.staff);
+            } finally {
+              setCompleteConfirmId(null);
+              setCompleteConfirmData(null);
+            }
+          }}
+          onCancel={() => {
+            setCompleteConfirmId(null);
+            setCompleteConfirmData(null);
+          }}
+        />
+      )}
+    </>
   );
 };
 
@@ -1048,6 +1115,7 @@ const AnalyticsPanel = () => (
 
 export const AdminDashboardLiveStatus = ({ date }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [proceedConfirmId, setProceedConfirmId] = useState(null);
@@ -1057,6 +1125,8 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   const [scheduleRefreshTrigger, setScheduleRefreshTrigger] = useState(0);
   const [currentAppointments, setCurrentAppointments] = useState([]);
   const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [doneAppointments, setDoneAppointments] = useState([]);
+  const [walkInLogs, setWalkInLogs] = useState([]);
   const [queueRefreshTrigger, setQueueRefreshTrigger] = useState(0);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
@@ -1084,9 +1154,40 @@ export const AdminDashboardLiveStatus = ({ date }) => {
 
   const handleAddWalkIn = (walkInData) => {
     console.log("Walk-in added:", walkInData);
-    // Here you can integrate with your API or state management
-    // For now, just logging the data
+    setQueueRefreshTrigger((prev) => prev + 1);
+    setScheduleRefreshTrigger((prev) => prev + 1);
   };
+
+  useEffect(() => {
+    const handleExternalRefresh = () => {
+      setQueueRefreshTrigger((prev) => prev + 1);
+      setScheduleRefreshTrigger((prev) => prev + 1);
+    };
+
+    const handleWalkInCreated = (event) => {
+      if (event?.detail?.id) {
+        handleExternalRefresh();
+      }
+    };
+
+    const handleAppointmentsUpdated = () => {
+      handleExternalRefresh();
+    };
+
+    const handleQueueStatusChanged = () => {
+      handleExternalRefresh();
+    };
+
+    window.addEventListener('admin:walkin-created', handleWalkInCreated);
+    window.addEventListener('appointmentsUpdated', handleAppointmentsUpdated);
+    window.addEventListener('live-queue:status-changed', handleQueueStatusChanged);
+
+    return () => {
+      window.removeEventListener('admin:walkin-created', handleWalkInCreated);
+      window.removeEventListener('appointmentsUpdated', handleAppointmentsUpdated);
+      window.removeEventListener('live-queue:status-changed', handleQueueStatusChanged);
+    };
+  }, []);
 
   const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
     try {
@@ -1110,14 +1211,22 @@ export const AdminDashboardLiveStatus = ({ date }) => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('[LiveQueue] Error response:', errorData);
-        alert(`API Error: ${errorData.error || response.statusText}\n${errorData.details || ''}`);
+        showToast({
+          message: `API Error: ${errorData.error || response.statusText}`,
+          type: 'error',
+          duration: 3000
+        });
         throw new Error(`Failed to move appointment to current: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
       const result = await response.json();
       console.log(`[LiveQueue] Appointment moved to current:`, result);
       console.log(`[LiveQueue] History synced:`, result.historyUpdated, result.historyUpdateReason);
-      alert(`✓ Status updated! History sync: ${result.historyUpdated ? 'YES' : 'NO'}`);
+      showToast({
+        message: '✓ Status updated!',
+        type: 'success',
+        duration: 2000
+      });
 
       // Refresh the queue panels so they reflect the updated database state
       setQueueRefreshTrigger((prev) => prev + 1);
@@ -1128,7 +1237,11 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     } catch (error) {
       console.error('[LiveQueue] Error moving appointment:', error);
       console.error('[LiveQueue] Full error:', error.toString());
-      alert('Failed to move appointment. Please try again.');
+      showToast({
+        message: 'Failed to move appointment. Please try again.',
+        type: 'error',
+        duration: 3000
+      });
     }
   };
 
@@ -1136,6 +1249,60 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    const fetchMetricsSources = async () => {
+      try {
+        const today = getManilaDateString();
+
+        const [doneRes, walkInRes] = await Promise.all([
+          fetch('/api/appointments/read/by-status?status=done'),
+          fetch(`/api/appointments/walk-in-logs?date=${today}`),
+        ]);
+
+        const doneData = doneRes.ok ? await doneRes.json() : {};
+        const walkInData = walkInRes.ok ? await walkInRes.json() : [];
+
+        setDoneAppointments(doneData.appointments || []);
+        setWalkInLogs(Array.isArray(walkInData) ? walkInData : []);
+      } catch (error) {
+        console.error('[LiveStatus] Error fetching metric sources:', error);
+        setDoneAppointments([]);
+        setWalkInLogs([]);
+      }
+    };
+
+    fetchMetricsSources();
+  }, [queueRefreshTrigger, currentAppointments, pendingAppointments]);
+
+  const metricsStats = useMemo(() => {
+    const today = getManilaDateString();
+
+    const totalAppointmentsToday = [
+      ...currentAppointments.filter((apt) => apt.date === today),
+      ...pendingAppointments.filter((apt) => apt.date === today),
+      ...doneAppointments.filter((apt) => apt.date === today),
+    ].length;
+
+    const totalWalkIn = walkInLogs.length;
+
+    const inQueue = [
+      ...currentAppointments.filter((apt) => apt.date === today),
+      ...pendingAppointments.filter((apt) => apt.date === today),
+      ...walkInLogs.filter((walkIn) => {
+        const walkInStatus = String(walkIn.status || '').toLowerCase();
+        if (walkInStatus && !['current', 'pending'].includes(walkInStatus)) return false;
+        const walkInDate = walkIn.date || walkIn.created_at?.split('T')[0] || walkIn.createdAt?.split('T')[0];
+        return walkInDate === today;
+      }),
+    ].length;
+
+    return [
+      { Icon: CalendarIcon, iconColor: '#dd901d', value: totalAppointmentsToday.toString(), label: 'Total Appointments Today', labelClass: 'dash-stat-label' },
+      { Icon: UserGroupIcon, iconColor: '#dd901d', value: totalWalkIn.toString(), label: 'Total Walk In', labelClass: 'dash-stat-label' },
+      { Icon: QueueIcon, iconColor: '#dd901d', value: inQueue.toString(), label: 'In Queue', labelClass: 'dash-stat-label' },
+    ];
+  }, [currentAppointments, pendingAppointments, doneAppointments, walkInLogs]);
 
   const headerNotifications = useMemo(() => {
     const currentFeed = currentAppointments.slice(0, 2).map((apt, index) => ({
@@ -1166,6 +1333,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
       className="super-admin-container admin-dashboard-page"
       style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
     >
+      <ToastViewport />
       {/* Sidebar */}
       <div
         inert={showWalkInModal ? "" : undefined}
@@ -1206,7 +1374,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
         <main className="dashboard-main">
           {/* Metrics Cards - Hero Section */}
           <div style={{ marginTop: '20px', marginBottom: '20px' }}>
-            <PageMetrics />
+            <PageMetrics stats={metricsStats} />
           </div>
 
         <div className="live-page-grid">

@@ -41,7 +41,8 @@ export default async (req, res) => {
     }
 
     if (!customers || customers.length === 0) {
-      return res.status(401).json({ error: 'Invalid email/phone or password' });
+      // Customer account not found
+      return res.status(404).json({ error: 'Account not found' });
     }
 
     const customer = customers[0];

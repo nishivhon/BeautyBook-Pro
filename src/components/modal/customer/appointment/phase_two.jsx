@@ -27,9 +27,58 @@ const BOOKING_MODAL_THEME_VARS = {
 const BOOKING_MODAL_THEME_STYLE_ID = "booking-modal-theme-phase-two";
 
 const BOOKING_MODAL_THEME_CSS = `
+@media (max-width: 1024px) {
   .booking-modal-theme,
   .booking-modal-theme * {
     color-scheme: dark;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-root {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    width: calc(100vw - 32px) !important;
+    max-width: calc(100vw - 32px) !important;
+    height: 520px !important;
+    max-height: 520px !important;
+    overflow: hidden !important;
+  }
+
+  @media (max-width: 480px) {
+    html[data-theme="light"] .booking-modal-theme .appt-root {
+      width: calc(100vw - 24px) !important;
+      height: 480px !important;
+      max-height: 480px !important;
+    }
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-header,
+  html[data-theme="light"] .booking-modal-theme .appt-footer {
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-progress {
+    background: rgba(12, 10, 9, 0.6) !important;
+    border-bottom: 1px solid rgba(221, 144, 29, 0.12) !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-body {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 12px 12px 10px !important;
+    gap: 12px !important;
+    background: #070605 !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-footer {
+    padding: 10px 12px 12px !important;
+  }
+
+  html[data-theme="light"] .booking-modal-theme .appt-cancel-btn,
+  html[data-theme="light"] .booking-modal-theme .appt-continue-btn {
+    min-height: 40px !important;
   }
 
   .booking-modal-theme .appt-root {
@@ -180,6 +229,8 @@ const BOOKING_MODAL_THEME_CSS = `
   .booking-modal-theme [role="option"]:hover {
     background: rgba(221, 144, 29, 0.12) !important;
   }
+
+}
 `;
 
 /* Hair Services — broom/brush icon */
@@ -373,7 +424,7 @@ const ServiceCard = ({ service, isSelected, onSelect, onOpenServiceModal, select
   </button>
 );
 
-export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showPromoCode = true }) => {
+export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, onClose, initialData, headerTitle = "Book Appointment", stepLabels = STEPS, showPromoCode = true, isWalkIn = false }) => {
   const [selectedServices, setSelectedServices] = useState([]);
   
   // Dynamic modal state
@@ -393,6 +444,19 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [promoCode, setPromoCode] = useState("");
+  const cancelDialogConfig = isWalkIn
+    ? {
+        title: "Cancel Walk-in?",
+        message: "Are you sure you want to cancel? Your walk-in progress will be lost.",
+        confirmText: "Yes, Cancel Walk-in",
+        cancelText: "Keep Going",
+      }
+    : {
+        title: "Cancel Booking?",
+        message: "Are you sure you want to cancel? Your booking progress will be lost.",
+        confirmText: "Yes, Cancel Booking",
+        cancelText: "Keep Booking",
+      };
   const [sortedServices, setSortedServices] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [dynamicCategoryKeywordsMap, setDynamicCategoryKeywordsMap] = useState({});
@@ -598,16 +662,28 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
             {couponsLoading && (
               <div style={{ padding: '10px 12px', color: '#cfcfcf' }}>Loading...</div>
             )}
-            {coupons.map((c) => (
-              <div
-                key={c.id}
-                role="option"
-                onClick={() => handleSelect(getCouponValue(c), c)}
-                style={{ padding: '10px 12px', cursor: 'pointer', color: '#f5f1eb', borderBottom: '1px solid rgba(255,255,255,0.03)' }}
-              >
-                {formatCouponDisplay(c)}
-              </div>
-            ))}
+            {coupons.map((c) => {
+              const isUsed = Boolean(c?.used || c?.customerCoupon?.used);
+              return (
+                <div
+                  key={c.id}
+                  role="option"
+                  onClick={() => { if (!isUsed) handleSelect(getCouponValue(c), c); }}
+                  style={{
+                    padding: '10px 12px',
+                    cursor: isUsed ? 'not-allowed' : 'pointer',
+                    color: isUsed ? '#777' : '#f5f1eb',
+                    borderBottom: '1px solid rgba(255,255,255,0.03)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <span>{formatCouponDisplay(c)}</span>
+                  {isUsed && <span style={{ fontSize: '0.8rem', color: '#cfcfcf' }}>(used)</span>}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -722,11 +798,36 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
   }, [selectedServices]);
 
   const handleExitRequest = () => {
+    if (isWalkIn) {
+      onCancel?.();
+      return;
+    }
+
     setShowBackdropConfirm(true);
   };
 
+  // Show confirmation on Escape key
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        handleExitRequest();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   const handleBack = () => {
     onBack?.();
+  };
+
+  const handleCancelClick = () => {
+    if (isWalkIn) {
+      onCancel?.();
+      return;
+    }
+
+    setShowCancelConfirm(true);
   };
 
   const openServiceModal = (serviceCardId) => {
@@ -817,11 +918,11 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
       <Toast message={toastState.message} type={toastState.type} isVisible={toastState.isVisible} duration={toastState.duration} />
       {createPortal(
         <div 
-          className={`appt-backdrop ${BOOKING_MODAL_THEME_CLASS}`}
+          className={`appt-backdrop ${BOOKING_MODAL_THEME_CLASS} booking-phase-two-modal`}
           data-theme="dark"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              handleBack();
+              handleExitRequest();
             }
           }}
           style={{
@@ -834,7 +935,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 10000010,
+            zIndex: 1000,
             backgroundColor: "rgba(0,0,0,0.5)",
             backdropFilter: "blur(2px)",
             pointerEvents: 'auto'
@@ -906,7 +1007,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
 
           <div style={{ display: "flex", gap: "12px", width: "100%" }}>
             <button
-              onClick={() => setShowCancelConfirm(true)}
+              onClick={handleCancelClick}
               style={{
                 flex: 1,
                 padding: "12px 16px",
@@ -952,25 +1053,25 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, initialDat
       {/* Cancel Confirmation Dialogs */}
       <ConfirmationDialog
         isOpen={showBackdropConfirm}
-        title="Cancel Booking?"
-        message="Are you sure you want to cancel? Your booking progress will be lost."
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
+        title={cancelDialogConfig.title}
+        message={cancelDialogConfig.message}
+        confirmText={cancelDialogConfig.confirmText}
+        cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowBackdropConfirm(false);
-          onCancel?.();
+          onClose?.();
         }}
         onCancel={() => setShowBackdropConfirm(false)}
       />
       <ConfirmationDialog
         isOpen={showCancelConfirm}
-        title="Cancel Booking?"
-        message="Are you sure you want to cancel? Your booking progress will be lost."
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
+        title={cancelDialogConfig.title}
+        message={cancelDialogConfig.message}
+        confirmText={cancelDialogConfig.confirmText}
+        cancelText={cancelDialogConfig.cancelText}
         onConfirm={() => {
           setShowCancelConfirm(false);
-          onCancel?.();
+          onClose?.();
         }}
         onCancel={() => setShowCancelConfirm(false)}
       />

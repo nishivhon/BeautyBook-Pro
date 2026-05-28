@@ -47,114 +47,77 @@ export const ConfirmationDialog = ({
   const dialog = (
     <div
       onClick={(e) => {
-        // clicking the overlay should behave like cancel (keep booking)
         if (e.target === e.currentTarget) {
-          // eslint-disable-next-line no-console
-          console.log('[ConfirmationDialog] overlay clicked - invoking onCancel');
           handleCancel();
         }
       }}
       style={{
-        position: "fixed",
+        position: 'fixed',
         inset: 0,
-        zIndex: 10000020,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backdropFilter: "blur(2px)",
-        backgroundColor: "rgba(0,0,0,0.5)",
+        zIndex: 1001,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backdropFilter: 'blur(2px)',
+        backgroundColor: 'rgba(0,0,0,0.5)',
         pointerEvents: 'auto'
-      }}>
-      <div style={{
-        background: "white",
-        borderRadius: "16px",
-        padding: "32px 24px",
-        maxWidth: "360px",
-        width: "90%",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-        animation: "fade-up 0.3s ease forwards",
-      }}>
-        {/* Title */}
-        <h2 style={{
-          fontSize: "18px",
-          fontWeight: "700",
-          color: "#1a0f00",
-          marginBottom: "12px",
-          textAlign: "center",
-          fontFamily: "Inter, sans-serif",
-        }}>
-          {title}
-        </h2>
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'white',
+          borderRadius: 16,
+          padding: '28px 22px',
+          maxWidth: 420,
+          width: '90%',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          animation: 'fade-up 0.25s ease forwards',
+          color: 'var(--color-black)'
+        }}
+      >
+        <h2 id="confirm-title" style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{title}</h2>
 
-        {/* Message */}
-        <p style={{
-          fontSize: "14px",
-          color: "#665544",
-          marginBottom: "24px",
-          textAlign: "center",
-          lineHeight: "1.5",
-          fontFamily: "Inter, sans-serif",
-        }}>
-          {message}
-        </p>
+        <div style={{ marginTop: 12 }}>
+          <p style={{ margin: 0, color: 'rgba(12,10,9,0.8)', lineHeight: 1.5 }}>{message}</p>
 
-        {/* Buttons */}
-        <div style={{
-          display: "flex",
-          gap: "12px",
-          flexDirection: "column",
-        }}>
-          {/* Keep Booking Button (Primary) */}
-          <button
-            onClick={handleCancel}
-            style={{
-              padding: "12px 16px",
-              background: "#dd901d",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontWeight: "600",
-              cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = "#c17a14";
-              e.target.style.transform = "translateY(-2px)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = "#dd901d";
-              e.target.style.transform = "translateY(0)";
-            }}
-          >
-            {cancelText}
-          </button>
+          <div style={{ display: 'flex', gap: 12, marginTop: 18 }}>
+            <button
+              onClick={handleCancel}
+              aria-label="Cancel action"
+              style={{
+                flex: 1,
+                padding: '10px 14px',
+                background: 'transparent',
+                color: 'var(--color-black)',
+                border: '1.25px solid rgba(12,10,9,0.08)',
+                borderRadius: 10,
+                cursor: 'pointer'
+              }}
+            >
+              {cancelText}
+            </button>
 
-          {/* Cancel Button (Secondary) */}
-          <button
-            onClick={handleConfirm}
-            style={{
-              padding: "12px 16px",
-              background: "transparent",
-              color: "#dd901d",
-              border: "1.5px solid #dd901d",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontWeight: "600",
-              cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = "rgba(221, 144, 29, 0.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = "transparent";
-            }}
-          >
-            {confirmText}
-          </button>
+            <button
+              onClick={handleConfirm}
+              aria-label="Confirm action"
+              style={{
+                flex: 1,
+                padding: '10px 14px',
+                background: 'var(--color-amber)',
+                color: 'var(--color-black)',
+                border: 'none',
+                borderRadius: 10,
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              {confirmText}
+            </button>
+          </div>
         </div>
       </div>
     </div>

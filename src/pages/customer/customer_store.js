@@ -150,6 +150,8 @@ export const useCustomerAppointmentsData = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchAppointments = async () => {
       try {
         setLoading(true);
@@ -160,7 +162,7 @@ export const useCustomerAppointmentsData = () => {
 
         if (!email && !phone) {
           console.log('[useCustomerAppointmentsData] No email or phone available');
-          setAppointments([]);
+          if (mounted) setAppointments([]);
           setLoading(false);
           return;
         }
@@ -180,23 +182,46 @@ export const useCustomerAppointmentsData = () => {
 
         const data = await response.json();
 
-        if (data.success && data.appointments) {
-          console.log('[useCustomerAppointmentsData] Fetched appointments:', data.appointments);
-          setAppointments(data.appointments);
-        } else {
-          setAppointments([]);
+        if (mounted) {
+          if (data.success && data.appointments) {
+            console.log('[useCustomerAppointmentsData] Fetched appointments:', data.appointments);
+            setAppointments(data.appointments);
+          } else {
+            setAppointments([]);
+          }
         }
       } catch (err) {
         console.error('[useCustomerAppointmentsData] Error fetching appointments:', err);
-        setAppointments([]);
+        if (mounted) setAppointments([]);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
-    if (profile?.id) {
-      fetchAppointments();
-    }
+    const triggerFetch = () => {
+      if (profile?.id) fetchAppointments();
+    };
+
+    // Initial fetch
+    triggerFetch();
+
+    // Refetch when the window/tab gains focus or when visibility changes
+    const onFocus = () => triggerFetch();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') triggerFetch();
+    };
+
+    // Listen for custom event dispatched after booking is confirmed
+    window.addEventListener('appointmentsUpdated', triggerFetch);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('appointmentsUpdated', triggerFetch);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [profile?.id, profile?.emails, profile?.phones]);
 
   return [appointments, setAppointments];

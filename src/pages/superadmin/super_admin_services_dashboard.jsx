@@ -49,6 +49,14 @@ const ShieldIcon = ({ color = "currentColor" }) => (
   </svg>
 );
 
+// Tag icon (Heroicons outline style)
+const TagIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.293 10.293l-7.586-7.586A1 1 0 008.586 2H4a2 2 0 00-2 2v4.586a1 1 0 00.293.707l7.586 7.586a2 2 0 002.828 0l4.586-4.586a2 2 0 000-2.828z" stroke={color} strokeWidth="1.5"/>
+    <circle cx="6.5" cy="6.5" r="1.5" fill={color} />
+  </svg>
+);
+
 const GlobeIcon = ({ color = "currentColor" }) => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="9" cy="9" r="7" stroke={color} strokeWidth="1.6"/>
@@ -97,8 +105,9 @@ const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
   { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
   { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
-  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
+  { id: "coupons", label: "Coupons", icon: DatabaseIcon, path: "/superadmin/coupons" },
   { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
+  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
   { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
 ];
 
@@ -111,6 +120,9 @@ export default function SuperAdminServicesDashboard() {
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') !== 'light';
   });
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
@@ -138,6 +150,18 @@ export default function SuperAdminServicesDashboard() {
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const theme = document.documentElement.getAttribute('data-theme');
+      setIsDarkMode(theme !== 'light');
+    };
+
+    const observer = new MutationObserver(handleThemeChange);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    return () => observer.disconnect();
   }, []);
 
   // Fetch services table on mount
@@ -354,7 +378,7 @@ export default function SuperAdminServicesDashboard() {
                   onClick={handleOpenAddServiceModal}
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: '#dd901d',
+                    backgroundColor: isDarkMode ? '#dd901d' : '#e74c3c',
                     color: '#1a1a1a',
                     border: 'none',
                     borderRadius: '6px',
@@ -366,8 +390,8 @@ export default function SuperAdminServicesDashboard() {
                     alignItems: 'center',
                     gap: '6px'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e6a326'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#dd901d'}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#e6a326' : '#c0392b'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#dd901d' : '#e74c3c'}
                 >
                   Add Service
                 </button>

@@ -4,6 +4,7 @@ import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { AddClientModal } from "../../components/modal/superadmin/add_client_modal";
+import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -53,6 +54,14 @@ const DashboardIcon = ({ color = "currentColor" }) => (
   </svg>
 );
 
+// Tag icon (Heroicons outline style)
+const TagIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.293 10.293l-7.586-7.586A1 1 0 008.586 2H4a2 2 0 00-2 2v4.586a1 1 0 00.293.707l7.586 7.586a2 2 0 002.828 0l4.586-4.586a2 2 0 000-2.828z" stroke={color} strokeWidth="1.5"/>
+    <circle cx="6.5" cy="6.5" r="1.5" fill={color} />
+  </svg>
+);
+
 const NavUserIcon = ({ color = "currentColor" }) => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="9" cy="5.5" r="3.5" stroke={color} strokeWidth="1.6"/>
@@ -80,8 +89,11 @@ const ShieldIcon = ({ color = "currentColor" }) => (
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
   { id: "staff-management", label: "Staff Management", icon: NavUserIcon, path: "/superadmin/users" },
-  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
-  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
+  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
+  { id: "coupons", label: "Coupons", icon: DatabaseIcon, path: "/superadmin/coupons" },
+  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
+  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
+  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
 ];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -107,6 +119,12 @@ export default function SuperAdminClientsDashboard() {
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
+  const [selectedClients, setSelectedClients] = useState(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeletingClients, setIsDeletingClients] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') !== 'light';
+  });
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -168,6 +186,18 @@ export default function SuperAdminClientsDashboard() {
     return () => clearTimeout(t);
   }, []);
 
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const theme = document.documentElement.getAttribute('data-theme');
+      setIsDarkMode(theme !== 'light');
+    };
+
+    const observer = new MutationObserver(handleThemeChange);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    return () => observer.disconnect();
+  }, []);
+
   const handleLogout = () => {
     logoutOperator();
     navigate("/operators/login");
@@ -185,6 +215,64 @@ export default function SuperAdminClientsDashboard() {
 
   const handleCloseAddClientModal = () => {
     setIsAddClientModalOpen(false);
+  };
+
+  const handleSelectClient = (clientId) => {
+    setSelectedClients((prev) => {
+      const updated = new Set(prev);
+      if (updated.has(clientId)) {
+        updated.delete(clientId);
+      } else {
+        updated.add(clientId);
+      }
+      return updated;
+    });
+  };
+
+  const handleRemoveClients = async () => {
+    if (selectedClients.size === 0) {
+      displayToast('Please select clients to remove');
+      return;
+    }
+
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmRemoveClients = async () => {
+    if (selectedClients.size === 0) {
+      setShowDeleteConfirm(false);
+      return;
+    }
+
+    try {
+      setIsDeletingClients(true);
+      const clientIds = Array.from(selectedClients);
+      
+      // Delete each selected client
+      for (const clientId of clientIds) {
+        const response = await fetch(`/api/customers/delete?id=${encodeURIComponent(clientId)}`, { method: 'DELETE' });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(body?.error || body?.details || `Failed to delete client ${clientId}`);
+        }
+      }
+
+      // Remove from UI
+      setClientsData((prev) => ({
+        ...prev,
+        rows: prev.rows.filter((client) => !selectedClients.has(client.id)),
+        meta: `${(prev.rows?.length || 0) - selectedClients.size} clients`,
+      }));
+      
+      setSelectedClients(new Set());
+      setShowDeleteConfirm(false);
+      displayToast(`${clientIds.length} client(s) removed successfully`);
+    } catch (error) {
+      console.error('[Clients] Error removing clients:', error);
+      displayToast('Failed to remove clients');
+    } finally {
+      setIsDeletingClients(false);
+    }
   };
 
   const handleAddNewClient = (result) => {
@@ -286,27 +374,29 @@ export default function SuperAdminClientsDashboard() {
                   />
                 </div>
                 
-                {/* Add Button */}
+                {/* Remove Button */}
                 <button
-                  onClick={handleOpenAddClientModal}
+                  onClick={handleRemoveClients}
+                  disabled={selectedClients.size === 0}
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: '#dd901d',
-                    color: '#1a1a1a',
+                    backgroundColor: selectedClients.size === 0 ? '#6B6157' : isDarkMode ? '#dd901d' : '#e74c3c',
+                    color: isDarkMode ? '#1a1a1a' : '#1a1a1a',
                     border: 'none',
                     borderRadius: '6px',
                     fontSize: '13px',
                     fontWeight: '600',
-                    cursor: 'pointer',
+                    cursor: selectedClients.size === 0 ? 'default' : 'pointer',
                     transition: 'all 0.2s',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    opacity: selectedClients.size === 0 ? 0.5 : 1
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e6a326'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#dd901d'}
+                  onMouseOver={(e) => selectedClients.size > 0 && (e.currentTarget.style.backgroundColor = isDarkMode ? '#e6a326' : '#c0392b')}
+                  onMouseOut={(e) => selectedClients.size > 0 && (e.currentTarget.style.backgroundColor = isDarkMode ? '#dd901d' : '#e74c3c')}
                 >
-                  Add Client
+                  Remove ({selectedClients.size})
                 </button>
               </div>
             </div>
@@ -319,6 +409,7 @@ export default function SuperAdminClientsDashboard() {
                 <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
+                      <th style={{ textAlign: 'center', width: '40px', padding: '8px' }}></th>
                       {clientsData.cols.map((col) => (
                         <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
                       ))}
@@ -331,6 +422,22 @@ export default function SuperAdminClientsDashboard() {
                       const endIdx = startIdx + itemsPerPage;
                       return filteredClients.slice(startIdx, endIdx).map((client, idx) => (
                         <tr key={idx} className="db-row">
+                          <td style={{ width: '40px', fontSize: '13px', textAlign: 'center', padding: '8px' }}>
+                            <input
+                              type="checkbox"
+                              className="client-select-checkbox"
+                              checked={selectedClients.has(client.id)}
+                              onChange={() => handleSelectClient(client.id)}
+                              style={{
+                                cursor: 'pointer',
+                                width: '18px',
+                                height: '18px',
+                                accentColor: isDarkMode ? '#FFD700' : '#e91e63',
+                                appearance: 'auto',
+                                scale: '1.2'
+                              }}
+                            />
+                          </td>
                           {clientsData.cols.map((col) => {
                             const cellValue = client[col];
                             const displayValue = formatCellValue(cellValue, col);
@@ -430,6 +537,22 @@ export default function SuperAdminClientsDashboard() {
         isOpen={isAddClientModalOpen}
         onClose={handleCloseAddClientModal}
         onSave={handleAddNewClient}
+      />
+
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Client Account?"
+        message={selectedClients.size > 1
+          ? `Are you sure you want to delete these ${selectedClients.size} client accounts? This will remove them from the database.`
+          : 'Are you sure you want to delete this client account? This will remove it from the database.'}
+        confirmText={isDeletingClients ? 'Deleting…' : 'Delete'}
+        cancelText="Keep Client"
+        onConfirm={confirmRemoveClients}
+        onCancel={() => {
+          if (!isDeletingClients) {
+            setShowDeleteConfirm(false);
+          }
+        }}
       />
 
       {/* ─── TOAST ─── */}

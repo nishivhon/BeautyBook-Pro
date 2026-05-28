@@ -8,6 +8,13 @@ import {
   LogoIcon,
   SettingsIcon,
 } from "./dashboardIcons";
+import {
+  fetchSuperAdminNotifications,
+  getSuperAdminNotificationCacheKey,
+  isSuperAdminNotificationCacheFresh,
+  readSuperAdminNotificationCache,
+  writeSuperAdminNotificationCache,
+} from "../../services/superadminNotifications";
 
 const defaultNotifications = [];
 
@@ -41,6 +48,9 @@ export function DashboardShell({
   profileActionPath,
   useSuperAdminHeaderActions = false,
   superAdminNoNotificationsMessage,
+  superAdminUseDefaultNotificationsWhenEmpty = true,
+  enableMobileDrawer = false,
+  showHeaderPageMeta = true,
   children,
 }) {
   const navigate = useNavigate();
@@ -54,6 +64,9 @@ export function DashboardShell({
   });
   const [openMenu, setOpenMenu] = useState(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(() => (typeof window !== "undefined" ? window.innerWidth <= 768 : false));
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [superAdminNotifications, setSuperAdminNotifications] = useState(() => notifications);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -67,6 +80,22 @@ export function DashboardShell({
   }, []);
 
   useEffect(() => {
+    if (!enableMobileDrawer || typeof window === "undefined") return;
+
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobileView(mobile);
+      if (!mobile) {
+        setMobileSidebarOpen(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [enableMobileDrawer]);
+
+  useEffect(() => {
     const handlePointerDown = (event) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setOpenMenu(null);
@@ -77,6 +106,7 @@ export function DashboardShell({
       if (event.key === "Escape") {
         setOpenMenu(null);
         setShowLogoutConfirm(false);
+        setMobileSidebarOpen(false);
       }
     };
 
@@ -90,6 +120,54 @@ export function DashboardShell({
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
+
+  useEffect(() => {
+    if (!useSuperAdminHeaderActions) {
+      setSuperAdminNotifications(notifications);
+      return;
+    }
+
+    let cancelled = false;
+
+    const hydrateNotifications = async () => {
+      const cached = readSuperAdminNotificationCache();
+
+      if (!cancelled && cached.items.length > 0) {
+        setSuperAdminNotifications(cached.items);
+      }
+
+      if (!isSuperAdminNotificationCacheFresh(cached.fetchedAt)) {
+        try {
+          const freshItems = await fetchSuperAdminNotifications();
+          if (cancelled) return;
+
+          setSuperAdminNotifications(freshItems);
+          writeSuperAdminNotificationCache(freshItems);
+        } catch (error) {
+          console.warn("[DashboardShell] Failed to refresh super admin notifications:", error);
+          if (!cancelled && cached.items.length === 0) {
+            setSuperAdminNotifications([]);
+          }
+        }
+      }
+    };
+
+    hydrateNotifications();
+
+    const handleStorage = (event) => {
+      if (event.key !== getSuperAdminNotificationCacheKey()) return;
+
+      const nextCache = readSuperAdminNotificationCache();
+      setSuperAdminNotifications(nextCache.items);
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [notifications, useSuperAdminHeaderActions]);
 
   const activeItemId = useMemo(() => {
     const currentPath = normalizePath(location.pathname);
@@ -105,15 +183,29 @@ export function DashboardShell({
   const displayName = profile?.name || roleLabel;
   const displayEmail = profile?.emails?.[0] || profile?.email || "";
   const pageTitle = title || getFallbackTitle(navItems, activeItemId, roleLabel);
+  const isMobileDrawerViewport =
+    enableMobileDrawer && (isMobileView || (typeof window !== "undefined" && window.innerWidth <= 768));
+  const isSidebarExpandedUI = isMobileDrawerViewport ? mobileSidebarOpen : sidebarExpanded;
+  const mobileDrawerWidth = mobileSidebarOpen ? "250px" : "72px";
 
   const toggleMenu = (menu) => {
     setOpenMenu((prev) => (prev === menu ? null : menu));
+  };
+
+  const handleSidebarToggle = () => {
+    const isMobileAtClick = typeof window !== "undefined" ? window.innerWidth <= 768 : isMobileView;
+    if (enableMobileDrawer && isMobileAtClick) {
+      setMobileSidebarOpen((prev) => !prev);
+      return;
+    }
+    setSidebarExpanded((prev) => !prev);
   };
 
   const handleNavClick = (item) => {
     if (!item?.path) return;
     navigate(item.path);
     setOpenMenu(null);
+    setMobileSidebarOpen(false);
   };
 
   const handleLogout = () => {
@@ -128,30 +220,55 @@ export function DashboardShell({
     }
   };
 
+  const containerClassName = [
+    "super-admin-container",
+    "admin-dashboard-page",
+    isMobileDrawerViewport ? "mobile-view" : "",
+    isMobileDrawerViewport && mobileSidebarOpen ? "mobile-sidebar-open" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const sidebarWidthOffset = isMobileDrawerViewport && mobileSidebarOpen
+    ? "0px"
+    : isSidebarExpandedUI
+      ? "340px"
+      : "80px";
+
   return (
-    <div className="super-admin-container admin-dashboard-page" style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}>
-      <aside className={`super-admin-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`} style={{
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? "translateX(0)" : "translateX(-16px)",
-        transition: "all 0.5s ease"
-      }}>
+    <div className={containerClassName} style={{ "--sidebar-width": sidebarWidthOffset }}>
+      <aside
+        className={`super-admin-sidebar ${isSidebarExpandedUI ? "expanded" : "collapsed"}`}
+        style={{
+          opacity: mounted ? 1 : 0,
+          width: isMobileDrawerViewport ? mobileDrawerWidth : undefined,
+          maxWidth: isMobileDrawerViewport ? mobileDrawerWidth : undefined,
+          transform: isMobileDrawerViewport
+            ? "translateX(0)"
+            : mounted
+              ? "translateX(0)"
+              : "translateX(-16px)",
+          transition: isMobileDrawerViewport ? "transform 0.28s ease, opacity 0.2s ease" : "all 0.5s ease",
+        }}
+      >
         {showSidebarHeader && (
           <div className="sidebar-logo-section">
             <button
-              onClick={() => setSidebarExpanded((prev) => !prev)}
+              onClick={handleSidebarToggle}
               className="logo-toggle-btn"
               title="Toggle sidebar"
               type="button"
+              aria-expanded={isMobileDrawerViewport ? mobileSidebarOpen : sidebarExpanded}
             >
               <div className="logo-badge">
                 <LogoIcon />
               </div>
-              {sidebarExpanded && <span className="brand-name">BeautyBook Pro</span>}
+              {isSidebarExpandedUI && <span className="brand-name">BeautyBook Pro</span>}
             </button>
           </div>
         )}
 
-        {showRoleBadge && sidebarExpanded && (
+        {showRoleBadge && isSidebarExpandedUI && (
           <div className="admin-badge-pill">
             <div className="admin-badge-circle">{roleInitial}</div>
             <span className="admin-badge-text">{roleLabel}</span>
@@ -170,7 +287,7 @@ export function DashboardShell({
                 type="button"
               >
                 <item.icon color={isActive ? "#000" : "currentColor"} />
-                {sidebarExpanded && <span>{item.label}</span>}
+                {isSidebarExpandedUI && <span>{item.label}</span>}
               </button>
             );
           })}
@@ -180,36 +297,64 @@ export function DashboardShell({
         <div className="sidebar-logout-section">
           <button onClick={handleLogout} className="logout-button" title="Log out" type="button">
             <LogOutIcon />
-            {sidebarExpanded && <span>Log Out</span>}
+            {isSidebarExpandedUI && <span>Log Out</span>}
           </button>
         </div>
       </aside>
+
+      {isMobileDrawerViewport ? (
+        <button
+          type="button"
+          className={`mobile-sidebar-backdrop ${mobileSidebarOpen ? "open" : ""}`}
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-label="Close navigation menu"
+        />
+      ) : null}
 
       <div className="super-admin-main">
         <header className={`dashboard-header ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
           <div className="dashboard-header-main">
             <button
-              onClick={() => setSidebarExpanded((prev) => !prev)}
+              onClick={handleSidebarToggle}
               className="logo-toggle-btn dashboard-header-logo-btn"
               title="Toggle sidebar"
               type="button"
+              aria-expanded={isMobileDrawerViewport ? mobileSidebarOpen : sidebarExpanded}
             >
               <div className="logo-badge">
                 <LogoIcon />
               </div>
             </button>
-            <span className="dashboard-system-title">BeautyBook Pro</span>
-            <div className="dashboard-page-title-wrap">
-              <h1 className="dash-page-title">{pageTitle}</h1>
-              <p className="dash-page-subtitle">{subtitle}</p>
-            </div>
+            <span
+              className="dashboard-system-title"
+              style={isMobileDrawerViewport ? { fontSize: "0.8rem", lineHeight: 1.05, maxWidth: "100px" } : undefined}
+            >
+              BeautyBook Pro
+            </span>
+            {showHeaderPageMeta ? (
+              <div className="dashboard-page-title-wrap">
+                <h1
+                  className="dash-page-title"
+                  style={isMobileDrawerViewport ? { fontSize: "0.98rem", lineHeight: 1.12 } : undefined}
+                >
+                  {pageTitle}
+                </h1>
+                <p
+                  className="dash-page-subtitle"
+                  style={isMobileDrawerViewport ? { fontSize: "0.76rem", lineHeight: 1.2 } : undefined}
+                >
+                  {subtitle}
+                </p>
+              </div>
+            ) : null}
           </div>
 
           {useSuperAdminHeaderActions ? (
             <SuperAdminHeaderActions
-              notifications={notifications}
+              notifications={superAdminNotifications}
               roleLabel={roleLabel}
               noNotificationsMessage={superAdminNoNotificationsMessage}
+              useDefaultNotificationsWhenEmpty={false}
             />
           ) : headerExtraActions ? (
             headerExtraActions
