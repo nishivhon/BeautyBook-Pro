@@ -456,7 +456,7 @@ export default function SuperAdminUsersDashboard() {
                       </thead>
                       <tbody>
                         {(() => {
-                          const itemsPerPage = 6;
+                          const itemsPerPage = 7;
                           const startIdx = (currentStaffPage - 1) * itemsPerPage;
                           const endIdx = startIdx + itemsPerPage;
                           return filteredStaff.slice(startIdx, endIdx).map((staff, idx) => (
@@ -465,7 +465,7 @@ export default function SuperAdminUsersDashboard() {
                             const cellValue = staff[col];
                             const displayValue = formatCellValue(cellValue, col);
                             return (
-                              <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
+                              <td key={col} style={{ fontSize: '13px', whiteSpace: 'normal', wordBreak: 'break-word', padding: '12px 8px' }}>{displayValue}</td>
                             );
                           })}
                           <td style={{ fontSize: '13px' }}>
@@ -510,7 +510,7 @@ export default function SuperAdminUsersDashboard() {
                   );
                   if (filteredStaff.length === 0) return null;
                   
-                  const itemsPerPage = 6;
+                  const itemsPerPage = 7;
                   const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
                   const startIdx = (currentStaffPage - 1) * itemsPerPage + 1;
                   const endIdx = Math.min(currentStaffPage * itemsPerPage, filteredStaff.length);

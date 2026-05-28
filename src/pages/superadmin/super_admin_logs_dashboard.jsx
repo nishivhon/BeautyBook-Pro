@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
@@ -124,7 +124,8 @@ export default function SuperAdminLogsDashboard() {
   const [modalMode, setModalMode] = useState("view");
   const [logsData, setLogsData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [currentLogsPage, setCurrentLogsPage] = useState(1);
+    const [currentLogsPage, setCurrentLogsPage] = useState(1);
+    const rowsPerPage = 4;
 
   // Persist sidebar state
   useEffect(() => {
@@ -134,6 +135,9 @@ export default function SuperAdminLogsDashboard() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Use fixed row height for consistency and dynamic rowsPerPage to prevent overflow/gaps
+    // Pages show 4 rows each (fixed)
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -344,30 +348,39 @@ export default function SuperAdminLogsDashboard() {
                   </thead>
                   <tbody>
                     {(() => {
-                      const itemsPerPage = 6;
-                      const startIdx = (currentLogsPage - 1) * itemsPerPage;
-                      const endIdx = startIdx + itemsPerPage;
+                      const itemsPerPage = rowsPerPage || 7;
+                      const totalRows = logsData.rows.length;
+                      const totalPages = Math.ceil(totalRows / itemsPerPage);
+                      // Only the last page can have fewer than itemsPerPage rows
+                      let startIdx = (currentLogsPage - 1) * itemsPerPage;
+                      let endIdx = startIdx + itemsPerPage;
+                      // If not last page, always fill up to itemsPerPage
+                      if (currentLogsPage < totalPages) {
+                        endIdx = startIdx + itemsPerPage;
+                      } else {
+                        endIdx = totalRows;
+                      }
                       return logsData.rows.slice(startIdx, endIdx).map((log, idx) => (
-                      <tr key={idx} className="db-row">
-                        {logsData.cols.map((col) => {
-                          const cellValue = log[col];
-                          const displayValue = formatCellValue(cellValue, col);
-                          return (
-                            <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
-                          );
-                        })}
-                      </tr>
-                    ));
+                        <tr key={idx} className="db-row" style={{ minHeight: 80, height: 80 }}>
+                          {logsData.cols.map((col) => {
+                            const cellValue = log[col];
+                            const displayValue = formatCellValue(cellValue, col);
+                            return (
+                              <td key={col} style={{ fontSize: '13px', whiteSpace: 'normal', wordBreak: 'break-word', padding: '12px 8px', minHeight: 80, height: 80, verticalAlign: 'middle' }}>{displayValue}</td>
+                            );
+                          })}
+                        </tr>
+                      ));
                     })()}
                   </tbody>
                 </table>
                 {logsData.rows.length > 0 && (() => {
-                  const itemsPerPage = 6;
+                  const itemsPerPage = rowsPerPage || 7;
                   const totalPages = Math.ceil(logsData.rows.length / itemsPerPage);
                   const startIdx = (currentLogsPage - 1) * itemsPerPage + 1;
                   const endIdx = Math.min(currentLogsPage * itemsPerPage, logsData.rows.length);
                   return (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
                         Showing {startIdx}–{endIdx} of {logsData.rows.length} logs
                       </div>

@@ -132,6 +132,7 @@ export default function SuperAdminServicesDashboard() {
   const [servicesData, setServicesData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentServicePage, setCurrentServicePage] = useState(1);
+  const rowsPerPage = 4;
   const [searchQuery, setSearchQuery] = useState('');
   const [editingService, setEditingService] = useState(null);
   const [isEditServiceModalOpen, setIsEditServiceModalOpen] = useState(false);
@@ -142,6 +143,8 @@ export default function SuperAdminServicesDashboard() {
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', JSON.stringify(sidebarExpanded));
   }, [sidebarExpanded]);
+
+  // Pages show 4 rows each (fixed)
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -409,7 +412,7 @@ export default function SuperAdminServicesDashboard() {
               return servicesData.rows && servicesData.rows.length > 0 ? (
                 filteredServices.length > 0 ? (
                   <div style={{ marginTop: '0px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+                    <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
                       {servicesData.cols.map((col) => (
@@ -420,35 +423,37 @@ export default function SuperAdminServicesDashboard() {
                   </thead>
                   <tbody>
                     {(() => {
-                      // Filter services by search query
-                      const filteredServices = servicesData.rows.filter(service =>
-                        matchesServiceQuery(service, searchQuery)
-                      );
-                      const itemsPerPage = 6;
-                      const startIdx = (currentServicePage - 1) * itemsPerPage;
-                      const endIdx = startIdx + itemsPerPage;
-                      return filteredServices.slice(startIdx, endIdx).map((service, idx) => (
-                      <tr key={idx} className="db-row">
+                        // Filter services by search query
+                        const filteredServices = servicesData.rows.filter(service =>
+                          matchesServiceQuery(service, searchQuery)
+                        );
+                        const itemsPerPage = rowsPerPage || 7;
+                        const startIdx = (currentServicePage - 1) * itemsPerPage;
+                        const endIdx = Math.min(startIdx + itemsPerPage, filteredServices.length);
+                        return filteredServices.slice(startIdx, endIdx).map((service, idx) => (
+                        <tr key={idx} className="db-row" style={{ minHeight: 80, height: 80 }}>
                           {servicesData.cols.map((col) => {
                           const cellValue = service[col];
                           const displayValue = formatCellValue(cellValue, col);
                           return (
                             <td
                               key={col}
-                              style={{
-                                fontSize: '13px',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: 0,
-                              }}
+                                style={{
+                                  fontSize: '13px',
+                                  whiteSpace: 'normal',
+                                  wordBreak: 'break-word',
+                                  padding: '12px 8px',
+                                  minHeight: 80,
+                                  height: 80,
+                                  verticalAlign: 'middle'
+                                }}
                               title={displayValue}
                             >
                               {displayValue}
                             </td>
                           );
                         })}
-                        <td style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>
+                          <td style={{ fontSize: '13px', whiteSpace: 'normal', wordBreak: 'break-word', padding: '12px 8px', minHeight: 80, height: 80, verticalAlign: 'middle' }}>
                           <button
                             onClick={() => handleEditService(service)}
                             title="Edit service"
@@ -489,12 +494,12 @@ export default function SuperAdminServicesDashboard() {
                   );
                   if (filteredServices.length === 0) return null;
                   
-                  const itemsPerPage = 6;
+                  const itemsPerPage = rowsPerPage || 7;
                   const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
                   const startIdx = (currentServicePage - 1) * itemsPerPage + 1;
                   const endIdx = Math.min(currentServicePage * itemsPerPage, filteredServices.length);
                   return (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
                         Showing {startIdx}–{endIdx} of {filteredServices.length} services
                       </div>
