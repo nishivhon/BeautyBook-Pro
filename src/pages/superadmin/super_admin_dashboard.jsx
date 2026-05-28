@@ -58,6 +58,13 @@ const RevenueIcon = () => (
   </svg>
 );
 
+const DownloadIcon = ({ size = 18, color = "#DD901D" }) => (
+  <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 7L10 11M10 11L6 7M10 11V2" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M17 11v5c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-5" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+);
+
 const formatISODate = (date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -315,6 +322,46 @@ export default function SuperAdminDashboard() {
 
   const selectionLabel = `${summaryRange.startDate} to ${summaryRange.endDate}`;
   const monthTitle = calendarMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const handleExportAllData = () => {
+    const exportData = {
+      metrics: {
+        appointments: summaryData.appointments,
+        walkIns: summaryData.walkIns,
+        revenue: summaryData.revenue,
+      },
+      dateRange: {
+        startDate: summaryRange.startDate,
+        endDate: summaryRange.endDate,
+      },
+      categories: serviceMetricCategories.map((cat) => ({
+        category: cat.category,
+        topService: cat.topService ? { name: cat.topService.name, count: cat.topService.count } : null,
+      })),
+      timestamp: new Date().toISOString(),
+    };
+    console.log('Exporting Metrics, Categories, and Services data...');
+    console.log(JSON.stringify(exportData, null, 2));
+  };
+
+  const handleExportWeeklyGraph = () => {
+    const exportData = {
+      weeklyReport: {
+        dateRange: `${formatGraphRangeLabel(graphWeekStart, graphWeekEnd)}`,
+        data: weeklyGraph.map((day) => ({
+          date: day.date,
+          day: day.label,
+          monthDay: day.monthDay,
+          appointments: day.appointments,
+          walkIns: day.walkIns,
+          revenue: day.revenue,
+        })),
+      },
+      timestamp: new Date().toISOString(),
+    };
+    console.log('Exporting Weekly Report Graph data...');
+    console.log(JSON.stringify(exportData, null, 2));
+  };
   const firstDayOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
   const lastDayOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0);
   const leadingEmptyDays = firstDayOfMonth.getDay();
@@ -376,25 +423,26 @@ export default function SuperAdminDashboard() {
       <div className="dash-stats-carousel-container">
         <div className="dash-stats-carousel-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <h3 className="dash-stats-set-title">Metrics</h3>
-          <div ref={calendarRef} style={{ position: 'relative' }}>
-            <button
-              type="button"
-              onClick={() => setCalendarOpen((prev) => !prev)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                borderRadius: 6,
-                border: '1px solid rgba(221, 144, 29, 0.45)',
-                background: '#fff',
-                color: '#6e4b12',
-                padding: '4px 8px',
-                fontWeight: 600,
-              }}
-            >
-              <CalendarIcon />
-              <span style={{ fontSize: 11 }}>{selectionLabel}</span>
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div ref={calendarRef} style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setCalendarOpen((prev) => !prev)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  borderRadius: 6,
+                  border: '1px solid rgba(221, 144, 29, 0.45)',
+                  background: '#fff',
+                  color: '#6e4b12',
+                  padding: '4px 8px',
+                  fontWeight: 600,
+                }}
+              >
+                <CalendarIcon />
+                <span style={{ fontSize: 11 }}>{selectionLabel}</span>
+              </button>
 
             {calendarOpen && (
               <div
@@ -477,9 +525,30 @@ export default function SuperAdminDashboard() {
               </div>
             )}
 
-            {summaryLoading && (
-              <p style={{ margin: '8px 2px 0', fontSize: 12, color: '#8a6b36', fontWeight: 600 }}>Loading metrics...</p>
-            )}
+              {summaryLoading && (
+                <p style={{ margin: '8px 2px 0', fontSize: 12, color: '#8a6b36', fontWeight: 600 }}>Loading metrics...</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleExportAllData}
+              title="Export Metrics, Categories & Services data"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                borderRadius: 6,
+                border: '1px solid rgba(221, 144, 29, 0.45)',
+                background: '#fff',
+                color: '#6e4b12',
+                padding: '4px 8px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <DownloadIcon size={16} />
+              <span style={{ fontSize: 11 }}>Export</span>
+            </button>
           </div>
         </div>
 
@@ -500,7 +569,7 @@ export default function SuperAdminDashboard() {
 
         <div className="superadmin-services-split">
           <section
-            className="dash-stat-card"
+            className="dash-stat-card no-hover"
             style={{
               minHeight: 360,
               padding: 24,
@@ -549,6 +618,27 @@ export default function SuperAdminDashboard() {
                   aria-label="Next week"
                 >
                   {'>'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportWeeklyGraph}
+                  title="Export Graph Data"
+                  style={{
+                    border: "1px solid rgba(221, 144, 29, 0.28)",
+                    background: "rgba(255, 255, 255, 0.02)",
+                    color: "var(--color-white)",
+                    borderRadius: 10,
+                    width: 30,
+                    height: 30,
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  aria-label="Export graph data"
+                >
+                  <DownloadIcon size={16} color="var(--color-white)" />
                 </button>
               </div>
             </div>
@@ -656,7 +746,7 @@ export default function SuperAdminDashboard() {
           </section>
 
           <section
-            className="dash-stat-card"
+            className="dash-stat-card no-hover"
             style={{
               minHeight: 360,
               padding: 24,
