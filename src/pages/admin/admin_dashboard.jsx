@@ -377,10 +377,17 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const [error, setError] = useState(null);
   const [completeConfirmId, setCompleteConfirmId] = useState(null);
   const [completeConfirmData, setCompleteConfirmData] = useState(null);
+  const [cancelConfirmId, setCancelConfirmId] = useState(null);
+  const [cancelConfirmData, setCancelConfirmData] = useState(null);
 
   const requestCompleteService = (itemId, customerName, service, staff) => {
     setCompleteConfirmId(itemId);
     setCompleteConfirmData({ name: customerName, service, staff });
+  };
+
+  const requestCancelWalkIn = (itemId, customerName) => {
+    setCancelConfirmId(itemId);
+    setCancelConfirmData({ name: customerName });
   };
 
   const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
@@ -600,6 +607,43 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     }
   };
 
+  const handleCancelWalkIn = async (itemId, customerName) => {
+    try {
+      const normalizedId = getQueueItemId(itemId);
+
+      const response = await fetch('/api/appointments/update/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: normalizedId,
+          status: 'cancelled',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to cancel walk-in: ${response.status}`);
+      }
+
+      setWalkInAppointments((prev) => prev.filter((walkIn) => String(walkIn.id) !== normalizedId));
+      setExpandedItemId(null);
+
+      window.dispatchEvent(new CustomEvent('appointmentsUpdated'));
+
+      showToast({
+        message: `Walk-in for ${customerName} cancelled.`,
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Error cancelling walk-in:', error);
+      showToast({
+        message: 'Failed to cancel walk-in: ' + error.message,
+        type: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
   // Transform appointments to queue item format
   const formatQueueItems = (appointments, type) => {
     return appointments.map((apt, index) => {
@@ -694,7 +738,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     }
   ];
 
-  const QueueItem = ({ id, type, number, name, staff, service, statusTop, statusSub, details, onCompleteService, showProceedButton = false, onProceed, isProceedEnabled = true, onProceedClick, actualId, isWalkIn }) => {
+  const QueueItem = ({ id, type, number, name, staff, service, statusTop, statusSub, details, onCompleteService, showProceedButton = false, onProceed, isProceedEnabled = true, onProceedClick, actualId, isWalkIn, onCancelWalkIn }) => {
     const isActive = type === "active";
     const isCancelled = type === "cancelled";
     const rowClass = isActive ? "live-queue-row-active"
@@ -715,6 +759,12 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     const handleProceed = () => {
       if (isProceedEnabled && onProceedClick) {
         onProceedClick(id, name, service, staff, actualId, isWalkIn);
+      }
+    };
+
+    const handleCancelWalkIn = () => {
+      if (onCancelWalkIn) {
+        onCancelWalkIn(id, name);
       }
     };
 
@@ -817,27 +867,17 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
             )}
 
             {showProceedButton && !isActive && (
-              <div style={{ gridColumn: '1 / -1' }}>
+              <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '8px' }}>
                 {isDarkMode(theme) ? (
                   <button
                     onClick={handleProceed}
                     disabled={!isProceedEnabled}
+                    className="live-queue-row-btn"
                     style={{
-                      width: "100%",
-                      padding: "10px 14px",
                       background: isProceedEnabled ? "#dd901d" : "#ccc",
                       color: "#fff",
                       border: "none",
-                      borderRadius: "8px",
-                      fontSize: "0.9rem",
-                      fontWeight: "600",
                       cursor: isProceedEnabled ? "pointer" : "not-allowed",
-                      fontFamily: "Inter, sans-serif",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                      transition: "all 0.2s ease",
                       opacity: isProceedEnabled ? 1 : 0.6,
                     }}
                     onMouseOver={e => {
@@ -854,19 +894,24 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
                   <button
                     onClick={handleProceed}
                     disabled={!isProceedEnabled}
-                    className="dash-complete-btn"
+                    className="dash-complete-btn live-queue-row-btn"
                     style={{
-                      width: "100%",
                       opacity: isProceedEnabled ? 1 : 0.6,
                       cursor: isProceedEnabled ? 'pointer' : 'not-allowed',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px'
                     }}
                   >
                     <ProceedIcon size={14} color="#fff" />
                     Proceed
+                  </button>
+                )}
+                {isWalkIn && (
+                  <button
+                    type="button"
+                    onClick={handleCancelWalkIn}
+                    className="live-queue-cancel-btn live-queue-row-btn"
+                  >
+                    <CancelledIcon size={14} color="#ef4444" />
+                    Cancel
                   </button>
                 )}
               </div>
@@ -972,6 +1017,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
                           showProceedButton={isUpNext}
                           isProceedEnabled={ii < 3}
                           onProceedClick={onProceedClick}
+                          onCancelWalkIn={requestCancelWalkIn}
                         />
                       );
                     })
@@ -1002,6 +1048,28 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         onCancel={() => {
           setCompleteConfirmId(null);
           setCompleteConfirmData(null);
+        }}
+      />
+    )}
+
+    {cancelConfirmId && (
+      <ConfirmationDialog
+        isOpen={true}
+        title="Cancel Walk-in?"
+        message={`Are you sure you want to cancel ${cancelConfirmData?.name}'s walk-in?`}
+        confirmText="Yes, Cancel"
+        cancelText="Keep Walk-in"
+        onConfirm={async () => {
+          try {
+            await handleCancelWalkIn(cancelConfirmId, cancelConfirmData?.name);
+          } finally {
+            setCancelConfirmId(null);
+            setCancelConfirmData(null);
+          }
+        }}
+        onCancel={() => {
+          setCancelConfirmId(null);
+          setCancelConfirmData(null);
         }}
       />
     )}

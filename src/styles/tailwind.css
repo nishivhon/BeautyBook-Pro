@@ -10908,6 +10908,34 @@ html[data-theme="light"] .dash-page-title,
     background-color: #16a34a;
   }
 
+  /* Live queue row actions — shared sizing in light and dark */
+  .live-queue-row-btn {
+    flex: 1;
+    margin-top: 0 !important;
+    padding: 10px 14px !important;
+    border-radius: 8px !important;
+    font-size: 0.9rem !important;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+  }
+
+  .live-queue-cancel-btn {
+    background: transparent !important;
+    color: #ef4444 !important;
+    border: 1.5px solid #ef4444 !important;
+    cursor: pointer;
+  }
+
+  .live-queue-cancel-btn:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+  }
+
   /* Continued staff member scroll styles */
   .staff-member-scroll {
     overflow-x: hidden;

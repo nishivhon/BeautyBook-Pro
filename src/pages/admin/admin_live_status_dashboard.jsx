@@ -401,7 +401,7 @@ const PageMetrics = ({ stats }) => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick }) => {
+const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick, isWalkIn = false, onCancelWalkIn }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -421,6 +421,12 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
   const handleProceed = () => {
     if (onProceedClick && isProceedEnabled) {
       onProceedClick(id, name, service);
+    }
+  };
+
+  const handleCancelWalkIn = () => {
+    if (onCancelWalkIn) {
+      onCancelWalkIn(id, name);
     }
   };
 
@@ -518,26 +524,17 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
           )}
 
           {showProceedButton && !isActive && (
-            <div style={{ gridColumn: '1 / -1' }}>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '8px' }}>
               <button
+                type="button"
                 onClick={handleProceed}
                 disabled={!isProceedEnabled}
+                className="live-queue-row-btn"
                 style={{
-                  width: "100%",
-                  padding: "10px 14px",
                   background: isProceedEnabled ? "#dd901d" : "#ccc",
                   color: "#fff",
                   border: "none",
-                  borderRadius: "8px",
-                  fontSize: "0.9rem",
-                  fontWeight: "600",
                   cursor: isProceedEnabled ? "pointer" : "not-allowed",
-                  fontFamily: "Inter, sans-serif",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  transition: "all 0.2s ease",
                   opacity: isProceedEnabled ? 1 : 0.6,
                 }}
                 onMouseOver={(e) => {
@@ -554,6 +551,16 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
                 <ProceedIcon size={14} color="#fff" />
                 Proceed
               </button>
+              {isWalkIn && (
+                <button
+                  type="button"
+                  onClick={handleCancelWalkIn}
+                  className="live-queue-cancel-btn live-queue-row-btn"
+                >
+                  <CancelledIcon size={14} color="#ef4444" />
+                  Cancel
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -573,6 +580,10 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   const [walkInAppointments, setWalkInAppointments] = useState([]);
   const [completeConfirmId, setCompleteConfirmId] = useState(null);
   const [completeConfirmData, setCompleteConfirmData] = useState(null);
+  const [cancelConfirmId, setCancelConfirmId] = useState(null);
+  const [cancelConfirmData, setCancelConfirmData] = useState(null);
+
+  const getQueueItemId = (itemId) => String(itemId || '').replace(/^walkin-/, '');
 
   // Fetch appointments data on component mount and when refreshTrigger changes
   useEffect(() => {
@@ -682,6 +693,48 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   const requestCompleteService = (itemId, customerName, service, staffName = "") => {
     setCompleteConfirmId(itemId);
     setCompleteConfirmData({ name: customerName, service, staff: staffName });
+  };
+
+  const requestCancelWalkIn = (itemId, customerName) => {
+    setCancelConfirmId(itemId);
+    setCancelConfirmData({ name: customerName });
+  };
+
+  const handleCancelWalkIn = async (itemId, customerName) => {
+    try {
+      const normalizedId = getQueueItemId(itemId);
+
+      const response = await fetch('/api/appointments/update/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: normalizedId,
+          status: 'cancelled',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to cancel walk-in: ${response.status}`);
+      }
+
+      setWalkInAppointments((prev) => prev.filter((walkIn) => String(walkIn.id) !== normalizedId));
+      setExpandedItemId(null);
+
+      window.dispatchEvent(new CustomEvent('appointmentsUpdated'));
+
+      showToast({
+        message: `Walk-in for ${customerName} cancelled.`,
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('[LiveQueue] Error cancelling walk-in:', error);
+      showToast({
+        message: 'Failed to cancel walk-in: ' + error.message,
+        type: 'error',
+        duration: 3000,
+      });
+    }
   };
 
   // Transform appointments to queue item format
@@ -856,6 +909,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
                           showProceedButton={isUpNext}
                           isProceedEnabled={ii < 3}
                           onProceedClick={(id, name, service) => handleProceedClick(id, name, service, item.staff)}
+                          onCancelWalkIn={requestCancelWalkIn}
                         />
                       );
                     })
@@ -886,6 +940,28 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
           onCancel={() => {
             setCompleteConfirmId(null);
             setCompleteConfirmData(null);
+          }}
+        />
+      )}
+
+      {cancelConfirmId && (
+        <ConfirmationDialog
+          isOpen={true}
+          title="Cancel Walk-in?"
+          message={`Are you sure you want to cancel ${cancelConfirmData?.name}'s walk-in?`}
+          confirmText="Yes, Cancel"
+          cancelText="Keep Walk-in"
+          onConfirm={async () => {
+            try {
+              await handleCancelWalkIn(cancelConfirmId, cancelConfirmData?.name);
+            } finally {
+              setCancelConfirmId(null);
+              setCancelConfirmData(null);
+            }
+          }}
+          onCancel={() => {
+            setCancelConfirmId(null);
+            setCancelConfirmData(null);
           }}
         />
       )}
