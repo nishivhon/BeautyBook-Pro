@@ -6,6 +6,13 @@ import { ThemeToggle } from "../components/public/ThemeToggle";
 const HERO_BG_IMAGE_DARK = new URL("../../images/DarkmodeBG.png", import.meta.url).href;
 const HERO_BG_IMAGE_LIGHT = new URL("../../images/LightmodeBG.png", import.meta.url).href;
 
+const TEAM_MEMBER_IMAGES = {
+  vhon: new URL("../../images/Members/Vhon.png", import.meta.url).href,
+  charlie: new URL("../../images/Members/Charlie.png", import.meta.url).href,
+  karl: new URL("../../images/Members/Karl.png", import.meta.url).href,
+  athlon: new URL("../../images/Members/Athlon.png", import.meta.url).href,
+};
+
 /* ── NAVBAR logo: scissors <> mark (white strokes on amber bg) ── */
 const LogoMark = () => (
   <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:22,height:22}}>
@@ -386,10 +393,10 @@ const SolutionSection = ({ isDesktop }) => {
 const TeamSection = ({ isDesktop }) => {
   const { themeMode } = usePublicTheme();
   const team = [
-    {id:1, name:'Dagodog, Vhon Inishi M.', role:'Project Leader'},
-    {id:2, name:'Arejola, Charlie R.', role:'Lead Programmer'},
-    {id:3, name:'Villon, Karl Lemuel R.', role:'Documentation'},
-    {id:4, name:'Zamora, Athlon Miguel C.', role:'QA'}
+    {id:1, name:'Dagodog, Vhon Inishi M.', role:'Project Leader', image: TEAM_MEMBER_IMAGES.vhon},
+    {id:2, name:'Arejola, Charlie R.', role:'Lead Programmer', image: TEAM_MEMBER_IMAGES.charlie},
+    {id:3, name:'Villon, Karl Lemuel R.', role:'Documentation', image: TEAM_MEMBER_IMAGES.karl},
+    {id:4, name:'Zamora, Athlon Miguel C.', role:'QA', image: TEAM_MEMBER_IMAGES.athlon},
   ];
 
   return (
@@ -402,12 +409,18 @@ const TeamSection = ({ isDesktop }) => {
           {team.map((member) => (
             <div key={member.id} style={{display:'flex', justifyContent:'center', width:'100%'}}>
               <div className="team-card" style={{width: isDesktop ? 220 : '100%', maxWidth: isDesktop ? 220 : 320, height: isDesktop ? 220 : 'auto', aspectRatio: isDesktop ? undefined : '1 / 1', borderRadius:10, border:'1px solid var(--border-tan-light)', background:'var(--bg-card)', position:'relative', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center'}}>
-                <div style={{color:'var(--color-tan)'}}>
-                  Photo Placeholder
-                </div>
+                <img
+                  src={member.image}
+                  alt={member.name}
+                  style={{position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover'}}
+                />
+                <div
+                  aria-hidden
+                  style={{position:'absolute', inset:0, background:'linear-gradient(to top, rgba(10, 9, 8, 0.92) 0%, rgba(10, 9, 8, 0.35) 45%, transparent 70%)'}}
+                />
 
-                <div style={{position:'absolute', left:0, right:0, bottom:14, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', pointerEvents:'none'}}>
-                  <h3 style={{fontSize: isDesktop ? '1.02rem' : '0.85rem', fontWeight:600, color:'var(--color-white)', margin:0}}>{member.name}</h3>
+                <div style={{position:'absolute', left:0, right:0, bottom:14, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', pointerEvents:'none', zIndex:1}}>
+                  <h3 style={{fontSize: isDesktop ? '1.02rem' : '0.85rem', fontWeight:600, color: themeMode === 'light' ? '#ffffff' : 'var(--color-white)', margin:0}}>{member.name}</h3>
                   <p style={{fontSize:'0.85rem', color: themeMode === 'light' ? '#f38ba6' : '#dd901d', fontWeight:600, margin:'6px 0 0'}}>{member.role}</p>
                 </div>
               </div>
