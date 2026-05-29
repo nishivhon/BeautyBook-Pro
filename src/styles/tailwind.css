@@ -13593,6 +13593,121 @@ html[data-theme="light"] .public-icon-slot {
   box-shadow: none !important;
 }
 
+/* Booking / walk-in modals — same SVG assets & sizing as public landpages */
+.booking-modal-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.booking-modal-icon-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* 48px — matches .public-icon-slot:not(.public-icon-slot--logo) */
+.booking-modal-icon-slot--feature {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+/* 24px — compact (e.g. download receipt button) */
+.booking-modal-icon-slot--inline {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+/* 36px — phase 1 date & time picker labels */
+.booking-modal-icon-slot--picker {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+/* 40px — phase 4 / walk-in confirm detail rows */
+.booking-modal-icon-slot--detail {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+/* Fills stylist avatar circle (42px) */
+.booking-modal-icon-slot--avatar {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+}
+
+.booking-modal-icon-slot .booking-modal-icon {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+}
+
+.appt-picker-label .booking-modal-icon-slot--picker {
+  margin-top: -2px;
+}
+
+.confirm-detail-row .booking-modal-icon-slot--detail {
+  margin-top: 0;
+}
+
+.confirm-svc-icon .booking-modal-icon-slot--feature {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.confirm-svc-icon .booking-modal-icon-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68%;
+  height: 68%;
+  line-height: 0;
+  overflow: hidden;
+}
+
+.confirm-svc-icon .booking-modal-icon--logo-art {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+.appt-download-receipt-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.appt-download-receipt-btn .booking-modal-icon-slot--inline {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+}
+
    /* Admin container overflow handling - keep content within layout bounds */
    .super-admin-container {
      overflow: hidden;

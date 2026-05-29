@@ -4,18 +4,19 @@ import { ConfirmationDialog } from "../customer/confirmation_dialog";
 import { Toast } from "../../toast";
 import { AppointmentFormPhase2 } from "./appointment/phase_two";
 import { AppointmentFormPhase3 } from "./appointment/phase_three";
+import {
+  BookingCalendarIcon,
+  BookingClockIcon,
+  BookingDownloadIcon,
+  BookingLogoIcon,
+  BookingModalIconSlot,
+  BookingStylistIcon,
+  BookingUserIcon,
+} from "./appointment/bookingModalIcons";
 
 const BackArrowIcon = () => (
   <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width={16} height={16}>
     <path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-/* Person silhouette — used in "Any available" row */
-const PersonIcon = ({ color = "#1a0f00" }) => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={20} height={20}>
-    <circle cx="12" cy="8" r="4" stroke={color} strokeWidth="1.8" fill="none"/>
-    <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke={color} strokeWidth="1.8" strokeLinecap="round" fill="none"/>
   </svg>
 );
 
@@ -26,59 +27,6 @@ const StarIcon = ({ muted = false }) => (
       d="M6 1l1.2 3.6H11L8.1 6.8l1.1 3.4L6 8.2l-3.2 2 1.1-3.4L1 4.6h3.8z"
       fill={muted ? "rgba(221,144,29,0.5)" : "#dd901d"}
     />
-  </svg>
-);
-
-/* Envelope icon */
-const EnvelopeIcon = () => (
-  <svg viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg" width={20} height={16} style={{ flexShrink: 0 }}>
-    <rect x="1" y="1" width="20" height="14" rx="2" stroke="#988f81" strokeWidth="1.5" fill="none"/>
-    <path d="M1 4l10 6 10-6" stroke="#988f81" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-
-/* Phone icon */
-const PhoneIcon = () => (
-  <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width={18} height={18} style={{ flexShrink: 0 }}>
-    <path
-      d="M4 1h4l2 5-2.5 1.5C8.3 10 10 11.7 12.5 12.5L14 10l5 2v4c0 1.7-1.3 3-3 3C6.3 19 1 13.7 1 7c0-1.7 1.3-3 3-3z"
-      stroke="#988f81" strokeWidth="1.5" fill="none" strokeLinejoin="round"
-    />
-  </svg>
-);
-
-/* Stylist / person with hair icon */
-const StylistIcon = () => (
-  <svg viewBox="0 0 20 22" fill="none" xmlns="http://www.w3.org/2000/svg" width={18} height={20} style={{ flexShrink: 0 }}>
-    <circle cx="10" cy="6" r="4.5" stroke="#988f81" strokeWidth="1.5" fill="none"/>
-    <path d="M1 20c0-5 4-9 9-9s9 4 9 9" stroke="#988f81" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-    <path d="M7 2.5 Q10 1 13 2.5" stroke="#988f81" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
-  </svg>
-);
-
-/* Download/Print icon */
-const DownloadIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={18} height={18} style={{ flexShrink: 0 }}>
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    <polyline points="7 10 12 15 17 10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-  </svg>
-);
-
-/* Scissors icon used for service rows */
-const ScissorsIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={22} height={22}>
-    {/* pivot ring top */}
-    <circle cx="6" cy="7"  r="3.5" stroke="#1a0f00" strokeWidth="1.8" fill="none"/>
-    {/* pivot ring bottom */}
-    <circle cx="6" cy="17" r="3.5" stroke="#1a0f00" strokeWidth="1.8" fill="none"/>
-    {/* blade 1 */}
-    <path d="M9 5.5 L22 12"  stroke="#1a0f00" strokeWidth="1.8" strokeLinecap="round"/>
-    {/* blade 2 */}
-    <path d="M9 18.5 L22 12" stroke="#1a0f00" strokeWidth="1.8" strokeLinecap="round"/>
-    {/* inner pivot dots */}
-    <circle cx="6" cy="7"  r="1.4" fill="#1a0f00"/>
-    <circle cx="6" cy="17" r="1.4" fill="#1a0f00"/>
   </svg>
 );
 
@@ -992,7 +940,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                       <div className="confirm-service-row">
                         <div className="confirm-service-left">
                           <div className="confirm-svc-icon">
-                            <ScissorsIcon />
+                            <BookingModalIconSlot size="feature">
+                              <BookingLogoIcon />
+                            </BookingModalIconSlot>
                           </div>
                           <div className="confirm-svc-text">
                             <span className="confirm-svc-name" style={{ color: '#ffffff' }}>{receiptData.services[0].title}</span>
@@ -1033,28 +983,36 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
 
                   <div className="confirm-details">
                     <div className="confirm-detail-row">
-                      <PersonIcon color="#ffffff" />
+                      <BookingModalIconSlot size="detail">
+                        <BookingUserIcon />
+                      </BookingModalIconSlot>
                       <div className="confirm-detail-text">
                         <span className="confirm-detail-label" style={{ color: '#988f81' }}>Name</span>
                         <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.name}</span>
                       </div>
                     </div>
                     <div className="confirm-detail-row">
-                      <StylistIcon />
+                      <BookingModalIconSlot size="detail">
+                        <BookingStylistIcon />
+                      </BookingModalIconSlot>
                       <div className="confirm-detail-text">
                         <span className="confirm-detail-label" style={{ color: '#988f81' }}>Stylist</span>
                         <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.stylist}</span>
                       </div>
                     </div>
                     <div className="confirm-detail-row">
-                      <EnvelopeIcon />
+                      <BookingModalIconSlot size="detail">
+                        <BookingCalendarIcon />
+                      </BookingModalIconSlot>
                       <div className="confirm-detail-text">
                         <span className="confirm-detail-label" style={{ color: '#988f81' }}>Date & Time</span>
                         <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.timestamp}</span>
                       </div>
                     </div>
                     <div className="confirm-detail-row">
-                      <DownloadIcon />
+                      <BookingModalIconSlot size="detail">
+                        <BookingClockIcon />
+                      </BookingModalIconSlot>
                       <div className="confirm-detail-text">
                         <span className="confirm-detail-label" style={{ color: '#988f81' }}>Duration</span>
                         <span className="confirm-detail-value" style={{ color: '#ffffff' }}>{receiptData.totalDuration} mins</span>
@@ -1142,7 +1100,9 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                 onClick={handleDownloadReceipt}
                 style={{flex: 1, cursor: "pointer", padding: "12px", fontSize: "16px", fontWeight: "600"}}
               >
-                <DownloadIcon />
+                <BookingModalIconSlot size="inline" className="appt-download-receipt-icon">
+                  <BookingDownloadIcon />
+                </BookingModalIconSlot>
                 Download Receipt
               </button>
             )}
