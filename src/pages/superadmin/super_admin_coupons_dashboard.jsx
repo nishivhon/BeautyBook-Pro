@@ -337,13 +337,13 @@ export default function SuperAdminCouponsDashboard() {
       <div className="superadmin-page-content" style={{ paddingTop: 20 }}>
         <div className="dashboard-panel superadmin-fixed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {/* Header actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexShrink: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexShrink: 0, overflow: 'visible', position: 'relative', zIndex: 2 }}>
             <div className="panel-title">
               {searchQuery || statusFilter !== "All"
                 ? `Search Results (${filteredCoupons.length})`
                 : `All Coupons (${couponsData.length})`}
             </div>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'nowrap', justifyContent: 'flex-end', overflowX: 'auto', maxWidth: 'min(100%, 720px)' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', overflow: 'visible' }}>
               {selectedCoupons.size > 0 && (
                 <>
                   <span style={{ color: '#988f81', fontSize: 13, whiteSpace: 'nowrap' }}>
@@ -443,7 +443,7 @@ export default function SuperAdminCouponsDashboard() {
               >
                 Export
               </button>
-              <div className="staff-filter-container" style={{ position: 'relative' }}>
+              <div className="staff-filter-container" style={{ position: 'relative', flexShrink: 0 }}>
                 <button
                   className="staff-filter-btn"
                   aria-label="Filter"
@@ -453,7 +453,7 @@ export default function SuperAdminCouponsDashboard() {
                   <FilterIcon size={15} color="currentColor" />
                 </button>
                 {filterOpen && (
-                  <div className="staff-filter-dropdown" style={{ position: 'absolute', top: '110%', right: 0, zIndex: 10, minWidth: 180 }}>
+                  <div className="staff-filter-dropdown" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 50, minWidth: 180 }}>
                     {STATUS_TABS.filter(tab => tab !== 'All').map((status) => (
                       <button
                         key={status}
