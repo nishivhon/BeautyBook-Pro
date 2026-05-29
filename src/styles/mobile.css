@@ -1611,21 +1611,32 @@
     padding: 0 20px;
   }
 
-  .hiw-feature-strip {
+  /* How It Works: half of each feature card overlaps the hero bottom edge */
+  .hiw-page-root .hero-section > div:nth-child(2) {
+    position: static;
+    z-index: 6;
+  }
+
+  .hiw-page-root .hero-section {
+    overflow: visible;
+    padding-bottom: 52px;
+  }
+
+  .hiw-page-root .hero-section .hiw-feature-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     max-width: 100%;
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);
-    bottom: -62px;
+    bottom: 0;
+    transform: translate(-50%, calc(50% + 50px));
     width: min(94%, 900px);
     margin-top: 0;
     z-index: 4;
   }
 
-  .hero-section {
-    padding-bottom: 92px;
+  .hiw-page-root .hero-text {
+    margin-bottom: 32px !important;
   }
 
   .hiw-feature-card {
@@ -1655,8 +1666,8 @@
     line-height: 1.3;
   }
 
-  .hiw-journey {
-    padding-top: 20px;
+  .hiw-page-root .hiw-journey {
+    padding-top: 108px;
   }
 
   .hiw-grid,
