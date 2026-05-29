@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { ToastViewport, useToast } from "../../components/toast";
 import { logoutOperator } from "../../services/operatorAuth";
 
 // Tag icon (Heroicons outline style)
@@ -96,6 +97,7 @@ const TABLE_CHECKBOX_CELL_STYLE = { ...TABLE_CELL_STYLE, width: 40, textAlign: '
 
 export default function SuperAdminCouponsDashboard() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [activeNav, setActiveNav] = useState("coupons");
   const [isDarkMode, setIsDarkMode] = useState(() => document.documentElement.getAttribute('data-theme') !== 'light');
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,8 +107,6 @@ export default function SuperAdminCouponsDashboard() {
   const [selectedCoupons, setSelectedCoupons] = useState(new Set());
   const [statusFilter, setStatusFilter] = useState("Active");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
   const [showBulkBar, setShowBulkBar] = useState(false);
   const [pendingBulkAction, setPendingBulkAction] = useState(null);
   const [isBulkMutating, setIsBulkMutating] = useState(false);
@@ -237,7 +237,7 @@ export default function SuperAdminCouponsDashboard() {
         }
 
         setCouponsData((prev) => prev.filter((coupon) => !selectedCoupons.has(coupon.id)));
-        setToastMessage("Selected coupons deleted");
+        showToast({ message: 'Selected coupons deleted', type: 'success', duration: 2200 });
       } else {
         const nextStatus = pendingBulkAction === "activate" ? "active" : "inactive";
         const updatedCoupons = [];
@@ -273,18 +273,22 @@ export default function SuperAdminCouponsDashboard() {
         }
 
         updateCouponsInState(updatedCoupons);
-        setToastMessage(pendingBulkAction === "activate" ? "Selected coupons activated" : "Selected coupons deactivated");
+        showToast({
+          message: pendingBulkAction === "activate" ? "Selected coupons activated" : "Selected coupons deactivated",
+          type: 'success',
+          duration: 2200,
+        });
       }
 
       setSelectedCoupons(new Set());
       setPendingBulkAction(null);
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2200);
     } catch (error) {
       console.error('[SuperAdminCoupons] Bulk action failed:', error);
-      setToastMessage(error.message || 'Failed to update coupons');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2600);
+      showToast({
+        message: error.message || 'Failed to update coupons',
+        type: 'error',
+        duration: 3000,
+      });
     } finally {
       setIsBulkMutating(false);
     }
@@ -616,22 +620,6 @@ export default function SuperAdminCouponsDashboard() {
             )}
           </div>
         </div>
-        {/* Toast */}
-        {showToast && (
-          <div style={{
-            position: 'fixed',
-            bottom: 24,
-            left: 24,
-            background: 'rgba(35, 29, 26, 0.95)',
-            border: '1px solid rgba(221, 144, 29, 0.3)',
-            color: '#D4C5B9',
-            padding: '12px 16px',
-            borderRadius: 8,
-            fontSize: 13,
-            zIndex: 1000,
-            backdropFilter: 'blur(10px)'
-          }}>{toastMessage}</div>
-        )}
         <ConfirmationDialog
           isOpen={Boolean(pendingBulkAction)}
           title={pendingBulkAction === 'delete' ? 'Delete Coupons?' : pendingBulkAction === 'activate' ? 'Activate Coupons?' : 'Deactivate Coupons?'}
@@ -650,6 +638,7 @@ export default function SuperAdminCouponsDashboard() {
           }}
         />
       </div>
+      <ToastViewport />
     </DashboardShell>
   );
 }

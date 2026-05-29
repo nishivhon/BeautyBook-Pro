@@ -5,6 +5,7 @@ import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { AddClientModal } from "../../components/modal/superadmin/add_client_modal";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { ToastViewport, useToast } from "../../components/toast";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -104,6 +105,7 @@ const NAV_ITEMS = [
 
 export default function SuperAdminClientsDashboard() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -120,8 +122,6 @@ export default function SuperAdminClientsDashboard() {
   const [loading, setLoading] = useState(false);
   const [currentClientPage, setCurrentClientPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [toastMessage, setToastMessage] = useState("");
-  const [showToast, setShowToast] = useState(false);
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
   const [selectedClients, setSelectedClients] = useState(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -172,7 +172,7 @@ export default function SuperAdminClientsDashboard() {
           rows: [],
           cols: ['id', 'name', 'email', 'phone'],
         });
-        displayToast('Failed to fetch client data');
+        showToast({ message: 'Failed to fetch client data', type: 'error', duration: 3000 });
       } finally {
         setLoading(false);
       }
@@ -207,12 +207,6 @@ export default function SuperAdminClientsDashboard() {
     navigate("/operators/login");
   };
 
-  const displayToast = (message) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2800);
-  };
-
   const handleOpenAddClientModal = () => {
     setIsAddClientModalOpen(true);
   };
@@ -235,7 +229,7 @@ export default function SuperAdminClientsDashboard() {
 
   const handleRemoveClients = async () => {
     if (selectedClients.size === 0) {
-      displayToast('Please select clients to remove');
+      showToast({ message: 'Please select clients to remove', type: 'warning', duration: 2800 });
       return;
     }
 
@@ -270,10 +264,10 @@ export default function SuperAdminClientsDashboard() {
       
       setSelectedClients(new Set());
       setShowDeleteConfirm(false);
-      displayToast(`${clientIds.length} client(s) removed successfully`);
+      showToast({ message: `${clientIds.length} client(s) removed successfully`, type: 'success', duration: 2800 });
     } catch (error) {
       console.error('[Clients] Error removing clients:', error);
-      displayToast('Failed to remove clients');
+      showToast({ message: 'Failed to remove clients', type: 'error', duration: 3000 });
     } finally {
       setIsDeletingClients(false);
     }
@@ -290,7 +284,7 @@ export default function SuperAdminClientsDashboard() {
       }));
     }
 
-    displayToast('Client added successfully');
+    showToast({ message: 'Client added successfully', type: 'success', duration: 2800 });
   };
 
   // Format column names for display
@@ -557,24 +551,7 @@ export default function SuperAdminClientsDashboard() {
         }}
       />
 
-      {/* ─── TOAST ─── */}
-      {showToast && (
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          left: '24px',
-          background: 'rgba(35, 29, 26, 0.95)',
-          border: '1px solid rgba(221, 144, 29, 0.3)',
-          color: '#D4C5B9',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          fontSize: '13px',
-          zIndex: 1000,
-          backdropFilter: 'blur(10px)'
-        }}>
-          {toastMessage}
-        </div>
-      )}
+      <ToastViewport />
     </DashboardShell>
   );
 }

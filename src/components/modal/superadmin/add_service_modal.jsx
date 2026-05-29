@@ -1,118 +1,13 @@
 import { useEffect, useState } from "react";
 import { databaseAPI } from "../../../services/databaseApi";
+import { ConfirmationDialog } from "../customer/confirmation_dialog";
+import { useToast } from "../../toast";
 
 const CloseIcon = ({ color = "currentColor" }) => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M5 5l10 10M15 5l-10 10" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 );
-
-const ConfirmationDialog = ({
-  isOpen = false,
-  title = "Leave without saving?",
-  message = "Are you sure you want to exit? Any unsaved information will be lost.",
-  confirmText = "Leave",
-  cancelText = "Stay",
-  onConfirm,
-  onCancel,
-}) => {
-  if (!isOpen) return null;
-  return (
-    <div style={{
-      position: "fixed",
-      inset: 0,
-      backgroundColor: "transparent",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 3000,
-      backdropFilter: "none",
-    }} onClick={onCancel}>
-      <div style={{
-        background: "white",
-        borderRadius: "16px",
-        padding: "32px 24px",
-        maxWidth: "360px",
-        width: "90%",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-        animation: "fade-up 0.3s ease forwards",
-      }} onClick={(event) => event.stopPropagation()}>
-        <h2 style={{
-          fontSize: "18px",
-          fontWeight: "700",
-          color: "#1a0f00",
-          marginBottom: "12px",
-          textAlign: "center",
-          fontFamily: "Inter, sans-serif",
-          marginTop: 0,
-        }}>
-          {title}
-        </h2>
-        <p style={{
-          fontSize: "14px",
-          color: "#665544",
-          marginBottom: "24px",
-          textAlign: "center",
-          lineHeight: "1.5",
-          fontFamily: "Inter, sans-serif",
-          marginTop: 0,
-        }}>
-          {message}
-        </p>
-        <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: "12px 16px",
-              background: "#dd901d",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontWeight: "600",
-              cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.background = "#c17a14";
-              event.currentTarget.style.transform = "translateY(-2px)";
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.background = "#dd901d";
-              event.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={onConfirm}
-            style={{
-              padding: "12px 16px",
-              background: "transparent",
-              color: "#dd901d",
-              border: "1.5px solid #dd901d",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontWeight: "600",
-              cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.background = "rgba(221, 144, 29, 0.1)";
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.background = "transparent";
-            }}
-          >
-            {confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const emptyForm = {
   name: "",
@@ -124,9 +19,9 @@ const emptyForm = {
 };
 
 export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState(emptyForm);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -188,22 +83,21 @@ export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
       ...previous,
       [name]: type === "checkbox" ? checked : value,
     }));
-    setError(null);
   };
 
   const validateForm = () => {
     if (!formData.name.trim()) {
-      setError("Service name is required");
+      showToast({ message: "Service name is required", type: "error", duration: 3000 });
       return false;
     }
 
     if (!formData.category.trim()) {
-      setError("Category is required");
+      showToast({ message: "Category is required", type: "error", duration: 3000 });
       return false;
     }
 
     if (formData.price === "" || formData.price === null || formData.price === undefined) {
-      setError("Price is required");
+      showToast({ message: "Price is required", type: "error", duration: 3000 });
       return false;
     }
 
@@ -224,14 +118,12 @@ export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
   const handleConfirmExit = () => {
     setShowConfirmation(false);
     setFormData(emptyForm);
-    setError(null);
     onClose?.();
   };
 
   const handleConfirmAdd = async () => {
     setShowConfirmation(false);
     setIsLoading(true);
-    setError(null);
 
     try {
       const response = await fetch("/api/services/create", {
@@ -258,7 +150,11 @@ export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
       onClose?.();
     } catch (saveError) {
       console.error("[AddServiceModal] Error:", saveError);
-      setError(saveError.message || "An error occurred while creating service");
+      showToast({
+        message: saveError.message || "An error occurred while creating service",
+        type: "error",
+        duration: 3000,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -266,7 +162,6 @@ export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
 
   const handleClose = () => {
     setFormData(emptyForm);
-    setError(null);
     setShowConfirmation(false);
     onClose?.();
   };
@@ -328,20 +223,6 @@ export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
               <CloseIcon />
             </button>
           </div>
-
-          {error && (
-            <div style={{
-              backgroundColor: "rgba(239, 68, 68, 0.1)",
-              border: "1px solid rgba(239, 68, 68, 0.3)",
-              borderRadius: "6px",
-              padding: "12px",
-              marginBottom: "16px",
-              color: "#EF4444",
-              fontSize: "13px",
-            }}>
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div>
@@ -612,6 +493,7 @@ export const AddServiceModal = ({ isOpen, onClose, onSave }) => {
 
       <ConfirmationDialog
         isOpen={showConfirmation}
+        zIndex={3000}
         title="Leave without saving?"
         message="Are you sure you want to exit? Any unsaved information will be lost."
         confirmText="Leave"

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
+import { ToastViewport, useToast } from "../../components/toast";
 
 
 // ─── SVG Icons ─────────────────────────────────────────────────────────
@@ -198,14 +199,13 @@ const formatDeviceSummary = (loginData) => {
 
 export default function SuperAdminSecurityDashboard() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [activeNav, setActiveNav] = useState("security");
   const [mounted, setMounted] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
   });
-  const [toastMessage, setToastMessage] = useState("");
-  const [showToast, setShowToast] = useState(false);
   const [secItems, setSecItems] = useState(initialSecurityItems);
 
   // Maintenance states
@@ -326,12 +326,6 @@ export default function SuperAdminSecurityDashboard() {
     navigate("/operators/login");
   };
 
-  const displayToast = (message) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2800);
-  };
-
   const handlePasswordFormChange = (field, value) => {
     setPasswordForm(prev => ({
       ...prev,
@@ -397,7 +391,7 @@ export default function SuperAdminSecurityDashboard() {
       }));
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setPasswordChangeMessage('Password updated successfully.');
-      displayToast('Password updated successfully.');
+      showToast({ message: 'Password updated successfully.', type: 'success', duration: 2800 });
     } catch (error) {
       setPasswordChangeError(error.message || 'Failed to change password.');
     } finally {
@@ -422,7 +416,7 @@ export default function SuperAdminSecurityDashboard() {
         } else {
           setMaintenanceEnabled(false);
           setMaintenanceStartTime(null);
-          displayToast("System maintenance disabled");
+          showToast({ message: 'System maintenance disabled', type: 'success', duration: 2800 });
         }
         return item; // Don't update status yet
       }
@@ -440,22 +434,22 @@ export default function SuperAdminSecurityDashboard() {
         ? { ...item, enabled: true, status: "Enabled" }
         : item
     ));
-    displayToast("System maintenance enabled");
+    showToast({ message: 'System maintenance enabled', type: 'success', duration: 2800 });
   };
 
   const handleAddToWhitelist = () => {
     if (whitelistInput && /^(\d{1,3}\.){3}\d{1,3}$/.test(whitelistInput)) {
       setMaintenanceWhitelist([...maintenanceWhitelist, whitelistInput]);
       setWhitelistInput("");
-      displayToast(`IP ${whitelistInput} added to whitelist`);
+      showToast({ message: `IP ${whitelistInput} added to whitelist`, type: 'success', duration: 2800 });
     } else {
-      displayToast("Invalid IP address format");
+      showToast({ message: 'Invalid IP address format', type: 'warning', duration: 2800 });
     }
   };
 
   const handleRemoveFromWhitelist = (ip) => {
     setMaintenanceWhitelist(maintenanceWhitelist.filter(item => item !== ip));
-    displayToast(`IP ${ip} removed from whitelist`);
+    showToast({ message: `IP ${ip} removed from whitelist`, type: 'success', duration: 2800 });
   };
 
   const formatCountdown = (seconds) => {
@@ -718,7 +712,11 @@ export default function SuperAdminSecurityDashboard() {
                     </div>
                     <Toggle enabled={item.enabled} onToggle={() => {
                       toggleSecurityItem(idx);
-                      displayToast(`${item.label} ${item.enabled ? "disabled" : "enabled"}`);
+                      showToast({
+                        message: `${item.label} ${item.enabled ? 'disabled' : 'enabled'}`,
+                        type: 'success',
+                        duration: 2800,
+                      });
                     }} />
                   </div>
                 </div>
@@ -727,12 +725,7 @@ export default function SuperAdminSecurityDashboard() {
           </div>
         </div>
 
-      {/* ─── TOAST ─── */}
-      {showToast && (
-        <div className="toast show">
-          {toastMessage}
-        </div>
-      )}
+      <ToastViewport />
 
       {/* ─── MAINTENANCE CONFIRMATION DIALOG ─── */}
       {showMaintenanceConfirm && (

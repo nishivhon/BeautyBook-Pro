@@ -4,6 +4,7 @@ import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
+import { ToastViewport, useToast } from "../../components/toast";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -111,14 +112,13 @@ const NAV_ITEMS = [
 
 export default function SuperAdminLogsDashboard() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [activeNav, setActiveNav] = useState("logs");
   const [mounted, setMounted] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
   });
-  const [toastMessage, setToastMessage] = useState("");
-  const [showToast, setShowToast] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalTable, setModalTable] = useState(null);
   const [modalMode, setModalMode] = useState("view");
@@ -208,7 +208,7 @@ export default function SuperAdminLogsDashboard() {
         }
       } catch (error) {
         console.error('[Logs] Error fetching data:', error);
-        displayToast('Failed to fetch appointment logs');
+        showToast({ message: 'Failed to fetch appointment logs', type: 'error', duration: 3000 });
       } finally {
         setLoading(false);
       }
@@ -220,12 +220,6 @@ export default function SuperAdminLogsDashboard() {
   const handleLogout = () => {
     logoutOperator();
     navigate("/operators/login");
-  };
-
-  const displayToast = (message) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2800);
   };
 
   // Format cell display value, especially for JSON services
@@ -268,14 +262,14 @@ export default function SuperAdminLogsDashboard() {
 
   const handleSaveChanges = () => {
     setShowModal(false);
-    displayToast('Changes saved.');
+    showToast({ message: 'Changes saved.', type: 'success', duration: 2800 });
   };
 
   const handleExportLogs = () => {
     const rows = logsData.rows;
     const cols = logsData.cols;
     if (!rows?.length || !cols?.length) {
-      displayToast('No logs to export');
+      showToast({ message: 'No logs to export', type: 'warning', duration: 2800 });
       return;
     }
 
@@ -302,7 +296,7 @@ export default function SuperAdminLogsDashboard() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    displayToast(`Exported ${rows.length} logs`);
+    showToast({ message: `Exported ${rows.length} logs`, type: 'success', duration: 2800 });
   };
 
   return (
@@ -517,12 +511,7 @@ export default function SuperAdminLogsDashboard() {
         handleSaveChanges={handleSaveChanges}
       />
 
-      {/* ─── TOAST ─── */}
-      {showToast && (
-        <div className="toast show">
-          {toastMessage}
-        </div>
-      )}
+      <ToastViewport />
     </DashboardShell>
   );
 }

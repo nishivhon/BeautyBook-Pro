@@ -12,6 +12,7 @@ import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { EditStaffModal } from "../../components/modal/superadmin/edit_staff";
 import { AddStaffModal } from "../../components/modal/superadmin/add_staff";
+import { ToastViewport, useToast } from "../../components/toast";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -135,6 +136,7 @@ const NAV_ITEMS = [
 
 export default function SuperAdminUsersDashboard() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -154,8 +156,6 @@ export default function SuperAdminUsersDashboard() {
   const [loading, setLoading] = useState(false);
   const [currentStaffPage, setCurrentStaffPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [toastMessage, setToastMessage] = useState("");
-  const [showToast, setShowToast] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -239,7 +239,7 @@ export default function SuperAdminUsersDashboard() {
           rows: [],
           cols: ['names', 'category_specialty', 'employment'],
         });
-        displayToast('Failed to fetch staff data');
+        showToast({ message: 'Failed to fetch staff data', type: 'error', duration: 3000 });
       } finally {
         setLoading(false);
       }
@@ -274,12 +274,6 @@ export default function SuperAdminUsersDashboard() {
     navigate("/operators/login");
   };
 
-  const displayToast = (message) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2800);
-  };
-
   // Handle opening the edit modal
   const handleEditStaff = (staff) => {
     setEditingStaff(staff);
@@ -300,7 +294,7 @@ export default function SuperAdminUsersDashboard() {
         staff.id === updatedStaff.id ? { ...staff, ...updatedStaff } : staff
       )
     }));
-    displayToast('Staff member updated successfully');
+    showToast({ message: 'Staff member updated successfully', type: 'success', duration: 2800 });
   };
 
   // Handle opening the add modal
@@ -320,7 +314,7 @@ export default function SuperAdminUsersDashboard() {
       rows: [newStaff, ...prev.rows],
       meta: `${prev.rows.length + 1} staff members`
     }));
-    displayToast('Staff member added successfully');
+    showToast({ message: 'Staff member added successfully', type: 'success', duration: 2800 });
   };
 
   // Format column names for display
@@ -597,25 +591,7 @@ export default function SuperAdminUsersDashboard() {
           </div>
       </div>
 
-      {/* ─── TOAST ─── */}
-      {showToast && (
-        <div style={{
-          position: 'fixed',
-          top: '80px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'rgba(35, 29, 26, 0.95)',
-          border: '1px solid rgba(221, 144, 29, 0.3)',
-          color: '#D4C5B9',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          fontSize: '13px',
-          zIndex: 1000,
-          backdropFilter: 'blur(10px)'
-        }}>
-          {toastMessage}
-        </div>
-      )}
+      <ToastViewport />
 
       {/* ─── EDIT STAFF MODAL ─── */}
       <EditStaffModal 

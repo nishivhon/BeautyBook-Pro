@@ -6,7 +6,7 @@ import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
 import { EditServiceModal } from "../../components/modal/superadmin/edit_service_modal";
 import { AddServiceModal } from "../../components/modal/superadmin/add_service_modal";
-import { Toast } from "../../components/toast";
+import { ToastViewport, useToast } from "../../components/toast";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -115,6 +115,7 @@ const NAV_ITEMS = [
 
 export default function SuperAdminServicesDashboard() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [activeNav, setActiveNav] = useState("services");
   const [mounted, setMounted] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
@@ -124,8 +125,6 @@ export default function SuperAdminServicesDashboard() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return document.documentElement.getAttribute('data-theme') !== 'light';
   });
-  const [toastMessage, setToastMessage] = useState("");
-  const [showToast, setShowToast] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalTable, setModalTable] = useState(null);
   const [modalMode, setModalMode] = useState("view");
@@ -205,7 +204,7 @@ export default function SuperAdminServicesDashboard() {
         }
       } catch (error) {
         console.error('[Services] Error fetching data:', error);
-        displayToast('Failed to fetch services');
+        showToast({ message: 'Failed to fetch services', type: 'error', duration: 3000 });
       } finally {
         setLoading(false);
       }
@@ -217,13 +216,6 @@ export default function SuperAdminServicesDashboard() {
   const handleLogout = () => {
     logoutOperator();
     navigate("/operators/login");
-  };
-
-  const displayToast = (message) => {
-    setToastMessage(message);
-    setToastType(/^(failed|error|invalid)/i.test(message) ? "error" : "success");
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2800);
   };
 
   // Format cell display value
@@ -266,7 +258,7 @@ export default function SuperAdminServicesDashboard() {
 
   const handleSaveChanges = () => {
     setShowModal(false);
-    displayToast('Changes saved.');
+    showToast({ message: 'Changes saved.', type: 'success', duration: 2800 });
   };
 
   // Handle editing a service
@@ -290,7 +282,11 @@ export default function SuperAdminServicesDashboard() {
             service.id === updatedService.id ? { ...service, ...updatedService } : service
           )
     }));
-            displayToast(updatedService.is_deleted ? 'Service removed successfully' : 'Service updated successfully');
+    showToast({
+      message: updatedService.is_deleted ? 'Service removed successfully' : 'Service updated successfully',
+      type: 'success',
+      duration: 2800,
+    });
   };
 
   // Handle opening add modal
@@ -309,7 +305,7 @@ export default function SuperAdminServicesDashboard() {
       ...prev,
       rows: [newService, ...prev.rows]
     }));
-    displayToast('Service created successfully');
+    showToast({ message: 'Service created successfully', type: 'success', duration: 2800 });
   };
 
   return (
@@ -605,7 +601,7 @@ export default function SuperAdminServicesDashboard() {
       />
 
       {/* ─── TOAST ─── */}
-      <Toast isVisible={showToast} message={toastMessage} type={toastType} duration={2800} />
+      <ToastViewport />
     </DashboardShell>
   );
 }

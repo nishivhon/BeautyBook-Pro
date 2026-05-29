@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 
 import { databaseAPI } from "../../../services/databaseApi";
+import { ConfirmationDialog } from "../customer/confirmation_dialog";
+import { useToast } from "../../toast";
 
 
 
@@ -39,6 +41,7 @@ const parseCategorySpecialty = (value) => {
 
 
 export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
+  const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
 
@@ -51,8 +54,7 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-
-  const [error, setError] = useState(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const [categories, setCategories] = useState([]);
 
@@ -70,7 +72,18 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || showConfirmation) return;
 
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setShowConfirmation(true);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, showConfirmation]);
 
   useEffect(() => {
 
@@ -85,8 +98,6 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
         employment: staff.employment !== false
 
       });
-
-      setError(null);
 
     }
 
@@ -182,11 +193,24 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
     });
 
-    setError(null);
-
   };
 
+  const handleExitAttempt = () => {
+    if (isLoading || showConfirmation) return;
+    setShowConfirmation(true);
+  };
 
+  const handleConfirmExit = () => {
+    setShowConfirmation(false);
+    if (staff && isOpen) {
+      setFormData({
+        names: staff.names || '',
+        category_specialty: parseCategorySpecialty(staff.category_specialty),
+        employment: staff.employment !== false,
+      });
+    }
+    onClose();
+  };
 
   const handleSubmit = async (e) => {
 
@@ -194,15 +218,13 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
     setIsLoading(true);
 
-    setError(null);
-
 
 
     try {
 
       if (!staff || !staff.id) {
 
-        setError('Staff ID is missing');
+        showToast({ message: 'Staff ID is missing', type: 'error', duration: 3000 });
 
         setIsLoading(false);
 
@@ -214,7 +236,7 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
       if (!formData.names.trim()) {
 
-        setError('Staff name is required');
+        showToast({ message: 'Staff name is required', type: 'error', duration: 3000 });
 
         setIsLoading(false);
 
@@ -234,7 +256,7 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
       if (selectedSpecialties.length === 0) {
 
-        setError('Please select at least one specialty');
+        showToast({ message: 'Please select at least one specialty', type: 'error', duration: 3000 });
 
         setIsLoading(false);
 
@@ -290,7 +312,11 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
       console.error('[EditStaffModal] Error:', err);
 
-      setError(err.message || 'An error occurred while updating staff');
+      showToast({
+        message: err.message || 'An error occurred while updating staff',
+        type: 'error',
+        duration: 3000,
+      });
 
     } finally {
 
@@ -323,7 +349,7 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
 
   return (
-
+    <>
     <div style={{
 
       position: 'fixed',
@@ -348,7 +374,7 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
       backdropFilter: 'blur(4px)'
 
-    }}>
+    }} onClick={handleExitAttempt}>
 
       <div style={{
 
@@ -368,7 +394,7 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
         animation: 'fadeInScale 0.3s ease-out'
 
-      }}>
+      }} onClick={(event) => event.stopPropagation()}>
 
         {/* Header */}
 
@@ -382,7 +408,9 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
           <button
 
-            onClick={onClose}
+            type="button"
+            onClick={handleExitAttempt}
+            disabled={isLoading}
 
             style={{
 
@@ -417,36 +445,6 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
           </button>
 
         </div>
-
-
-
-        {/* Error Message */}
-
-        {error && (
-
-          <div style={{
-
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-
-            borderRadius: '6px',
-
-            padding: '12px',
-
-            marginBottom: '16px',
-
-            color: '#EF4444',
-
-            fontSize: '13px'
-
-          }}>
-
-            {error}
-
-          </div>
-
-        )}
 
 
 
@@ -798,7 +796,7 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
               type="button"
 
-              onClick={onClose}
+              onClick={handleExitAttempt}
 
               disabled={isLoading}
 
@@ -922,7 +920,18 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
 
       </div>
 
+    </div>
 
+      <ConfirmationDialog
+        isOpen={showConfirmation}
+        zIndex={3000}
+        title="Leave without saving?"
+        message="Are you sure you want to exit? Any unsaved changes will be lost."
+        confirmText="Leave"
+        cancelText="Stay"
+        onConfirm={handleConfirmExit}
+        onCancel={() => setShowConfirmation(false)}
+      />
 
       <style>{`
 
@@ -1015,9 +1024,7 @@ export const EditStaffModal = ({ staff, isOpen, onClose, onSave }) => {
         }
 
       `}</style>
-
-    </div>
-
+    </>
   );
 
 };
