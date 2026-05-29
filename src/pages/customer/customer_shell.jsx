@@ -8,79 +8,23 @@ import { AppointmentFormPhase4 } from "../../components/modal/customer/appointme
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 import { useToast } from "../../components/toast";
 import CustomerHeaderActions from "../../components/customer/CustomerHeaderActions";
+import {
+  LogoMark,
+  CustomerDashboardIcon,
+  CustomerProfileIcon,
+  CustomerHistoryIcon,
+  CustomerCouponsIcon,
+  CustomerBookingIcon,
+  CustomerLogOutIcon,
+} from "../../components/customer/customerDashboardIcons";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { useCustomerAppointmentsData } from "./customer_store";
 
-const LogoIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="7" cy="7" r="3.5" stroke="#000" strokeWidth="2" />
-    <circle cx="7" cy="15" r="3.5" stroke="#000" strokeWidth="2" />
-    <path d="M9.8 8.8l7 7M9.8 13.2L17 6.2" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
-const DashboardIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="1" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6" />
-    <rect x="10" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6" />
-    <rect x="1" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6" />
-    <rect x="10" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6" />
-  </svg>
-);
-
-const UserIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="9" cy="5.5" r="3.5" stroke={color} strokeWidth="1.6" />
-    <path d="M2 16c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
-);
-
-const HistoryIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.5" />
-    <path d="M12 6v6l4 2" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-);
-
-const TicketIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M4 4h16v2H4V4zm0 4h16v8H4V8zm0 10h16v2H4v-2z" stroke={color} strokeWidth="1.5" fill="none" />
-  </svg>
-);
-
-const BookingIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="3" y="4" width="18" height="18" rx="3" stroke={color} strokeWidth="1.6" />
-    <path d="M8 2v4M16 2v4M3 10h18" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
-);
-
-const BellIcon = ({ color = "#fff" }) => (
-  <svg width="16" height="19" viewBox="0 0 16 19" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M8 1a5 5 0 00-5 5v3l-1.5 2.5h13L13 9V6a5 5 0 00-5-5z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
-    <path d="M6.5 15.5a1.5 1.5 0 003 0" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
-);
-
-const SettingsIcon = ({ color = "#fff" }) => (
-  <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="8.5" cy="8.5" r="2.5" stroke={color} strokeWidth="1.6" />
-    <path d="M8.5 1v2M8.5 14v2M1 8.5h2M14 8.5h2M3.05 3.05l1.41 1.41M12.54 12.54l1.41 1.41M3.05 13.95l1.41-1.41M12.54 4.46l1.41-1.41" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
-);
-
-const LogOutIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M7 15H3.5A1.5 1.5 0 012 13.5v-9A1.5 1.5 0 013.5 3H7" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-    <path d="M12 12l4-3-4-3M16 9H7" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/customer/dashboard" },
-  { id: "profile", label: "Profile", icon: UserIcon, path: "/customer/profile" },
-  { id: "history", label: "Service History", icon: HistoryIcon, path: "/customer/history" },
-  { id: "coupons", label: "Coupons", icon: TicketIcon, path: "/customer/coupons" },
+  { id: "dashboard", label: "Dashboard", icon: CustomerDashboardIcon, path: "/customer/dashboard" },
+  { id: "profile", label: "Profile", icon: CustomerProfileIcon, path: "/customer/profile" },
+  { id: "history", label: "Service History", icon: CustomerHistoryIcon, path: "/customer/history" },
+  { id: "coupons", label: "Coupons", icon: CustomerCouponsIcon, path: "/customer/coupons" },
 ];
 
 const PAGE_META = {
@@ -389,6 +333,8 @@ export function CustomerShell({ activeNav, profile, children }) {
         <DashboardShell
           navItems={NAV_ITEMS}
           activeNav={activeNav}
+          LogoIcon={LogoMark}
+          LogOutIcon={CustomerLogOutIcon}
           roleLabel={sidebarDisplayName}
           roleInitial={sidebarDisplayInitial}
           showSidebarHeader={false}
@@ -400,7 +346,7 @@ export function CustomerShell({ activeNav, profile, children }) {
           storageKey="customerSidebarExpanded"
           sidebarExtraAction={(
             <button onClick={handleBookAppointmentClick} className="nav-button cdb-book-nav-btn" title="Book Appointment" type="button">
-              <BookingIcon color="currentColor" />
+              <CustomerBookingIcon color="currentColor" />
               {sidebarExpanded && <span>Book Appointment</span>}
             </button>
           )}

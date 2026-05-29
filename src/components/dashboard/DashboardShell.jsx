@@ -39,6 +39,8 @@ export function DashboardShell({
   showRoleBadge = true,
   sidebarExtraAction = null,
   headerExtraActions = null,
+  LogoIcon: LogoIconComponent = LogoIcon,
+  LogOutIcon: LogOutIconComponent = LogOutIcon,
   onLogoutConfirm,
   logoutTitle = "Log Out?",
   logoutMessage = "Are you sure you want to log out?",
@@ -261,7 +263,7 @@ export function DashboardShell({
               aria-expanded={isMobileDrawerViewport ? mobileSidebarOpen : sidebarExpanded}
             >
               <div className="logo-badge">
-                <LogoIcon />
+                <LogoIconComponent />
               </div>
               {isSidebarExpandedUI && <span className="brand-name">BeautyBook Pro</span>}
             </button>
@@ -296,7 +298,7 @@ export function DashboardShell({
 
         <div className="sidebar-logout-section">
           <button onClick={handleLogout} className="logout-button" title="Log out" type="button">
-            <LogOutIcon />
+            <LogOutIconComponent />
             {isSidebarExpandedUI && <span>Log Out</span>}
           </button>
         </div>
@@ -322,7 +324,7 @@ export function DashboardShell({
               aria-expanded={isMobileDrawerViewport ? mobileSidebarOpen : sidebarExpanded}
             >
               <div className="logo-badge">
-                <LogoIcon />
+                <LogoIconComponent />
               </div>
             </button>
             <span
