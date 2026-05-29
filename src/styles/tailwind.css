@@ -1627,9 +1627,8 @@ html[data-theme="light"] .container-empty-state {
   color: #0c0a09 !important;
 }
 
-/* In light mode, make `db-row` use the same subtle card background as the metric cards.
-   Table rows (tr.db-row) are explicitly reset further down so table layout is preserved. */
-html[data-theme="light"] .db-row {
+/* In light mode, card-style `db-row` — exclude table rows so table layout matches dark mode. */
+html[data-theme="light"] .db-row:not(tr) {
   background: rgba(250, 190, 206, 0.12) !important;
   border-color: #d5d2d3 !important;
   box-shadow: 0 8px 22px rgba(243, 139, 166, 0.1) !important;
@@ -1638,7 +1637,7 @@ html[data-theme="light"] .db-row {
   cursor: pointer;
 }
 
-html[data-theme="light"] .db-row:hover {
+html[data-theme="light"] .db-row:not(tr):hover {
   background: rgba(243, 139, 166, 0.12) !important;
 }
 
@@ -1685,11 +1684,16 @@ html[data-theme="light"] .data-table tbody tr.db-row {
   border: none !important;
   padding: 0 !important;
   border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  cursor: default !important;
 }
 
 html[data-theme="light"] .data-table tbody tr.db-row td {
   background: transparent !important;
   padding: 12px 8px !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
 }
 
 html[data-theme="light"] .superadmin-page-content .data-table tbody tr,
@@ -1697,6 +1701,36 @@ html[data-theme="light"] .superadmin-page-content .data-table tbody tr td,
 html[data-theme="light"] .superadmin-page-content .data-table thead tr,
 html[data-theme="light"] .superadmin-page-content .data-table thead tr th {
   background: transparent !important;
+}
+
+/* Super Admin tables: identical layout in light/dark — colors only differ */
+html[data-theme="light"] .superadmin-page-content .data-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+}
+
+html[data-theme="light"] .superadmin-page-content .data-table th {
+  padding: 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+html[data-theme="light"] .superadmin-page-content .data-table tbody tr.db-row td {
+  padding: 12px 8px !important;
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+  vertical-align: middle !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+html[data-theme="light"] .superadmin-page-content .data-table td {
+  border-bottom: 1px solid rgba(152, 143, 129, 0.1) !important;
 }
 
 html[data-theme="light"] .dashboard-panel input[type="text"] {
@@ -8625,11 +8659,16 @@ html[data-theme="light"] .dash-page-title,
     border: none !important;
     padding: 0 !important;
     border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
   }
 
   .data-table tbody tr.db-row td {
     background: transparent !important;
     padding: 12px 8px;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    vertical-align: middle;
   }
 
   .data-table tbody tr.db-row:hover,

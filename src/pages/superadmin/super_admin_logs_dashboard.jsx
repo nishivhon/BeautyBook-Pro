@@ -271,6 +271,40 @@ export default function SuperAdminLogsDashboard() {
     displayToast('Changes saved.');
   };
 
+  const handleExportLogs = () => {
+    const rows = logsData.rows;
+    const cols = logsData.cols;
+    if (!rows?.length || !cols?.length) {
+      displayToast('No logs to export');
+      return;
+    }
+
+    const escapeCsv = (value) => {
+      const str = String(value ?? '');
+      if (/[",\n\r]/.test(str)) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const headerLine = cols.map((col) => escapeCsv(formatColumnName(col))).join(',');
+    const dataLines = rows.map((row) =>
+      cols.map((col) => escapeCsv(formatCellValue(row[col], col))).join(',')
+    );
+    const csv = [headerLine, ...dataLines].join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `appointment-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    displayToast(`Exported ${rows.length} logs`);
+  };
+
   return (
     <DashboardShell
       navItems={NAV_ITEMS}
@@ -330,6 +364,25 @@ export default function SuperAdminLogsDashboard() {
                     }}
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={handleExportLogs}
+                  disabled={loading || !logsData.rows?.length}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#6B6157',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: loading || !logsData.rows?.length ? 'not-allowed' : 'pointer',
+                    opacity: loading || !logsData.rows?.length ? 0.7 : 1,
+                  }}
+                  title={!logsData.rows?.length ? 'No logs to export' : 'Export logs as CSV'}
+                >
+                  Export
+                </button>
               </div>
             </div>
 

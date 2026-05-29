@@ -86,6 +86,10 @@ const ShieldIcon = ({ color = "currentColor" }) => (
 
 // ─── Navigation Items ─────────────────────────────────────────────────────
 
+const ROWS_PER_PAGE = 7;
+const TABLE_CELL_STYLE = { fontSize: '13px', whiteSpace: 'normal', wordBreak: 'break-word', padding: '12px 8px' };
+const TABLE_CHECKBOX_CELL_STYLE = { ...TABLE_CELL_STYLE, width: 40, textAlign: 'center' };
+
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
   { id: "staff-management", label: "Staff Management", icon: NavUserIcon, path: "/superadmin/users" },
@@ -409,7 +413,7 @@ export default function SuperAdminClientsDashboard() {
                 <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: 'center', width: '40px', padding: '8px' }}></th>
+                      <th style={{ textAlign: 'center', width: 40, padding: '12px 8px' }}></th>
                       {clientsData.cols.map((col) => (
                         <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
                       ))}
@@ -417,12 +421,11 @@ export default function SuperAdminClientsDashboard() {
                   </thead>
                   <tbody>
                     {(() => {
-                      const itemsPerPage = 6;
-                      const startIdx = (currentClientPage - 1) * itemsPerPage;
-                      const endIdx = startIdx + itemsPerPage;
+                      const startIdx = (currentClientPage - 1) * ROWS_PER_PAGE;
+                      const endIdx = startIdx + ROWS_PER_PAGE;
                       return filteredClients.slice(startIdx, endIdx).map((client, idx) => (
                         <tr key={idx} className="db-row">
-                          <td style={{ width: '40px', fontSize: '13px', textAlign: 'center', padding: '8px' }}>
+                          <td style={TABLE_CHECKBOX_CELL_STYLE}>
                             <input
                               type="checkbox"
                               className="client-select-checkbox"
@@ -430,11 +433,11 @@ export default function SuperAdminClientsDashboard() {
                               onChange={() => handleSelectClient(client.id)}
                               style={{
                                 cursor: 'pointer',
-                                width: '18px',
-                                height: '18px',
+                                width: 18,
+                                height: 18,
+                                margin: 0,
                                 accentColor: isDarkMode ? '#FFD700' : '#e91e63',
                                 appearance: 'auto',
-                                scale: '1.2'
                               }}
                             />
                           </td>
@@ -442,7 +445,7 @@ export default function SuperAdminClientsDashboard() {
                             const cellValue = client[col];
                             const displayValue = formatCellValue(cellValue, col);
                             return (
-                              <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
+                              <td key={col} style={TABLE_CELL_STYLE}>{displayValue}</td>
                             );
                           })}
                         </tr>
@@ -451,10 +454,9 @@ export default function SuperAdminClientsDashboard() {
                   </tbody>
                 </table>
                 {filteredClients.length > 0 && (() => {
-                  const itemsPerPage = 6;
-                  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-                  const startIdx = (currentClientPage - 1) * itemsPerPage + 1;
-                  const endIdx = Math.min(currentClientPage * itemsPerPage, filteredClients.length);
+                  const totalPages = Math.ceil(filteredClients.length / ROWS_PER_PAGE);
+                  const startIdx = (currentClientPage - 1) * ROWS_PER_PAGE + 1;
+                  const endIdx = Math.min(currentClientPage * ROWS_PER_PAGE, filteredClients.length);
                   return (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>

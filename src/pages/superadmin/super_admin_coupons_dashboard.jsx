@@ -90,11 +90,16 @@ const NAV_ITEMS = [
 
 const STATUS_TABS = ["All", "Active", "Expired", "Upcoming", "Deleted"];
 
+const ROWS_PER_PAGE = 7;
+const TABLE_CELL_STYLE = { fontSize: 13, whiteSpace: 'normal', wordBreak: 'break-word', padding: '12px 8px' };
+const TABLE_CHECKBOX_CELL_STYLE = { ...TABLE_CELL_STYLE, width: 40, textAlign: 'center' };
+
 export default function SuperAdminCouponsDashboard() {
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState("coupons");
   const [isDarkMode, setIsDarkMode] = useState(() => document.documentElement.getAttribute('data-theme') !== 'light');
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentCouponPage, setCurrentCouponPage] = useState(1);
   const [couponsData, setCouponsData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedCoupons, setSelectedCoupons] = useState(new Set());
@@ -326,15 +331,74 @@ export default function SuperAdminCouponsDashboard() {
       logoutCancelText="Stay Logged In"
     >
       <div className="superadmin-page-content" style={{ paddingTop: 20 }}>
-        <div className="dashboard-panel superadmin-fixed-panel">
+        <div className="dashboard-panel superadmin-fixed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {/* Header actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexShrink: 0 }}>
             <div className="panel-title">
               {searchQuery || statusFilter !== "All"
                 ? `Search Results (${filteredCoupons.length})`
                 : `All Coupons (${couponsData.length})`}
             </div>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'nowrap', justifyContent: 'flex-end', overflowX: 'auto', maxWidth: 'min(100%, 720px)' }}>
+              {selectedCoupons.size > 0 && (
+                <>
+                  <span style={{ color: '#988f81', fontSize: 13, whiteSpace: 'nowrap' }}>
+                    {selectedCoupons.size} coupon{selectedCoupons.size > 1 ? 's' : ''} selected
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleBulkDelete}
+                    style={{
+                      padding: '6px 14px',
+                      background: '#e74c3c',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 6,
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkDeactivate}
+                    style={{
+                      padding: '6px 14px',
+                      background: '#7f8c8d',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 6,
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Deactivate
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkActivate}
+                    style={{
+                      padding: '6px 14px',
+                      background: '#27ae60',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 6,
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Activate
+                  </button>
+                  <div
+                    aria-hidden
+                    style={{ width: 1, height: 24, background: 'rgba(152, 143, 129, 0.35)', flexShrink: 0 }}
+                  />
+                </>
+              )}
               {/* Search */}
               <input
                 type="text"
@@ -343,6 +407,7 @@ export default function SuperAdminCouponsDashboard() {
                 onChange={e => {
                   setSearchQuery(e.target.value);
                   setSelectedCoupons(new Set());
+                  setCurrentCouponPage(1);
                 }}
                 style={{
                   padding: '8px 12px 8px 32px',
@@ -393,6 +458,7 @@ export default function SuperAdminCouponsDashboard() {
                         onClick={() => {
                           setStatusFilter(status);
                           setSelectedCoupons(new Set());
+                          setCurrentCouponPage(1);
                           setFilterOpen(false);
                         }}
                       >
@@ -405,141 +471,148 @@ export default function SuperAdminCouponsDashboard() {
             </div>
           </div>
 
-          {/* Bulk actions bar */}
-          {selectedCoupons.size > 0 && (
-            <div style={{
-              background: isDarkMode ? 'rgba(221,144,29,0.08)' : 'rgba(231,76,60,0.08)',
-              border: '1px solid rgba(152,143,129,0.18)',
-              borderRadius: 8,
-              padding: '10px 18px',
-              marginBottom: 12,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-            }}>
-              <span style={{ color: '#988f81', fontSize: 13 }}>{selectedCoupons.size} coupon{selectedCoupons.size > 1 ? 's' : ''} selected</span>
-              <button
-                onClick={handleBulkDelete}
-                style={{
-                  padding: '6px 14px',
-                  background: '#e74c3c',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontWeight: 600,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
-              >
-                Delete
-              </button>
-              <button
-                onClick={handleBulkDeactivate}
-                style={{
-                  padding: '6px 14px',
-                  background: '#7f8c8d',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontWeight: 600,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
-              >
-                Deactivate
-              </button>
-              <button
-                onClick={handleBulkActivate}
-                style={{
-                  padding: '6px 14px',
-                  background: '#27ae60',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontWeight: 600,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
-              >
-                Activate
-              </button>
-            </div>
-          )}
-
           {/* Table */}
-          <div style={{ marginTop: 0, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ marginTop: 0, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {loading ? (
               <div className="container-empty-state">Loading coupon data...</div>
             ) : (
-            <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
-              <thead>
-                <tr>
-                  <th style={{ width: 40, padding: 8 }} />
-                  {columns.slice(1).map(col => (
-                    <th key={col.key} style={{ textAlign: 'left' }}>{col.label}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCoupons.length > 0 ? filteredCoupons.map((coupon, idx) => (
-                  <tr key={coupon.id} className="db-row">
-                    <td style={{ width: 40, fontSize: 13, textAlign: 'center', padding: 8 }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedCoupons.has(coupon.id)}
-                        onChange={() => handleSelectCoupon(coupon.id)}
-                        style={{
-                          cursor: 'pointer',
-                          width: 18,
-                          height: 18,
-                          accentColor: isDarkMode ? '#FFD700' : '#e91e63',
-                          appearance: 'auto',
-                          scale: 1.2,
-                        }}
-                      />
-                    </td>
-                    <td style={{ fontSize: 13 }}>{coupon.code}</td>
-                    <td style={{ fontSize: 13 }}>{coupon.valueType}</td>
-                    <td style={{ fontSize: 13 }}>{coupon.valueType === 'Percentage' ? `${coupon.value}%` : `₱${coupon.value}`}</td>
-                    <td style={{ fontSize: 13 }}>{coupon.description}</td>
-                    <td style={{ fontSize: 13 }}>{formatDate(coupon.startDate)}</td>
-                    <td style={{ fontSize: 13 }}>{formatDate(coupon.endDate)}</td>
-                    <td style={{ fontSize: 13 }}>{!coupon.maxUses || coupon.maxUses === 0 ? 'Unlimited' : coupon.maxUses}</td>
-                    <td style={{ fontSize: 13 }}>{coupon.timesUsed}</td>
-                    <td style={{ fontSize: 13 }}>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '2px 10px',
-                        borderRadius: 12,
-                        fontWeight: 600,
-                        fontSize: 12,
-                        background: statusColors[coupon.status]?.bg || '#bbb',
-                        color: statusColors[coupon.status]?.color || '#fff',
-                        minWidth: 70,
-                        textAlign: 'center',
-                      }}>{coupon.status}</span>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={columns.length} style={{ textAlign: 'center', padding: 32, color: '#988f81', fontSize: 15 }}>
-                      No coupons found. <button style={{
-                        marginLeft: 8,
-                        padding: '6px 14px',
-                        background: isDarkMode ? '#dd901d' : '#e74c3c',
-                        color: '#1a1a1a',
-                        border: 'none',
-                        borderRadius: 6,
-                        fontWeight: 600,
-                        fontSize: 13,
-                        cursor: 'pointer',
-                      }}>Remove</button>
-                      {/* TODO: Remove Coupon modal */}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+              <>
+                <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'center', width: 40, padding: '12px 8px' }} />
+                      {columns.slice(1).map(col => (
+                        <th key={col.key} style={{ textAlign: 'left' }}>{col.label}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCoupons.length > 0 ? (() => {
+                      const startIdx = (currentCouponPage - 1) * ROWS_PER_PAGE;
+                      const endIdx = startIdx + ROWS_PER_PAGE;
+                      return filteredCoupons.slice(startIdx, endIdx).map((coupon) => (
+                        <tr key={coupon.id} className="db-row">
+                          <td style={TABLE_CHECKBOX_CELL_STYLE}>
+                            <input
+                              type="checkbox"
+                              checked={selectedCoupons.has(coupon.id)}
+                              onChange={() => handleSelectCoupon(coupon.id)}
+                              style={{
+                                cursor: 'pointer',
+                                width: 18,
+                                height: 18,
+                                margin: 0,
+                                accentColor: isDarkMode ? '#FFD700' : '#e91e63',
+                                appearance: 'auto',
+                              }}
+                            />
+                          </td>
+                          <td style={TABLE_CELL_STYLE}>{coupon.code}</td>
+                          <td style={TABLE_CELL_STYLE}>{coupon.valueType}</td>
+                          <td style={TABLE_CELL_STYLE}>{coupon.valueType === 'Percentage' ? `${coupon.value}%` : `₱${coupon.value}`}</td>
+                          <td style={TABLE_CELL_STYLE}>{coupon.description}</td>
+                          <td style={TABLE_CELL_STYLE}>{formatDate(coupon.startDate)}</td>
+                          <td style={TABLE_CELL_STYLE}>{formatDate(coupon.endDate)}</td>
+                          <td style={TABLE_CELL_STYLE}>{!coupon.maxUses || coupon.maxUses === 0 ? 'Unlimited' : coupon.maxUses}</td>
+                          <td style={TABLE_CELL_STYLE}>{coupon.timesUsed}</td>
+                          <td style={TABLE_CELL_STYLE}>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '2px 10px',
+                              borderRadius: 12,
+                              fontWeight: 600,
+                              fontSize: 12,
+                              background: statusColors[coupon.status]?.bg || '#bbb',
+                              color: statusColors[coupon.status]?.color || '#fff',
+                              minWidth: 70,
+                              textAlign: 'center',
+                            }}>{coupon.status}</span>
+                          </td>
+                        </tr>
+                      ));
+                    })() : (
+                      <tr>
+                        <td colSpan={columns.length} style={{ textAlign: 'center', padding: 32, color: '#988f81', fontSize: 15 }}>
+                          No coupons found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+                {filteredCoupons.length > 0 && (() => {
+                  const totalPages = Math.ceil(filteredCoupons.length / ROWS_PER_PAGE);
+                  const startIdx = (currentCouponPage - 1) * ROWS_PER_PAGE + 1;
+                  const endIdx = Math.min(currentCouponPage * ROWS_PER_PAGE, filteredCoupons.length);
+                  return (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
+                      <div style={{ color: '#988f81', fontSize: '13px' }}>
+                        Showing {startIdx}–{endIdx} of {filteredCoupons.length} coupons
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => setCurrentCouponPage(p => Math.max(1, p - 1))}
+                          disabled={currentCouponPage === 1}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(152, 143, 129, 0.3)',
+                            background: currentCouponPage === 1 ? 'rgba(152, 143, 129, 0.05)' : 'transparent',
+                            color: currentCouponPage === 1 ? '#6B6157' : '#988f81',
+                            fontSize: '13px',
+                            cursor: currentCouponPage === 1 ? 'default' : 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentCouponPage !== 1) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                              e.currentTarget.style.background = 'rgba(152, 143, 129, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentCouponPage !== 1) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          ← Previous
+                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#988f81', fontSize: '13px' }}>
+                          Page {currentCouponPage} of {totalPages}
+                        </div>
+                        <button
+                          onClick={() => setCurrentCouponPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentCouponPage === totalPages}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(152, 143, 129, 0.3)',
+                            background: currentCouponPage === totalPages ? 'rgba(152, 143, 129, 0.05)' : 'transparent',
+                            color: currentCouponPage === totalPages ? '#6B6157' : '#988f81',
+                            fontSize: '13px',
+                            cursor: currentCouponPage === totalPages ? 'default' : 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentCouponPage !== totalPages) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)';
+                              e.currentTarget.style.background = 'rgba(152, 143, 129, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentCouponPage !== totalPages) {
+                              e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
             )}
           </div>
         </div>
