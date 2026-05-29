@@ -205,7 +205,7 @@ const CONTACTS = [
   { id: "addr", text: "Canvas city, Abc st., 245 lot B" },
   { id: "phone", text: "(02) 123-4567", href: "tel:021234567" },
   { id: "email", text: "beautybookpro@gmail.com", href: "mailto:beautybookpro@gmail.com" },
-  { id: "hrs", text: "Mon-Fri: 8:00 AM - 5:00 PM" },
+  { id: "hrs", text: "Monday to Sunday: 8:00 AM - 8:00 PM" },
 ];
 
 function useReveal(threshold = 0.15) {
