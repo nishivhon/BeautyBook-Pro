@@ -302,6 +302,67 @@
   }
 }
 
+/* Phone layout only — matches isDesktop breakpoint (<768px) */
+@media (max-width: 767px) {
+  .service-carousel-panel,
+  .service-carousel-touch-surface {
+    box-shadow: none !important;
+  }
+
+  .service-carousel-panel button,
+  .service-carousel-touch-surface button,
+  .service-carousel-shell .hide-scrollbar button {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  .services-page-hero-stack {
+    position: relative;
+    z-index: 2;
+  }
+
+  .services-section-mobile {
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    margin-left: 0;
+    max-width: 100%;
+  }
+
+  .services-mobile-top-row {
+    overflow: hidden;
+  }
+
+  .service-list-column {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .service-list-carousel,
+  .service-list-carousel-track {
+    overflow: hidden !important;
+  }
+
+  .services-section-mobile .service-carousel-shell > .service-carousel-copy {
+    position: relative;
+    z-index: 1;
+    background: var(--bg-dark);
+  }
+
+  /* Avoid empty band below footer when content is shorter than the viewport */
+  .app-wrapper.services-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .app-wrapper.services-page > .footer {
+    margin-top: auto;
+    flex-shrink: 0;
+  }
+}
+
 /* Phones (480px and down) */
 @media (max-width: 480px) {
   .navbar {

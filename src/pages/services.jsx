@@ -368,7 +368,7 @@ function ServiceCategoryCarousel({ categories, activeCategoryIndex, hoveredCateg
       onTouchCancel={handleTouchEnd}
       style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "10px 0", pointerEvents: isSliding ? "none" : "auto", touchAction: "pan-y", WebkitTapHighlightColor: "transparent" }}
     >
-      <div className="hide-scrollbar" style={{ display: "flex", alignItems: "center", gap: isCompact ? "12px" : "14px", overflow: "visible", padding: isCompact ? "10px 4px 14px" : "10px 8px 14px", boxShadow: isTouchActive ? "0 0 0 1px rgba(221, 144, 29, 0.18), 0 0 24px rgba(221, 144, 29, 0.12)" : "none", borderRadius: "12px" }}>
+      <div className="hide-scrollbar service-carousel-touch-surface" style={{ display: "flex", alignItems: "center", gap: isCompact ? "12px" : "14px", overflow: "visible", padding: isCompact ? "10px 4px 14px" : "10px 8px 14px", boxShadow: isTouchActive ? "0 0 0 1px rgba(221, 144, 29, 0.18), 0 0 24px rgba(221, 144, 29, 0.12)" : "none", borderRadius: "12px" }}>
         {orderedCategories.map(({ sourceIndex, category }, orderedIndex) => {
           const isHovered = hoveredCategoryIndex === sourceIndex;
           const isPrimary = orderedIndex === 0;
@@ -507,6 +507,7 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
   const activePriceColor = themeMode === "light" ? "#f38ba6" : "#f7c669";
   const cardVerticalSpacing = isCompact ? 90 : itemSpacing;
   const cardPaddingX = isCompact ? "12px" : "16px";
+  const viewportHeight = isCompact ? 290 : 280;
 
   const handleTouchStart = (event) => {
     if (!services.length) return;
@@ -615,6 +616,7 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
   return (
     <div
       ref={containerRef}
+      className={`service-carousel-touch-surface${isCompact ? " service-list-carousel" : ""}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
@@ -623,8 +625,9 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
       onTouchCancel={handleTouchEnd}
       style={{
         position: "relative",
-        minHeight: isCompact ? "220px" : "280px",
-        overflow: "visible",
+        ...(isCompact
+          ? { height: viewportHeight, minHeight: viewportHeight, maxHeight: viewportHeight, overflow: "hidden" }
+          : { minHeight: "280px", overflow: "visible" }),
         padding: 0,
         display: "flex",
         flexDirection: "column",
@@ -636,7 +639,16 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
         borderRadius: "16px",
       }}
     >
-      <div style={{ position: "relative", height: "100%", minHeight: isCompact ? "160px" : "220px", paddingInline: isCompact ? "4px" : 0 }}>
+      <div
+        className={isCompact ? "service-list-carousel-track" : undefined}
+        style={{
+          position: "relative",
+          height: isCompact ? "100%" : undefined,
+          minHeight: isCompact ? "100%" : "220px",
+          overflow: isCompact ? "hidden" : "visible",
+          paddingInline: isCompact ? "4px" : 0,
+        }}
+      >
         {services.map((service, index) => {
           let offset = index - virtualIndex;
           if (offset > services.length / 2) offset -= services.length;
@@ -647,7 +659,9 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
           const scale = isActive ? 1 : Math.max(0.82, 1 - distance * 0.06);
           const opacity = Math.max(isUserScroll ? 0.5 : 0.26, 1 - distance * 0.16);
 
-          const maxRenderDistance = isUserScroll ? Math.max(visibleCount + 1, 6) : Math.max(visibleCount / 2 + 1, 3);
+          const maxRenderDistance = isCompact
+            ? (isUserScroll ? Math.max(visibleCount, 3) : Math.max(Math.ceil(visibleCount / 2) + 1, 2))
+            : (isUserScroll ? Math.max(visibleCount + 1, 6) : Math.max(visibleCount / 2 + 1, 3));
 
           if (distance > maxRenderDistance) {
             return null;
@@ -666,7 +680,7 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
                   transform: `translate(-50%, calc(-50% + ${offset * cardVerticalSpacing}px)) scale(${scale})`,
                   opacity,
                   zIndex: 20 - distance,
-                  minHeight: "75px",
+                  minHeight: isCompact ? "82px" : "75px",
                   borderRadius: "16px",
                   border: isActive ? activeCardBorder : inactiveCardBorder,
                   background: isActive ? activeCardBackground : inactiveCardBackground,
@@ -675,19 +689,55 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
                   cursor: "pointer",
                   boxShadow: isActive ? activeCardShadow : inactiveCardShadow,
                   display: "flex",
-                  alignItems: "center",
+                  alignItems: isCompact ? "flex-start" : "center",
                   justifyContent: "space-between",
-                  gap: "18px",
+                  gap: isCompact ? "8px" : "18px",
                   transition: "transform 240ms ease, opacity 240ms ease, background 240ms ease, border-color 240ms ease, box-shadow 240ms ease",
                   pointerEvents: services.length > 5 && distance > 2 ? "none" : "auto",
                 }}
             >
-              <div style={{ minWidth: 0, textAlign: "left" }}>
-                <div style={{ fontSize: "1.06rem", fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: serviceNameColor }}>{service.name}</div>
-                <div style={{ fontSize: "0.9rem", color: durationColor, marginTop: "4px" }}>{service.duration}</div>
+              <div style={{ minWidth: 0, flex: isCompact ? 1 : undefined, textAlign: "left" }}>
+                <div
+                  style={
+                    isCompact
+                      ? {
+                          fontSize: "0.76rem",
+                          fontWeight: 800,
+                          lineHeight: 1.25,
+                          color: serviceNameColor,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          overflowWrap: "anywhere",
+                        }
+                      : {
+                          fontSize: "1.06rem",
+                          fontWeight: 800,
+                          lineHeight: 1.15,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          color: serviceNameColor,
+                        }
+                  }
+                >
+                  {service.name}
+                </div>
+                <div style={{ fontSize: isCompact ? "0.72rem" : "0.9rem", color: durationColor, marginTop: "4px" }}>{service.duration}</div>
               </div>
 
-              <span style={{ fontSize: "0.9rem", fontWeight: 800, letterSpacing: "0.04em", color: isActive ? activePriceColor : priceColor, textTransform: "uppercase", whiteSpace: "nowrap" }}>
+              <span
+                style={{
+                  fontSize: isCompact ? "0.72rem" : "0.9rem",
+                  fontWeight: 800,
+                  letterSpacing: "0.04em",
+                  color: isActive ? activePriceColor : priceColor,
+                  textTransform: "uppercase",
+                  whiteSpace: "nowrap",
+                  ...(isCompact ? { flexShrink: 0, alignSelf: "flex-start", paddingTop: "2px" } : {}),
+                }}
+              >
                 {service.price}
               </span>
             </button>
@@ -704,11 +754,11 @@ function ServiceDetailsPanel({ service, onBookService, isCompact }) {
     <div
       style={{
         // Fixed height based on the largest details content (Women Regular Colors)
-        height: isCompact ? "240px" : "280px",
-        padding: isCompact ? "12px 6px 30px" : "10px 12px 30px",
+        height: isCompact ? "290px" : "280px",
+        padding: isCompact ? "10px 6px 16px" : "10px 12px 30px",
         display: "flex",
         flexDirection: "column",
-        gap: "12px",
+        gap: isCompact ? "6px" : "12px",
       }}
     >
       <h3
@@ -716,13 +766,14 @@ function ServiceDetailsPanel({ service, onBookService, isCompact }) {
           margin: 0,
           color: "var(--color-white)",
           fontFamily: "Georgia, 'Times New Roman', serif",
-          fontSize: isCompact ? "1.05rem" : "1.25rem",
-          lineHeight: 1.15,
+          fontSize: isCompact ? "0.72rem" : "1.25rem",
+          lineHeight: isCompact ? 1.2 : 1.15,
           width: "100%",
-          maxWidth: "16rem",
-          minHeight: isCompact ? "2.6rem" : "2.9rem",
+          maxWidth: isCompact ? "100%" : "16rem",
+          minHeight: isCompact ? "calc(0.72rem * 1.2 * 3)" : "2.9rem",
+          maxHeight: isCompact ? "calc(0.72rem * 1.2 * 3)" : undefined,
           display: "-webkit-box",
-          WebkitLineClamp: 2,
+          WebkitLineClamp: isCompact ? 3 : 2,
           WebkitBoxOrient: "vertical",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -731,21 +782,58 @@ function ServiceDetailsPanel({ service, onBookService, isCompact }) {
       >
         {service.name}
       </h3>
-      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px", width: isCompact ? "18rem" : "20rem" }}>
-        <div style={{ color: themeMode === "light" ? "#000000" : "#a79c8b", fontSize: "0.8rem", letterSpacing: "0.06em", textTransform: "none" }}>Category:</div>
-        <div style={{ color: themeMode === "light" ? "#000000" : "#f7f1e6", fontSize: "0.86rem", fontWeight: 700, fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(CATEGORIES.find(c => c.id === service.category) || {}).name || "—"}</div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: isCompact ? "flex-start" : "center",
+          gap: isCompact ? "4px" : "6px",
+          marginTop: isCompact ? "2px" : "6px",
+          width: isCompact ? "100%" : "20rem",
+          maxWidth: isCompact ? "100%" : "20rem",
+          minWidth: 0,
+          flexWrap: isCompact ? "wrap" : "nowrap",
+        }}
+      >
+        <div style={{ color: themeMode === "light" ? "#000000" : "#a79c8b", fontSize: isCompact ? "0.65rem" : "0.8rem", letterSpacing: "0.06em", textTransform: "none", flexShrink: 0 }}>Category:</div>
+        <div
+          style={{
+            color: themeMode === "light" ? "#000000" : "#f7f1e6",
+            fontSize: isCompact ? "0.68rem" : "0.86rem",
+            fontWeight: 700,
+            fontStyle: "italic",
+            minWidth: 0,
+            flex: isCompact ? "1 1 100%" : undefined,
+            ...(isCompact
+              ? {
+                  lineHeight: 1.25,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  overflowWrap: "anywhere",
+                }
+              : {
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }),
+          }}
+        >
+          {(CATEGORIES.find(c => c.id === service.category) || {}).name || "—"}
+        </div>
       </div>
 
       <p
         style={{
           margin: 0,
           color: themeMode === "light" ? "#111111" : "#f7f1e6",
-          fontSize: isCompact ? "0.94rem" : "1rem",
+          fontSize: isCompact ? "0.74rem" : "1rem",
           lineHeight: 1.35,
-          maxWidth: isCompact ? "18rem" : "20rem",
+          maxWidth: isCompact ? "100%" : "20rem",
           width: "100%",
-          minHeight: isCompact ? "4.05rem" : "4.05rem",
-          maxHeight: isCompact ? "4.05rem" : "4.05rem",
+          flex: isCompact ? "1 1 auto" : undefined,
+          minHeight: isCompact ? "calc(0.74rem * 1.35 * 3)" : "4.05rem",
+          maxHeight: isCompact ? "calc(0.74rem * 1.35 * 3)" : "4.05rem",
           display: "-webkit-box",
           WebkitLineClamp: 3,
           WebkitBoxOrient: "vertical",
@@ -768,7 +856,7 @@ function ServiceDetailsPanel({ service, onBookService, isCompact }) {
             alignItems: "center",
             minWidth: isCompact ? "100%" : "180px",
             width: isCompact ? "100%" : "auto",
-            height: isCompact ? "44px" : "34px",
+            height: isCompact ? "40px" : "34px",
             borderRadius: "6px",
             fontSize: "0.88rem",
             padding: "0 18px",
@@ -815,16 +903,16 @@ export default function ServicesPage() {
   }, []);
 
   return (
-    <div className="app-wrapper" style={{ zoom: isDesktop ? '150%' : '100%', fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial' }}>
+    <div className="app-wrapper services-page" style={{ zoom: isDesktop ? '150%' : '100%', fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial' }}>
       <NavBar />
 
       {/* Hero */}
-      <div className="pt-16">
+      <div className={`pt-16${isCompact ? " services-page-hero-stack" : ""}`}>
         <HeroSection />
       </div>
 
       {/* Main Content Section - Services Three Column Layout */}
-      <section id="services" className="services-section">
+      <section id="services" className={`services-section${isCompact ? " services-section-mobile" : ""}`}>
         <div
           className="service-carousel-shell"
           style={{
@@ -883,6 +971,7 @@ export default function ServicesPage() {
           ) : (
             <>
               <div
+                className="services-mobile-top-row"
                 style={{
                   display: "flex",
                   flexDirection: "row",
@@ -892,10 +981,10 @@ export default function ServicesPage() {
                   justifyContent: "space-between",
                   flexWrap: "nowrap",
                   position: "relative",
-                  zIndex: 1,
+                  zIndex: 0,
                 }}
               >
-                <div style={{ flex: "0 0 55%", minWidth: "0" }}>
+                <div className="service-list-column" style={{ flex: "0 0 55%", minWidth: "0" }}>
                   <ServicePinWheelCarousel
                     services={categoryServices}
                     activeServiceIndex={activeServiceIndex}
@@ -917,7 +1006,7 @@ export default function ServicesPage() {
                 </div>
               </div>
 
-              <div className="service-carousel-copy" style={{ minWidth: 0, marginTop: "0", position: "relative", zIndex: 2 }}>
+              <div className="service-carousel-copy" style={{ minWidth: 0, marginTop: "0", position: "relative", zIndex: 0 }}>
                 <div>
                   <ServiceCategoryCarousel
                     categories={CATEGORIES}
