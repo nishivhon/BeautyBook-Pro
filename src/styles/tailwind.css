@@ -487,7 +487,8 @@ html[data-theme="light"] {
   min-height: 110px;
   max-width: 280px;
   margin: 0 auto;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
   box-shadow: 0 6px 20px rgba(0,0,0,0.5);
   transition: all 0.3s ease;
   cursor: pointer;
@@ -515,21 +516,29 @@ html[data-theme="light"] {
 }
 
 .hiw-feature-icon {
-  width: 30px;
-  height: 30px;
-  padding: 6px;
+  width: 56px;
+  height: 56px;
+  padding: 5px;
   box-sizing: border-box;
-  border-radius: 6px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-amber);
+  background: rgba(221, 144, 29, 0.28);
   margin-left: 4px;
+  flex-shrink: 0;
 }
 
 .hiw-feature-icon svg {
-  width: 10px;
-  height: 10px;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.public-page-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   display: block;
 }
 
@@ -934,15 +943,15 @@ html[data-theme="light"] .hero-title .hero-line-2 {
   }
 
   .hiw-feature-icon {
-    width: 24px;
-    height: 24px;
-    padding: 4px;
+    width: 48px;
+    height: 48px;
+    padding: 5px;
     margin-left: 0;
   }
 
   .hiw-feature-icon svg {
-    width: 8px;
-    height: 8px;
+    width: 100%;
+    height: 100%;
   }
 
   .hiw-feature-title {
@@ -3349,7 +3358,7 @@ html[data-theme="light"] .dash-page-title,
   }
 
   html[data-theme="light"] .logo-badge {
-    background: #f5f0e8;
+    background: rgba(245, 240, 232, 0.45);
     color: #000000;
   }
 
@@ -3448,8 +3457,8 @@ html[data-theme="light"] .dash-page-title,
     border-color: rgba(243, 139, 166, 0.65) !important;
   }
 
-  html[data-theme="light"] .hiw-feature-icon {
-    background: #ffffff;
+  html[data-theme="light"] .hiw-feature-icon:not(.public-icon-slot) {
+    background: rgba(255, 255, 255, 0.35);
     border: 1px solid rgba(0, 0, 0, 0.08);
   }
 
@@ -3468,8 +3477,8 @@ html[data-theme="light"] .dash-page-title,
     border-color: rgba(243, 139, 166, 0.65) !important;
   }
 
-  html[data-theme="light"] .howitworks-section .icon-box {
-    background: #ffffff;
+  html[data-theme="light"] .howitworks-section .icon-box:not(.public-icon-slot) {
+    background: rgba(255, 255, 255, 0.35);
     border: 1px solid rgba(0, 0, 0, 0.08);
   }
 
@@ -3933,6 +3942,10 @@ html[data-theme="light"] .dash-page-title,
   }
 
   .step-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
     padding: 16px;
     background: var(--bg-card);
     border-radius: 9px;
@@ -3951,12 +3964,19 @@ html[data-theme="light"] .dash-page-title,
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 52px;
-    height: 52px;
-    padding: 11px;
+    width: 56px;
+    height: 56px;
+    padding: 5px;
     margin-bottom: 14px;
-    background: var(--color-amber);
+    background: rgba(221, 144, 29, 0.28);
     border-radius: 10px;
+    box-sizing: border-box;
+  }
+
+  .icon-box svg {
+    width: 100%;
+    height: 100%;
+    display: block;
   }
 
   .step-title {
@@ -4326,10 +4346,20 @@ html[data-theme="light"] .dash-page-title,
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    background: var(--color-amber);
+    width: 40px;
+    height: 40px;
+    padding: 5px;
+    background: rgba(221, 144, 29, 0.28);
     border-radius: 9px;
+    box-sizing: border-box;
+  }
+
+  .logo-badge svg,
+  .logo-badge .public-page-icon {
+    width: 100%;
+    height: 100%;
+    display: block;
+    flex-shrink: 0;
   }
 
   .brand-name {
@@ -7813,15 +7843,18 @@ html[data-theme="light"] .dash-page-title,
     justify-content: center;
     width: 40px;
     height: 40px;
-    background: var(--color-amber);
+    padding: 5px;
+    background: rgba(221, 144, 29, 0.28);
     border-radius: 10px;
     flex-shrink: 0;
     transition: all 0.2s ease;
+    box-sizing: border-box;
   }
 
-  .logo-badge svg {
-    width: 22px;
-    height: 22px;
+  .logo-badge svg,
+  .logo-badge .public-page-icon {
+    width: 100%;
+    height: 100%;
     color: #000;
   }
 
@@ -13451,7 +13484,88 @@ html[data-theme="light"] aside > div:first-child {
   border-bottom-color: rgba(152, 143, 129, 0.5) !important;
 }
 
+/* Public marketing pages: icon slots (no visible placeholder box) */
+.public-icon-slot {
+  display: grid !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
 
+.public-icon-slot.public-icon-slot--logo {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+}
+
+.public-icon-slot:not(.public-icon-slot--logo) {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.hiw-feature-card .public-icon-slot,
+.step-card .public-icon-slot {
+  margin-inline: auto;
+}
+
+.step-card .public-icon-slot,
+.grid-3col .public-icon-slot {
+  margin-bottom: 14px;
+}
+
+.public-icon-slot .public-page-icon,
+.public-icon-slot svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  object-fit: contain !important;
+  display: block !important;
+  flex-shrink: 0 !important;
+}
+
+/* Raster assets have large viewBox padding — scale artwork to fill the 5px inset */
+.public-page-icon-logo-wrap {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  line-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.public-page-icon-logo-wrap .public-page-icon--logo-art {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  transform: none !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+.public-icon-slot .public-page-icon--retention-art {
+  transform: scale(1.95) !important;
+  transform-origin: center center !important;
+  object-position: 50% 50% !important;
+}
+
+html[data-theme="light"] .public-icon-slot {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
 
    /* Admin container overflow handling - keep content within layout bounds */
    .super-admin-container {

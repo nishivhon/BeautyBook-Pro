@@ -2,6 +2,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePublicTheme } from "../theme/publicThemeContext";
 import { ThemeToggle } from "../components/public/ThemeToggle";
+import {
+  LogoMark,
+  BookOnlineIcon,
+  GetNotifiedIcon,
+  EnjoyServiceIcon,
+} from "../components/public/publicPageIcons";
 
 const HERO_BG_IMAGE_DARK = new URL("../../images/DarkmodeBG.png", import.meta.url).href;
 const HERO_BG_IMAGE_LIGHT = new URL("../../images/LightmodeBG.png", import.meta.url).href;
@@ -17,46 +23,6 @@ const STEP_IMAGES = {
 };
 
 // PAGE_STYLES moved to `src/styles/tailwind.css` to centralize styles.
-
-const LogoMark = () => (
-  <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 22, height: 22 }}>
-    <circle cx="6" cy="21" r="4" stroke="black" strokeWidth="2" fill="none" />
-    <circle cx="6" cy="9" r="4" stroke="black" strokeWidth="2" fill="none" />
-    <path d="M10 18.5 L28 7" stroke="black" strokeWidth="2" strokeLinecap="round" />
-    <path d="M10 11.5 L28 23" stroke="black" strokeWidth="2" strokeLinecap="round" />
-    <circle cx="6" cy="21" r="1.6" fill="black" />
-    <circle cx="6" cy="9" r="1.6" fill="black" />
-  </svg>
-);
-
-const CalendarIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }}>
-    <rect x="2" y="4" width="20" height="18" rx="2" stroke="black" strokeWidth="1.8" fill="none" />
-    <line x1="2" y1="10" x2="22" y2="10" stroke="black" strokeWidth="1.8" />
-    <path d="M8 2v4M16 2v4" stroke="black" strokeWidth="1.8" strokeLinecap="round" />
-    <circle cx="7" cy="14.5" r="1" fill="black" />
-    <circle cx="12" cy="14.5" r="1" fill="black" />
-    <circle cx="17" cy="14.5" r="1" fill="black" />
-    <circle cx="7" cy="19" r="1" fill="black" />
-    <circle cx="12" cy="19" r="1" fill="black" />
-  </svg>
-);
-
-const BellIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }}>
-    <path d="M5 15V10a7 7 0 0 1 14 0v5l2 2H3l2-2z" stroke="black" strokeWidth="1.8" fill="none" strokeLinejoin="round" />
-    <path d="M10 19a2 2 0 0 0 4 0" stroke="black" strokeWidth="1.8" strokeLinecap="round" fill="none" />
-    <circle cx="17.5" cy="6.5" r="4" fill="#dd901d" />
-    <path d="M15.8 6.5l1.2 1.2 2-2.4" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const CheckCircleIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }}>
-    <circle cx="12" cy="12" r="10" stroke="black" strokeWidth="1.8" fill="none" />
-    <path d="M7.5 12l3 3.5 6-7" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 const SparkleIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }}>
@@ -118,9 +84,9 @@ const CheckItem = ({ lightMode = false }) => (
 );
 
 const FEATURE_CARDS = [
-  { title: "Book Online", desc: "Select your service, preferred stylist, and convenient time slot", icon: <CalendarIcon /> },
-  { title: "Get Notified", desc: "Receive real-time updates and ‘Your Turn Soon’ alerts", icon: <BellIcon /> },
-  { title: "Enjoy Service", desc: "Arrive on time and skip the traditional waiting queue", icon: <CheckCircleIcon /> },
+  { title: "Book Online", desc: "Select your service, preferred stylist, and convenient time slot", icon: <BookOnlineIcon /> },
+  { title: "Get Notified", desc: "Receive real-time updates and ‘Your Turn Soon’ alerts", icon: <GetNotifiedIcon /> },
+  { title: "Enjoy Service", desc: "Arrive on time and skip the traditional waiting queue", icon: <EnjoyServiceIcon /> },
 ];
 
 const NAV_ITEMS = [
@@ -252,7 +218,7 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="flex-center-gap-2">
-        <div className="logo-badge">
+        <div className="public-icon-slot public-icon-slot--logo">
           <LogoMark />
         </div>
         <span className="brand-name">BeautyBook Pro</span>
@@ -347,7 +313,7 @@ function HeroSection() {
         <div style={{ marginTop: 28 }} className="hiw-feature-strip">
           {FEATURE_CARDS.map((card) => (
             <div key={card.title} className="hiw-feature-card hiw-reveal visible">
-              <div className="hiw-feature-icon">{card.icon}</div>
+              <div className="public-icon-slot">{card.icon}</div>
               <h3 className="hiw-feature-title">{card.title}</h3>
               <p className="hiw-feature-desc">{card.desc}</p>
             </div>

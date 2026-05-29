@@ -10,6 +10,7 @@ import handFootImage from "../../images/Service Category/Hand & Foot Care.png";
 import othersImage from "../../images/Service Category/Others.png";
 import { usePublicTheme } from "../theme/publicThemeContext";
 import { ThemeToggle } from "../components/public/ThemeToggle";
+import { LogoMark } from "../components/public/publicPageIcons";
 
 const HERO_BG_IMAGE_DARK = new URL("../../images/DarkmodeBG.png", import.meta.url).href;
 const HERO_BG_IMAGE_LIGHT = new URL("../../images/LightmodeBG.png", import.meta.url).href;
@@ -121,18 +122,6 @@ const SERVICES = [
 ];
 
 // ── Navbar ───────────────────────────────────────────────────────────────────
-/* Reuse NavBar (same implementation as other pages) */
-const LogoMark = () => (
-  <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:22,height:22}}>
-    <circle cx="6"  cy="21" r="4" stroke="black" strokeWidth="2" fill="none"/>
-    <circle cx="6"  cy="9"  r="4" stroke="black" strokeWidth="2" fill="none"/>
-    <path d="M10 18.5 L28 7"  stroke="black" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M10 11.5 L28 23" stroke="black" strokeWidth="2" strokeLinecap="round"/>
-    <circle cx="6"  cy="21" r="1.6" fill="black"/>
-    <circle cx="6"  cy="9"  r="1.6" fill="black"/>
-  </svg>
-);
-
 const NavBar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -157,7 +146,7 @@ const NavBar = () => {
   return (
     <nav className="navbar">
       <div className="flex-center-gap-2">
-        <div className="logo-badge"><LogoMark/></div>
+        <div className="public-icon-slot public-icon-slot--logo"><LogoMark/></div>
         <span className="brand-name">BeautyBook Pro</span>
       </div>
 

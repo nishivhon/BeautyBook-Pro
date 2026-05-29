@@ -10,6 +10,12 @@ import handFootImage from "../../images/Service Category/Hand & Foot Care.png";
 import othersImage from "../../images/Service Category/Others.png";
 import { usePublicTheme } from "../theme/publicThemeContext";
 import { ThemeToggle } from "../components/public/ThemeToggle";
+import {
+  LogoMark,
+  BookOnlineIcon,
+  GetNotifiedIcon,
+  EnjoyServiceIcon,
+} from "../components/public/publicPageIcons";
 
 const HERO_BG_IMAGE_DARK = new URL("../../images/DarkmodeBG.png", import.meta.url).href;
 const HERO_BG_IMAGE_LIGHT = new URL("../../images/LightmodeBG.png", import.meta.url).href;
@@ -28,64 +34,6 @@ const getCategoryImage = (categoryName) => {
   const found = CATEGORY_IMAGES.find(({ match }) => match.test(categoryName));
   return found ? found.src : othersImage;
 };
-
-/* ── NAVBAR logo: scissors <> mark (white strokes on amber bg) ── */
-const LogoMark = () => (
-  <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:22,height:22}}>
-    {/* left pivot rings */}
-    <circle cx="6"  cy="21" r="4" stroke="black" strokeWidth="2" fill="none"/>
-    <circle cx="6"  cy="9"  r="4" stroke="black" strokeWidth="2" fill="none"/>
-    {/* blade crossing to the right */}
-    <path d="M10 18.5 L28 7"  stroke="black" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M10 11.5 L28 23" stroke="black" strokeWidth="2" strokeLinecap="round"/>
-    {/* inner filled dots */}
-    <circle cx="6"  cy="21" r="1.6" fill="black"/>
-    <circle cx="6"  cy="9"  r="1.6" fill="black"/>
-  </svg>
-);
-
-/* ── How It Works: CALENDAR ── */
-const CalendarIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
-    {/* outer box */}
-    <rect x="2" y="4" width="20" height="18" rx="2" stroke="black" strokeWidth="1.8" fill="none"/>
-    {/* header divider */}
-    <line x1="2" y1="10" x2="22" y2="10" stroke="black" strokeWidth="1.8"/>
-    {/* hanger pins */}
-    <path d="M8 2v4M16 2v4" stroke="black" strokeWidth="1.8" strokeLinecap="round"/>
-    {/* date dots — 2 rows */}
-    <circle cx="7"  cy="14.5" r="1" fill="black"/>
-    <circle cx="12" cy="14.5" r="1" fill="black"/>
-    <circle cx="17" cy="14.5" r="1" fill="black"/>
-    <circle cx="7"  cy="19"   r="1" fill="black"/>
-    <circle cx="12" cy="19"   r="1" fill="black"/>
-  </svg>
-);
-
-/* ── How It Works: BELL with notification badge + checkmark ── */
-const BellIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
-    {/* bell body */}
-    <path
-      d="M5 15V10a7 7 0 0 1 14 0v5l2 2H3l2-2z"
-      stroke="black" strokeWidth="1.8" fill="none" strokeLinejoin="round"
-    />
-    {/* clapper */}
-    <path d="M10 19a2 2 0 0 0 4 0" stroke="black" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
-    {/* notification badge circle top-right */}
-    <circle cx="17.5" cy="6.5" r="4" fill="#dd901d"/>
-    {/* tiny check inside badge */}
-    <path d="M15.8 6.5l1.2 1.2 2-2.4" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-/* ── How It Works: CIRCLE CHECK ── */
-const CheckCircleIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
-    <circle cx="12" cy="12" r="10" stroke="black" strokeWidth="1.8" fill="none"/>
-    <path d="M7.5 12l3 3.5 6-7" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
 
 /* ── Services: SCISSORS (haircut) ── */
 const ScissorsIcon = () => (
@@ -190,7 +138,7 @@ const NavBar = ({ onBookAppointment }) => {
     <nav className="navbar">
       {/* Logo */}
       <div className="flex-center-gap-2">
-        <div className="logo-badge">
+        <div className="public-icon-slot public-icon-slot--logo">
           <LogoMark/>
         </div>
         <span className="brand-name">BeautyBook Pro</span>
@@ -317,9 +265,9 @@ const HeroSection = ({ onBookAppointment }) => {
 const HowItWorksSection = () => {
   const navigate = useNavigate();
   const steps = [
-    {icon:<CalendarIcon/>,   title:"Book Online",    desc:"Select your service, preferred stylist, and convenient time slot"},
-    {icon:<BellIcon/>,       title:"Get Notified",   desc:"Receive real-time updates and \u2018Your Turn Soon\u2019 alerts"},
-    {icon:<CheckCircleIcon/>,title:"Enjoy Service",  desc:"Arrive on time and skip the traditional waiting queue"},
+    {icon:<BookOnlineIcon/>,   title:"Book Online",    desc:"Select your service, preferred stylist, and convenient time slot"},
+    {icon:<GetNotifiedIcon/>,  title:"Get Notified",   desc:"Receive real-time updates and \u2018Your Turn Soon\u2019 alerts"},
+    {icon:<EnjoyServiceIcon/>, title:"Enjoy Service",  desc:"Arrive on time and skip the traditional waiting queue"},
   ];
   return (
     <section id="howitworks" className="howitworks-section">
@@ -342,7 +290,7 @@ const HowItWorksSection = () => {
             }}
             aria-label={`Go to How It Works page: ${s.title}`}
           >
-            <div className="icon-box">{s.icon}</div>
+            <div className="public-icon-slot">{s.icon}</div>
             <div className="step-title">{s.title}</div>
             <p className="step-desc">{s.desc}</p>
           </div>
