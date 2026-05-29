@@ -4476,19 +4476,8 @@ html[data-theme="light"] .dash-page-title,
     gap: 12px;
   }
 
-  .login-logo-badge {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    background: var(--color-amber);
-    border-radius: 10px;
+  .login-logo-row .public-icon-slot.public-icon-slot--logo {
     flex-shrink: 0;
-  }
-
-  html[data-theme="light"] .login-logo-badge {
-    background: #f38ba6;
   }
 
   /* Admin portal badge pill */
@@ -4575,7 +4564,11 @@ html[data-theme="light"] .dash-page-title,
   }
 
   .login-input-inner input::placeholder {
-    color: rgba(152, 143, 129, 0.72);
+    color: rgba(152, 143, 129, 0.5);
+  }
+
+  html[data-theme="light"] .login-input-inner input::placeholder {
+    color: rgba(107, 93, 82, 0.72);
   }
 
   .login-eye-btn {
@@ -4950,17 +4943,24 @@ html[data-theme="light"] .dash-page-title,
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    background: var(--color-amber);
+    background: rgba(221, 144, 29, 0.28);
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 5px;
+    box-sizing: border-box;
     box-shadow:
       0 0 0 16px rgba(221, 144, 29, 0.1),
       0 0 0 32px rgba(221, 144, 29, 0.05);
   }
 
+  .login-icon-circle .public-page-icon-logo-wrap {
+    width: 100%;
+    height: 100%;
+  }
+
   html[data-theme="light"] .login-icon-circle {
-    background: #f38ba6;
+    background: rgba(255, 255, 255, 0.35);
     box-shadow:
       0 0 0 16px rgba(243, 139, 166, 0.14),
       0 0 0 32px rgba(243, 139, 166, 0.06);
