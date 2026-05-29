@@ -29,6 +29,7 @@ import CustomerCouponsPage from './pages/customer/customer_coupons'
 // import StaffQueueDashboard from './pages/staff/staff_queue_dashboard'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { PublicThemeProvider, PublicThemeRouteSync } from './theme/publicThemeContext'
+import { ToastRouteSync, ToastViewport } from './components/toast'
 
 function App() {
   useEffect(() => {
@@ -41,6 +42,8 @@ function App() {
       <PublicThemeProvider>
         <PublicThemeRouteSync />
         <ScrollToTopOnRouteChange />
+        <ToastRouteSync />
+        <ToastViewport />
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/landpage" element={<Homepage />} />

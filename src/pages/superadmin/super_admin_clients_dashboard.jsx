@@ -5,7 +5,7 @@ import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { AddClientModal } from "../../components/modal/superadmin/add_client_modal";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
-import { ToastViewport, useToast } from "../../components/toast";
+import { useToast } from "../../components/toast";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -550,8 +550,6 @@ export default function SuperAdminClientsDashboard() {
           }
         }}
       />
-
-      <ToastViewport />
     </DashboardShell>
   );
 }

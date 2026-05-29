@@ -6,7 +6,7 @@ import { AppointmentFormPhase2 } from "../../components/modal/customer/appointme
 import { AppointmentFormPhase3 } from "../../components/modal/customer/appointment/phase_three";
 import { AppointmentFormPhase4 } from "../../components/modal/customer/appointment/phase_four";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
-import { ToastViewport, useToast } from "../../components/toast";
+import { useToast } from "../../components/toast";
 import CustomerHeaderActions from "../../components/customer/CustomerHeaderActions";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { useCustomerAppointmentsData } from "./customer_store";
@@ -105,7 +105,7 @@ export function CustomerShell({ activeNav, profile, children }) {
   const [appointmentPhase, setAppointmentPhase] = useState(1);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [appointments] = useCustomerAppointmentsData();
-  const { showToast, dismissToast } = useToast();
+  const { showToast } = useToast();
 
   useEffect(() => {
     localStorage.setItem("customerSidebarExpanded", JSON.stringify(sidebarExpanded));
@@ -432,8 +432,6 @@ export function CustomerShell({ activeNav, profile, children }) {
           ) : null}
           {children}
         </DashboardShell>
-
-        <ToastViewport onDismiss={dismissToast} />
       </div>
 
       {showAppointment && (

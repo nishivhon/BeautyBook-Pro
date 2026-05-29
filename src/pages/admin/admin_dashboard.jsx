@@ -4,7 +4,7 @@ import { logoutOperator } from "../../services/operatorAuth";
 import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
-import { ToastViewport, useToast } from "../../components/toast";
+import { useToast } from "../../components/toast";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1859,7 +1859,6 @@ export const AdminDashboard = ({ date }) => {
       className="super-admin-container admin-dashboard-page"
       style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
     >
-      <ToastViewport />
       {/* Sidebar */}
       <div
         inert={showWalkInModal ? "" : undefined}

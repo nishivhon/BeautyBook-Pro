@@ -6,7 +6,7 @@ import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
 import { EditServiceModal } from "../../components/modal/superadmin/edit_service_modal";
 import { AddServiceModal } from "../../components/modal/superadmin/add_service_modal";
-import { ToastViewport, useToast } from "../../components/toast";
+import { useToast } from "../../components/toast";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -600,8 +600,6 @@ export default function SuperAdminServicesDashboard() {
         onSave={handleAddNewService}
       />
 
-      {/* ─── TOAST ─── */}
-      <ToastViewport />
     </DashboardShell>
   );
 }

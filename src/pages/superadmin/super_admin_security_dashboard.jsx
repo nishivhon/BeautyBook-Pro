@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
-import { ToastViewport, useToast } from "../../components/toast";
+import { useToast } from "../../components/toast";
 
 
 // ─── SVG Icons ─────────────────────────────────────────────────────────
@@ -724,8 +724,6 @@ export default function SuperAdminSecurityDashboard() {
             </div>
           </div>
         </div>
-
-      <ToastViewport />
 
       {/* ─── MAINTENANCE CONFIRMATION DIALOG ─── */}
       {showMaintenanceConfirm && (

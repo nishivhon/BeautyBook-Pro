@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
-import { ToastViewport, useToast } from "../../components/toast";
+import { useToast } from "../../components/toast";
 import { logoutOperator } from "../../services/operatorAuth";
 
 // Tag icon (Heroicons outline style)
@@ -638,7 +638,6 @@ export default function SuperAdminCouponsDashboard() {
           }}
         />
       </div>
-      <ToastViewport />
     </DashboardShell>
   );
 }

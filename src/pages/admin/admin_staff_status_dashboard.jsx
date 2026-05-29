@@ -7,7 +7,7 @@ import { StatusUpdateModal } from "../../components/modal/admin/status_update";
 import { ManageServiceModal } from "../../components/modal/admin/manage_service";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
-import { ToastViewport, useToast } from "../../components/toast";
+import { useToast } from "../../components/toast";
 
 // ═══════════════════════════════════════════════════════════════════
 // DARK MODE HELPER
@@ -1435,7 +1435,6 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       className="super-admin-container admin-dashboard-page"
       style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
     >
-      <ToastViewport />
       {/* Sidebar */}
       <AdminSidebar 
         activeNav={activeNav}

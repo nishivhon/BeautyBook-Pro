@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 
 const ToastContext = createContext(null);
 
@@ -45,6 +46,26 @@ const dismissToast = (toastId) => {
   const store = getToastStore();
   store.queue = store.queue.filter((toast) => toast.id !== toastId);
   emitToastState();
+};
+
+export const clearAllToasts = () => {
+  const store = getToastStore();
+  if (!store.queue.length) {
+    return;
+  }
+  store.queue = [];
+  emitToastState();
+};
+
+/** Clears the global toast queue whenever the route pathname changes. */
+export const ToastRouteSync = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    clearAllToasts();
+  }, [location.pathname]);
+
+  return null;
 };
 
 const enqueueToast = (input, fallbackType = "info", fallbackDuration = DEFAULT_DURATION) => {
@@ -146,7 +167,7 @@ const ToastItem = ({ toast, onDismiss }) => {
   );
 };
 
-export const ToastViewport = ({ toasts = [], onDismiss }) => {
+export const ToastViewport = ({ toasts = [], onDismiss = dismissToast }) => {
   const [visibleToasts, setVisibleToasts] = useState(toasts);
 
   useEffect(() => {
