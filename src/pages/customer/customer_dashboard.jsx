@@ -568,19 +568,17 @@ export default function CustomerDashboard() {
 					<div className="cdb-grid cdb-grid-history">
 						{recentCompleted && recentCompleted.length > 0 ? (
 							recentCompleted.map((item) => (
-								<div key={`${item.id || 'history'}-${item.date || 'unknown'}-${item.service || 'service'}`} className="cdb-item-card">
-									<div className="cdb-item-left" style={{ minWidth: 0, flex: isMobile ? '1 1 0' : undefined }}>
-										<h3 className="cdb-item-title" style={{ fontSize: isMobile ? '15px' : undefined, whiteSpace: isMobile ? 'normal' : undefined, wordBreak: isMobile ? 'break-word' : undefined }}>{item.service}</h3>
+								<div key={`${item.id || 'history'}-${item.date || 'unknown'}-${item.service || 'service'}`} className="cdb-item-card cdb-history-item-card">
+									<div className="cdb-item-left">
+										<h3 className="cdb-item-title">{item.service}</h3>
 										<p className="cdb-item-subtitle">{item.stylist} · ${item.cost.toFixed(2)}</p>
 										<p className="cdb-date-text">{new Date(item.date).toLocaleDateString()}</p>
 										{item.rated && <div className="cdb-rating-row">{[1, 2, 3, 4, 5].map((star) => <span key={star}>{star <= item.rating ? "★" : "☆"}</span>)}</div>}
 									</div>
-									<div className="cdb-item-right" style={{ flex: isMobile ? '0 0 auto' : undefined }}>
+									<div className="cdb-item-right">
 										<span className={`cdb-status-badge ${item.status === "completed" ? "completed" : "upcoming"}`}>{item.status}</span>
 										{(item.rating === 0 || item.rating === undefined || item.rating === null) && (
-											<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)} style={{ padding: isMobile ? '8px 12px' : undefined, fontSize: isMobile ? '12px' : undefined, whiteSpace: 'nowrap' }}>
-												Rate Service
-											</button>
+											<button className="cdb-btn cdb-btn-secondary" onClick={() => handleRateService(item.id)}>Rate Service</button>
 										)}
 									</div>
 								</div>

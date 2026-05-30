@@ -149,7 +149,7 @@ export default function CustomerHistoryPage() {
 
           <div className="cdb-grid cdb-grid-history">
             {filteredHistory.map((item) => (
-              <div key={item.id} className="cdb-item-card">
+              <div key={item.id} className="cdb-item-card cdb-history-item-card">
                 <div className="cdb-item-left">
                   <h3 className="cdb-item-title">{item.service}</h3>
                   <p className="cdb-item-subtitle">{item.stylist} · ${item.cost.toFixed(2)}</p>
