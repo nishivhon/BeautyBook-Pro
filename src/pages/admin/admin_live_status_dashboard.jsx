@@ -785,7 +785,9 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
             <span className="dash-live-dot" />
             Live
           </span>
-          <button 
+        </div>
+        <div className="dash-panel-buttons">
+          <button
             className="live-add-walkin-btn-small"
             onClick={onOpenWalkInModal}
             title="Add a walk-in customer"

@@ -615,27 +615,27 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                 )}>
                   <div>
                     <p className="dash-detail-label">Current Client</p>
-                    <p className="dash-detail-value">{s.details.currentClient}</p>
+                    <p className="dash-detail-value">{s.details?.currentClient ?? '—'}</p>
                   </div>
 
                   <div>
                     <p className="dash-detail-label">Up Next Client</p>
-                    <p className="dash-detail-value">{s.details.upNextClient}</p>
+                    <p className="dash-detail-value">{s.details?.upNextClient ?? '—'}</p>
                   </div>
 
                   <div>
                     <p className="dash-detail-label">Total Clients Today</p>
-                    <p className="dash-detail-value">{s.details.totalClients}</p>
+                    <p className="dash-detail-value">{s.details?.totalClients ?? '—'}</p>
                   </div>
 
                   <div>
                     <p className="dash-detail-label">Done Clients Today</p>
-                    <p className="dash-detail-value">{s.details.doneClients}</p>
+                    <p className="dash-detail-value">{s.details?.doneClients ?? '—'}</p>
                   </div>
 
                   <div>
                     <p className="dash-detail-label">Total Walk-Ins Today</p>
-                    <p className="dash-detail-value">{s.details.totalWalkIns}</p>
+                    <p className="dash-detail-value">{s.details?.totalWalkIns ?? '—'}</p>
                   </div>
 
                   <div>

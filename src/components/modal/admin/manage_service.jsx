@@ -67,6 +67,12 @@ export const ManageServiceModal = ({ isOpen, staff, onClose, onSave, serviceCate
     }
   }, [isOpen, staff, serviceCategories]);
 
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = setTimeout(() => setToast(null), 3800);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
   if (!isOpen || !staff) return null;
 
   const handleCategoryToggle = (categoryId) => {
@@ -108,12 +114,6 @@ export const ManageServiceModal = ({ isOpen, staff, onClose, onSave, serviceCate
       setToast({ message: 'Changes discarded.', type: 'info' });
     }
   };
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 3800);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   return (
     <>
@@ -283,10 +283,15 @@ export const ManageServiceModal = ({ isOpen, staff, onClose, onSave, serviceCate
                         checked={selectedCategories.includes(category.id)}
                         onChange={() => handleCategoryToggle(category.id)}
                         style={{
-                          width: "16px",
-                          height: "16px",
+                          width: "18px",
+                          height: "18px",
                           cursor: "pointer",
+                          background: "#fff",
+                          border: "2px solid #988f81",
+                          borderRadius: "4px",
                           accentColor: "#22c55e",
+                          boxShadow: "0 0 0 1px #0002",
+                          appearance: "auto"
                         }}
                       />
                       <span style={{ fontSize: "13px", color: "#f5f5f5", fontWeight: selectedCategories.includes(category.id) ? "500" : "400" }}>
