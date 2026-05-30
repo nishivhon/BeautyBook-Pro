@@ -18,6 +18,42 @@ const normalizeCategorySpecialty = (value) => {
   return value;
 };
 
+const normalizeInServiceValue = (value) => {
+  if (value === null) return null;
+  if (typeof value !== 'string') return value;
+
+  const normalized = value.trim().toLowerCase().replace(/\s+/g, '-');
+  if (!normalized) return null;
+
+  if (normalized === 'avail' || normalized === 'in-service' || normalized === 'on-break') {
+    return normalized;
+  }
+
+  // Map non-enum display states to nullable DB state
+  if (['absent', 'off', 'off-today', 'clocked-out', 'clockedout', 'not-clocked-in', 'notclockedin'].includes(normalized)) {
+    return null;
+  }
+
+  return normalized;
+};
+
+const normalizeStatusValue = (value) => {
+  if (value === null) return null;
+  if (typeof value !== 'string') return value;
+
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+
+  // Keep DB status aligned with existing values used elsewhere.
+  if (normalized === 'absent') return 'off';
+  if (normalized === 'available' || normalized === 'open slots') return 'avail';
+  if (normalized === 'in service') return 'in-service';
+  if (normalized === 'on break') return 'on-break';
+  if (normalized === 'off today' || normalized === 'clocked out') return 'off';
+
+  return normalized;
+};
+
 export default async (req, res) => {
   if (req.method !== 'PUT') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -28,9 +64,9 @@ export default async (req, res) => {
     const normalizedSpecialties = category_specialty !== undefined
       ? normalizeCategorySpecialty(category_specialty)
       : undefined;
-    const normalizedInService = typeof in_service === 'string' ? in_service.trim().toLowerCase() : in_service;
-    const normalizedStatus = typeof status === 'string' ? status.trim().toLowerCase() : status;
-    const shouldDisableWalkIn = normalizedInService === 'in-service' || normalizedStatus === 'in service';
+    const normalizedInService = normalizeInServiceValue(in_service);
+    const normalizedStatus = normalizeStatusValue(status);
+    const shouldDisableWalkIn = normalizedInService === 'in-service' || normalizedStatus === 'in-service';
 
     if (!id) {
       return res.status(400).json({ error: 'Staff ID is required' });
@@ -78,8 +114,8 @@ export default async (req, res) => {
     if (clock_in !== undefined) updateData.clock_in = clock_in;
     if (clock_out !== undefined) updateData.clock_out = clock_out;
     if (walk_in !== undefined) updateData.walk_in = shouldDisableWalkIn ? false : walk_in;
-    if (status !== undefined) updateData.status = status;
-    if (in_service !== undefined) updateData.in_service = in_service;
+    if (status !== undefined) updateData.status = normalizedStatus;
+    if (in_service !== undefined) updateData.in_service = normalizedInService;
     if (shouldDisableWalkIn) updateData.walk_in = false;
     if (total_clients !== undefined) updateData.total_clients = total_clients;
     if (done_clients !== undefined) updateData.done_clients = done_clients;
