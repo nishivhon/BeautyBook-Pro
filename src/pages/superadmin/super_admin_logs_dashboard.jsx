@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
+import { useToast } from "../../components/toast";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -111,20 +112,20 @@ const NAV_ITEMS = [
 
 export default function SuperAdminLogsDashboard() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [activeNav, setActiveNav] = useState("logs");
   const [mounted, setMounted] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
   });
-  const [toastMessage, setToastMessage] = useState("");
-  const [showToast, setShowToast] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalTable, setModalTable] = useState(null);
   const [modalMode, setModalMode] = useState("view");
   const [logsData, setLogsData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [currentLogsPage, setCurrentLogsPage] = useState(1);
+    const [currentLogsPage, setCurrentLogsPage] = useState(1);
+    const rowsPerPage = 4;
 
   // Persist sidebar state
   useEffect(() => {
@@ -134,6 +135,9 @@ export default function SuperAdminLogsDashboard() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Use fixed row height for consistency and dynamic rowsPerPage to prevent overflow/gaps
+    // Pages show 4 rows each (fixed)
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -204,7 +208,7 @@ export default function SuperAdminLogsDashboard() {
         }
       } catch (error) {
         console.error('[Logs] Error fetching data:', error);
-        displayToast('Failed to fetch appointment logs');
+        showToast({ message: 'Failed to fetch appointment logs', type: 'error', duration: 3000 });
       } finally {
         setLoading(false);
       }
@@ -216,12 +220,6 @@ export default function SuperAdminLogsDashboard() {
   const handleLogout = () => {
     logoutOperator();
     navigate("/operators/login");
-  };
-
-  const displayToast = (message) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2800);
   };
 
   // Format cell display value, especially for JSON services
@@ -264,7 +262,41 @@ export default function SuperAdminLogsDashboard() {
 
   const handleSaveChanges = () => {
     setShowModal(false);
-    displayToast('Changes saved.');
+    showToast({ message: 'Changes saved.', type: 'success', duration: 2800 });
+  };
+
+  const handleExportLogs = () => {
+    const rows = logsData.rows;
+    const cols = logsData.cols;
+    if (!rows?.length || !cols?.length) {
+      showToast({ message: 'No logs to export', type: 'warning', duration: 2800 });
+      return;
+    }
+
+    const escapeCsv = (value) => {
+      const str = String(value ?? '');
+      if (/[",\n\r]/.test(str)) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const headerLine = cols.map((col) => escapeCsv(formatColumnName(col))).join(',');
+    const dataLines = rows.map((row) =>
+      cols.map((col) => escapeCsv(formatCellValue(row[col], col))).join(',')
+    );
+    const csv = [headerLine, ...dataLines].join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `appointment-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast({ message: `Exported ${rows.length} logs`, type: 'success', duration: 2800 });
   };
 
   return (
@@ -326,6 +358,25 @@ export default function SuperAdminLogsDashboard() {
                     }}
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={handleExportLogs}
+                  disabled={loading || !logsData.rows?.length}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#6B6157',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: loading || !logsData.rows?.length ? 'not-allowed' : 'pointer',
+                    opacity: loading || !logsData.rows?.length ? 0.7 : 1,
+                  }}
+                  title={!logsData.rows?.length ? 'No logs to export' : 'Export logs as CSV'}
+                >
+                  Export
+                </button>
               </div>
             </div>
 
@@ -344,30 +395,39 @@ export default function SuperAdminLogsDashboard() {
                   </thead>
                   <tbody>
                     {(() => {
-                      const itemsPerPage = 6;
-                      const startIdx = (currentLogsPage - 1) * itemsPerPage;
-                      const endIdx = startIdx + itemsPerPage;
+                      const itemsPerPage = rowsPerPage || 7;
+                      const totalRows = logsData.rows.length;
+                      const totalPages = Math.ceil(totalRows / itemsPerPage);
+                      // Only the last page can have fewer than itemsPerPage rows
+                      let startIdx = (currentLogsPage - 1) * itemsPerPage;
+                      let endIdx = startIdx + itemsPerPage;
+                      // If not last page, always fill up to itemsPerPage
+                      if (currentLogsPage < totalPages) {
+                        endIdx = startIdx + itemsPerPage;
+                      } else {
+                        endIdx = totalRows;
+                      }
                       return logsData.rows.slice(startIdx, endIdx).map((log, idx) => (
-                      <tr key={idx} className="db-row">
-                        {logsData.cols.map((col) => {
-                          const cellValue = log[col];
-                          const displayValue = formatCellValue(cellValue, col);
-                          return (
-                            <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
-                          );
-                        })}
-                      </tr>
-                    ));
+                        <tr key={idx} className="db-row" style={{ minHeight: 80, height: 80 }}>
+                          {logsData.cols.map((col) => {
+                            const cellValue = log[col];
+                            const displayValue = formatCellValue(cellValue, col);
+                            return (
+                              <td key={col} style={{ fontSize: '13px', whiteSpace: 'normal', wordBreak: 'break-word', padding: '12px 8px', minHeight: 80, height: 80, verticalAlign: 'middle' }}>{displayValue}</td>
+                            );
+                          })}
+                        </tr>
+                      ));
                     })()}
                   </tbody>
                 </table>
                 {logsData.rows.length > 0 && (() => {
-                  const itemsPerPage = 6;
+                  const itemsPerPage = rowsPerPage || 7;
                   const totalPages = Math.ceil(logsData.rows.length / itemsPerPage);
                   const startIdx = (currentLogsPage - 1) * itemsPerPage + 1;
                   const endIdx = Math.min(currentLogsPage * itemsPerPage, logsData.rows.length);
                   return (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
                         Showing {startIdx}–{endIdx} of {logsData.rows.length} logs
                       </div>
@@ -450,13 +510,6 @@ export default function SuperAdminLogsDashboard() {
         setShowModal={setShowModal}
         handleSaveChanges={handleSaveChanges}
       />
-
-      {/* ─── TOAST ─── */}
-      {showToast && (
-        <div className="toast show">
-          {toastMessage}
-        </div>
-      )}
     </DashboardShell>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ConfirmationDialog } from "../modal/customer/confirmation_dialog";
 import SuperAdminHeaderActions from "../superadmin/SuperAdminHeaderActions";
+import { SuperAdminLogoIcon } from "../superadmin/superAdminDashboardIcons";
 import {
   BellIcon,
   LogOutIcon,
@@ -39,6 +40,8 @@ export function DashboardShell({
   showRoleBadge = true,
   sidebarExtraAction = null,
   headerExtraActions = null,
+  LogoIcon: LogoIconComponent = LogoIcon,
+  LogOutIcon: LogOutIconComponent = LogOutIcon,
   onLogoutConfirm,
   logoutTitle = "Log Out?",
   logoutMessage = "Are you sure you want to log out?",
@@ -183,6 +186,10 @@ export function DashboardShell({
   const displayName = profile?.name || roleLabel;
   const displayEmail = profile?.emails?.[0] || profile?.email || "";
   const pageTitle = title || getFallbackTitle(navItems, activeItemId, roleLabel);
+  const ResolvedLogoIcon =
+    useSuperAdminHeaderActions && LogoIconComponent === LogoIcon
+      ? SuperAdminLogoIcon
+      : LogoIconComponent;
   const isMobileDrawerViewport =
     enableMobileDrawer && (isMobileView || (typeof window !== "undefined" && window.innerWidth <= 768));
   const isSidebarExpandedUI = isMobileDrawerViewport ? mobileSidebarOpen : sidebarExpanded;
@@ -261,7 +268,7 @@ export function DashboardShell({
               aria-expanded={isMobileDrawerViewport ? mobileSidebarOpen : sidebarExpanded}
             >
               <div className="logo-badge">
-                <LogoIcon />
+                <ResolvedLogoIcon />
               </div>
               {isSidebarExpandedUI && <span className="brand-name">BeautyBook Pro</span>}
             </button>
@@ -296,7 +303,7 @@ export function DashboardShell({
 
         <div className="sidebar-logout-section">
           <button onClick={handleLogout} className="logout-button" title="Log out" type="button">
-            <LogOutIcon />
+            <LogOutIconComponent />
             {isSidebarExpandedUI && <span>Log Out</span>}
           </button>
         </div>
@@ -322,7 +329,7 @@ export function DashboardShell({
               aria-expanded={isMobileDrawerViewport ? mobileSidebarOpen : sidebarExpanded}
             >
               <div className="logo-badge">
-                <LogoIcon />
+                <ResolvedLogoIcon />
               </div>
             </button>
             <span

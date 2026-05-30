@@ -5,8 +5,26 @@ import { couponService } from "../../services/couponService";
 import { EditServiceModal } from "../../components/modal/admin/edit_service";
 import CouponModal from "../../components/modal/admin/coupon_modal";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
+import {
+  AdminDashboardNavIcon,
+  AdminServicesNavIcon,
+  AdminLiveStatusNavIcon,
+  AdminStaffStatusNavIcon,
+  AdminLogOutIcon,
+  AdminIconSlot,
+  AdminMetricMoneyIcon,
+  AdminMetricPromoIcon,
+  AdminServiceRowIcon,
+  AdminEditIcon,
+  AdminAnalyticsIcon,
+  AdminDownloadIcon,
+  AdminQuickActionServiceIcon,
+  AdminQuickActionPromoIcon,
+  AdminNavLogoIcon,
+} from "../../components/admin/adminDashboardIcons";
+import { LogoMark } from "../../components/public/publicPageIcons";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
-import { ToastViewport, useToast } from "../../components/toast";
+import { useToast } from "../../components/toast";
 
 // ═══════════════════════════════════════════════════════════════════
 // DARK MODE HELPER
@@ -22,151 +40,14 @@ const getThemeStyles = (darkStyles, lightStyles) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// SVG ICONS
-// ═══════════════════════════════════════════════════════════
-
-const ScissorsIcon = ({ size = 20, color = "#000" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="6" cy="6" r="3" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <circle cx="6" cy="18" r="3" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <path d="M20 4L8.12 15.88" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <path d="M14.47 14.48L20 20" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <path d="M8.12 8.12L12 12" stroke={color} strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
-const BellIcon = ({ size = 15, color = "#fff" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M13.73 21a2 2 0 01-3.46 0" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const SettingsIcon = ({ size = 15, color = "#fff" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.8" />
-    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke={color} strokeWidth="1.8" />
-  </svg>
-);
-
-const RevenueIcon = ({ size = 20, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <line x1="12" y1="1" x2="12" y2="23" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const GiftIcon = ({ size = 20, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M10 1v7M10 1H6a1 1 0 0 0-1 1v4h10V2a1 1 0 0 0-1-1h-4z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M10 1h4a1 1 0 0 1 1 1v4H6V2a1 1 0 0 1 1-1h3z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 6h16v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M10 8v9" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-);
-
-const PromoIcon = ({ size = 20, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="7" cy="7" r="1.5" fill={color} />
-  </svg>
-);
-
-const EditIcon = ({ size = 15, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const PlusIcon = ({ size = 16, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M12 5v14M5 12h14" stroke={color} strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
-const DiscountIcon = ({ size = 16, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="9" cy="9" r="2" stroke={color} strokeWidth="1.8" />
-    <circle cx="15" cy="15" r="2" stroke={color} strokeWidth="1.8" />
-    <path d="M5 19L19 5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-);
-
-const AnalyticsIcon = ({ size = 20, color = "#000" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M3 3v18h18" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <path d="M18 9l-5 5-4-4-4 4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const DownloadIcon = ({ size = 14, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <polyline points="7 10 12 15 17 10" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <line x1="12" y1="15" x2="12" y2="3" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-);
-
-// ═══════════════════════════════════════════════════════════════════
-// ICON COMPONENTS FOR SIDEBAR
-// ═══════════════════════════════════════════════════════════════════
-
-const LogoIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="7" cy="7" r="3.5" stroke="#000" strokeWidth="2"/>
-    <circle cx="7" cy="15" r="3.5" stroke="#000" strokeWidth="2"/>
-    <path d="M9.8 8.8l7 7M9.8 13.2L17 6.2" stroke="#000" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
-const DashboardIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="1" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-    <rect x="10" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-    <rect x="1" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-    <rect x="10" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-  </svg>
-);
-
-const GridIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M2 2h5v5H2zM11 2h5v5h-5zM2 11h5v5H2zM11 11h5v5h-5z" stroke={color} strokeWidth="1.6" strokeLinejoin="round"/>
-  </svg>
-);
-
-const ActivityIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M1 9h16M1 1h16v14H1z" stroke={color} strokeWidth="1.6"/>
-    <circle cx="9" cy="6" r="2" fill={color}/>
-  </svg>
-);
-
-const UserGroupIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="6" cy="5" r="3" stroke={color} strokeWidth="1.6"/>
-    <circle cx="12" cy="7" r="2.5" stroke={color} strokeWidth="1.5"/>
-    <path d="M1 16c0-2.5 1.8-4 5-4s5 1.5 5 4" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
-    <path d="M10 14c0-1.5 1-2.5 3-2.5s3 1 3 2.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-
-const LogOutIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M7 15H3.5A1.5 1.5 0 012 13.5v-9A1.5 1.5 0 013.5 3H7" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
-    <path d="M12 12l4-3-4-3M16 9H7" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-// ═══════════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════════
 
 const NAV_ITEMS = [
-  { id: "home", label: "Dashboard", icon: DashboardIcon },
-  { id: "services", label: "Services", icon: GridIcon },
-  { id: "live-status", label: "Live Status", icon: ActivityIcon },
-  { id: "staff-status", label: "Staff Status", icon: UserGroupIcon },
+  { id: "home", label: "Dashboard", icon: AdminDashboardNavIcon },
+  { id: "services", label: "Services", icon: AdminServicesNavIcon },
+  { id: "live-status", label: "Live Status", icon: AdminLiveStatusNavIcon },
+  { id: "staff-status", label: "Staff Status", icon: AdminStaffStatusNavIcon },
 ];
 
 const SERVICE_GROUPS = [
@@ -285,7 +166,7 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, onLogout }) =>
       {/* Log Out */}
       <div className="sidebar-logout-section">
         <button onClick={handleLogout} className="logout-button" title="Log out">
-          <LogOutIcon />
+          <AdminLogOutIcon />
           {sidebarExpanded && <span>Log Out</span>}
         </button>
       </div>
@@ -313,7 +194,7 @@ const AdminNavbar = ({ onLogout }) => {
     <header className="admin-navbar">
       <div className="admin-nav-logo">
         <div className="admin-nav-logo-badge">
-          <ScissorsIcon size={20} color="#000" />
+          <AdminNavLogoIcon />
         </div>
         <span className="admin-nav-brand">BeautyBook Pro</span>
       </div>
@@ -370,9 +251,9 @@ const PageMetrics = ({ stats }) => (
     {stats.map(({ Icon, badge, badgeType, value, label }, i) => (
       <div key={i} className="dash-stat-card">
         <div className="dash-stat-top">
-          <div className="dash-stat-icon-box">
-            <Icon size={20} color="#dd901d" />
-          </div>
+          <AdminIconSlot size="metric">
+            <Icon />
+          </AdminIconSlot>
           {badge && (
             <span className={`dash-stat-badge ${badgeType === "green" ? "dash-stat-badge-green" : "dash-stat-badge-blue"}`}>
               {badge}
@@ -414,9 +295,9 @@ const ServiceItem = ({ id, name, category, meta, available, price, estimatedTime
   return (
     <div className="svc-item-row" style={rowStyles}>
       <div className="svc-item-left">
-        <div className="svc-item-icon-box">
-          <ScissorsIcon size={18} color={titleColor} />
-        </div>
+        <AdminIconSlot size="svc-row">
+          <AdminServiceRowIcon />
+        </AdminIconSlot>
         <div className="svc-item-info">
           <span className="svc-item-name" style={{ color: titleColor }}>{name}</span>
           <span className="svc-item-meta" style={{ color: metaColor }}>{meta}</span>
@@ -430,11 +311,13 @@ const ServiceItem = ({ id, name, category, meta, available, price, estimatedTime
           <span className="svc-item-price" style={{ color: priceColor }}>{price}</span>
         </div>
         <button 
-          className="svc-item-edit-btn" 
+          className="svc-item-edit-btn admin-icon-btn-bare" 
           aria-label="Edit service"
           onClick={() => onEdit({ id, name, category, meta, available, price, estimatedTime })}
         >
-          <EditIcon size={14} color="currentColor" />
+          <AdminIconSlot size="edit-lg">
+            <AdminEditIcon />
+          </AdminIconSlot>
         </button>
       </div>
     </div>
@@ -529,7 +412,9 @@ const QuickActionsPanel = ({ onNewService, onManageCoupons }) => (
       className="svc-action-btn-primary"
       onClick={onNewService}
     >
-      <ScissorsIcon size={16} color="#000" />
+      <AdminIconSlot size="action-lg">
+        <AdminQuickActionServiceIcon />
+      </AdminIconSlot>
       New Service
     </button>
 
@@ -537,7 +422,9 @@ const QuickActionsPanel = ({ onNewService, onManageCoupons }) => (
       className="svc-action-btn-secondary"
       onClick={onManageCoupons}
     >
-      <PromoIcon size={16} color="currentColor" />
+      <AdminIconSlot size="action-lg">
+        <AdminQuickActionPromoIcon />
+      </AdminIconSlot>
       Manage Coupons
     </button>
   </div>
@@ -547,9 +434,9 @@ const QuickActionsPanel = ({ onNewService, onManageCoupons }) => (
 const AnalyticsPanel = () => (
   <div className="dash-sidebar-panel svc-analytics-wrap">
     <div className="dash-analytics-header">
-      <div className="dash-analytics-icon-box">
-        <AnalyticsIcon size={20} color="#000" />
-      </div>
+      <AdminIconSlot size="analytics-lg">
+        <AdminAnalyticsIcon />
+      </AdminIconSlot>
       <div className="dash-analytics-text">
         <h3 className="dash-analytics-title">Analytics</h3>
         <p className="dash-analytics-sub">View Detailed Reports</p>
@@ -557,7 +444,9 @@ const AnalyticsPanel = () => (
     </div>
     <button className="dash-download-btn">
       Download Reports
-      <DownloadIcon size={13} color="currentColor" />
+      <AdminIconSlot size="inline">
+        <AdminDownloadIcon />
+      </AdminIconSlot>
     </button>
   </div>
 );
@@ -576,8 +465,8 @@ export const AdminDashboardServices = ({ date }) => {
   const [isManagingCoupons, setIsManagingCoupons] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [stats, setStats] = useState([
-    { Icon: RevenueIcon,  badge: "+15%",  badgeType: "green", value: "₱0.00", label: "Revenue Today" },
-    { Icon: GiftIcon,     badge: "+8%",   badgeType: "green", value: "0",       label: "Coupons Used"   },
+    { Icon: AdminMetricMoneyIcon, badge: "+15%", badgeType: "green", value: "₱0.00", label: "Revenue Today" },
+    { Icon: AdminMetricPromoIcon, badge: "+8%",  badgeType: "green", value: "0",     label: "Coupons Used" },
   ]);
   const [appointmentData, setAppointmentData] = useState({
     current: [],
@@ -677,8 +566,8 @@ export const AdminDashboardServices = ({ date }) => {
         const usedCoupons = coupons.reduce((sum, coupon) => sum + (Number(coupon.number_of_uses) || 0), 0);
 
         setStats([
-          { Icon: RevenueIcon, badge: "+15%", badgeType: "green", value: "₱12,450", label: "Revenue Today" },
-          { Icon: GiftIcon,    badge: "+8%",  badgeType: "green", value: usedCoupons.toString(), label: "Coupons Used"   },
+          { Icon: AdminMetricMoneyIcon, badge: "+15%", badgeType: "green", value: "₱12,450", label: "Revenue Today" },
+          { Icon: AdminMetricPromoIcon, badge: "+8%", badgeType: "green", value: usedCoupons.toString(), label: "Coupons Used" },
         ]);
       } catch (err) {
         console.error('Error loading coupon metrics:', err);
@@ -924,7 +813,6 @@ export const AdminDashboardServices = ({ date }) => {
       className="super-admin-container admin-dashboard-page"
       style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
     >
-      <ToastViewport />
       {/* Sidebar */}
       <AdminSidebar 
         activeNav={activeNav}
@@ -943,8 +831,8 @@ export const AdminDashboardServices = ({ date }) => {
               className="logo-toggle-btn dashboard-header-logo-btn"
               title="Toggle sidebar"
             >
-              <div className="logo-badge">
-                <LogoIcon />
+              <div className="logo-badge public-icon-slot public-icon-slot--logo">
+                <LogoMark />
               </div>
             </button>
             <span className="dashboard-system-title">BeautyBook Pro</span>

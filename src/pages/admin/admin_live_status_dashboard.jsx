@@ -2,9 +2,24 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
+import {
+  AdminDashboardNavIcon,
+  AdminServicesNavIcon,
+  AdminLiveStatusNavIcon,
+  AdminStaffStatusNavIcon,
+  AdminLogOutIcon,
+  AdminIconSlot,
+  AdminMetricCalendarIcon,
+  AdminMetricWalkInIcon,
+  AdminMetricQueueIcon,
+  AdminQueueActiveIcon,
+  AdminAnalyticsIcon,
+  AdminDownloadIcon,
+} from "../../components/admin/adminDashboardIcons";
+import { LogoMark } from "../../components/public/publicPageIcons";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
-import { ToastViewport, useToast } from "../../components/toast";
+import { useToast } from "../../components/toast";
 
 // ═══════════════════════════════════════════════════════════════════
 // DARK MODE HELPER
@@ -23,30 +38,6 @@ const getThemeStyles = (darkStyles, lightStyles) => {
 // SVG ICONS
 // ═══════════════════════════════════════════════════════════════════
 
-const ScissorsIcon = ({ size = 20, color = "#000" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="6" cy="6" r="3" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <circle cx="6" cy="18" r="3" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <path d="M20 4L8.12 15.88" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <path d="M14.47 14.48L20 20" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <path d="M8.12 8.12L12 12" stroke={color} strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
-const BellIcon = ({ size = 15, color = "#fff" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M13.73 21a2 2 0 01-3.46 0" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const SettingsIcon = ({ size = 15, color = "#fff" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.8" />
-    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke={color} strokeWidth="1.8" />
-  </svg>
-);
-
 const ChevronRightIcon = ({ size = 13, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <path d="M9 18l6-6-6-6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -63,20 +54,6 @@ const CheckCircleIcon = ({ size = 18, color = "#22c55e" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
     <path d="M8 12l3 3 5-5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const InProgressIcon = ({ size = 18, color = "#4387ef" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
-    <path d="M12 6v6l4 2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const PendingIcon = ({ size = 18, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
-    <path d="M12 8v4M12 16h.01" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
   </svg>
 );
 
@@ -110,21 +87,6 @@ const NextIcon = ({ size = 14, color = "currentColor" }) => (
   </svg>
 );
 
-const AnalyticsIcon = ({ size = 20, color = "#000" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M3 3v18h18" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <path d="M18 9l-5 5-4-4-4 4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const DownloadIcon = ({ size = 14, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <polyline points="7 10 12 15 17 10" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <line x1="12" y1="15" x2="12" y2="3" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-);
-
 const ProceedIcon = ({ size = 14, color = "#fff" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <path d="M10 8l6 4-6 4V8z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -132,87 +94,15 @@ const ProceedIcon = ({ size = 14, color = "#fff" }) => (
   </svg>
 );
 
-const CalendarIcon = ({ size = 20, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="4" width="18" height="18" rx="3" stroke={color} strokeWidth="1.8" />
-    <path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    <circle cx="8" cy="15" r="1" fill={color} />
-    <circle cx="12" cy="15" r="1" fill={color} />
-    <circle cx="16" cy="15" r="1" fill={color} />
-  </svg>
-);
-
-const QueueIcon = ({ size = 20, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="9" cy="5" r="2" stroke={color} strokeWidth="1.8" />
-    <circle cx="9" cy="12" r="2" stroke={color} strokeWidth="1.8" />
-    <circle cx="9" cy="19" r="2" stroke={color} strokeWidth="1.8" />
-    <path d="M13 5h8M13 12h8M13 19h8" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-);
-
-const RevenueIcon = ({ size = 20, color = "#dd901d" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <line x1="12" y1="1" x2="12" y2="23" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 // ═══════════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════════
 
-const LogoIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="7" cy="7" r="3.5" stroke="#000" strokeWidth="2"/>
-    <circle cx="7" cy="15" r="3.5" stroke="#000" strokeWidth="2"/>
-    <path d="M9.8 8.8l7 7M9.8 13.2L17 6.2" stroke="#000" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
-const DashboardIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="1" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-    <rect x="10" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-    <rect x="1" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-    <rect x="10" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-  </svg>
-);
-
-const GridIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M2 2h5v5H2zM11 2h5v5h-5zM2 11h5v5H2zM11 11h5v5h-5z" stroke={color} strokeWidth="1.6" strokeLinejoin="round"/>
-  </svg>
-);
-
-const ActivityIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M1 9h16M1 1h16v14H1z" stroke={color} strokeWidth="1.6"/>
-    <circle cx="9" cy="6" r="2" fill={color}/>
-  </svg>
-);
-
-const UserGroupIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="6" cy="5" r="3" stroke={color} strokeWidth="1.6"/>
-    <circle cx="12" cy="7" r="2.5" stroke={color} strokeWidth="1.5"/>
-    <path d="M1 16c0-2.5 1.8-4 5-4s5 1.5 5 4" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
-    <path d="M10 14c0-1.5 1-2.5 3-2.5s3 1 3 2.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-
-const LogOutIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M7 15H3.5A1.5 1.5 0 012 13.5v-9A1.5 1.5 0 013.5 3H7" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
-    <path d="M12 12l4-3-4-3M16 9H7" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
 const NAV_ITEMS = [
-  { id: "home", label: "Dashboard", icon: DashboardIcon },
-  { id: "services", label: "Services", icon: GridIcon },
-  { id: "live-status", label: "Live Status", icon: ActivityIcon },
-  { id: "staff-status", label: "Staff Status", icon: UserGroupIcon },
+  { id: "home", label: "Dashboard", icon: AdminDashboardNavIcon },
+  { id: "services", label: "Services", icon: AdminServicesNavIcon },
+  { id: "live-status", label: "Live Status", icon: AdminLiveStatusNavIcon },
+  { id: "staff-status", label: "Staff Status", icon: AdminStaffStatusNavIcon },
 ];
 
 const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
@@ -353,7 +243,7 @@ const AdminSidebar = ({ activeNav, setActiveNav, sidebarExpanded, onLogout }) =>
       {/* Log Out */}
       <div className="sidebar-logout-section">
         <button onClick={handleLogout} className="logout-button" title="Log out">
-          <LogOutIcon />
+          <AdminLogOutIcon />
           {sidebarExpanded && <span>Log Out</span>}
         </button>
       </div>
@@ -384,12 +274,12 @@ const PageTitle = () => {
 /* ── Metric cards for hero section ── */
 const PageMetrics = ({ stats }) => (
   <div className="live-stats-row">
-    {stats.map(({ Icon, iconColor, value, label, labelClass }, i) => (
+    {stats.map(({ Icon, iconSlot = "metric", value, label, labelClass }, i) => (
       <div key={i} className="dash-stat-card">
         <div className="dash-stat-top">
-          <div className="dash-stat-icon-box">
-            <Icon size={20} color={iconColor} />
-          </div>
+          <AdminIconSlot size={iconSlot}>
+            <Icon />
+          </AdminIconSlot>
         </div>
         <div className="dash-stat-bottom">
           <p className="dash-stat-value">{value}</p>
@@ -401,7 +291,7 @@ const PageMetrics = ({ stats }) => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick }) => {
+const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick, isWalkIn = false, onCancelWalkIn }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -424,14 +314,20 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
     }
   };
 
+  const handleCancelWalkIn = () => {
+    if (onCancelWalkIn) {
+      onCancelWalkIn(id, name);
+    }
+  };
+
   return (
     <>
       <div className={rowClass}>
         <div className="live-queue-left">
           {isActive ? (
-            <div className="live-queue-icon-box">
-              <ScissorsIcon size={17} color="#000" />
-            </div>
+            <AdminIconSlot size="queue">
+              <AdminQueueActiveIcon />
+            </AdminIconSlot>
           ) : (
             <div className="live-queue-number-box">{number}</div>
           )}
@@ -493,7 +389,7 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
           </div>
 
           <div>
-            <p className="dash-detail-label">Starting Time</p>
+            <p className="dash-detail-label">Time added</p>
             <p className="dash-detail-value">{details.startTime}</p>
           </div>
 
@@ -518,26 +414,17 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
           )}
 
           {showProceedButton && !isActive && (
-            <div style={{ gridColumn: '1 / -1' }}>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '8px' }}>
               <button
+                type="button"
                 onClick={handleProceed}
                 disabled={!isProceedEnabled}
+                className="live-queue-row-btn"
                 style={{
-                  width: "100%",
-                  padding: "10px 14px",
                   background: isProceedEnabled ? "#dd901d" : "#ccc",
                   color: "#fff",
                   border: "none",
-                  borderRadius: "8px",
-                  fontSize: "0.9rem",
-                  fontWeight: "600",
                   cursor: isProceedEnabled ? "pointer" : "not-allowed",
-                  fontFamily: "Inter, sans-serif",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  transition: "all 0.2s ease",
                   opacity: isProceedEnabled ? 1 : 0.6,
                 }}
                 onMouseOver={(e) => {
@@ -554,6 +441,16 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
                 <ProceedIcon size={14} color="#fff" />
                 Proceed
               </button>
+              {isWalkIn && (
+                <button
+                  type="button"
+                  onClick={handleCancelWalkIn}
+                  className="live-queue-cancel-btn live-queue-row-btn"
+                >
+                  <CancelledIcon size={14} color="#ef4444" />
+                  Cancel
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -573,6 +470,10 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   const [walkInAppointments, setWalkInAppointments] = useState([]);
   const [completeConfirmId, setCompleteConfirmId] = useState(null);
   const [completeConfirmData, setCompleteConfirmData] = useState(null);
+  const [cancelConfirmId, setCancelConfirmId] = useState(null);
+  const [cancelConfirmData, setCancelConfirmData] = useState(null);
+
+  const getQueueItemId = (itemId) => String(itemId || '').replace(/^walkin-/, '');
 
   // Fetch appointments data on component mount and when refreshTrigger changes
   useEffect(() => {
@@ -684,6 +585,85 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
     setCompleteConfirmData({ name: customerName, service, staff: staffName });
   };
 
+  const requestCancelWalkIn = (itemId, customerName) => {
+    setCancelConfirmId(itemId);
+    setCancelConfirmData({ name: customerName });
+  };
+
+  const handleCancelWalkIn = async (itemId, customerName) => {
+    try {
+      const normalizedId = getQueueItemId(itemId);
+
+      const response = await fetch('/api/appointments/update/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: normalizedId,
+          status: 'cancelled',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to cancel walk-in: ${response.status}`);
+      }
+
+      setWalkInAppointments((prev) => prev.filter((walkIn) => String(walkIn.id) !== normalizedId));
+      setExpandedItemId(null);
+
+      window.dispatchEvent(new CustomEvent('appointmentsUpdated'));
+
+      showToast({
+        message: `Walk-in for ${customerName} cancelled.`,
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('[LiveQueue] Error cancelling walk-in:', error);
+      showToast({
+        message: 'Failed to cancel walk-in: ' + error.message,
+        type: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
+  const getAppointmentSortTimestamp = (dateValue, timeValue) => {
+    if (!timeValue) return Number.MAX_SAFE_INTEGER;
+
+    const normalizedTime = String(timeValue).trim();
+    const meridiemMatch = normalizedTime.match(/(AM|PM)$/i);
+    let hours = 0;
+    let minutes = 0;
+    let seconds = 0;
+
+    if (meridiemMatch) {
+      const timePart = normalizedTime.replace(/\s*(AM|PM)$/i, '');
+      const [h, m = '0', s = '0'] = timePart.split(':');
+      hours = Number.parseInt(h, 10) || 0;
+      minutes = Number.parseInt(m, 10) || 0;
+      seconds = Number.parseInt(s, 10) || 0;
+      const period = meridiemMatch[1].toUpperCase();
+      if (period === 'PM' && hours < 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+    } else {
+      const [h, m = '0', s = '0'] = normalizedTime.split(':');
+      hours = Number.parseInt(h, 10) || 0;
+      minutes = Number.parseInt(m, 10) || 0;
+      seconds = Number.parseInt(s, 10) || 0;
+    }
+
+    const baseDate = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+    if (Number.isNaN(baseDate.getTime())) return Number.MAX_SAFE_INTEGER;
+    baseDate.setHours(hours, minutes, seconds, 0);
+    return baseDate.getTime();
+  };
+
+  const getWalkInSortTimestamp = (value) => {
+    if (!value) return Number.MAX_SAFE_INTEGER;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? Number.MAX_SAFE_INTEGER : parsed.getTime();
+  };
+
   // Transform appointments to queue item format
   const formatQueueItems = (appointments, type) => {
     return appointments.map((apt, index) => ({
@@ -698,9 +678,21 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
       details: {
         serviceSelected: apt.service,
         currentService: type === 'active' ? 'In Progress' : 'Pending',
-        startTime: apt.time,
+        startTime: type === 'active'
+          ? (() => {
+            const updatedAtValue = apt.updated_at || apt.updatedAt || apt.created_at || apt.createdAt || apt.time;
+            const updatedAtDate = new Date(updatedAtValue);
+            return Number.isNaN(updatedAtDate.getTime())
+              ? '—'
+              : updatedAtDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          })()
+          : apt.time,
+        timeLabel: type === 'active' ? 'Started at' : 'Appointment time',
         estimatedTime: '45 mins'
-      }
+      },
+      upNextSortKey: type === 'waiting'
+        ? getAppointmentSortTimestamp(apt.date, apt.time)
+        : Number.MAX_SAFE_INTEGER
     }));
   };
 
@@ -711,6 +703,13 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
       const serviceNames = Array.isArray(walkin.services) 
         ? walkin.services.map(s => s.title || s.name).join(', ')
         : 'Walk-in Service';
+      const walkInAddedTime = (() => {
+        const createdAtValue = walkin.created_at || walkin.createdAt || walkin.updated_at;
+        const createdAtDate = new Date(createdAtValue);
+        return Number.isNaN(createdAtDate.getTime())
+          ? '—'
+          : createdAtDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      })();
       
       return {
         id: `walkin-${walkin.id}`,
@@ -720,14 +719,26 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
         staff: walkin.assigned_staff,
         service: `${serviceNames} • ${walkin.assigned_staff}`,
         statusTop: type === 'active' ? 'Now' : 'Walk-in',
-        statusSub: type === 'active' ? 'In Progress' : 'Waiting',
+        statusSub: type === 'active' ? 'In Progress' : walkInAddedTime,
         details: {
           serviceSelected: serviceNames,
           currentService: type === 'active' ? 'In Progress' : 'Pending',
-          startTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          startTime: (() => {
+            const timeValue = type === 'active'
+              ? (walkin.updated_at || walkin.updatedAt || walkin.created_at || walkin.createdAt)
+              : (walkin.created_at || walkin.createdAt || walkin.updated_at);
+            const createdAtDate = new Date(timeValue);
+            return Number.isNaN(createdAtDate.getTime())
+              ? '—'
+              : createdAtDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          })(),
+          timeLabel: type === 'active' ? 'Started at' : 'Time added',
           estimatedTime: '45 mins',
           refNo: walkin.refNo || walkin.id
         },
+        upNextSortKey: type === 'active'
+          ? Number.MAX_SAFE_INTEGER
+          : getWalkInSortTimestamp(walkin.created_at || walkin.createdAt || walkin.updated_at),
         isWalkIn: true
       };
     });
@@ -744,7 +755,12 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   const walkInItems = formatWalkInItems(pendingWalkIns, 'waiting');
 
   // Combine pending items with walk-ins
-  const combinedPendingItems = [...pendingItems, ...walkInItems];
+  const combinedPendingItems = [...pendingItems, ...walkInItems]
+    .sort((a, b) => (a.upNextSortKey || Number.MAX_SAFE_INTEGER) - (b.upNextSortKey || Number.MAX_SAFE_INTEGER))
+    .map((item, index) => ({
+      ...item,
+      number: index + 1,
+    }));
 
   // Create queue sections - only Current and Up Next, no On Deck
   const queueSections = [
@@ -771,7 +787,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
           </span>
         </div>
         <div className="dash-panel-buttons">
-          <button 
+          <button
             className="live-add-walkin-btn-small"
             onClick={onOpenWalkInModal}
             title="Add a walk-in customer"
@@ -856,6 +872,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
                           showProceedButton={isUpNext}
                           isProceedEnabled={ii < 3}
                           onProceedClick={(id, name, service) => handleProceedClick(id, name, service, item.staff)}
+                          onCancelWalkIn={requestCancelWalkIn}
                         />
                       );
                     })
@@ -886,6 +903,28 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
           onCancel={() => {
             setCompleteConfirmId(null);
             setCompleteConfirmData(null);
+          }}
+        />
+      )}
+
+      {cancelConfirmId && (
+        <ConfirmationDialog
+          isOpen={true}
+          title="Cancel Walk-in?"
+          message={`Are you sure you want to cancel ${cancelConfirmData?.name}'s walk-in?`}
+          confirmText="Yes, Cancel"
+          cancelText="Keep Walk-in"
+          onConfirm={async () => {
+            try {
+              await handleCancelWalkIn(cancelConfirmId, cancelConfirmData?.name);
+            } finally {
+              setCancelConfirmId(null);
+              setCancelConfirmData(null);
+            }
+          }}
+          onCancel={() => {
+            setCancelConfirmId(null);
+            setCancelConfirmData(null);
           }}
         />
       )}
@@ -1094,9 +1133,9 @@ function convertTo12HourFormat(time24) {
 const AnalyticsPanel = () => (
   <div className="dash-sidebar-panel">
     <div className="dash-analytics-header">
-      <div className="dash-analytics-icon-box">
-        <AnalyticsIcon size={20} color="#000" />
-      </div>
+      <AdminIconSlot size="analytics-lg">
+        <AdminAnalyticsIcon />
+      </AdminIconSlot>
       <div className="dash-analytics-text">
         <h3 className="dash-analytics-title">Analytics</h3>
         <p className="dash-analytics-sub">View Detailed Reports</p>
@@ -1104,7 +1143,9 @@ const AnalyticsPanel = () => (
     </div>
     <button className="dash-download-btn">
       Download Reports
-      <DownloadIcon size={13} color="currentColor" />
+      <AdminIconSlot size="inline">
+        <AdminDownloadIcon />
+      </AdminIconSlot>
     </button>
   </div>
 );
@@ -1298,9 +1339,9 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     ].length;
 
     return [
-      { Icon: CalendarIcon, iconColor: '#dd901d', value: totalAppointmentsToday.toString(), label: 'Total Appointments Today', labelClass: 'dash-stat-label' },
-      { Icon: UserGroupIcon, iconColor: '#dd901d', value: totalWalkIn.toString(), label: 'Total Walk In', labelClass: 'dash-stat-label' },
-      { Icon: QueueIcon, iconColor: '#dd901d', value: inQueue.toString(), label: 'In Queue', labelClass: 'dash-stat-label' },
+      { Icon: AdminMetricCalendarIcon, value: totalAppointmentsToday.toString(), label: 'Total Appointments Today', labelClass: 'dash-stat-label' },
+      { Icon: AdminMetricWalkInIcon, iconSlot: 'metric-walkin', value: totalWalkIn.toString(), label: 'Total Walk In', labelClass: 'dash-stat-label' },
+      { Icon: AdminMetricQueueIcon, value: inQueue.toString(), label: 'In Queue', labelClass: 'dash-stat-label' },
     ];
   }, [currentAppointments, pendingAppointments, doneAppointments, walkInLogs]);
 
@@ -1333,7 +1374,6 @@ export const AdminDashboardLiveStatus = ({ date }) => {
       className="super-admin-container admin-dashboard-page"
       style={{ "--sidebar-width": sidebarExpanded ? "340px" : "80px" }}
     >
-      <ToastViewport />
       {/* Sidebar */}
       <div
         inert={showWalkInModal ? "" : undefined}
@@ -1358,8 +1398,8 @@ export const AdminDashboardLiveStatus = ({ date }) => {
               className="logo-toggle-btn dashboard-header-logo-btn"
               title="Toggle sidebar"
             >
-              <div className="logo-badge">
-                <LogoIcon />
+              <div className="logo-badge public-icon-slot public-icon-slot--logo">
+                <LogoMark />
               </div>
             </button>
             <span className="dashboard-system-title">BeautyBook Pro</span>

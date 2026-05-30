@@ -2,130 +2,24 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
+import { useToast } from "../../components/toast";
+import {
+  SUPER_ADMIN_NAV_ITEMS,
+  SuperAdminIconSlot,
+  SuperAdminLogOutIcon,
+  SuperAdminSecurityPanelIcon,
+  SuperAdminAdminSecurityPanelIcon,
+  SuperAdminSystemSettingsPanelIcon,
+  SuperAdminMaintenanceRowIcon,
+} from "../../components/superadmin/superAdminDashboardIcons";
 
-
-// ─── SVG Icons ─────────────────────────────────────────────────────────
-
-const DashboardIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="1" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-    <rect x="10" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-    <rect x="1" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-    <rect x="10" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6"/>
-  </svg>
-);
-
-const UserIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="9" cy="5.5" r="3.5" stroke={color} strokeWidth="1.6"/>
-    <path d="M2 16c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
-  </svg>
-);
-
-const DatabaseIcon = ({ color = "currentColor" }) => (
-  <svg width="26" height="26" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="9" cy="4.5" rx="6" ry="2.5" stroke={color} strokeWidth="1.6"/>
-    <path d="M3 4.5v9C3 15.09 5.686 17 9 17s6-1.91 6-3.5v-9" stroke={color} strokeWidth="1.6"/>
-    <path d="M3 9c0 1.657 2.686 3 6 3s6-1.343 6-3" stroke={color} strokeWidth="1.6"/>
-  </svg>
-);
-
-const ShieldIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M9 1.5L3 4v5.5C3 13.09 5.686 16.3 9 17c3.314-.7 6-3.91 6-7.5V4L9 1.5z" stroke={color} strokeWidth="1.6" strokeLinejoin="round"/>
-    <path d="M6.5 9l1.75 1.75L11.5 7" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const LogOutIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M7 15H3.5A1.5 1.5 0 012 13.5v-9A1.5 1.5 0 013.5 3H7" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
-    <path d="M12 12l4-3-4-3M16 9H7" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-// ─── Event Icons ─────────────────────────────────────────────────────
-
-const WarningIcon = ({ color = "#dd901d" }) => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <path d="M10 2L18.5 17H1.5L10 2z" stroke={color} strokeWidth="1.3" strokeLinejoin="round"/>
-    <line x1="10" y1="9" x2="10" y2="13" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
-    <circle cx="10" cy="15.5" r="0.8" fill={color}/>
-  </svg>
-);
-
-const KeyIcon = ({ color = "#4387ef" }) => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <circle cx="7.5" cy="10" r="4.5" stroke={color} strokeWidth="1.3"/>
-    <path d="M11.5 10H18M16 8v4" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
-  </svg>
-);
-
-const UserPlusIcon = ({ color = "#4387ef" }) => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <circle cx="8" cy="7" r="3" stroke={color} strokeWidth="1.3"/>
-    <path d="M2 18c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
-    <path d="M15 6v6M12 9h6" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
-  </svg>
-);
-
-const BlockIcon = ({ color = "#ef4343" }) => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <circle cx="10" cy="10" r="7.5" stroke={color} strokeWidth="1.3"/>
-    <line x1="4.5" y1="4.5" x2="15.5" y2="15.5" stroke={color} strokeWidth="1.3"/>
-  </svg>
-);
-
-const RoleIcon = ({ color = "#dd901d" }) => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <circle cx="10" cy="7" r="3" stroke={color} strokeWidth="1.3"/>
-    <path d="M4 18c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
-    <path d="M14 3l1.5 1.5L18 2" stroke={color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const QuickAccessIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <rect x="2" y="4" width="16" height="12" rx="2" stroke="#22c55e" strokeWidth="1.3"/>
-    <path d="M6 8h8M6 12h5" stroke="#22c55e" strokeWidth="1.3" strokeLinecap="round"/>
-  </svg>
-);
-
-const MagicLinkIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <path d="M10 3l2 5h5l-4 3 2 5-5-3-5 3 2-5-4-3h5l2-5z" stroke="#22c55e" strokeWidth="1.3" strokeLinejoin="round"/>
-  </svg>
-);
-
-const IPIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <circle cx="10" cy="10" r="7.5" stroke="#988f81" strokeWidth="1.3"/>
-    <path d="M10 4C7 8 7 12 10 16M10 4c3 4 3 8 0 12M3 10h14" stroke="#988f81" strokeWidth="1.3" strokeLinecap="round"/>
-  </svg>
-);
-
-const SystemMaintenanceIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <path d="M8 3H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2h-4" stroke="#988f81" strokeWidth="1.3" strokeLinecap="round"/>
-    <path d="M9 1a1 1 0 112 0" stroke="#988f81" strokeWidth="1.3" strokeLinecap="round"/>
-    <path d="M7 11l2 2 4-4" stroke="#988f81" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-// ─── Navigation Items ──────────────────────────────────────────────────
-
-const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
-  { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
-  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
-  { id: "coupons", label: "Coupons", icon: DatabaseIcon, path: "/superadmin/coupons" },
-  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
-  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
-  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
-];
+const SECURITY_PANEL_HEADER_ICONS = {
+  "super-admin": SuperAdminSecurityPanelIcon,
+  admin: SuperAdminAdminSecurityPanelIcon,
+};
 
 const initialSecurityItems = [
-  { label: "System Maintenance", status: "Disabled", enabled: false, Icon: SystemMaintenanceIcon },
+  { label: "System Maintenance", status: "Disabled", enabled: false, Icon: SuperAdminMaintenanceRowIcon },
 ];
 
 const SECURITY_PANELS = [
@@ -198,14 +92,13 @@ const formatDeviceSummary = (loginData) => {
 
 export default function SuperAdminSecurityDashboard() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [activeNav, setActiveNav] = useState("security");
   const [mounted, setMounted] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
   });
-  const [toastMessage, setToastMessage] = useState("");
-  const [showToast, setShowToast] = useState(false);
   const [secItems, setSecItems] = useState(initialSecurityItems);
 
   // Maintenance states
@@ -326,12 +219,6 @@ export default function SuperAdminSecurityDashboard() {
     navigate("/operators/login");
   };
 
-  const displayToast = (message) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2800);
-  };
-
   const handlePasswordFormChange = (field, value) => {
     setPasswordForm(prev => ({
       ...prev,
@@ -397,7 +284,7 @@ export default function SuperAdminSecurityDashboard() {
       }));
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setPasswordChangeMessage('Password updated successfully.');
-      displayToast('Password updated successfully.');
+      showToast({ message: 'Password updated successfully.', type: 'success', duration: 2800 });
     } catch (error) {
       setPasswordChangeError(error.message || 'Failed to change password.');
     } finally {
@@ -422,7 +309,7 @@ export default function SuperAdminSecurityDashboard() {
         } else {
           setMaintenanceEnabled(false);
           setMaintenanceStartTime(null);
-          displayToast("System maintenance disabled");
+          showToast({ message: 'System maintenance disabled', type: 'success', duration: 2800 });
         }
         return item; // Don't update status yet
       }
@@ -440,22 +327,22 @@ export default function SuperAdminSecurityDashboard() {
         ? { ...item, enabled: true, status: "Enabled" }
         : item
     ));
-    displayToast("System maintenance enabled");
+    showToast({ message: 'System maintenance enabled', type: 'success', duration: 2800 });
   };
 
   const handleAddToWhitelist = () => {
     if (whitelistInput && /^(\d{1,3}\.){3}\d{1,3}$/.test(whitelistInput)) {
       setMaintenanceWhitelist([...maintenanceWhitelist, whitelistInput]);
       setWhitelistInput("");
-      displayToast(`IP ${whitelistInput} added to whitelist`);
+      showToast({ message: `IP ${whitelistInput} added to whitelist`, type: 'success', duration: 2800 });
     } else {
-      displayToast("Invalid IP address format");
+      showToast({ message: 'Invalid IP address format', type: 'warning', duration: 2800 });
     }
   };
 
   const handleRemoveFromWhitelist = (ip) => {
     setMaintenanceWhitelist(maintenanceWhitelist.filter(item => item !== ip));
-    displayToast(`IP ${ip} removed from whitelist`);
+    showToast({ message: `IP ${ip} removed from whitelist`, type: 'success', duration: 2800 });
   };
 
   const formatCountdown = (seconds) => {
@@ -573,7 +460,8 @@ export default function SuperAdminSecurityDashboard() {
 
   return (
     <DashboardShell
-      navItems={NAV_ITEMS}
+      navItems={SUPER_ADMIN_NAV_ITEMS}
+      LogOutIcon={SuperAdminLogOutIcon}
       activeNav={activeNav}
       roleLabel="Super Administrator"
       roleInitial="S"
@@ -624,11 +512,14 @@ export default function SuperAdminSecurityDashboard() {
             failedLoginCount: 0,
             lastPasswordChangeAt: null,
           };
+          const PanelHeaderIcon = SECURITY_PANEL_HEADER_ICONS[panelKey] || SuperAdminSecurityPanelIcon;
 
           return (
             <div key={panelKey} className="dashboard-panel" style={{ marginBottom: '16px' }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", marginBottom: panelKey === 'super-admin' ? '16px' : '10px' }}>
-                <ShieldIcon color="currentColor" />
+                <SuperAdminIconSlot size="action-lg">
+                  <PanelHeaderIcon />
+                </SuperAdminIconSlot>
                 {title}
               </div>
 
@@ -685,18 +576,19 @@ export default function SuperAdminSecurityDashboard() {
 
           <div className="dashboard-panel">
               <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", marginBottom: "16px" }}>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ color: "currentColor" }}>
-                <rect x="2" y="8" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.3"/>
-                <path d="M5 8V6a4 4 0 018 0v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-              </svg>
+              <SuperAdminIconSlot size="inline">
+                <SuperAdminSystemSettingsPanelIcon />
+              </SuperAdminIconSlot>
               System Settings
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
               {secItems.map((item, idx) => (
                 <div key={idx} className="db-row" style={{ padding: "16px", height: "auto" }}>
-                  <div className="db-icon" style={{ background: item.enabled ? "rgba(34, 197, 94, 0.1)" : "rgba(152, 143, 129, 0.1)", borderRadius: "8px", width: "36px", height: "36px", marginRight: "12px" }}>
-                    <item.Icon />
+                  <div className="db-icon admin-icon-btn-bare" style={{ background: item.enabled ? "rgba(34, 197, 94, 0.1)" : "rgba(152, 143, 129, 0.1)", borderRadius: "8px", width: "36px", height: "36px", marginRight: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <SuperAdminIconSlot size="action">
+                      <item.Icon />
+                    </SuperAdminIconSlot>
                   </div>
                   <div className="db-name-wrap">
                     <span className="db-name">{item.label}</span>
@@ -718,7 +610,11 @@ export default function SuperAdminSecurityDashboard() {
                     </div>
                     <Toggle enabled={item.enabled} onToggle={() => {
                       toggleSecurityItem(idx);
-                      displayToast(`${item.label} ${item.enabled ? "disabled" : "enabled"}`);
+                      showToast({
+                        message: `${item.label} ${item.enabled ? 'disabled' : 'enabled'}`,
+                        type: 'success',
+                        duration: 2800,
+                      });
                     }} />
                   </div>
                 </div>
@@ -726,13 +622,6 @@ export default function SuperAdminSecurityDashboard() {
             </div>
           </div>
         </div>
-
-      {/* ─── TOAST ─── */}
-      {showToast && (
-        <div className="toast show">
-          {toastMessage}
-        </div>
-      )}
 
       {/* ─── MAINTENANCE CONFIRMATION DIALOG ─── */}
       {showMaintenanceConfirm && (

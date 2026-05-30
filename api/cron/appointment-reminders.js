@@ -71,12 +71,43 @@ const getManilaNow = () => {
 
 const parseTimeToMinutes = (timeValue) => {
   if (!timeValue || typeof timeValue !== 'string') return null;
-  const [hoursText, minutesText] = timeValue.split(':');
-  const hours = Number(hoursText);
-  const minutes = Number(minutesText);
+
+  const normalized = timeValue.trim().toUpperCase();
+  const match = normalized.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/);
+  if (!match) return null;
+
+  let hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const meridiem = match[3] || null;
 
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  if (minutes < 0 || minutes > 59) return null;
+
+  if (meridiem) {
+    if (hours < 1 || hours > 12) return null;
+    if (meridiem === 'AM') {
+      hours = hours === 12 ? 0 : hours;
+    } else if (meridiem === 'PM') {
+      hours = hours === 12 ? 12 : hours + 12;
+    }
+  } else if (hours < 0 || hours > 23) {
+    return null;
+  }
+
   return (hours * 60) + minutes;
+};
+
+const formatAppointmentTime = (timeValue) => {
+  const minutes = parseTimeToMinutes(timeValue);
+  if (minutes === null) {
+    return String(timeValue || '').trim() || 'your scheduled time';
+  }
+
+  const hours24 = Math.floor(minutes / 60);
+  const minuteValue = minutes % 60;
+  const isPm = hours24 >= 12;
+  const hours12 = hours24 % 12 || 12;
+  return `${hours12}:${String(minuteValue).padStart(2, '0')} ${isPm ? 'PM' : 'AM'}`;
 };
 
 const parseServicesSummary = (servicesValue) => {
@@ -215,7 +246,7 @@ export default async (req, res) => {
     }
 
     const candidates = (slots || []).filter((slot) => {
-      const slotMinutes = parseTimeToMinutes(String(slot.time_slot || '').slice(0, 5));
+      const slotMinutes = parseTimeToMinutes(String(slot.time_slot || ''));
       return slotMinutes !== null && slotMinutes === reminderTargetMinutes;
     });
 
@@ -229,7 +260,7 @@ export default async (req, res) => {
         continue;
       }
 
-      const appointmentTime = String(slot.time_slot || '').slice(0, 5);
+      const appointmentTime = formatAppointmentTime(slot.time_slot);
       const serviceSummary = parseServicesSummary(slot.services);
       const reminderText = buildReminderText({
         name: slot.customer_name || 'Customer',
@@ -238,29 +269,38 @@ export default async (req, res) => {
         staffName: slot.assigned_staff,
       });
 
-      if (isEmailContact(contact)) {
-        const normalizedEmail = normalizeEmail(contact);
-        await sendEmailAsync(
-          normalizedEmail,
-          slot.customer_name || 'Customer',
-          appointmentTime,
-          serviceSummary,
-          slot.assigned_staff
-        );
-      } else {
-        const phone = formatPhoneForSms(contact);
-        if (!phone) {
-          skipped.push({ id: slot.id, reason: 'invalid_phone' });
-          continue;
-        }
+      try {
+        if (isEmailContact(contact)) {
+          const normalizedEmail = normalizeEmail(contact);
+          await sendEmailAsync(
+            normalizedEmail,
+            slot.customer_name || 'Customer',
+            appointmentTime,
+            serviceSummary,
+            slot.assigned_staff
+          );
+        } else {
+          const phone = formatPhoneForSms(contact);
+          if (!phone) {
+            skipped.push({ id: slot.id, reason: 'invalid_phone' });
+            continue;
+          }
 
-        await sendSmsAsync(
-          phone,
-          slot.customer_name || 'Customer',
-          appointmentTime,
-          serviceSummary,
-          slot.assigned_staff
-        );
+          await sendSmsAsync(
+            phone,
+            slot.customer_name || 'Customer',
+            appointmentTime,
+            serviceSummary,
+            slot.assigned_staff
+          );
+        }
+      } catch (sendError) {
+        skipped.push({
+          id: slot.id,
+          reason: isEmailContact(contact) ? 'email_send_failed' : 'sms_send_failed',
+          details: String(sendError?.message || sendError),
+        });
+        continue;
       }
 
       const { error: updateError } = await supabase

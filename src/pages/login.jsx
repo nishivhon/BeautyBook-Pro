@@ -8,18 +8,9 @@ import { Toast } from "../components/toast";
 import ReactDOM from "react-dom";
 import { PasswordResetModal } from "../components/modal/password_reset_modal";
 import { usePublicTheme } from "../theme/publicThemeContext";
+import { LogoMark } from "../components/public/publicPageIcons";
 
 // ── SVG Icons ─────────────────────────────────────────────────────
-const ScissorsIcon = ({ size = 28, color = "#000" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="6" cy="6" r="3" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <circle cx="6" cy="18" r="3" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <path d="M20 4L8.12 15.88" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <path d="M14.47 14.48L20 20" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    <path d="M8.12 8.12L12 12" stroke={color} strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
 const MailIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
     <rect x="2" y="4" width="20" height="16" rx="3" stroke="#988f81" strokeWidth="1.8" />
@@ -727,8 +718,8 @@ const InlineOtp = ({ onClose, onVerified, selectedPhone, selectedEmail, otpType 
       </button>
 
       <div className="login-logo-row">
-        <div className="login-logo-badge">
-          <ScissorsIcon size={22} color="#000" />
+        <div className="public-icon-slot public-icon-slot--logo">
+          <LogoMark />
         </div>
         <span className="brand-name">BeautyBook Pro</span>
       </div>
@@ -870,8 +861,8 @@ const InlineOtp = ({ onClose, onVerified, selectedPhone, selectedEmail, otpType 
           </button>
 
           <div className="login-logo-row">
-            <div className="login-logo-badge">
-              <ScissorsIcon size={22} color="#000" />
+            <div className="public-icon-slot public-icon-slot--logo">
+              <LogoMark />
             </div>
             <span className="brand-name">BeautyBook Pro</span>
           </div>
@@ -1148,7 +1139,7 @@ const InlineOtp = ({ onClose, onVerified, selectedPhone, selectedEmail, otpType 
 
         <div className={`login-right-content ${mounted ? "mounted" : ""}`}>
           <div className="login-icon-circle">
-            <ScissorsIcon size={52} color="#000" />
+            <LogoMark />
           </div>
 
           <div className="login-right-heading">

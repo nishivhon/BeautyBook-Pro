@@ -8,19 +8,14 @@ export const ConfirmationDialog = ({
   cancelText = "Keep Booking",
   onConfirm,
   onCancel,
-  isOpen = false 
+  isOpen = false,
+  zIndex = 1001,
 }) => {
   const [isVisible, setIsVisible] = useState(isOpen);
 
   useEffect(() => {
     setIsVisible(isOpen);
   }, [isOpen]);
-
-  // Debug logging for visibility changes
-  // eslint-disable-next-line no-console
-  useEffect(() => {
-    console.log('[ConfirmationDialog] isOpen prop:', isOpen, 'internal isVisible:', isVisible, 'title:', title);
-  }, [isOpen, isVisible, title]);
 
   if (!isVisible) return null;
 
@@ -54,7 +49,7 @@ export const ConfirmationDialog = ({
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 1001,
+        zIndex,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

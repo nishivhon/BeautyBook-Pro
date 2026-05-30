@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../confirmation_dialog";
 import { fetchStaffWithAnyOption } from "../../../../services/staffApi";
+import { BookingAnyStylistIcon, BookingModalIconSlot } from "./bookingModalIcons";
 
 const BOOKING_MODAL_THEME_CLASS = "booking-modal-theme";
 
@@ -234,14 +235,6 @@ const BOOKING_MODAL_THEME_CSS = `
    INLINE SVG ICONS
 ══════════════════════════════════════════ */
 
-/* Person silhouette — used in "Any available" row */
-const PersonIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width={20} height={20}>
-    <circle cx="12" cy="8" r="4" stroke="#1a0f00" strokeWidth="1.8" fill="none"/>
-    <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#1a0f00" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
-  </svg>
-);
-
 /* Back arrow */
 const BackArrowIcon = () => (
   <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width={16} height={16}>
@@ -381,7 +374,9 @@ const AnyRow = ({ isSelected, onSelect }) => (
     <div className="stylist-row-left">
       {/* amber circle with person icon */}
       <div className="stylist-avatar">
-        <PersonIcon />
+        <BookingModalIconSlot size="avatar">
+          <BookingAnyStylistIcon />
+        </BookingModalIconSlot>
       </div>
       <div className="stylist-text">
         <span className="stylist-name">Any available stylist</span>
@@ -393,6 +388,8 @@ const AnyRow = ({ isSelected, onSelect }) => (
 /* ── Named stylist row ── */
 const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext = true }) => {
   const hasNextAppointment = Boolean(stylist.nextAppointmentTime);
+  const canBookForWalkIn = stylist.isBookableForWalkIn !== false;
+  const availabilityTone = canBookForWalkIn ? '#22c55e' : '#ef4444';
 
   return (
     <button
@@ -410,9 +407,9 @@ const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext =
         <div className="stylist-text">
           <span className={`stylist-name${stylist.unavailable ? " muted" : ""}`}>{stylist.name}</span>
           <div style={{ marginTop: 4, display: "inline-flex", gap: 8, flexWrap: "wrap" }}>
-            {showTime && <span className="stylist-unavailable-tag">{stylist.totalSelectedTime || 0} min total</span>}
+            {showTime && <span className="stylist-unavailable-tag" style={{ color: availabilityTone }}>{stylist.totalSelectedTime || 0} min total</span>}
             {showTime && showNext && <span>•</span>}
-            {showNext && <span className="stylist-unavailable-tag">{hasNextAppointment ? `Next: ${formatTimeTo12Hour(stylist.nextAppointmentTime)}` : "No next appointment"}</span>}
+            {showNext && <span className="stylist-unavailable-tag" style={{ color: availabilityTone }}>{hasNextAppointment ? `Next: ${formatTimeTo12Hour(stylist.nextAppointmentTime)}` : "No next appointment"}</span>}
           </div>
           {stylist.unavailable && <span className="stylist-unavailable-tag">Unavailable</span>}
         </div>
@@ -604,6 +601,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, onClose, i
               totalSelectedTime,
               walk_in: staff.walk_in === true,
               in_service: staff.in_service,
+              isBookableForWalkIn: isWalkIn ? !disabledForWalkIn && !hasOverlap : true,
               unavailable: stylist.unavailable || disabledForWalkIn || staffIsInService || hasOverlap,
             };
           })

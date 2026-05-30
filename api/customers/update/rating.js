@@ -16,10 +16,11 @@ export default async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { customerId, date, service, staff, rating } = req.body;
+  const { customerId, historyId, id, date, service, staff, rating } = req.body;
+  const targetHistoryId = historyId || id;
 
-  if (!customerId || !date || !service || !staff || rating === undefined || rating < 1 || rating > 5) {
-    return res.status(400).json({ error: 'customerId, date, service, staff, and rating (1-5) are required' });
+  if (!customerId || (!targetHistoryId && (!date || !service || !staff)) || rating === undefined || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: 'customerId, historyId (or date, service, staff), and rating (1-5) are required' });
   }
 
   try {
@@ -70,24 +71,42 @@ export default async (req, res) => {
 
     console.log(`[RateService] Found ${histories.length} history entries`);
 
-    // Find matching history entry by date, service, and staff
-    const targetDateStr = String(date).trim();
-    const targetServiceStr = String(service).trim().toLowerCase();
-    const targetStaffStr = String(staff).trim().toLowerCase();
+    const normalizedTargetHistoryId = String(targetHistoryId || '').trim();
+    const targetDateStr = String(date || '').trim();
+    const targetServiceStr = String(service || '').trim().toLowerCase();
+    const targetStaffStr = String(staff || '').trim().toLowerCase();
 
     let matchIndex = -1;
-    for (let i = 0; i < histories.length; i++) {
-      const item = histories[i] || {};
-      const itemDateStr = String(item.date || '').trim();
-      const itemServiceStr = String(item.service || '').trim().toLowerCase();
-      const itemStaffStr = String(item.staff || '').trim().toLowerCase();
 
-      console.log(`[RateService] Checking history[${i}]: date="${itemDateStr}", service="${itemServiceStr}", staff="${itemStaffStr}"`);
+    if (normalizedTargetHistoryId) {
+      for (let i = 0; i < histories.length; i++) {
+        const item = histories[i] || {};
+        const itemHistoryId = String(item.id || item.historyId || '').trim();
 
-      if (itemDateStr === targetDateStr && itemServiceStr === targetServiceStr && itemStaffStr === targetStaffStr) {
-        console.log(`[RateService] Found matching history at index ${i}`);
-        matchIndex = i;
-        break;
+        console.log(`[RateService] Checking history[${i}] by id: historyId="${itemHistoryId}"`);
+
+        if (itemHistoryId === normalizedTargetHistoryId) {
+          console.log(`[RateService] Found matching history by id at index ${i}`);
+          matchIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (matchIndex === -1) {
+      for (let i = 0; i < histories.length; i++) {
+        const item = histories[i] || {};
+        const itemDateStr = String(item.date || '').trim();
+        const itemServiceStr = String(item.service || '').trim().toLowerCase();
+        const itemStaffStr = String(item.staff || '').trim().toLowerCase();
+
+        console.log(`[RateService] Checking history[${i}]: date="${itemDateStr}", service="${itemServiceStr}", staff="${itemStaffStr}"`);
+
+        if (itemDateStr === targetDateStr && itemServiceStr === targetServiceStr && itemStaffStr === targetStaffStr) {
+          console.log(`[RateService] Found matching history at index ${i}`);
+          matchIndex = i;
+          break;
+        }
       }
     }
 

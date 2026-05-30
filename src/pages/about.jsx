@@ -2,94 +2,25 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { usePublicTheme } from "../theme/publicThemeContext";
 import { ThemeToggle } from "../components/public/ThemeToggle";
+import {
+  LogoMark,
+  ConflictIcon,
+  WaitIcon,
+  DataIcon,
+  CommunicationIcon,
+  RetentionIcon,
+  StaffSchedulingIcon,
+} from "../components/public/publicPageIcons";
 
 const HERO_BG_IMAGE_DARK = new URL("../../images/DarkmodeBG.png", import.meta.url).href;
 const HERO_BG_IMAGE_LIGHT = new URL("../../images/LightmodeBG.png", import.meta.url).href;
 
-/* ── NAVBAR logo: scissors <> mark (white strokes on amber bg) ── */
-const LogoMark = () => (
-  <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:22,height:22}}>
-    {/* left pivot rings */}
-    <circle cx="6"  cy="21" r="4" stroke="black" strokeWidth="2" fill="none"/>
-    <circle cx="6"  cy="9"  r="4" stroke="black" strokeWidth="2" fill="none"/>
-    {/* blade crossing to the right */}
-    <path d="M10 18.5 L28 7"  stroke="black" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M10 11.5 L28 23" stroke="black" strokeWidth="2" strokeLinecap="round"/>
-    {/* inner filled dots */}
-    <circle cx="6"  cy="21" r="1.6" fill="black"/>
-    <circle cx="6"  cy="9"  r="1.6" fill="black"/>
-  </svg>
-);
-
-/* ── Problem Icons ── */
-const ConflictIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
-    <rect x="2" y="4" width="8" height="14" rx="1" stroke="black" strokeWidth="1.6" fill="none"/>
-    <rect x="14" y="4" width="8" height="14" rx="1" stroke="black" strokeWidth="1.6" fill="none"/>
-    <path d="M6 8h12M6 12h12M6 16h12" stroke="black" strokeWidth="1.3" strokeLinecap="round"/>
-    <circle cx="20" cy="6" r="3" stroke="#dd901d" strokeWidth="1.8" fill="none"/>
-    <path d="M18 4l4 4M22 4l-4 4" stroke="#dd901d" strokeWidth="1.6" strokeLinecap="round"/>
-  </svg>
-);
-
-const WaitIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
-    {/* clock circle */}
-    <circle cx="12" cy="12" r="9.5" stroke="black" strokeWidth="1.7" fill="none"/>
-    {/* clock hands */}
-    <line x1="12" y1="12" x2="12" y2="7" stroke="black" strokeWidth="1.6" strokeLinecap="round"/>
-    <line x1="12" y1="12" x2="16.5" y2="12" stroke="black" strokeWidth="1.6" strokeLinecap="round"/>
-    {/* waiting people */}
-    <circle cx="4" cy="18" r="1.5" fill="black"/>
-    <path d="M3 20.5v2M5 20.5v2" stroke="black" strokeWidth="1.2" strokeLinecap="round"/>
-    <circle cx="8" cy="19" r="1.5" fill="black"/>
-    <path d="M7 21.5v2M9 21.5v2" stroke="black" strokeWidth="1.2" strokeLinecap="round"/>
-  </svg>
-);
-
-const DataIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
-    <rect x="2" y="2" width="20" height="20" rx="2" stroke="black" strokeWidth="1.7" fill="none"/>
-    <line x1="2" y1="6" x2="22" y2="6" stroke="black" strokeWidth="1.5"/>
-    <circle cx="6" cy="10" r="1" fill="black"/>
-    <circle cx="12" cy="10" r="1" fill="black"/>
-    <circle cx="18" cy="10" r="1" fill="black"/>
-    <circle cx="6" cy="15" r="1" fill="black"/>
-    <circle cx="12" cy="15" r="1" fill="black"/>
-    <circle cx="18" cy="15" r="1" fill="black"/>
-    <circle cx="6" cy="20" r="1" fill="black"/>
-    <circle cx="12" cy="20" r="1" fill="black"/>
-  </svg>
-);
-
-const CommunicationIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
-    {/* phone outline */}
-    <path d="M3 5a2 2 0 012-2h3.28a1 1 0 00-.684 1.72M3 5a2 2 0 002 2h3.28" stroke="black" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
-    <rect x="4" y="6" width="10" height="12" rx="1.5" stroke="black" strokeWidth="1.6" fill="none"/>
-    <circle cx="9" cy="17" r="0.8" fill="black"/>
-    {/* message bubbles */}
-    <path d="M18 8l-4 2 4 2v-4z" fill="black"/>
-    <path d="M20 10h2a1 1 0 011 1v4a1 1 0 01-1 1h-2" stroke="black" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
-  </svg>
-);
-
-const RetentionIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
-    {/* heart outline */}
-    <path d="M12 21l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09 1.09-1.28 2.76-2.09 4.5-2.09 3.08 0 5.5 2.42 5.5 5.5 0 3.78-3.4 6.86-8.55 11.18L12 21z" stroke="black" strokeWidth="1.6" fill="none" strokeLinejoin="round"/>
-    {/* upward arrow */}
-    <path d="M12 12l-2 2v-4M14 12l2 2v-4" stroke="#dd901d" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-/* ── Solution Icon ── */
-const SolutionIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"100%"}}>
-    <circle cx="12" cy="12" r="9.5" stroke="black" strokeWidth="1.7" fill="none"/>
-    <path d="M7.5 12l3 3.5L16 9" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
+const TEAM_MEMBER_IMAGES = {
+  vhon: new URL("../../images/Members/Vhon.png", import.meta.url).href,
+  charlie: new URL("../../images/Members/Charlie.png", import.meta.url).href,
+  karl: new URL("../../images/Members/Karl.png", import.meta.url).href,
+  athlon: new URL("../../images/Members/Athlon.png", import.meta.url).href,
+};
 
 /* ── CheckItem for feature lists ── */
 const CheckItem = ({ lightMode = false }) => (
@@ -134,7 +65,7 @@ const NavBar = () => {
     <nav className="navbar">
       {/* Logo */}
       <div className="flex-center-gap-2">
-        <div className="logo-badge">
+        <div className="public-icon-slot public-icon-slot--logo">
           <LogoMark/>
         </div>
         <span className="brand-name">
@@ -280,7 +211,7 @@ const ProblemSection = ({ isDesktop }) => {
     {icon:<DataIcon/>, text:"Lack of customer data and service history tracking"},
     {icon:<CommunicationIcon/>, text:"Limited communication between businesses and clients"},
     {icon:<RetentionIcon/>, text:"Poor customer retention due to manual processes"},
-    {icon:<SolutionIcon/>, text:"Inefficient staff scheduling and reporting"},
+    {icon:<StaffSchedulingIcon/>, text:"Inefficient staff scheduling and reporting"},
   ];
 
   return (
@@ -326,9 +257,7 @@ const ProblemSection = ({ isDesktop }) => {
                 e.currentTarget.style.borderColor = themeMode === 'light' ? 'rgba(243, 139, 166, 0.35)' : 'rgba(221,144,29,0.06)';
               }}
             >
-              <div style={{width:52, height:52, display:'flex', alignItems:'center', justifyContent:'center', background: themeMode === 'light' ? '#ffffff' : 'var(--bg-darker)', borderRadius:10, border: themeMode === 'light' ? '1px solid rgba(0, 0, 0, 0.08)' : 'none', marginBottom:14}}>
-                <div style={{width:28,height:28,color: themeMode === 'light' ? '#f38ba6' : '#dd901d'}}>{p.icon}</div>
-              </div>
+              <div className="public-icon-slot">{p.icon}</div>
               <p style={{fontSize:'0.9rem', color: themeMode === 'light' ? '#0c0a09' : 'var(--color-tan)', fontWeight:500, margin:0}}>{p.text}</p>
             </div>
           ))}
@@ -386,10 +315,10 @@ const SolutionSection = ({ isDesktop }) => {
 const TeamSection = ({ isDesktop }) => {
   const { themeMode } = usePublicTheme();
   const team = [
-    {id:1, name:'Dagodog, Vhon Inishi M.', role:'Project Leader'},
-    {id:2, name:'Arejola, Charlie R.', role:'Lead Programmer'},
-    {id:3, name:'Villon, Karl Lemuel R.', role:'Documentation'},
-    {id:4, name:'Zamora, Athlon Miguel C.', role:'QA'}
+    {id:1, name:'Dagodog, Vhon Inishi M.', role:'Project Leader', image: TEAM_MEMBER_IMAGES.vhon},
+    {id:2, name:'Arejola, Charlie R.', role:'Lead Programmer', image: TEAM_MEMBER_IMAGES.charlie},
+    {id:3, name:'Villon, Karl Lemuel R.', role:'Documentation', image: TEAM_MEMBER_IMAGES.karl},
+    {id:4, name:'Zamora, Athlon Miguel C.', role:'QA', image: TEAM_MEMBER_IMAGES.athlon},
   ];
 
   return (
@@ -402,12 +331,18 @@ const TeamSection = ({ isDesktop }) => {
           {team.map((member) => (
             <div key={member.id} style={{display:'flex', justifyContent:'center', width:'100%'}}>
               <div className="team-card" style={{width: isDesktop ? 220 : '100%', maxWidth: isDesktop ? 220 : 320, height: isDesktop ? 220 : 'auto', aspectRatio: isDesktop ? undefined : '1 / 1', borderRadius:10, border:'1px solid var(--border-tan-light)', background:'var(--bg-card)', position:'relative', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center'}}>
-                <div style={{color:'var(--color-tan)'}}>
-                  Photo Placeholder
-                </div>
+                <img
+                  src={member.image}
+                  alt={member.name}
+                  style={{position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover'}}
+                />
+                <div
+                  aria-hidden
+                  style={{position:'absolute', inset:0, background:'linear-gradient(to top, rgba(10, 9, 8, 0.92) 0%, rgba(10, 9, 8, 0.35) 45%, transparent 70%)'}}
+                />
 
-                <div style={{position:'absolute', left:0, right:0, bottom:14, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', pointerEvents:'none'}}>
-                  <h3 style={{fontSize: isDesktop ? '1.02rem' : '0.85rem', fontWeight:600, color:'var(--color-white)', margin:0}}>{member.name}</h3>
+                <div style={{position:'absolute', left:0, right:0, bottom:14, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', pointerEvents:'none', zIndex:1}}>
+                  <h3 style={{fontSize: isDesktop ? '1.02rem' : '0.85rem', fontWeight:600, color: themeMode === 'light' ? '#ffffff' : 'var(--color-white)', margin:0}}>{member.name}</h3>
                   <p style={{fontSize:'0.85rem', color: themeMode === 'light' ? '#f38ba6' : '#dd901d', fontWeight:600, margin:'6px 0 0'}}>{member.role}</p>
                 </div>
               </div>
@@ -427,7 +362,7 @@ const FooterSection = () => (
         <span className="footer-label">
           Contact us
         </span>
-        {["Canvas city, Abc st., 245 lot B","(02) 123-4567","beautybookpro@gmail.com","Mon-Fri: 8:00 AM - 5:00 PM"].map((t,i) => (
+        {["Canvas city, Abc st., 245 lot B","(02) 123-4567","beautybookpro@gmail.com","Monday to Sunday: 8:00 AM - 8:00 PM"].map((t,i) => (
           <span key={i} className="footer-text">
             {t}
           </span>

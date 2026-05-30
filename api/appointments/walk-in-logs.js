@@ -61,12 +61,11 @@ export default async (req, res) => {
     } else {
       console.warn("[WalkInLogs] Exact date match failed, trying created_at range...");
       // If exact date fails, try filtering by created_at date range
-      const nextDate = new Date(date + 'T23:59:59Z');
-      const endDate = new Date(nextDate);
-      endDate.setDate(endDate.getDate() + 1);
+      const [year, month, day] = date.split('-').map(Number);
+      const endDate = new Date(Date.UTC(year, month - 1, day + 1));
       const endDateStr = endDate.toISOString().split('T')[0];
 
-      supabaseUrl = `${SUPABASE_URL}/rest/v1/walk_in_logs?created_at=gte.${date}T00:00:00Z&created_at=lt.${endDateStr}T00:00:00Z&order=created_at.asc`;
+      supabaseUrl = `${SUPABASE_URL}/rest/v1/walk_in_logs?created_at=gte.${date}T00:00:00&created_at=lt.${endDateStr}T00:00:00&order=created_at.asc`;
       response = await fetch(supabaseUrl, {
         method: "GET",
         headers: {

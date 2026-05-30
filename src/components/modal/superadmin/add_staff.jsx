@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { databaseAPI } from "../../../services/databaseApi";
+import { ConfirmationDialog } from "../customer/confirmation_dialog";
+import { useToast } from "../../toast";
 
 const CloseIcon = ({ color = "currentColor" }) => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -7,108 +9,13 @@ const CloseIcon = ({ color = "currentColor" }) => (
   </svg>
 );
 
-const ConfirmationDialog = ({ 
-  isOpen = false,
-  title = "Leave without saving?",
-  message = "Are you sure you want to exit? Any unsaved information will be lost.",
-  confirmText = "Leave",
-  cancelText = "Stay",
-  onConfirm,
-  onCancel
-}) => {
-  if (!isOpen) return null;
-
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 3000,
-      backdropFilter: 'blur(2px)',
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '16px',
-        padding: '32px 24px',
-        maxWidth: '360px',
-        width: '90%',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-        animation: 'fade-up 0.3s ease forwards'
-      }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1a0f00', marginBottom: '12px', textAlign: 'center', fontFamily: 'Inter, sans-serif', marginTop: 0 }}>
-          {title}
-        </h2>
-        <p style={{ fontSize: '14px', color: '#665544', marginBottom: '24px', textAlign: 'center', lineHeight: '1.5', fontFamily: 'Inter, sans-serif', marginTop: 0 }}>
-          {message}
-        </p>
-        <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: '12px 16px',
-              background: '#dd901d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#c17a14';
-              e.target.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = '#dd901d';
-              e.target.style.transform = 'translateY(0)';
-            }}
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={onConfirm}
-            style={{
-              padding: '12px 16px',
-              background: 'transparent',
-              color: '#dd901d',
-              border: '1.5px solid #dd901d',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = 'rgba(221, 144, 29, 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'transparent';
-            }}
-          >
-            {confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     names: '',
     category_specialty: []
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -163,7 +70,6 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
       ...prev,
       [name]: value
     }));
-    setError(null);
   };
 
   const handleSpecialtyToggle = (specialty) => {
@@ -178,19 +84,18 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
         category_specialty: nextSelected,
       };
     });
-    setError(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.names.trim()) {
-      setError('Staff name is required');
+      showToast({ message: 'Staff name is required', type: 'error', duration: 3000 });
       return;
     }
 
     if (!Array.isArray(formData.category_specialty) || formData.category_specialty.length === 0) {
-      setError('Select at least one specialty');
+      showToast({ message: 'Select at least one specialty', type: 'error', duration: 3000 });
       return;
     }
 
@@ -205,7 +110,6 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
   const handleConfirmExit = () => {
     setShowConfirmation(false);
     setFormData({ names: '', category_specialty: [] });
-    setError(null);
     onClose();
   };
 
@@ -214,7 +118,6 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
   const handleConfirmAdd = async () => {
     setShowConfirmation(false);
     setIsLoading(true);
-    setError(null);
 
     try {
       const response = await fetch('/api/staffs/create', {
@@ -239,7 +142,11 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
       onClose();
     } catch (err) {
       console.error('[AddStaffModal] Error:', err);
-      setError(err.message || 'An error occurred while creating staff');
+      showToast({
+        message: err.message || 'An error occurred while creating staff',
+        type: 'error',
+        duration: 3000,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -247,7 +154,6 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
 
   const handleClose = () => {
     setFormData({ names: '', category_specialty: [] });
-    setError(null);
     setShowConfirmation(false);
     onClose();
   };
@@ -307,20 +213,6 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
           </div>
 
           {/* Error Message */}
-          {error && (
-            <div style={{
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '6px',
-              padding: '12px',
-              marginBottom: '16px',
-              color: '#EF4444',
-              fontSize: '13px'
-            }}>
-              {error}
-            </div>
-          )}
-
           {/* Form */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Name Field */}
@@ -447,6 +339,7 @@ export const AddStaffModal = ({ isOpen, onClose, onSave }) => {
       {/* Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={showConfirmation}
+        zIndex={3000}
         title="Leave without saving?"
         message="Are you sure you want to exit? Any unsaved information will be lost."
         confirmText="Leave"

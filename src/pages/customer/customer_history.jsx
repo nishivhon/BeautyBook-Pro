@@ -116,11 +116,37 @@ export default function CustomerHistoryPage() {
       return;
     }
 
-    setHistory((prev) =>
-      prev.map((h) => (h.id === selectedForRating.id ? { ...h, rated: true, rating: ratingValue } : h))
-    );
-    showToast({ message: "Rating submitted successfully.", type: "success" });
-    setSelectedForRating(null);
+    const submitRating = async () => {
+      try {
+        const response = await fetch('/api/customers/update/rating', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerId: profile.id,
+            historyId: selectedForRating.id,
+            date: selectedForRating.date,
+            service: selectedForRating.service,
+            staff: selectedForRating.stylist,
+            rating: ratingValue,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody.error || errorBody.details || `Failed to submit rating: ${response.statusText}`);
+        }
+
+        setHistory((prev) =>
+          prev.map((h) => (h.id === selectedForRating.id ? { ...h, rated: true, rating: ratingValue } : h))
+        );
+        showToast({ message: "Rating submitted successfully.", type: "success" });
+        setSelectedForRating(null);
+      } catch (error) {
+        showToast({ message: error.message || "Failed to submit rating.", type: "error" });
+      }
+    };
+
+    submitRating();
   };
 
   return (
@@ -149,7 +175,7 @@ export default function CustomerHistoryPage() {
 
           <div className="cdb-grid cdb-grid-history">
             {filteredHistory.map((item) => (
-              <div key={item.id} className="cdb-item-card">
+              <div key={item.id} className="cdb-item-card cdb-history-item-card">
                 <div className="cdb-item-left">
                   <h3 className="cdb-item-title">{item.service}</h3>
                   <p className="cdb-item-subtitle">{item.stylist} · ${item.cost.toFixed(2)}</p>

@@ -2,6 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmationDialog } from "../confirmation_dialog";
 import Toast from "../../../toast";
+import {
+  BookingCalendarIcon,
+  BookingClockIcon,
+  BookingModalIconSlot,
+} from "./bookingModalIcons";
 
 const BOOKING_MODAL_THEME_CLASS = "booking-modal-theme";
 
@@ -329,26 +334,6 @@ const BOOKING_MODAL_THEME_CSS = `
 }
 `;
 
-const CalendarSmIcon = () => (
-  <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" width={18} height={18}>
-    <rect x="1" y="2.5" width="16" height="14" rx="2" stroke="white" strokeWidth="1.4" fill="none"/>
-    <path d="M5.5 1v3M12.5 1v3" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
-    <line x1="1" y1="8" x2="17" y2="8" stroke="white" strokeWidth="1.4"/>
-    <circle cx="5.5" cy="11.5" r="1" fill="white"/>
-    <circle cx="9"   cy="11.5" r="1" fill="white"/>
-    <circle cx="12.5" cy="11.5" r="1" fill="white"/>
-    <circle cx="5.5" cy="14.5" r="1" fill="white"/>
-    <circle cx="9"   cy="14.5" r="1" fill="white"/>
-  </svg>
-);
-
-const ClockSmIcon = () => (
-  <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" width={18} height={18}>
-    <circle cx="9" cy="9" r="8" stroke="white" strokeWidth="1.4" fill="none"/>
-    <path d="M9 4.5v5l3 2.5" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
-  </svg>
-);
-
 const STEPS = [
   { number: 1, label: "Schedule" },
   { number: 2, label: "Service"  },
@@ -656,16 +641,14 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
             onClick={() => setShowDateInput(!showDateInput)}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = "#dd901d";
-              const svgs = e.currentTarget.querySelectorAll('svg');
-              svgs.forEach(svg => svg.style.stroke = "#dd901d");
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = "white";
-              const svgs = e.currentTarget.querySelectorAll('svg');
-              svgs.forEach(svg => svg.style.stroke = "white");
             }}
           >
-            <CalendarSmIcon />
+            <BookingModalIconSlot size="picker">
+              <BookingCalendarIcon />
+            </BookingModalIconSlot>
             <span>Select Date</span>
           </div>
           {!showDateInput ? (
@@ -815,7 +798,9 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
         {/* ── Time picker ── */}
         <div className="appt-picker-group">
           <div className="appt-picker-label">
-            <ClockSmIcon />
+            <BookingModalIconSlot size="picker">
+              <BookingClockIcon />
+            </BookingModalIconSlot>
             <span>Select Time</span>
           </div>
           <div className="appt-time-grid">

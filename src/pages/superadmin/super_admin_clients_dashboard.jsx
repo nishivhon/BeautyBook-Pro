@@ -5,6 +5,7 @@ import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { AddClientModal } from "../../components/modal/superadmin/add_client_modal";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { useToast } from "../../components/toast";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -86,6 +87,10 @@ const ShieldIcon = ({ color = "currentColor" }) => (
 
 // ─── Navigation Items ─────────────────────────────────────────────────────
 
+const ROWS_PER_PAGE = 7;
+const TABLE_CELL_STYLE = { fontSize: '13px', whiteSpace: 'normal', wordBreak: 'break-word', padding: '12px 8px' };
+const TABLE_CHECKBOX_CELL_STYLE = { ...TABLE_CELL_STYLE, width: 40, textAlign: 'center' };
+
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
   { id: "staff-management", label: "Staff Management", icon: NavUserIcon, path: "/superadmin/users" },
@@ -100,6 +105,7 @@ const NAV_ITEMS = [
 
 export default function SuperAdminClientsDashboard() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -116,8 +122,6 @@ export default function SuperAdminClientsDashboard() {
   const [loading, setLoading] = useState(false);
   const [currentClientPage, setCurrentClientPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [toastMessage, setToastMessage] = useState("");
-  const [showToast, setShowToast] = useState(false);
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
   const [selectedClients, setSelectedClients] = useState(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -168,7 +172,7 @@ export default function SuperAdminClientsDashboard() {
           rows: [],
           cols: ['id', 'name', 'email', 'phone'],
         });
-        displayToast('Failed to fetch client data');
+        showToast({ message: 'Failed to fetch client data', type: 'error', duration: 3000 });
       } finally {
         setLoading(false);
       }
@@ -203,12 +207,6 @@ export default function SuperAdminClientsDashboard() {
     navigate("/operators/login");
   };
 
-  const displayToast = (message) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2800);
-  };
-
   const handleOpenAddClientModal = () => {
     setIsAddClientModalOpen(true);
   };
@@ -231,7 +229,7 @@ export default function SuperAdminClientsDashboard() {
 
   const handleRemoveClients = async () => {
     if (selectedClients.size === 0) {
-      displayToast('Please select clients to remove');
+      showToast({ message: 'Please select clients to remove', type: 'warning', duration: 2800 });
       return;
     }
 
@@ -266,10 +264,10 @@ export default function SuperAdminClientsDashboard() {
       
       setSelectedClients(new Set());
       setShowDeleteConfirm(false);
-      displayToast(`${clientIds.length} client(s) removed successfully`);
+      showToast({ message: `${clientIds.length} client(s) removed successfully`, type: 'success', duration: 2800 });
     } catch (error) {
       console.error('[Clients] Error removing clients:', error);
-      displayToast('Failed to remove clients');
+      showToast({ message: 'Failed to remove clients', type: 'error', duration: 3000 });
     } finally {
       setIsDeletingClients(false);
     }
@@ -286,7 +284,7 @@ export default function SuperAdminClientsDashboard() {
       }));
     }
 
-    displayToast('Client added successfully');
+    showToast({ message: 'Client added successfully', type: 'success', duration: 2800 });
   };
 
   // Format column names for display
@@ -409,7 +407,7 @@ export default function SuperAdminClientsDashboard() {
                 <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: 'center', width: '40px', padding: '8px' }}></th>
+                      <th style={{ textAlign: 'center', width: 40, padding: '12px 8px' }}></th>
                       {clientsData.cols.map((col) => (
                         <th key={col} style={{ textAlign: 'left' }}>{formatColumnName(col)}</th>
                       ))}
@@ -417,12 +415,11 @@ export default function SuperAdminClientsDashboard() {
                   </thead>
                   <tbody>
                     {(() => {
-                      const itemsPerPage = 6;
-                      const startIdx = (currentClientPage - 1) * itemsPerPage;
-                      const endIdx = startIdx + itemsPerPage;
+                      const startIdx = (currentClientPage - 1) * ROWS_PER_PAGE;
+                      const endIdx = startIdx + ROWS_PER_PAGE;
                       return filteredClients.slice(startIdx, endIdx).map((client, idx) => (
                         <tr key={idx} className="db-row">
-                          <td style={{ width: '40px', fontSize: '13px', textAlign: 'center', padding: '8px' }}>
+                          <td style={TABLE_CHECKBOX_CELL_STYLE}>
                             <input
                               type="checkbox"
                               className="client-select-checkbox"
@@ -430,11 +427,11 @@ export default function SuperAdminClientsDashboard() {
                               onChange={() => handleSelectClient(client.id)}
                               style={{
                                 cursor: 'pointer',
-                                width: '18px',
-                                height: '18px',
+                                width: 18,
+                                height: 18,
+                                margin: 0,
                                 accentColor: isDarkMode ? '#FFD700' : '#e91e63',
                                 appearance: 'auto',
-                                scale: '1.2'
                               }}
                             />
                           </td>
@@ -442,7 +439,7 @@ export default function SuperAdminClientsDashboard() {
                             const cellValue = client[col];
                             const displayValue = formatCellValue(cellValue, col);
                             return (
-                              <td key={col} style={{ fontSize: '13px' }}>{displayValue}</td>
+                              <td key={col} style={TABLE_CELL_STYLE}>{displayValue}</td>
                             );
                           })}
                         </tr>
@@ -451,10 +448,9 @@ export default function SuperAdminClientsDashboard() {
                   </tbody>
                 </table>
                 {filteredClients.length > 0 && (() => {
-                  const itemsPerPage = 6;
-                  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-                  const startIdx = (currentClientPage - 1) * itemsPerPage + 1;
-                  const endIdx = Math.min(currentClientPage * itemsPerPage, filteredClients.length);
+                  const totalPages = Math.ceil(filteredClients.length / ROWS_PER_PAGE);
+                  const startIdx = (currentClientPage - 1) * ROWS_PER_PAGE + 1;
+                  const endIdx = Math.min(currentClientPage * ROWS_PER_PAGE, filteredClients.length);
                   return (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)', marginTop: 'auto' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>
@@ -554,25 +550,6 @@ export default function SuperAdminClientsDashboard() {
           }
         }}
       />
-
-      {/* ─── TOAST ─── */}
-      {showToast && (
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          left: '24px',
-          background: 'rgba(35, 29, 26, 0.95)',
-          border: '1px solid rgba(221, 144, 29, 0.3)',
-          color: '#D4C5B9',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          fontSize: '13px',
-          zIndex: 1000,
-          backdropFilter: 'blur(10px)'
-        }}>
-          {toastMessage}
-        </div>
-      )}
     </DashboardShell>
   );
 }

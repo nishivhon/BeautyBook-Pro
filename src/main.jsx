@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './app'
+import './styles/theme.css'
 import './styles/tailwind.css'
 import './styles/mobile.css'
 // GLOBAL NAVIGATION INTERCEPTOR - Blocks redirect to / for email link users
