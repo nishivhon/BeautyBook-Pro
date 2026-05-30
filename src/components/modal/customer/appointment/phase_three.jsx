@@ -388,6 +388,8 @@ const AnyRow = ({ isSelected, onSelect }) => (
 /* ── Named stylist row ── */
 const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext = true }) => {
   const hasNextAppointment = Boolean(stylist.nextAppointmentTime);
+  const canBookForWalkIn = stylist.isBookableForWalkIn !== false;
+  const availabilityTone = canBookForWalkIn ? '#22c55e' : '#ef4444';
 
   return (
     <button
@@ -405,9 +407,9 @@ const StylistRow = ({ stylist, isSelected, onSelect, showTime = true, showNext =
         <div className="stylist-text">
           <span className={`stylist-name${stylist.unavailable ? " muted" : ""}`}>{stylist.name}</span>
           <div style={{ marginTop: 4, display: "inline-flex", gap: 8, flexWrap: "wrap" }}>
-            {showTime && <span className="stylist-unavailable-tag">{stylist.totalSelectedTime || 0} min total</span>}
+            {showTime && <span className="stylist-unavailable-tag" style={{ color: availabilityTone }}>{stylist.totalSelectedTime || 0} min total</span>}
             {showTime && showNext && <span>•</span>}
-            {showNext && <span className="stylist-unavailable-tag">{hasNextAppointment ? `Next: ${formatTimeTo12Hour(stylist.nextAppointmentTime)}` : "No next appointment"}</span>}
+            {showNext && <span className="stylist-unavailable-tag" style={{ color: availabilityTone }}>{hasNextAppointment ? `Next: ${formatTimeTo12Hour(stylist.nextAppointmentTime)}` : "No next appointment"}</span>}
           </div>
           {stylist.unavailable && <span className="stylist-unavailable-tag">Unavailable</span>}
         </div>
@@ -599,6 +601,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, onClose, i
               totalSelectedTime,
               walk_in: staff.walk_in === true,
               in_service: staff.in_service,
+              isBookableForWalkIn: isWalkIn ? !disabledForWalkIn && !hasOverlap : true,
               unavailable: stylist.unavailable || disabledForWalkIn || staffIsInService || hasOverlap,
             };
           })
