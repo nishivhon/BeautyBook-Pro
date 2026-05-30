@@ -499,7 +499,7 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
           </div>
 
           <div>
-            <p className="dash-detail-label">Starting Time</p>
+            <p className="dash-detail-label">Time added</p>
             <p className="dash-detail-value">{details.startTime}</p>
           </div>
 
@@ -751,7 +751,16 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
       details: {
         serviceSelected: apt.service,
         currentService: type === 'active' ? 'In Progress' : 'Pending',
-        startTime: apt.time,
+        startTime: type === 'active'
+          ? (() => {
+            const updatedAtValue = apt.updated_at || apt.updatedAt || apt.created_at || apt.createdAt || apt.time;
+            const updatedAtDate = new Date(updatedAtValue);
+            return Number.isNaN(updatedAtDate.getTime())
+              ? '—'
+              : updatedAtDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          })()
+          : apt.time,
+        timeLabel: type === 'active' ? 'Started at' : 'Appointment time',
         estimatedTime: '45 mins'
       }
     }));
@@ -777,7 +786,16 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
         details: {
           serviceSelected: serviceNames,
           currentService: type === 'active' ? 'In Progress' : 'Pending',
-          startTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          startTime: (() => {
+            const timeValue = type === 'active'
+              ? (walkin.updated_at || walkin.updatedAt || walkin.created_at || walkin.createdAt)
+              : (walkin.created_at || walkin.createdAt || walkin.updated_at);
+            const createdAtDate = new Date(timeValue);
+            return Number.isNaN(createdAtDate.getTime())
+              ? '—'
+              : createdAtDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          })(),
+          timeLabel: type === 'active' ? 'Started at' : 'Time added',
           estimatedTime: '45 mins',
           refNo: walkin.refNo || walkin.id
         },
@@ -822,8 +840,6 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
             <span className="dash-live-dot" />
             Live
           </span>
-        </div>
-        <div className="dash-panel-buttons">
           <button 
             className="live-add-walkin-btn-small"
             onClick={onOpenWalkInModal}

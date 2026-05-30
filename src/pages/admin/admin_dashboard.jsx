@@ -649,6 +649,10 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     return appointments.map((apt, index) => {
       // Extract service name - should come from API now
       const serviceName = apt.service || 'Service';
+      const displayTime = type === 'active'
+        ? formatAddedTime(apt.updated_at || apt.updatedAt || apt.created_at || apt.createdAt || apt.time)
+        : formatTimeToAmPm(apt.time);
+      const timeLabel = type === 'active' ? 'Started at' : 'Appointment time';
       
       return {
         id: apt.id,
@@ -662,11 +666,19 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         details: {
           serviceSelected: serviceName,
           currentService: type === 'active' ? 'In Progress' : 'Pending',
-          startTime: formatTimeToAmPm(apt.time),
+          startTime: displayTime,
+          timeLabel,
           estimatedTime: '45 mins'
         }
       };
     });
+  };
+
+  const formatAddedTime = (value) => {
+    if (!value) return '—';
+    const dateValue = new Date(value);
+    if (Number.isNaN(dateValue.getTime())) return '—';
+    return dateValue.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
   const currentItems = formatQueueItems(currentAppointments, 'active');
@@ -694,7 +706,10 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         details: {
           serviceSelected: serviceNames,
           currentService: isCurrentType ? 'In Progress' : 'Pending',
-          startTime: formatTimeToAmPm(walkin.time || walkin.time_slot || walkin.start_time || new Date().toISOString()),
+          startTime: isCurrentType
+            ? formatAddedTime(walkin.updated_at || walkin.updatedAt || walkin.created_at || walkin.createdAt)
+            : formatAddedTime(walkin.created_at || walkin.createdAt || walkin.updated_at),
+          timeLabel: isCurrentType ? 'Started at' : 'Time added',
           estimatedTime: '45 mins'
         },
         isWalkIn: true
@@ -841,7 +856,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
               </div>
 
               <div>
-                <span className="dash-detail-label">Starting Time</span>
+                <span className="dash-detail-label">{details.timeLabel || 'Time added'}</span>
                 <span className="dash-detail-value">{details.startTime}</span>
               </div>
 
