@@ -42,6 +42,31 @@ function isPastOrCurrentSlot(dateStr, time24) {
   return dateStr === currentDate && time24 <= currentTime;
 }
 
+function resolvePreferredContact(notifPrefValue, fallbackEmail, fallbackPhone) {
+  const normalizedEmail = typeof fallbackEmail === 'string' ? fallbackEmail.trim().toLowerCase() : '';
+  const normalizedPhone = typeof fallbackPhone === 'string' ? fallbackPhone.replace(/\D/g, '') : '';
+  const notifPref = String(notifPrefValue || '').trim();
+
+  if (!notifPref) {
+    return normalizedEmail || normalizedPhone;
+  }
+
+  const lower = notifPref.toLowerCase();
+  if (lower === 'email') {
+    return normalizedEmail || normalizedPhone;
+  }
+  if (lower === 'sms' || lower === 'phone') {
+    return normalizedPhone || normalizedEmail;
+  }
+
+  if (notifPref.includes('@')) {
+    return notifPref.toLowerCase();
+  }
+
+  const notifPhone = notifPref.replace(/\D/g, '');
+  return notifPhone || normalizedEmail || normalizedPhone;
+}
+
 export default async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -85,8 +110,30 @@ export default async (req, res) => {
       });
     }
     
-    // Use email or phone as contact (whichever is provided, prioritize email)
-    const customerContact = email || phone;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const normalizedPhone = typeof phone === 'string' ? phone.replace(/\D/g, '') : '';
+
+    // Use notif_pref from customer account when available; fallback to request contact.
+    let customerContact = normalizedEmail || normalizedPhone;
+    let customerAccount = null;
+
+    if (normalizedEmail || normalizedPhone) {
+      let customerLookup = supabase.from('customers_accounts').select('id, notif_pref').limit(1);
+
+      if (normalizedEmail) {
+        customerLookup = customerLookup.eq('email', normalizedEmail);
+      } else {
+        customerLookup = customerLookup.eq('phone', normalizedPhone);
+      }
+
+      const { data: customerRows, error: customerLookupError } = await customerLookup;
+      if (customerLookupError) {
+        console.warn('[Appointments] Customer notif_pref lookup failed:', customerLookupError.message);
+      } else {
+        customerAccount = (customerRows && customerRows[0]) || null;
+        customerContact = resolvePreferredContact(customerAccount?.notif_pref, normalizedEmail, normalizedPhone);
+      }
+    }
 
     // Format services as array of objects
     const formattedServices = servicesArray.map(svc => 
@@ -107,9 +154,6 @@ export default async (req, res) => {
     const couponCode = String(req.body?.coupon?.code || req.body?.coupon?.id || '').trim().toUpperCase();
     if (couponCode && (email || phone)) {
       try {
-        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-        const normalizedPhone = typeof phone === 'string' ? phone.replace(/\D/g, '') : '';
-
         let customerQuery = supabase.from('customers_accounts').select('id, coupons_used').limit(1);
         if (normalizedEmail) customerQuery = customerQuery.eq('email', normalizedEmail);
         else if (normalizedPhone) customerQuery = customerQuery.eq('phone', normalizedPhone);
@@ -163,9 +207,6 @@ export default async (req, res) => {
 
     // Best-effort: mark the selected coupon as used in the customer account
     if (couponCode && (email || phone)) {
-      const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-      const normalizedPhone = typeof phone === 'string' ? phone.replace(/\D/g, '') : '';
-
       let customerQuery = supabase.from('customers_accounts').select('id, coupons_used');
       if (normalizedEmail) {
         customerQuery = customerQuery.eq('email', normalizedEmail);
