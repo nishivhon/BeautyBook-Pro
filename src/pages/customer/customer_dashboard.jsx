@@ -260,6 +260,7 @@ export default function CustomerDashboard() {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					customerId: profile.id,
+					historyId: selectedForRating.id,
 					date: selectedForRating.date,
 					service: selectedForRating.service,
 					staff: selectedForRating.stylist,

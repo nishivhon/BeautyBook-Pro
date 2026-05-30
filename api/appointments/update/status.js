@@ -3,6 +3,26 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
+const getPhtTimestampString = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(date).reduce((accumulator, part) => {
+    if (part.type !== 'literal') {
+      accumulator[part.type] = part.value;
+    }
+    return accumulator;
+  }, {});
+
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+};
+
 const getServiceNameFromSlot = (slot) => {
   if (!slot?.services) {
     return 'Service pending';
@@ -440,7 +460,7 @@ export default async (req, res) => {
       .update({
         status,
         ...(isWalkIn ? {} : (status === 'cancelled' ? { reminder_sent: false, reminder_sent_at: null } : {})),
-        updated_at: new Date().toISOString()
+        updated_at: isWalkIn ? getPhtTimestampString() : new Date().toISOString()
       })
       .eq('id', isWalkIn ? normalizedWalkInId : id)
       .select();

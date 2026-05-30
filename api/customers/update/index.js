@@ -6,6 +6,22 @@ const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 const normalizePhone = (value) => (typeof value === 'string' ? value.replace(/\D/g, '') : '');
 
+const resolveNotificationPreferenceValue = ({ preference, email, phone }) => {
+  if (typeof preference === 'undefined') return undefined;
+
+  const raw = String(preference || '').trim();
+  if (!raw) return '';
+
+  const lower = raw.toLowerCase();
+  if (lower === 'email') return normalizeEmail(email);
+  if (lower === 'sms' || lower === 'phone') return normalizePhone(phone);
+  if (lower === 'email/sms') return normalizeEmail(email) || normalizePhone(phone);
+
+  // Already an actual contact value
+  if (raw.includes('@')) return normalizeEmail(raw);
+  return normalizePhone(raw) || raw;
+};
+
 export default async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -39,7 +55,7 @@ export default async (req, res) => {
 
     const { data: currentCustomer, error: currentError } = await supabase
       .from('customers_accounts')
-      .select('id, email, phone')
+      .select('id, email, phone, notif_pref')
       .eq('id', customerId)
       .maybeSingle();
 
@@ -85,12 +101,22 @@ export default async (req, res) => {
       }
     }
 
+    const resolvedNotificationPreference = resolveNotificationPreferenceValue({
+      preference: notificationPreference,
+      email: normalizedEmail || currentCustomer.email,
+      phone: normalizedPhone || currentCustomer.phone,
+    });
+
+    if (typeof notificationPreference !== 'undefined' && !resolvedNotificationPreference) {
+      return res.status(400).json({ error: 'Selected notification preference requires a valid contact value' });
+    }
+
     const updateData = {
       name: String(name).trim(),
       email: normalizedEmail,
       phone: normalizedPhone,
       ...(histories ? { histories } : {}),
-      ...(typeof notificationPreference !== 'undefined' ? { notif_pref: String(notificationPreference).trim() } : {}),
+      ...(typeof notificationPreference !== 'undefined' ? { notif_pref: resolvedNotificationPreference } : {}),
     };
 
     const { data, error } = await supabase

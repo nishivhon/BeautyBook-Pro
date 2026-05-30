@@ -1,5 +1,25 @@
 import { getSupabaseClient } from './utils/supabaseClient.js';
 
+const getPhtTimestampString = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(date).reduce((accumulator, part) => {
+    if (part.type !== 'literal') {
+      accumulator[part.type] = part.value;
+    }
+    return accumulator;
+  }, {});
+
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -41,7 +61,8 @@ export default async function handler(req, res) {
       assigned_staff: assignedStaff,
       services,
       status: 'pending',
-      updated_at: new Date().toISOString(),
+      created_at: getPhtTimestampString(),
+      updated_at: getPhtTimestampString(),
     };
 
     console.log('[WalkInCreate] Inserting walk-in:', walkInData, 'client ref:', refNo || null);

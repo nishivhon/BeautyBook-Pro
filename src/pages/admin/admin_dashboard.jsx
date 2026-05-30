@@ -649,6 +649,10 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     return appointments.map((apt, index) => {
       // Extract service name - should come from API now
       const serviceName = apt.service || 'Service';
+      const displayTime = type === 'active'
+        ? formatAddedTime(apt.updated_at || apt.updatedAt || apt.created_at || apt.createdAt || apt.time)
+        : formatTimeToAmPm(apt.time);
+      const timeLabel = type === 'active' ? 'Started at' : 'Appointment time';
       
       return {
         id: apt.id,
@@ -662,11 +666,59 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         details: {
           serviceSelected: serviceName,
           currentService: type === 'active' ? 'In Progress' : 'Pending',
-          startTime: formatTimeToAmPm(apt.time),
+          startTime: displayTime,
+          timeLabel,
           estimatedTime: '45 mins'
-        }
+        },
+        upNextSortKey: type === 'waiting'
+          ? getAppointmentSortTimestamp(apt.date, apt.time)
+          : Number.MAX_SAFE_INTEGER
       };
     });
+  };
+
+  const formatAddedTime = (value) => {
+    if (!value) return '—';
+    const dateValue = new Date(value);
+    if (Number.isNaN(dateValue.getTime())) return '—';
+    return dateValue.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getAppointmentSortTimestamp = (dateValue, timeValue) => {
+    if (!timeValue) return Number.MAX_SAFE_INTEGER;
+
+    const normalizedTime = String(timeValue).trim();
+    const meridiemMatch = normalizedTime.match(/(AM|PM)$/i);
+    let hours = 0;
+    let minutes = 0;
+    let seconds = 0;
+
+    if (meridiemMatch) {
+      const timePart = normalizedTime.replace(/\s*(AM|PM)$/i, '');
+      const [h, m = '0', s = '0'] = timePart.split(':');
+      hours = Number.parseInt(h, 10) || 0;
+      minutes = Number.parseInt(m, 10) || 0;
+      seconds = Number.parseInt(s, 10) || 0;
+      const period = meridiemMatch[1].toUpperCase();
+      if (period === 'PM' && hours < 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+    } else {
+      const [h, m = '0', s = '0'] = normalizedTime.split(':');
+      hours = Number.parseInt(h, 10) || 0;
+      minutes = Number.parseInt(m, 10) || 0;
+      seconds = Number.parseInt(s, 10) || 0;
+    }
+
+    const baseDate = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+    if (Number.isNaN(baseDate.getTime())) return Number.MAX_SAFE_INTEGER;
+    baseDate.setHours(hours, minutes, seconds, 0);
+    return baseDate.getTime();
+  };
+
+  const getWalkInSortTimestamp = (value) => {
+    if (!value) return Number.MAX_SAFE_INTEGER;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? Number.MAX_SAFE_INTEGER : parsed.getTime();
   };
 
   const currentItems = formatQueueItems(currentAppointments, 'active');
@@ -690,13 +742,21 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
         staff: walkin.assigned_staff,
         service: `${serviceNames} • ${walkin.assigned_staff}`,
         statusTop: isCurrentType ? 'Now' : 'Walk-in',
-        statusSub: isCurrentType ? 'In Progress' : 'Waiting',
+        statusSub: isCurrentType
+          ? 'In Progress'
+          : formatAddedTime(walkin.created_at || walkin.createdAt || walkin.updated_at),
         details: {
           serviceSelected: serviceNames,
           currentService: isCurrentType ? 'In Progress' : 'Pending',
-          startTime: formatTimeToAmPm(walkin.time || walkin.time_slot || walkin.start_time || new Date().toISOString()),
+          startTime: isCurrentType
+            ? formatAddedTime(walkin.updated_at || walkin.updatedAt || walkin.created_at || walkin.createdAt)
+            : formatAddedTime(walkin.created_at || walkin.createdAt || walkin.updated_at),
+          timeLabel: isCurrentType ? 'Started at' : 'Time added',
           estimatedTime: '45 mins'
         },
+        upNextSortKey: isCurrentType
+          ? Number.MAX_SAFE_INTEGER
+          : getWalkInSortTimestamp(walkin.created_at || walkin.createdAt || walkin.updated_at),
         isWalkIn: true
       };
     });
@@ -722,7 +782,12 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const pendingItems = formatQueueItems(todayPendingAppointments, 'waiting');
 
   // Combine pending appointments with pending walk-ins
-  const allUpNextItems = [...pendingItems, ...pendingWalkInItems];
+  const allUpNextItems = [...pendingItems, ...pendingWalkInItems]
+    .sort((a, b) => (a.upNextSortKey || Number.MAX_SAFE_INTEGER) - (b.upNextSortKey || Number.MAX_SAFE_INTEGER))
+    .map((item, index) => ({
+      ...item,
+      number: index + 1,
+    }));
   console.log('[LiveQueue] All up next items (appointments + walk-ins):', allUpNextItems.length);
   console.log('[LiveQueue] All current items (appointments + current walk-ins):', allCurrentItems.length);
 
@@ -841,7 +906,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
               </div>
 
               <div>
-                <span className="dash-detail-label">Starting Time</span>
+                <span className="dash-detail-label">{details.timeLabel || 'Time added'}</span>
                 <span className="dash-detail-value">{details.startTime}</span>
               </div>
 

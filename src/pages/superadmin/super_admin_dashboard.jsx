@@ -294,7 +294,6 @@ export default function SuperAdminDashboard() {
   const chartSeries = [
     { key: "appointments", label: "Appointments", color: "#dd901d" },
     { key: "walkIns", label: "Walk-ins", color: "#e85d75" },
-    { key: "revenue", label: "Revenue", color: "#7fbf7f" },
   ];
   const chartMaxValue = Math.max(
     1,
@@ -726,6 +725,9 @@ export default function SuperAdminDashboard() {
                           <div style={{ textAlign: "center", lineHeight: 1.15 }}>
                             <div style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>{dayEntry.label}</div>
                             <div style={{ color: "#9f8457", fontSize: 11, fontWeight: 600 }}>{dayEntry.monthDay}</div>
+                            <div style={{ color: "#7fbf7f", fontSize: 11, fontWeight: 700, marginTop: 3 }}>
+                              ₱{Number(dayEntry.revenue || 0).toLocaleString('en-PH')}
+                            </div>
                           </div>
                         </div>
                       ))}
