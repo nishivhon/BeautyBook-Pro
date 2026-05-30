@@ -737,6 +737,43 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
     }
   };
 
+  const getAppointmentSortTimestamp = (dateValue, timeValue) => {
+    if (!timeValue) return Number.MAX_SAFE_INTEGER;
+
+    const normalizedTime = String(timeValue).trim();
+    const meridiemMatch = normalizedTime.match(/(AM|PM)$/i);
+    let hours = 0;
+    let minutes = 0;
+    let seconds = 0;
+
+    if (meridiemMatch) {
+      const timePart = normalizedTime.replace(/\s*(AM|PM)$/i, '');
+      const [h, m = '0', s = '0'] = timePart.split(':');
+      hours = Number.parseInt(h, 10) || 0;
+      minutes = Number.parseInt(m, 10) || 0;
+      seconds = Number.parseInt(s, 10) || 0;
+      const period = meridiemMatch[1].toUpperCase();
+      if (period === 'PM' && hours < 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+    } else {
+      const [h, m = '0', s = '0'] = normalizedTime.split(':');
+      hours = Number.parseInt(h, 10) || 0;
+      minutes = Number.parseInt(m, 10) || 0;
+      seconds = Number.parseInt(s, 10) || 0;
+    }
+
+    const baseDate = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+    if (Number.isNaN(baseDate.getTime())) return Number.MAX_SAFE_INTEGER;
+    baseDate.setHours(hours, minutes, seconds, 0);
+    return baseDate.getTime();
+  };
+
+  const getWalkInSortTimestamp = (value) => {
+    if (!value) return Number.MAX_SAFE_INTEGER;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? Number.MAX_SAFE_INTEGER : parsed.getTime();
+  };
+
   // Transform appointments to queue item format
   const formatQueueItems = (appointments, type) => {
     return appointments.map((apt, index) => ({
@@ -762,7 +799,10 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
           : apt.time,
         timeLabel: type === 'active' ? 'Started at' : 'Appointment time',
         estimatedTime: '45 mins'
-      }
+      },
+      upNextSortKey: type === 'waiting'
+        ? getAppointmentSortTimestamp(apt.date, apt.time)
+        : Number.MAX_SAFE_INTEGER
     }));
   };
 
@@ -773,6 +813,13 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
       const serviceNames = Array.isArray(walkin.services) 
         ? walkin.services.map(s => s.title || s.name).join(', ')
         : 'Walk-in Service';
+      const walkInAddedTime = (() => {
+        const createdAtValue = walkin.created_at || walkin.createdAt || walkin.updated_at;
+        const createdAtDate = new Date(createdAtValue);
+        return Number.isNaN(createdAtDate.getTime())
+          ? '—'
+          : createdAtDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      })();
       
       return {
         id: `walkin-${walkin.id}`,
@@ -782,7 +829,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
         staff: walkin.assigned_staff,
         service: `${serviceNames} • ${walkin.assigned_staff}`,
         statusTop: type === 'active' ? 'Now' : 'Walk-in',
-        statusSub: type === 'active' ? 'In Progress' : 'Waiting',
+        statusSub: type === 'active' ? 'In Progress' : walkInAddedTime,
         details: {
           serviceSelected: serviceNames,
           currentService: type === 'active' ? 'In Progress' : 'Pending',
@@ -799,6 +846,9 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
           estimatedTime: '45 mins',
           refNo: walkin.refNo || walkin.id
         },
+        upNextSortKey: type === 'active'
+          ? Number.MAX_SAFE_INTEGER
+          : getWalkInSortTimestamp(walkin.created_at || walkin.createdAt || walkin.updated_at),
         isWalkIn: true
       };
     });
@@ -815,7 +865,12 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   const walkInItems = formatWalkInItems(pendingWalkIns, 'waiting');
 
   // Combine pending items with walk-ins
-  const combinedPendingItems = [...pendingItems, ...walkInItems];
+  const combinedPendingItems = [...pendingItems, ...walkInItems]
+    .sort((a, b) => (a.upNextSortKey || Number.MAX_SAFE_INTEGER) - (b.upNextSortKey || Number.MAX_SAFE_INTEGER))
+    .map((item, index) => ({
+      ...item,
+      number: index + 1,
+    }));
 
   // Create queue sections - only Current and Up Next, no On Deck
   const queueSections = [
