@@ -2066,7 +2066,7 @@ html[data-theme="light"] .dash-page-title,
   html[data-theme="light"] .staff-filter-option:hover,
   html[data-theme="light"] .staff-filter-option.active,
   html[data-theme="light"] .staff-filter-clear:hover,
-  html[data-theme="light"] .svc-item-edit-btn:hover,
+  html[data-theme="light"] .svc-item-edit-btn:not(.admin-icon-btn-bare):hover,
   html[data-theme="light"] .staff-member-chevron:hover,
   html[data-theme="light"] .dash-queue-chevron:hover,
   html[data-theme="light"] .live-queue-chevron:hover {
@@ -13445,7 +13445,7 @@ html[data-theme="light"] .dash-stat-badge-blue {
 html[data-theme="light"] .dash-queue-chevron,
 html[data-theme="light"] .live-queue-chevron,
 html[data-theme="light"] .staff-member-chevron,
-html[data-theme="light"] .svc-item-edit-btn,
+html[data-theme="light"] .svc-item-edit-btn:not(.admin-icon-btn-bare),
 html[data-theme="light"] .staff-filter-btn {
   background: #ffffff !important;
   color: #000000 !important;
@@ -13455,11 +13455,19 @@ html[data-theme="light"] .staff-filter-btn {
 html[data-theme="light"] .dash-queue-chevron:hover,
 html[data-theme="light"] .live-queue-chevron:hover,
 html[data-theme="light"] .staff-member-chevron:hover,
-html[data-theme="light"] .svc-item-edit-btn:hover,
+html[data-theme="light"] .svc-item-edit-btn:not(.admin-icon-btn-bare):hover,
 html[data-theme="light"] .staff-filter-btn:hover {
   background: #ffffff !important;
   color: #000000 !important;
   border-color: #d5d2d3 !important;
+}
+
+html[data-theme="light"] .svc-item-edit-btn.admin-icon-btn-bare,
+html[data-theme="light"] .svc-item-edit-btn.admin-icon-btn-bare:hover {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #0c0a09 !important;
 }
 
 html[data-theme="light"] .staff-member-avatar {
@@ -13706,6 +13714,193 @@ html[data-theme="light"] .public-icon-slot {
   height: 20px;
   min-width: 20px;
   min-height: 20px;
+}
+
+/* Admin dashboard — SVG assets & sizing (aligned with public / customer dashboards) */
+.admin-dash-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.admin-dash-icon-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* 48px — matches .public-icon-slot:not(.public-icon-slot--logo) */
+.admin-dash-icon-slot--metric {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+/* Admin dashboard — larger walk-in metric (User with + artwork has extra viewBox padding) */
+.admin-dash-icon-slot--metric-walkin {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+}
+
+.admin-dash-icon-slot--metric-walkin .admin-dash-icon--walkin-metric-art {
+  transform: scale(1.45);
+  transform-origin: center center;
+  object-position: center center;
+}
+
+.admin-dash-icon-slot--queue {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.admin-dash-icon-slot--summary {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+}
+
+.admin-dash-icon-slot--summary-lg {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.admin-dash-icon-slot--analytics {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.admin-dash-icon-slot--analytics-lg {
+  width: 60px;
+  height: 60px;
+  min-width: 60px;
+  min-height: 60px;
+}
+
+.admin-dash-icon-slot--inline {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+}
+
+.admin-dash-icon-slot--edit {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+}
+
+.admin-dash-icon-slot--edit-lg {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.admin-dash-icon-slot--svc-row {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.admin-dash-icon-slot--action {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+}
+
+.admin-dash-icon-slot--action-lg {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+}
+
+/* Bare icon controls — no amber/tan placeholder box behind artwork */
+.svc-item-edit-btn.admin-icon-btn-bare,
+.dash-download-btn .admin-dash-icon-slot--inline {
+  background: transparent !important;
+}
+
+.svc-item-edit-btn.admin-icon-btn-bare {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  padding: 2px;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.svc-item-edit-btn.admin-icon-btn-bare:hover {
+  background: transparent !important;
+  opacity: 0.85;
+}
+
+.dash-stat-top > .admin-dash-icon-slot--metric {
+  margin-bottom: 2px;
+}
+
+.admin-dash-icon-slot .admin-dash-icon {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+}
+
+.nav-button .admin-dash-icon--nav,
+.logout-button .admin-dash-icon--nav {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  object-fit: contain;
+  display: block;
+  transform: scale(1.5);
+  transform-origin: center center;
+}
+
+.dash-action-btn .admin-dash-icon--header {
+  display: block;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  object-fit: contain;
+  transform: scale(1.45);
+  transform-origin: center center;
+}
+
+.logo-badge .admin-dash-icon--nav-logo-art,
+.admin-nav-logo-badge .admin-dash-icon--nav-logo-art {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+}
+
+.dash-download-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
    /* Admin container overflow handling - keep content within layout bounds */
