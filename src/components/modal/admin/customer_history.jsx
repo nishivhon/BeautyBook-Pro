@@ -490,35 +490,45 @@ export const CustomerHistoryModal = ({ isOpen, onClose, staffName = null }) => {
                     </button>
 
                     {expandedCustomer === id && (
-                      <div style={{ backgroundColor: 'rgba(221, 144, 29, 0.05)', borderLeft: '3px solid #dd901d', padding: '16px', borderRadius: '6px', marginTop: '8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Stylist</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{stylist}</p>
-                        </div>
-
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phone</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{phone}</p>
-                        </div>
-
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{email}</p>
-                        </div>
-
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Service</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{service}</p>
-                        </div>
-
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Time Slot</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{time}</p>
-                        </div>
-
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{amount}</p>
+                      <div style={{ backgroundColor: 'rgba(221, 144, 29, 0.05)', borderLeft: '3px solid #dd901d', padding: '16px', borderRadius: '6px', marginTop: '8px', marginBottom: '8px' }}>
+                        {/* Receipt Section Only */}
+                        <div style={{ background: '#11100d', borderRadius: '8px', padding: '18px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', color: '#f5f1eb' }}>
+                          <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                            <div style={{ fontWeight: 700, fontSize: '18px', color: '#dd901d' }}>Receipt</div>
+                            <div style={{ fontSize: '12px', color: '#988f81' }}>Booking Summary</div>
+                          </div>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Customer</div>
+                            <div style={{ fontWeight: 600 }}>{customerName}</div>
+                          </div>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Date</div>
+                            <div style={{ fontWeight: 600 }}>{date} {time && `• ${time}`}</div>
+                          </div>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Service</div>
+                            <div style={{ fontWeight: 600 }}>{service}</div>
+                          </div>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Amount</div>
+                            <div style={{ fontWeight: 600 }}>{amount}</div>
+                          </div>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Stylist</div>
+                            <div style={{ fontWeight: 600 }}>{stylist}</div>
+                          </div>
+                          {item.status && (
+                            <div style={{ marginBottom: '10px' }}>
+                              <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Status</div>
+                              <div style={{ fontWeight: 600 }}>{item.status}</div>
+                            </div>
+                          )}
+                          {item.id && (
+                            <div style={{ marginBottom: '10px' }}>
+                              <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Reference No.</div>
+                              <div style={{ fontWeight: 600 }}>{item.id}</div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
