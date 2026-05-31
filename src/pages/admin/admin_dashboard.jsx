@@ -18,10 +18,6 @@ import {
   AdminMetricMoneyIcon,
   AdminMetricClockIcon,
   AdminMetricWalkInIcon,
-  AdminSummaryCompletedIcon,
-  AdminSummaryInProgressIcon,
-  AdminSummaryPendingIcon,
-  AdminSummaryCancelledIcon,
   AdminQueueActiveIcon,
   AdminAnalyticsIcon,
   AdminDownloadIcon,
@@ -124,13 +120,6 @@ const STAFF = [
   { initial: "M", name: "Mike Santos",     subStatus: "Serving: Juan D.", dotClass: "dash-staff-status-dot-green", nextTime: "10:30 AM" },
   { initial: "J", name: "Daniel Smith",    subStatus: "Available",        dotClass: "dash-staff-status-dot-amber", nextTime: "1:00 PM"  },
   { initial: "C", name: "Antonio Marquez", subStatus: "On Break",         dotClass: "dash-staff-status-dot-gray",  nextTime: "1:30 PM"  },
-];
-
-const SUMMARY = [
-  { Icon: AdminSummaryCompletedIcon, label: "Completed",   value: 0 },
-  { Icon: AdminSummaryInProgressIcon, label: "In Progress", value: 0 },
-  { Icon: AdminSummaryPendingIcon, label: "Pending",     value: 0 },
-  { Icon: AdminSummaryCancelledIcon, label: "Cancelled",   value: 0 },
 ];
 
 const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
@@ -1211,64 +1200,7 @@ const StaffStatus = () => {
   );
 };
 
-const SummaryPanel = () => {
-  const [summary, setSummary] = useState(SUMMARY);
-
-  useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        const [resCompleted, resInProgress, resPending, resCancelled] = await Promise.all([
-          fetch('/api/appointments/read/by-status?status=done'),
-          fetch('/api/appointments/read/by-status?status=current'),
-          fetch('/api/appointments/read/by-status?status=pending'),
-          fetch(`/api/appointments/read/daily-cancellations?date=${getManilaDateString()}`)
-        ]);
-
-        const completedData = resCompleted.ok ? await resCompleted.json() : {};
-        const inProgressData = resInProgress.ok ? await resInProgress.json() : {};
-        const pendingData = resPending.ok ? await resPending.json() : {};
-        const cancelledData = resCancelled.ok ? await resCancelled.json() : {};
-
-        // Extract counts from the API response structure (has count property and appointments array)
-        const completedCount = completedData.count || (Array.isArray(completedData.appointments) ? completedData.appointments.length : 0);
-        const inProgressCount = inProgressData.count || (Array.isArray(inProgressData.appointments) ? inProgressData.appointments.length : 0);
-        const pendingCount = pendingData.count || (Array.isArray(pendingData.appointments) ? pendingData.appointments.length : 0);
-        const cancelledCount = cancelledData.totalCancellations || cancelledData.count || 0;
-
-        setSummary([
-          { Icon: AdminSummaryCompletedIcon, label: "Completed",   value: completedCount },
-          { Icon: AdminSummaryInProgressIcon, label: "In Progress", value: inProgressCount },
-          { Icon: AdminSummaryPendingIcon, label: "Pending",     value: pendingCount },
-          { Icon: AdminSummaryCancelledIcon, label: "Cancelled",   value: cancelledCount },
-        ]);
-      } catch (error) {
-      }
-    };
-
-    fetchSummary();
-  }, []);
-
-  return (
-    <div className="dash-sidebar-panel">
-      <h3 className="dash-sidebar-title">Summary</h3>
-      <div className="dash-summary-list">
-        {summary.map(({ Icon, label, value }, i) => (
-          <div key={i} className="dash-summary-row">
-            <div className="dash-summary-left">
-              <AdminIconSlot size="summary-lg">
-                <Icon />
-              </AdminIconSlot>
-              <span className="dash-summary-label">{label}</span>
-            </div>
-            <span className="dash-summary-value">{value}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const AnalyticsPanel = () => (
+const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
   <div className="dash-sidebar-panel">
     <div className="dash-analytics-header">
       <AdminIconSlot size="analytics-lg">
@@ -1276,11 +1208,11 @@ const AnalyticsPanel = () => (
       </AdminIconSlot>
       <div className="dash-analytics-text">
         <h3 className="dash-analytics-title">Analytics</h3>
-        <p className="dash-analytics-sub">View past 7 days detailed report</p>
+        <p className="dash-analytics-sub">View monthly detailed report</p>
       </div>
     </div>
-    <button className="dash-download-btn">
-      Download Reports
+    <button className="dash-download-btn" onClick={onDownloadReports} disabled={isDownloading}>
+      {isDownloading ? 'Downloading...' : 'Download Reports'}
       <AdminIconSlot size="inline">
         <AdminDownloadIcon />
       </AdminIconSlot>
@@ -1569,6 +1501,7 @@ export const AdminDashboard = ({ date }) => {
   const [bookingNotifications, setBookingNotifications] = useState([]);
   const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
   const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
+  const [isDownloadingReports, setIsDownloadingReports] = useState(false);
   const [stats, setStats] = useState([
     { Icon: AdminMetricCalendarIcon, badge: null, badgeType: null, value: '0', label: "Total Appointments Today" },
     { Icon: AdminMetricWalkInIcon, iconSlot: "metric-walkin", badge: null, badgeType: null, value: '0', label: "Total Walk In" },
@@ -1839,6 +1772,43 @@ export const AdminDashboard = ({ date }) => {
     // For now, just logging the data
   };
 
+  const handleDownloadReports = async () => {
+    try {
+      setIsDownloadingReports(true);
+
+      const response = await fetch('/api/cron/dashboard-analytics-export');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to download reports: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'dashboard_analytics_monthly.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      showToast({
+        message: 'Dashboard analytics CSV downloaded successfully.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('[AdminDashboard] Error downloading analytics CSV:', error);
+      showToast({
+        message: `Failed to download reports: ${error.message}`,
+        type: 'error',
+        duration: 3000,
+      });
+    } finally {
+      setIsDownloadingReports(false);
+    }
+  };
+
   const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
     try {
       // For walk-ins, use actualId instead of prefixed id
@@ -1996,8 +1966,7 @@ export const AdminDashboard = ({ date }) => {
 
             <div className="dash-sidebar">
               <StaffStatus />
-              <SummaryPanel />
-              <AnalyticsPanel />
+              <AnalyticsPanel onDownloadReports={handleDownloadReports} isDownloading={isDownloadingReports} />
             </div>
           </div>
         </main>
