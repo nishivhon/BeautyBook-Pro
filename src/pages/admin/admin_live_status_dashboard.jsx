@@ -13,8 +13,6 @@ import {
   AdminMetricWalkInIcon,
   AdminMetricQueueIcon,
   AdminQueueActiveIcon,
-  AdminAnalyticsIcon,
-  AdminDownloadIcon,
 } from "../../components/admin/adminDashboardIcons";
 import { LogoMark } from "../../components/public/publicPageIcons";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
@@ -1163,27 +1161,6 @@ function convertTo12HourFormat(time24) {
   return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
-/* ── Analytics panel ── */
-const AnalyticsPanel = () => (
-  <div className="dash-sidebar-panel">
-    <div className="dash-analytics-header">
-      <AdminIconSlot size="analytics-lg">
-        <AdminAnalyticsIcon />
-      </AdminIconSlot>
-      <div className="dash-analytics-text">
-        <h3 className="dash-analytics-title">Analytics</h3>
-        <p className="dash-analytics-sub">View past 7 days detailed report</p>
-      </div>
-    </div>
-    <button className="dash-download-btn">
-      Download Reports
-      <AdminIconSlot size="inline">
-        <AdminDownloadIcon />
-      </AdminIconSlot>
-    </button>
-  </div>
-);
-
 // ═══════════════════════════════════════════════════════════════════
 // MAIN EXPORT
 // ═══════════════════════════════════════════════════════════════════
@@ -1515,7 +1492,6 @@ export const AdminDashboardLiveStatus = ({ date }) => {
           {/* Right — Schedule + Analytics */}
           <div className="live-sidebar">
             <SchedulePanel date={new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} refreshTrigger={scheduleRefreshTrigger} />
-            <AnalyticsPanel />
           </div>
         </div>
       </main>
