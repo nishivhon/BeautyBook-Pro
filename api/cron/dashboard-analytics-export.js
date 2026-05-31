@@ -58,6 +58,32 @@ const getWalkInRevenue = (row) => {
   return total;
 };
 
+const hasAppointmentBookingData = (row) => {
+  const customerName = String(row?.customer_name || '').trim();
+  const customerContact = String(row?.customer_contact || '').trim();
+  const assignedStaff = String(row?.assigned_staff || '').trim();
+  const services = parseServices(row?.services);
+  const totalPrice = Number(row?.total_price || 0);
+
+  return (
+    customerName.length > 0 ||
+    customerContact.length > 0 ||
+    assignedStaff.length > 0 ||
+    services.length > 0 ||
+    (Number.isFinite(totalPrice) && totalPrice > 0)
+  );
+};
+
+const hasWalkInBookingData = (row) => {
+  const customerName = String(row?.customer_name || '').trim();
+  const services = parseServices(row?.services);
+
+  return (
+    customerName.length > 0 ||
+    services.length > 0
+  );
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -84,21 +110,40 @@ export default async function handler(req, res) {
     const today = getPhtDateString();
     const startDate = `${today.slice(0, 7)}-01`;
 
-    const [appointmentResult, walkInResult] = await Promise.all([
-      supabase
+    const startDateObj = new Date(`${startDate}T00:00:00+08:00`);
+    const todayObj = new Date(`${today}T00:00:00+08:00`);
+    const yesterdayObj = new Date(todayObj);
+    yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+    const yesterday = getPhtDateString(yesterdayObj);
+
+    const appointmentPastPromise = startDate <= yesterday
+      ? supabase
         .from('appointment_logs')
-        .select('date, total_price')
+        .select('date, total_price, customer_name, customer_contact, assigned_staff, services')
         .gte('date', startDate)
-        .lte('date', today),
+        .lte('date', yesterday)
+      : Promise.resolve({ data: [], error: null });
+
+    const [appointmentPastResult, appointmentTodayResult, walkInResult] = await Promise.all([
+      appointmentPastPromise,
+      supabase
+        .from('available_slots')
+        .select('date, total_price, customer_name, customer_contact, assigned_staff, services, status')
+        .in('status', ['pending', 'current', 'done'])
+        .eq('date', today),
       supabase
         .from('walk_in_logs')
-        .select('date, services')
+        .select('date, services, customer_name')
         .gte('date', startDate)
         .lte('date', today),
     ]);
 
-    if (appointmentResult.error) {
-      return res.status(500).json({ error: 'Failed to fetch appointment_logs', details: appointmentResult.error.message });
+    if (appointmentPastResult.error) {
+      return res.status(500).json({ error: 'Failed to fetch appointment_logs', details: appointmentPastResult.error.message });
+    }
+
+    if (appointmentTodayResult.error) {
+      return res.status(500).json({ error: 'Failed to fetch available_slots', details: appointmentTodayResult.error.message });
     }
 
     if (walkInResult.error) {
@@ -106,9 +151,6 @@ export default async function handler(req, res) {
     }
 
     const dayMap = new Map();
-
-    const startDateObj = new Date(`${startDate}T00:00:00+08:00`);
-    const todayObj = new Date(`${today}T00:00:00+08:00`);
 
     for (let cursor = new Date(startDateObj); cursor <= todayObj; cursor.setDate(cursor.getDate() + 1)) {
       const date = getPhtDateString(cursor);
@@ -120,7 +162,14 @@ export default async function handler(req, res) {
       });
     }
 
-    for (const row of appointmentResult.data || []) {
+    const appointmentRows = [
+      ...(appointmentPastResult.data || []),
+      ...(appointmentTodayResult.data || []),
+    ];
+
+    for (const row of appointmentRows) {
+      if (!hasAppointmentBookingData(row)) continue;
+
       const dateKey = row.date;
       if (!dayMap.has(dateKey)) continue;
 
@@ -134,6 +183,8 @@ export default async function handler(req, res) {
     }
 
     for (const row of walkInResult.data || []) {
+      if (!hasWalkInBookingData(row)) continue;
+
       const dateKey = row.date;
       if (!dayMap.has(dateKey)) continue;
 

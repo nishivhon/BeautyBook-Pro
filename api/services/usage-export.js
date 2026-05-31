@@ -43,6 +43,20 @@ const toServiceName = (serviceEntry) => {
   return null;
 };
 
+const getPhtDateString = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date).reduce((accumulator, part) => {
+    if (part.type !== 'literal') accumulator[part.type] = part.value;
+    return accumulator;
+  }, {});
+
+  return `${parts.year}-${parts.month}-${parts.day}`;
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -68,8 +82,8 @@ export default async function handler(req, res) {
 
     const [servicesResult, appointmentResult, walkInResult] = await Promise.all([
       supabase.from('services').select('id, service_name, category, price'),
-      supabase.from('appointment_logs').select('services'),
-      supabase.from('walk_in_logs').select('services'),
+      supabase.from('appointment_logs').select('date, services'),
+      supabase.from('walk_in_logs').select('date, services'),
     ]);
 
     if (servicesResult.error) {
@@ -156,20 +170,35 @@ export default async function handler(req, res) {
       return String(a.service_name || '').localeCompare(String(b.service_name || ''));
     });
 
-    const worksheetRows = rows.map((row) => ({
-      category: row.category || '',
-      service_name: row.service_name || '',
-      unit_price: row.unit_price,
-      usage_count: row.usage_count,
-      total_revenue: row.total_revenue,
-    }));
+    const appointmentDates = (appointmentResult.data || []).map((row) => row?.date).filter(Boolean);
+    const walkInDates = (walkInResult.data || []).map((row) => row?.date).filter(Boolean);
+    const allDates = [...appointmentDates, ...walkInDates].sort();
+    const defaultToday = getPhtDateString();
+    const rangeStart = allDates[0] || defaultToday;
+    const rangeEnd = allDates[allDates.length - 1] || defaultToday;
 
-    const worksheet = XLSX.utils.json_to_sheet(worksheetRows, {
-      header: ['category', 'service_name', 'unit_price', 'usage_count', 'total_revenue'],
-    });
+    const worksheetRows = [
+      ['Date Range', `${rangeStart} to ${rangeEnd}`],
+      ['Category', 'Service Name', 'Unit Price', 'Usage Count', 'Total Revenue'],
+      ...rows.map((row) => [
+        row.category || '',
+        row.service_name || '',
+        row.unit_price,
+        row.usage_count,
+        row.total_revenue,
+      ]),
+    ];
 
-    const lastRow = Math.max(worksheetRows.length + 1, 2);
-    worksheet['!autofilter'] = { ref: `A1:E${lastRow}` };
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetRows);
+    const lastRow = Math.max(worksheetRows.length, 2);
+    worksheet['!autofilter'] = { ref: `A2:E${lastRow}` };
+    worksheet['!cols'] = [
+      { wch: 22 },
+      { wch: 28 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 16 },
+    ];
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Services Usage');
