@@ -35,6 +35,7 @@ import resendOtpHandler from '../../api/sms/resend-otp.js';
 import sendOtpHandler from '../../api/sms/send-otp.js';
 import verifyOtpHandler from '../../api/sms/verify-otp.js';
 import updateCustomerHandler from '../../api/customers/update/index.js';
+import couponsReadHandler from '../../api/coupons/read/index.js';
 import availableSlotsHandler from '../../api/appointments/read/available-slots.js';
 import createAppointmentHandler from '../../api/appointments/create/index.js';
 import servicesIndexHandler from '../../api/services/index.js';
@@ -68,6 +69,9 @@ app.post('/api/appointments/create', wrapHandler(createAppointmentHandler));
 
 // Customer profile routes
 app.post('/api/customers/update', wrapHandler(updateCustomerHandler));
+
+// Coupons routes
+app.get('/api/coupons/read', wrapHandler(couponsReadHandler));
 
 // Services routes
 app.get('/api/services', wrapHandler(servicesIndexHandler));

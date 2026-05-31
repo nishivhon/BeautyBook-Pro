@@ -100,7 +100,8 @@ export const SUPER_ADMIN_NAV_ITEMS = [
   { id: "staff-management", label: "Staff Management", icon: SuperAdminStaffNavIcon, path: "/superadmin/users" },
   { id: "clients", label: "Client Accounts", icon: SuperAdminClientsNavIcon, path: "/superadmin/clients" },
   { id: "coupons", label: "Coupons", icon: SuperAdminCouponsNavIcon, path: "/superadmin/coupons" },
-  { id: "logs", label: "Logs", icon: SuperAdminLogsNavIcon, path: "/superadmin/logs" },
+  { id: "logs", label: "Appointment Logs", icon: SuperAdminLogsNavIcon, path: "/superadmin/logs" },
+  { id: "walkin-logs", label: "Walk-in Logs", icon: SuperAdminLogsNavIcon, path: "/superadmin/walkin-logs" },
   { id: "services", label: "Services", icon: SuperAdminServicesNavIcon, path: "/superadmin/services" },
   { id: "security", label: "Security", icon: SuperAdminSecurityNavIcon, path: "/superadmin/security" },
 ];
