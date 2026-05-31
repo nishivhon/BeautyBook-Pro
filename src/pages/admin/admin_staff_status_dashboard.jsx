@@ -868,7 +868,7 @@ const QuickActionsPanel = ({ onCustomerHistory }) => (
 );
 
 /* ── Analytics panel ── */
-const AnalyticsPanel = () => (
+const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
   <div className="dash-sidebar-panel">
     <div className="dash-analytics-header">
       <AdminIconSlot size="analytics-lg">
@@ -879,8 +879,8 @@ const AnalyticsPanel = () => (
         <p className="dash-analytics-sub">View Detailed Reports</p>
       </div>
     </div>
-    <button className="dash-download-btn">
-      Download Reports
+    <button className="dash-download-btn" onClick={onDownloadReports} disabled={isDownloading}>
+      {isDownloading ? 'Downloading...' : 'Download Reports'}
       <AdminIconSlot size="inline">
         <AdminDownloadIcon />
       </AdminIconSlot>
@@ -906,6 +906,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   const [mounted, setMounted] = useState(false);
   const [serviceCategories, setServiceCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [isDownloadingReports, setIsDownloadingReports] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -1298,6 +1299,43 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     }
   };
 
+  const handleDownloadReports = async () => {
+    try {
+      setIsDownloadingReports(true);
+
+      const response = await fetch('/api/cron/staff-logs-export');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to download reports: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'staff_logs_last_7_days.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      showToast({
+        message: 'Staff logs CSV downloaded successfully.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('[AdminStaff] Error downloading staff logs CSV:', error);
+      showToast({
+        message: `Failed to download reports: ${error.message}`,
+        type: 'error',
+        duration: 3000,
+      });
+    } finally {
+      setIsDownloadingReports(false);
+    }
+  };
+
   const headerNotifications = useMemo(() => {
     const statusFeed = staff.slice(0, 3).map((member, index) => ({
       id: `staff-${member.name || index}`,
@@ -1389,7 +1427,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
             <QuickActionsPanel 
               onCustomerHistory={() => setIsCustomerHistoryOpen(true)}
             />
-            <AnalyticsPanel />
+            <AnalyticsPanel onDownloadReports={handleDownloadReports} isDownloading={isDownloadingReports} />
           </div>
         </div>
         </main>

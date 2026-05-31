@@ -84,25 +84,36 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const limit = Math.min(Math.max(Number(req.query.limit || 5), 1), 20);
+  const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 20);
+  const beforeCreatedAt = String(req.query.beforeCreatedAt || '').trim();
+  const beforeId = String(req.query.beforeId || '').trim();
 
   try {
     const supabase = getSupabaseClient();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('available_slots')
       .select('id, date, time_slot, customer_name, customer_contact, assigned_staff, services, status, created_at, updated_at')
       .not('customer_name', 'is', null)
       .eq('status', 'pending')
       .eq('availability', false)
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .order('id', { ascending: false });
+
+    if (beforeCreatedAt && beforeId) {
+      query = query.or(`created_at.lt.${beforeCreatedAt},and(created_at.eq.${beforeCreatedAt},id.lt.${beforeId})`);
+    }
+
+    const { data, error } = await query.limit(limit);
 
     if (error) {
       return res.status(500).json({ error: 'Failed to fetch booking notifications', details: error.message });
     }
 
     const notifications = (data || []).map((slot, index) => {
+      const createdAt = slot.created_at || null;
+      const updatedAt = slot.updated_at || null;
+      const activityAt = updatedAt || createdAt;
       const serviceLabel = getServiceLabel(slot.services);
       const staffLabel = slot.assigned_staff || 'Any available stylist';
       const timeLabel = convertTo12HourFormat(slot.time_slot);
@@ -116,15 +127,27 @@ export default async function handler(req, res) {
         category: getNotificationCategory(slot.status),
         title: `${slot.customer_name || 'Customer'} booked ${serviceLabel}`,
         description: `${dateLabel} at ${timeLabel} • ${staffLabel}`,
-        time: formatRelativeTime(slot.created_at || slot.updated_at),
+        time: formatRelativeTime(activityAt),
+        activityAt,
+        createdAt,
+        updatedAt,
         unread: true,
       };
     });
+
+    const oldestNotification = notifications[notifications.length - 1] || null;
 
     return res.status(200).json({
       success: true,
       count: notifications.length,
       notifications,
+      hasMore: notifications.length === limit,
+      nextCursor: oldestNotification
+        ? {
+            createdAt: oldestNotification.createdAt,
+            id: oldestNotification.id,
+          }
+        : null,
     });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch booking notifications', details: error.message });

@@ -140,6 +140,40 @@ const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
   day: '2-digit',
 }).format(new Date());
 
+const sortBookingNotifications = (items) => {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a?.activityAt || a?.updatedAt || a?.createdAt || 0).getTime();
+    const bTime = new Date(b?.activityAt || b?.updatedAt || b?.createdAt || 0).getTime();
+
+    if (aTime !== bTime) return bTime - aTime;
+
+    return String(b?.id || '').localeCompare(String(a?.id || ''));
+  });
+};
+
+const mergeBookingNotifications = (currentItems, incomingItems) => {
+  const notificationMap = new Map();
+
+  [...currentItems, ...incomingItems].forEach((item) => {
+    if (!item?.id) return;
+    notificationMap.set(String(item.id), item);
+  });
+
+  return sortBookingNotifications(Array.from(notificationMap.values()));
+};
+
+const getOldestBookingNotificationCursor = (items) => {
+  const sortedItems = sortBookingNotifications(items);
+  const oldestItem = sortedItems[sortedItems.length - 1];
+
+  if (!oldestItem?.createdAt || !oldestItem?.id) return null;
+
+  return {
+    createdAt: oldestItem.activityAt || oldestItem.updatedAt || oldestItem.createdAt,
+    id: oldestItem.id,
+  };
+};
+
 // ═══════════════════════════════════════════════════════════════════
 // SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
@@ -1533,6 +1567,8 @@ export const AdminDashboard = ({ date }) => {
   const [doneAppointments, setDoneAppointments] = useState([]);
   const [walkInLogs, setWalkInLogs] = useState([]);
   const [bookingNotifications, setBookingNotifications] = useState([]);
+  const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
+  const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
   const [stats, setStats] = useState([
     { Icon: AdminMetricCalendarIcon, badge: null, badgeType: null, value: '0', label: "Total Appointments Today" },
     { Icon: AdminMetricWalkInIcon, iconSlot: "metric-walkin", badge: null, badgeType: null, value: '0', label: "Total Walk In" },
@@ -1597,48 +1633,27 @@ export const AdminDashboard = ({ date }) => {
   }, []);
 
   useEffect(() => {
-    const formatServiceLabel = (services) => {
-      if (!services) return 'a service';
-      if (typeof services === 'string') return services;
-      if (Array.isArray(services)) {
-        const names = services
-          .map((service) => service?.name || service?.title || service?.service || service)
-          .filter(Boolean);
-        return names.length > 0 ? names.join(', ') : 'a service';
-      }
-      if (typeof services === 'object') {
-        return services.name || services.title || services.service || Object.values(services).filter(Boolean).join(', ') || 'a service';
-      }
-      return 'a service';
-    };
-
-    const formatRelativeTime = (value) => {
-      if (!value) return 'Just now';
-      const dateValue = new Date(value);
-      if (Number.isNaN(dateValue.getTime())) return 'Just now';
-
-      const diffMs = Date.now() - dateValue.getTime();
-      const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
-      if (diffMinutes < 1) return 'Just now';
-      if (diffMinutes < 60) return `${diffMinutes}m ago`;
-      const diffHours = Math.floor(diffMinutes / 60);
-      if (diffHours < 24) return `${diffHours}h ago`;
-      const diffDays = Math.floor(diffHours / 24);
-      return `${diffDays}d ago`;
-    };
-
-    const fetchBookingNotifications = async () => {
+    const fetchBookingNotifications = async ({ cursor = null } = {}) => {
       try {
-        const response = await fetch('/api/appointments/read/recent-bookings?limit=5');
+        const searchParams = new URLSearchParams({ limit: '20' });
+
+        if (cursor?.createdAt && cursor?.id) {
+          searchParams.set('beforeCreatedAt', cursor.createdAt);
+          searchParams.set('beforeId', String(cursor.id));
+        }
+
+        const response = await fetch(`/api/appointments/read/recent-bookings?${searchParams.toString()}`);
         if (!response.ok) {
           throw new Error('Failed to fetch booking notifications');
         }
 
         const result = await response.json();
-        setBookingNotifications(result.notifications || []);
+        const nextNotifications = result.notifications || [];
+        setBookingNotifications((prev) => mergeBookingNotifications(prev, nextNotifications));
+        setBookingNotificationsHasMore(Boolean(result.hasMore));
       } catch (error) {
         console.error('[AdminDashboard] Error loading booking notifications:', error);
-        setBookingNotifications([]);
+        setBookingNotificationsHasMore(false);
       }
     };
 
@@ -1667,15 +1682,43 @@ export const AdminDashboard = ({ date }) => {
         createdAt,
       };
 
-      setBookingNotifications((prev) => {
-        const next = [newNotification, ...prev.filter((item) => String(item.id) !== String(detail.id))];
-        return next.slice(0, 5);
-      });
+      setBookingNotifications((prev) => mergeBookingNotifications(prev, [newNotification]));
     };
 
     window.addEventListener('admin:walkin-created', handleWalkInCreated);
     return () => window.removeEventListener('admin:walkin-created', handleWalkInCreated);
   }, []);
+
+  const handleLoadMoreBookingNotifications = async () => {
+    if (loadingMoreBookingNotifications || !bookingNotificationsHasMore) return;
+
+    const oldestNotification = getOldestBookingNotificationCursor(bookingNotifications);
+
+    if (!oldestNotification?.createdAt || !oldestNotification?.id) return;
+
+    try {
+      setLoadingMoreBookingNotifications(true);
+
+      const searchParams = new URLSearchParams({
+        limit: '20',
+        beforeCreatedAt: oldestNotification.createdAt,
+        beforeId: String(oldestNotification.id),
+      });
+
+      const response = await fetch(`/api/appointments/read/recent-bookings?${searchParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to load more booking notifications');
+      }
+
+      const result = await response.json();
+      setBookingNotifications((prev) => mergeBookingNotifications(prev, result.notifications || []));
+      setBookingNotificationsHasMore(Boolean(result.hasMore));
+    } catch (error) {
+      console.error('[AdminDashboard] Error loading more booking notifications:', error);
+    } finally {
+      setLoadingMoreBookingNotifications(false);
+    }
+  };
 
   // Calculate stats dynamically
   useEffect(() => {
@@ -1922,7 +1965,12 @@ export const AdminDashboard = ({ date }) => {
               <p className="dash-page-subtitle">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
             </div>
           </div>
-          <AdminHeaderActions notifications={headerNotifications} />
+          <AdminHeaderActions
+            notifications={headerNotifications}
+            onLoadMoreNotifications={handleLoadMoreBookingNotifications}
+            hasMoreNotifications={bookingNotificationsHasMore}
+            loadingMoreNotifications={loadingMoreBookingNotifications}
+          />
         </header>
 
         {/* Main Content Area */}
