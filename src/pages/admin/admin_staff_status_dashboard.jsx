@@ -1410,19 +1410,19 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = 'staff_logs_last_7_days.csv';
+      link.download = 'staff_logs_last_7_days.xlsx';
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
 
       showToast({
-        message: 'Staff logs CSV downloaded successfully.',
+        message: 'Staff logs XLSX downloaded successfully.',
         type: 'success',
         duration: 2000,
       });
     } catch (error) {
-      console.error('[AdminStaff] Error downloading staff logs CSV:', error);
+      console.error('[AdminStaff] Error downloading staff logs XLSX:', error);
       showToast({
         message: `Failed to download reports: ${error.message}`,
         type: 'error',

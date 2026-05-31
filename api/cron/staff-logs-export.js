@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import * as XLSX from 'xlsx';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
@@ -24,15 +25,6 @@ const shiftDateString = (dateString, dayOffset) => {
   const sourceDate = new Date(`${dateString}T00:00:00+08:00`);
   sourceDate.setDate(sourceDate.getDate() + dayOffset);
   return getPhtDateString(sourceDate);
-};
-
-const csvEscape = (value) => {
-  if (value === null || value === undefined || value === '') return '';
-  const text = String(value);
-  if (/[",\n\r]/.test(text)) {
-    return `"${text.replace(/"/g, '""')}"`;
-  }
-  return text;
 };
 
 export default async function handler(req, res) {
@@ -73,27 +65,32 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to fetch staff logs', details: error.message });
     }
 
-    const header = ['date', 'staff_name', 'clock_in', 'clock_out', 'total_clients', 'total_walk_in', 'done_clients'];
-    const csvLines = [header.join(',')];
+    const worksheetRows = (rows || []).map((row) => ({
+      date: row.date || '',
+      staff_name: row.staff_name || '',
+      clock_in: row.clock_in || '',
+      clock_out: row.clock_out || '',
+      total_clients: row.total_clients ?? 0,
+      total_walk_in: row.total_walk_in ?? 0,
+      done_clients: row.done_clients ?? 0,
+    }));
 
-    for (const row of rows || []) {
-      csvLines.push([
-        csvEscape(row.date),
-        csvEscape(row.staff_name),
-        csvEscape(row.clock_in),
-        csvEscape(row.clock_out),
-        csvEscape(row.total_clients),
-        csvEscape(row.total_walk_in),
-        csvEscape(row.done_clients),
-      ].join(','));
-    }
+    const worksheet = XLSX.utils.json_to_sheet(worksheetRows, {
+      header: ['date', 'staff_name', 'clock_in', 'clock_out', 'total_clients', 'total_walk_in', 'done_clients'],
+    });
 
-    const csv = csvLines.join('\r\n');
-    const filename = `staff_logs_last_7_days_${today}.csv`;
+    const lastRow = Math.max(worksheetRows.length + 1, 2);
+    worksheet['!autofilter'] = { ref: `A1:G${lastRow}` };
 
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Staff Logs');
+
+    const xlsxBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const filename = `staff_logs_last_7_days_${today}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    return res.status(200).send(csv);
+    return res.status(200).send(xlsxBuffer);
   } catch (error) {
     return res.status(500).json({ error: 'Server error', details: error.message });
   }

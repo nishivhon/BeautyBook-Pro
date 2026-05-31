@@ -211,8 +211,17 @@ export const CustomerHistoryModal = ({ isOpen, onClose, staffName = null }) => {
       ];
 
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(appointmentWorkbookRows), 'Appointments');
-      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(walkInWorkbookRows), 'Walk-ins');
+      const appointmentSheet = XLSX.utils.aoa_to_sheet(appointmentWorkbookRows);
+      const walkInSheet = XLSX.utils.aoa_to_sheet(walkInWorkbookRows);
+
+      const appointmentLastRow = Math.max(appointmentWorkbookRows.length, 2);
+      const walkInLastRow = Math.max(walkInWorkbookRows.length, 2);
+
+      appointmentSheet['!autofilter'] = { ref: `A1:I${appointmentLastRow}` };
+      walkInSheet['!autofilter'] = { ref: `A1:E${walkInLastRow}` };
+
+      XLSX.utils.book_append_sheet(workbook, appointmentSheet, 'Appointments');
+      XLSX.utils.book_append_sheet(workbook, walkInSheet, 'Walk-ins');
 
       const fileName = `customer-history-${filterType}-${staffName ? staffName.replace(/\s+/g, '_') : 'all'}.xlsx`;
       XLSX.writeFile(workbook, fileName);
