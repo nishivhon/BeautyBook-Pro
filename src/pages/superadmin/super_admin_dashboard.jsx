@@ -46,6 +46,65 @@ const parseISODate = (value) => {
   return new Date(year, month - 1, day);
 };
 
+const getGraphModeForRange = (rangeStart, rangeEnd) => {
+  const start = new Date(rangeStart);
+  const end = new Date(rangeEnd);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return "daily";
+  }
+
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  const totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
+  return totalDays > 14 ? "weekly" : "daily";
+};
+
+const buildReportGraphSkeleton = (rangeStart, rangeEnd) => {
+  const mode = getGraphModeForRange(rangeStart, rangeEnd);
+  const start = new Date(rangeStart);
+  const end = new Date(rangeEnd);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return { mode: "daily", points: [] };
+  }
+
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  const bucketSize = mode === "weekly" ? 7 : 1;
+  const formatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+  const points = [];
+
+  for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, bucketSize)) {
+    const bucketEnd = new Date(cursor);
+    bucketEnd.setDate(bucketEnd.getDate() + bucketSize - 1);
+
+    if (bucketEnd > end) {
+      bucketEnd.setTime(end.getTime());
+    }
+
+    const bucketLabel = mode === "weekly"
+      ? `${formatter.format(cursor)} - ${formatter.format(bucketEnd)}`
+      : cursor.toLocaleDateString("en-US", { weekday: "short" });
+
+    points.push({
+      date: formatISODate(cursor),
+      label: mode === "weekly"
+        ? cursor.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        : cursor.toLocaleDateString("en-US", { weekday: "short" }),
+      monthDay: bucketLabel,
+      rangeLabel: bucketLabel,
+      appointments: 0,
+      walkIns: 0,
+      revenue: 0,
+    });
+  }
+
+  return { mode, points };
+};
+
 const isDarkMode = () => {
   if (typeof document === 'undefined') return true;
   return document.documentElement.getAttribute('data-theme') !== 'light';
@@ -259,7 +318,7 @@ export default function SuperAdminDashboard() {
   const [weeklyGraph, setWeeklyGraph] = useState([]);
   const [weeklyGraphLoading, setWeeklyGraphLoading] = useState(false);
   const [weeklyGraphError, setWeeklyGraphError] = useState("");
-  const [graphWeekAnchor, setGraphWeekAnchor] = useState(() => new Date(defaultPastDate));
+  const [weeklyGraphMode, setWeeklyGraphMode] = useState("daily");
   const [hoveredTower, setHoveredTower] = useState(null);
   const calendarRef = useRef(null);
   const graphChartRef = useRef(null);
@@ -277,7 +336,16 @@ export default function SuperAdminDashboard() {
   const fetchSummary = async (range = summaryRange) => {
     try {
       setSummaryLoading(true);
-      const params = new URLSearchParams({ summary: 'superadmin-dashboard', startDate: range.startDate, endDate: range.endDate });
+      setWeeklyGraphLoading(true);
+      setWeeklyGraphError("");
+
+      const params = new URLSearchParams({
+        summary: 'superadmin-dashboard',
+        startDate: range.startDate,
+        endDate: range.endDate,
+        graphStartDate: range.startDate,
+        graphEndDate: range.endDate,
+      });
       const resp = await fetch(`/api/database/table-data?${params.toString()}`);
       if (!resp.ok) throw new Error('Failed to load summary');
       const json = await resp.json();
@@ -288,10 +356,17 @@ export default function SuperAdminDashboard() {
         staffMetrics: Array.isArray(json.staffMetrics) ? json.staffMetrics : [],
       });
       setServiceMetrics(Array.isArray(json.serviceMetrics) ? json.serviceMetrics : []);
+      setWeeklyGraph(Array.isArray(json.weeklyGraph) ? json.weeklyGraph : []);
+      setWeeklyGraphMode(json.graphMode || getGraphModeForRange(range.startDate, range.endDate));
     } catch (err) {
       console.error('Summary load error', err);
+      const fallbackGraph = buildReportGraphSkeleton(range.startDate, range.endDate);
+      setWeeklyGraphError('Unable to load report graph right now.');
+      setWeeklyGraph(fallbackGraph.points);
+      setWeeklyGraphMode(fallbackGraph.mode);
     } finally {
       setSummaryLoading(false);
+      setWeeklyGraphLoading(false);
     }
   };
 
@@ -316,74 +391,10 @@ export default function SuperAdminDashboard() {
     return next;
   };
 
-  const formatGraphRangeLabel = (startDate, endDate) => {
-    const formatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
-    return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
-  };
-
-  const buildWeeklyGraphSkeleton = (rangeStart, rangeEnd) => {
-    const start = getMondayStart(rangeStart);
-    const end = addDays(start, 6);
-    const days = [];
-
-    for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, 1)) {
-      days.push({
-        date: formatISODate(cursor),
-        label: cursor.toLocaleDateString("en-US", { weekday: "short" }),
-        monthDay: cursor.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-        appointments: 0,
-        walkIns: 0,
-        revenue: 0,
-      });
-    }
-
-    return days;
-  };
-
-  const graphWeekStart = getMondayStart(graphWeekAnchor);
-  const graphWeekEnd = addDays(graphWeekStart, 6);
-  const graphRangeLabel = formatGraphRangeLabel(graphWeekStart, graphWeekEnd);
-
-  const fetchWeeklyGraph = async (rangeStart = graphWeekStart, rangeEnd = graphWeekEnd) => {
-    try {
-      setWeeklyGraphLoading(true);
-      setWeeklyGraphError("");
-
-      const params = new URLSearchParams({
-        summary: "superadmin-dashboard",
-        startDate: summaryRange.startDate,
-        endDate: summaryRange.endDate,
-        graphStartDate: formatISODate(rangeStart),
-        graphEndDate: formatISODate(rangeEnd),
-      });
-
-      const response = await fetch(`/api/database/table-data?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error("Failed to load weekly graph");
-      }
-
-      const json = await response.json();
-      const nextGraph = Array.isArray(json.weeklyGraph) && json.weeklyGraph.length > 0
-        ? json.weeklyGraph
-        : buildWeeklyGraphSkeleton(rangeStart, rangeEnd);
-      setWeeklyGraph(nextGraph);
-    } catch (error) {
-      console.error("Weekly graph load error", error);
-      setWeeklyGraphError("Unable to load weekly graph right now.");
-      setWeeklyGraph(buildWeeklyGraphSkeleton(rangeStart, rangeEnd));
-    } finally {
-      setWeeklyGraphLoading(false);
-    }
-  };
-
   // Load initial summary for the default range
   useEffect(() => {
     fetchSummary(summaryRange);
   }, []);
-
-  useEffect(() => {
-    fetchWeeklyGraph(graphWeekStart, graphWeekEnd);
-  }, [graphWeekAnchor]);
 
   useEffect(() => {
     if (!calendarOpen) return undefined;
@@ -445,31 +456,68 @@ export default function SuperAdminDashboard() {
   const cards = metricsCardsFor(summaryData);
   const staffMetrics = Array.isArray(summaryData.staffMetrics) ? summaryData.staffMetrics : [];
   const serviceMetricCategories = serviceMetrics;
-  const chartSeries = [
+  const reportGraphSeries = [
     { key: "appointments", label: "Appointments", color: "#dd901d" },
     { key: "walkIns", label: "Walk-ins", color: "#e85d75" },
   ];
-  const chartMaxValue = Math.max(
+  const reportGraphModeLabel = weeklyGraphMode === "weekly" ? "Weekly buckets" : "Daily points";
+  const reportGraphCellWidth = weeklyGraphMode === "weekly" ? 118 : 76;
+  const reportGraphWidth = Math.max(720, weeklyGraph.length * reportGraphCellWidth);
+  const reportGraphHeight = 300;
+  const reportGraphPadding = { top: 24, right: 24, bottom: 60, left: 50 };
+  const reportGraphPlotWidth = Math.max(1, reportGraphWidth - reportGraphPadding.left - reportGraphPadding.right);
+  const reportGraphPlotHeight = Math.max(1, reportGraphHeight - reportGraphPadding.top - reportGraphPadding.bottom);
+  const reportGraphMaxValue = Math.max(
     1,
-    ...weeklyGraph.flatMap((entry) => chartSeries.map((series) => Number(entry?.[series.key] || 0)))
+    ...weeklyGraph.flatMap((entry) => reportGraphSeries.map((series) => Number(entry?.[series.key] || 0)))
   );
+  const reportGraphXStep = weeklyGraph.length > 1 ? reportGraphPlotWidth / (weeklyGraph.length - 1) : 0;
 
-  const handleTowerHover = (event, dayEntry, series) => {
-    if (!graphChartRef.current) return;
+  const buildGraphPoints = (seriesKey) => weeklyGraph.map((entry, index) => {
+    const value = Number(entry?.[seriesKey] || 0);
+    return {
+      x: reportGraphPadding.left + (index * reportGraphXStep),
+      y: reportGraphPadding.top + (reportGraphPlotHeight - ((value / reportGraphMaxValue) * reportGraphPlotHeight)),
+      value,
+      entry,
+    };
+  });
 
-    const chartRect = graphChartRef.current.getBoundingClientRect();
-    const targetRect = event.currentTarget.getBoundingClientRect();
-    const left = targetRect.left - chartRect.left + targetRect.width / 2;
-    const top = targetRect.top - chartRect.top;
+  const appointmentGraphPoints = buildGraphPoints("appointments");
+  const walkInGraphPoints = buildGraphPoints("walkIns");
 
+  const buildGraphPath = (points) => {
+    if (points.length === 0) return "";
+    return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  };
+
+  const buildGraphAreaPath = (points) => {
+    if (points.length === 0) return "";
+
+    const firstPoint = points[0];
+    const lastPoint = points[points.length - 1];
+    return [
+      `M ${firstPoint.x} ${reportGraphPadding.top + reportGraphPlotHeight}`,
+      `L ${firstPoint.x} ${firstPoint.y}`,
+      ...points.slice(1).map((point) => `L ${point.x} ${point.y}`),
+      `L ${lastPoint.x} ${reportGraphPadding.top + reportGraphPlotHeight}`,
+      "Z",
+    ].join(" ");
+  };
+
+  const handleGraphPointHover = (point, series) => {
     setHoveredTower({
-      left,
-      top,
+      x: point.x,
+      y: point.y,
       title: series.label,
-      value: Number(dayEntry?.[series.key] || 0),
-      dayLabel: dayEntry?.label,
-      monthDay: dayEntry?.monthDay,
+      value: point.value,
+      dayLabel: point.entry?.label,
+      monthDay: point.entry?.monthDay,
+      rangeLabel: point.entry?.rangeLabel,
       color: series.color,
+      appointments: point.entry?.appointments || 0,
+      walkIns: point.entry?.walkIns || 0,
+      revenue: point.entry?.revenue || 0,
     });
   };
 
@@ -500,7 +548,8 @@ export default function SuperAdminDashboard() {
   const handleExportWeeklyGraph = () => {
     const exportData = {
       weeklyReport: {
-        dateRange: `${formatGraphRangeLabel(graphWeekStart, graphWeekEnd)}`,
+        dateRange: selectionLabel,
+        mode: weeklyGraphMode,
         data: weeklyGraph.map((day) => ({
           date: day.date,
           day: day.label,
@@ -827,46 +876,13 @@ export default function SuperAdminDashboard() {
             background: "linear-gradient(180deg, rgba(221, 144, 29, 0.05) 0%, rgba(221, 144, 29, 0.02) 100%)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             <div>
               <h3 className="dash-stats-set-title">Weekly Report Graph</h3>
+              <p style={{ margin: "6px 0 0", color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>{selectionLabel}</p>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => setGraphWeekAnchor((prev) => addDays(prev, -7))}
-                style={{
-                  border: "1px solid rgba(221, 144, 29, 0.28)",
-                  background: "rgba(255, 255, 255, 0.02)",
-                  color: "var(--color-white)",
-                  borderRadius: 10,
-                  width: 30,
-                  height: 30,
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
-                aria-label="Previous week"
-              >
-                {'<'}
-              </button>
-              <span style={{ color: "#c9ab7b", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{graphRangeLabel}</span>
-              <button
-                type="button"
-                onClick={() => setGraphWeekAnchor((prev) => addDays(prev, 7))}
-                style={{
-                  border: "1px solid rgba(221, 144, 29, 0.28)",
-                  background: "rgba(255, 255, 255, 0.02)",
-                  color: "var(--color-white)",
-                  borderRadius: 10,
-                  width: 30,
-                  height: 30,
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
-                aria-label="Next week"
-              >
-                {'>'}
-              </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ color: "#c9ab7b", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", padding: "4px 10px", borderRadius: 999, border: "1px solid rgba(221, 144, 29, 0.18)", background: "rgba(255, 255, 255, 0.02)" }}>{reportGraphModeLabel}</span>
               <button
                 type="button"
                 onClick={handleExportWeeklyGraph}
@@ -876,17 +892,18 @@ export default function SuperAdminDashboard() {
                   background: "rgba(255, 255, 255, 0.02)",
                   color: "var(--color-white)",
                   borderRadius: 10,
-                  width: 30,
-                  height: 30,
+                  padding: "6px 10px",
                   cursor: "pointer",
                   fontWeight: 700,
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  gap: 6,
                 }}
                 aria-label="Export graph data"
               >
                 <DownloadIcon size={16} color="var(--color-white)" />
+                <span style={{ fontSize: 12 }}>Export</span>
               </button>
             </div>
           </div>
@@ -901,97 +918,125 @@ export default function SuperAdminDashboard() {
               background: "linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01))",
               padding: 18,
               position: "relative",
+              overflowX: "auto",
             }}
           >
             {weeklyGraphLoading ? (
-              <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
-                Loading weekly graph...
+              <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
+                Loading report graph...
               </div>
             ) : weeklyGraphError ? (
-              <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#c08a4d", fontWeight: 600 }}>
+              <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "#c08a4d", fontWeight: 600 }}>
                 {weeklyGraphError}
               </div>
             ) : weeklyGraph.length === 0 ? (
-              <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
-                No weekly data available.
+              <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
+                No report data available.
               </div>
             ) : (
-              <>
+              <div style={{ position: "relative", width: reportGraphWidth, height: reportGraphHeight, margin: "0 auto" }}>
+                <svg width="100%" height={reportGraphHeight} viewBox={`0 0 ${reportGraphWidth} ${reportGraphHeight}`} role="img" aria-label="Selected range report line graph">
+                  <defs>
+                    <linearGradient id="report-appointments-area" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#dd901d" stopOpacity="0.28" />
+                      <stop offset="100%" stopColor="#dd901d" stopOpacity="0.02" />
+                    </linearGradient>
+                    <linearGradient id="report-walkins-area" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#e85d75" stopOpacity="0.24" />
+                      <stop offset="100%" stopColor="#e85d75" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+
+                  {Array.from({ length: 4 }).map((_, index) => {
+                    const y = reportGraphPadding.top + (reportGraphPlotHeight * (index / 3));
+                    const labelValue = Math.round(reportGraphMaxValue * (1 - (index / 3)));
+
+                    return (
+                      <g key={`grid-${index}`}>
+                        <line x1={reportGraphPadding.left} y1={y} x2={reportGraphWidth - reportGraphPadding.right} y2={y} stroke="rgba(152, 143, 129, 0.18)" strokeDasharray="4 6" />
+                        <text x={14} y={y + 4} fill="#9f8457" fontSize="10" fontWeight="600">{labelValue}</text>
+                      </g>
+                    );
+                  })}
+
+                  <path d={buildGraphAreaPath(appointmentGraphPoints)} fill="url(#report-appointments-area)" />
+                  <path d={buildGraphAreaPath(walkInGraphPoints)} fill="url(#report-walkins-area)" />
+
+                  <path d={buildGraphPath(appointmentGraphPoints)} fill="none" stroke="#dd901d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d={buildGraphPath(walkInGraphPoints)} fill="none" stroke="#e85d75" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+                  {appointmentGraphPoints.map((point, index) => (
+                    <g key={`appointment-point-${point.entry?.date || index}`}>
+                      <circle
+                        cx={point.x}
+                        cy={point.y}
+                        r="5"
+                        fill="#dd901d"
+                        stroke="rgba(17, 12, 6, 0.9)"
+                        strokeWidth="2"
+                        onMouseEnter={() => handleGraphPointHover(point, reportGraphSeries[0])}
+                        onMouseLeave={() => setHoveredTower(null)}
+                        style={{ cursor: "pointer" }}
+                      />
+                    </g>
+                  ))}
+
+                  {walkInGraphPoints.map((point, index) => (
+                    <g key={`walkin-point-${point.entry?.date || index}`}>
+                      <circle
+                        cx={point.x}
+                        cy={point.y}
+                        r="5"
+                        fill="#e85d75"
+                        stroke="rgba(17, 12, 6, 0.9)"
+                        strokeWidth="2"
+                        onMouseEnter={() => handleGraphPointHover(point, reportGraphSeries[1])}
+                        onMouseLeave={() => setHoveredTower(null)}
+                        style={{ cursor: "pointer" }}
+                      />
+                    </g>
+                  ))}
+
+                  {weeklyGraph.map((dayEntry, index) => {
+                    const x = reportGraphPadding.left + (index * reportGraphXStep);
+                    const axisLabel = weeklyGraphMode === "weekly" ? dayEntry.label : dayEntry.label;
+                    const axisSubLabel = weeklyGraphMode === "weekly" ? dayEntry.rangeLabel : dayEntry.monthDay;
+
+                    return (
+                      <g key={`axis-${dayEntry.date || index}`}>
+                        <text x={x} y={reportGraphHeight - 26} fill="#fff" fontSize="11" fontWeight="700" textAnchor="middle">{axisLabel}</text>
+                        <text x={x} y={reportGraphHeight - 10} fill="#9f8457" fontSize="10" fontWeight="600" textAnchor="middle">{axisSubLabel}</text>
+                      </g>
+                    );
+                  })}
+                </svg>
+
                 {hoveredTower ? (
                   <div
                     style={{
                       position: "absolute",
-                      left: hoveredTower.left,
-                      top: Math.max(10, hoveredTower.top - 14),
-                      transform: "translate(-50%, -100%)",
+                      left: `${Math.min(95, Math.max(5, (hoveredTower.x / reportGraphWidth) * 100))}%`,
+                      top: Math.max(10, hoveredTower.y - 14),
+                      transform: "translateY(-100%)",
                       background: "rgba(17, 12, 6, 0.96)",
                       border: `1px solid ${hoveredTower.color}`,
                       borderRadius: 12,
-                      padding: "8px 10px",
-                      minWidth: 138,
+                      padding: "10px 12px",
+                      minWidth: 150,
                       boxShadow: "0 12px 24px rgba(0, 0, 0, 0.22)",
                       zIndex: 5,
                       pointerEvents: "none",
                     }}
                   >
                     <p style={{ margin: 0, color: "#fff", fontSize: 12, fontWeight: 700 }}>{hoveredTower.title}</p>
-                    <p style={{ margin: "2px 0 0", color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>{hoveredTower.dayLabel} · {hoveredTower.monthDay}</p>
-                    <p style={{ margin: "4px 0 0", color: hoveredTower.color, fontSize: 16, fontWeight: 800 }}>
-                      {hoveredTower.title === "Revenue" ? `₱${Number(hoveredTower.value || 0).toLocaleString()}` : hoveredTower.value}
+                    <p style={{ margin: "2px 0 0", color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>{hoveredTower.rangeLabel}</p>
+                    <p style={{ margin: "4px 0 0", color: hoveredTower.color, fontSize: 16, fontWeight: 800 }}>{hoveredTower.value}</p>
+                    <p style={{ margin: "6px 0 0", color: "#c9ab7b", fontSize: 11, fontWeight: 600 }}>
+                      Revenue: {formatRevenueValue(hoveredTower.revenue)}
                     </p>
                   </div>
                 ) : null}
-
-                <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 10, flex: 1, alignItems: "end" }}>
-                    {weeklyGraph.map((dayEntry) => (
-                      <div key={dayEntry.date} style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center", height: "100%", minHeight: 210 }}>
-                        <div style={{ width: "100%", flex: 1, display: "flex", alignItems: "end", justifyContent: "center", gap: 6, position: "relative" }}>
-                          {chartSeries.map((series) => {
-                            const rawValue = Number(dayEntry?.[series.key] || 0);
-                            const height = Math.max(8, Math.round((rawValue / chartMaxValue) * 160));
-
-                            return (
-                              <div
-                                key={`${dayEntry.date}-${series.key}`}
-                                onMouseEnter={(event) => handleTowerHover(event, dayEntry, series)}
-                                onMouseLeave={() => setHoveredTower(null)}
-                                style={{
-                                  width: 14,
-                                  height,
-                                  borderRadius: 999,
-                                  background: series.color,
-                                  boxShadow: `0 0 0 1px rgba(255,255,255,0.08) inset, 0 6px 18px ${series.color}22`,
-                                  cursor: "pointer",
-                                  transition: "transform 0.15s ease, opacity 0.15s ease",
-                                  opacity: 0.95,
-                                }}
-                              />
-                            );
-                          })}
-                        </div>
-
-                        <div style={{ textAlign: "center", lineHeight: 1.15 }}>
-                          <div style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>{dayEntry.label}</div>
-                          <div style={{ color: "#9f8457", fontSize: 11, fontWeight: 600 }}>{dayEntry.monthDay}</div>
-                          <div style={{ color: "#7fbf7f", fontSize: 11, fontWeight: 700, marginTop: 3 }}>
-                            ₱{Number(dayEntry.revenue || 0).toLocaleString('en-PH')}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
-                    {chartSeries.map((series) => (
-                      <div key={series.key} style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>
-                        <span style={{ width: 10, height: 10, borderRadius: 999, background: series.color, display: "inline-block" }} />
-                        {series.label}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
+              </div>
             )}
           </div>
         </section>

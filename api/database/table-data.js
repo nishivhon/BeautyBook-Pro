@@ -206,67 +206,95 @@ export default async (req, res) => {
       });
   };
 
-  const buildWeeklyGraph = ({ startDate, endDate, appointmentRows = [], walkInRows = [] }) => {
+  const buildReportGraph = ({ startDate, endDate, appointmentRows = [], walkInRows = [] }) => {
     const start = createLocalDateFromISO(startDate);
     const end = createLocalDateFromISO(endDate);
 
-    if (!start || !end) return [];
+    if (!start || !end) {
+      return { mode: 'daily', points: [] };
+    }
 
+    const totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
+    const mode = totalDays > 14 ? 'weekly' : 'daily';
+    const bucketSize = mode === 'weekly' ? 7 : 1;
     const buckets = [];
-    const bucketMap = new Map();
 
-    for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, 1)) {
-      const dateKey = formatISODate(cursor);
-      const label = cursor.toLocaleDateString('en-US', { weekday: 'short' });
-      const monthDay = cursor.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, bucketSize)) {
+      const bucketStart = new Date(cursor);
+      const bucketEnd = new Date(cursor);
+      bucketEnd.setDate(bucketEnd.getDate() + bucketSize - 1);
 
-      const bucket = {
-        date: dateKey,
-        label,
-        monthDay,
+      if (bucketEnd > end) {
+        bucketEnd.setTime(end.getTime());
+      }
+
+      const labelFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+      const rangeLabel = `${labelFormatter.format(bucketStart)} - ${labelFormatter.format(bucketEnd)}`;
+
+      buckets.push({
+        startDate: formatISODate(bucketStart),
+        endDate: formatISODate(bucketEnd),
+        date: formatISODate(bucketStart),
+        label: mode === 'weekly'
+          ? bucketStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : bucketStart.toLocaleDateString('en-US', { weekday: 'short' }),
+        monthDay: mode === 'weekly'
+          ? rangeLabel
+          : bucketStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         appointments: 0,
         walkIns: 0,
         revenue: 0,
-      };
-
-      buckets.push(bucket);
-      bucketMap.set(dateKey, bucket);
+      });
     }
 
-    const applyAppointment = (row) => {
-      const dateKey = extractRowDate(row);
-      if (!dateKey || !bucketMap.has(dateKey)) return;
+    const getBucketIndex = (rowDate) => {
+      const current = createLocalDateFromISO(rowDate);
+      if (!current) return -1;
 
-      const bucket = bucketMap.get(dateKey);
+      const diffDays = Math.floor((current.getTime() - start.getTime()) / 86400000);
+      if (diffDays < 0) return -1;
+
+      return mode === 'weekly' ? Math.floor(diffDays / 7) : diffDays;
+    };
+
+    const applyAppointment = (row) => {
+      const bucketIndex = getBucketIndex(extractRowDate(row));
+      if (bucketIndex < 0 || bucketIndex >= buckets.length) return;
+
       const status = String(row?.status || '').trim().toLowerCase();
       const hasTotalPrice = row?.total_price !== null && row?.total_price !== undefined && String(row?.total_price).trim() !== '';
 
       if (status === 'done' && hasTotalPrice) {
-        bucket.appointments += 1;
-        bucket.revenue += toNumber(row?.total_price);
+        buckets[bucketIndex].appointments += 1;
+        buckets[bucketIndex].revenue += toNumber(row?.total_price);
       }
     };
 
     const applyWalkIn = (row) => {
-      const dateKey = extractRowDate(row);
-      if (!dateKey || !bucketMap.has(dateKey)) return;
+      const bucketIndex = getBucketIndex(extractRowDate(row));
+      if (bucketIndex < 0 || bucketIndex >= buckets.length) return;
 
-      const bucket = bucketMap.get(dateKey);
-      bucket.walkIns += 1;
-      bucket.revenue += extractWalkInServicesPrice(row?.services);
+      buckets[bucketIndex].walkIns += 1;
+      buckets[bucketIndex].revenue += extractWalkInServicesPrice(row?.services);
     };
 
     appointmentRows.forEach(applyAppointment);
     walkInRows.forEach(applyWalkIn);
 
-    return buckets.map(({ date, label, monthDay, appointments, walkIns, revenue }) => ({
-      date,
-      label,
-      monthDay,
-      appointments,
-      walkIns,
-      revenue: Number(revenue.toFixed(2)),
-    }));
+    return {
+      mode,
+      points: buckets.map(({ date, label, monthDay, appointments, walkIns, revenue, startDate: bucketStartDate, endDate: bucketEndDate }) => ({
+        date,
+        label,
+        monthDay,
+        rangeLabel: monthDay,
+        startDate: bucketStartDate,
+        endDate: bucketEndDate,
+        appointments,
+        walkIns,
+        revenue: Number(revenue.toFixed(2)),
+      })),
+    };
   };
 
   try {
@@ -280,9 +308,6 @@ export default async (req, res) => {
       if (summary === 'superadmin-dashboard') {
         const startDate = parseDateInput(req.query.startDate) || parseDateInput(req.query.endDate) || new Date().toISOString().slice(0, 10);
         const endDate = parseDateInput(req.query.endDate) || startDate;
-        const graphStartDate = parseDateInput(req.query.graphStartDate) || null;
-        const graphEndDate = parseDateInput(req.query.graphEndDate) || null;
-
         if (startDate > endDate) {
           return res.status(400).json({ error: 'startDate must be before or equal to endDate' });
         }
@@ -312,36 +337,12 @@ export default async (req, res) => {
         const walkInRows = Array.isArray(walkInResult.data) ? walkInResult.data : [];
         const bookedRows = [...appointmentRows, ...walkInRows];
 
-        let weeklyGraph = [];
-        if (graphStartDate && graphEndDate) {
-          const [graphAppointmentResult, graphWalkInResult] = await Promise.all([
-            supabase
-              .from('appointment_logs')
-              .select('*')
-              .gte('date', graphStartDate)
-              .lte('date', graphEndDate),
-            supabase
-              .from('walk_in_logs')
-              .select('*')
-              .gte('date', graphStartDate)
-              .lte('date', graphEndDate),
-          ]);
-
-          if (graphAppointmentResult.error) {
-            return res.status(500).json({ error: 'Failed to fetch graph appointment_logs summary', details: graphAppointmentResult.error.message });
-          }
-
-          if (graphWalkInResult.error) {
-            return res.status(500).json({ error: 'Failed to fetch graph walk_in_logs summary', details: graphWalkInResult.error.message });
-          }
-
-          weeklyGraph = buildWeeklyGraph({
-            startDate: graphStartDate,
-            endDate: graphEndDate,
-            appointmentRows: Array.isArray(graphAppointmentResult.data) ? graphAppointmentResult.data : [],
-            walkInRows: Array.isArray(graphWalkInResult.data) ? graphWalkInResult.data : [],
-          });
-        }
+        const graphResult = buildReportGraph({
+          startDate,
+          endDate,
+          appointmentRows,
+          walkInRows,
+        });
 
         const successfulAppointmentRows = appointmentRows.filter((row) => {
           const status = String(row?.status || '').trim().toLowerCase();
@@ -366,7 +367,8 @@ export default async (req, res) => {
             appointmentRows: successfulAppointmentRows,
             walkInRows,
           }),
-          weeklyGraph,
+          graphMode: graphResult.mode,
+          weeklyGraph: graphResult.points,
         });
       }
 
