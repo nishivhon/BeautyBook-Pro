@@ -913,7 +913,11 @@ const StaffListPanel = ({ staff: staffList, loading, error, onStaffStatusUpdate,
                 body: JSON.stringify(updatePayload)
               });
               
-              onStaffStatusUpdate?.(confirmModal.staffName, isClockIn ? "Available" : "Absent");
+              onStaffStatusUpdate?.(
+                confirmModal.staffName,
+                isClockIn ? "Available" : "Absent",
+                isClockIn ? { clockIn: timeString } : { clockOut: timeString }
+              );
             } else if (isWalkInAccept || isWalkInReject) {
               const currentStaff = staff.find(member => member.name === confirmModal.staffName);
               if (isWalkInAccept && currentStaff?.status !== "Available") {
