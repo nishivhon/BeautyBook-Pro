@@ -748,6 +748,8 @@ function ServiceDetailsPanel({ service, onBookService, isCompact }) {
         display: "flex",
         flexDirection: "column",
         gap: isCompact ? "6px" : "12px",
+        justifyContent: "center",
+        height: isCompact ? "290px" : "280px",
       }}
     >
       <h3
@@ -820,40 +822,17 @@ function ServiceDetailsPanel({ service, onBookService, isCompact }) {
           lineHeight: 1.35,
           maxWidth: isCompact ? "100%" : "20rem",
           width: "100%",
-          flex: isCompact ? "1 1 auto" : undefined,
-          minHeight: isCompact ? "calc(0.74rem * 1.35 * 3)" : "4.05rem",
-          maxHeight: isCompact ? "calc(0.74rem * 1.35 * 3)" : "4.05rem",
-          display: "-webkit-box",
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          flex: 1,
+          minHeight: isCompact ? "calc(0.74rem * 1.35 * 6)" : "8.1rem",
+          maxHeight: isCompact ? undefined : "none",
+          display: "block",
           overflowWrap: "anywhere",
+          overflowY: "auto",
         }}
       >
         {service.description}
       </p>
-
-      <div style={{ marginTop: "auto" }}>
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={onBookService}
-          style={{
-            display: "inline-flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minWidth: isCompact ? "100%" : "180px",
-            width: isCompact ? "100%" : "auto",
-            height: isCompact ? "40px" : "34px",
-            borderRadius: "6px",
-            fontSize: "0.88rem",
-            padding: "0 18px",
-          }}
-        >
-          Book Service
-        </button>
-      </div>
+      {/* Book Service button removed for landpage services page */}
     </div>
   );
 }
