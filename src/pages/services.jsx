@@ -737,7 +737,7 @@ function ServicePinWheelCarousel({ services, activeServiceIndex, onSelectService
   );
 }
 
-function ServiceDetailsPanel({ service, onBookService, isCompact }) {
+function ServiceDetailsPanel({ service, onBookService, isCompact, categories = [] }) {
   const { themeMode } = usePublicTheme();
   return (
     <div
@@ -810,7 +810,18 @@ function ServiceDetailsPanel({ service, onBookService, isCompact }) {
                 }),
           }}
         >
-          {(CATEGORIES.find(c => c.id === service.category) || {}).name || "—"}
+          {(() => {
+            if (!service) return '—';
+            if (typeof service.category === 'string') return service.category;
+            // numeric category id — try to resolve from provided categories first
+            const byId = categories.find(c => Number(c.id) === Number(service.category));
+            if (byId) return byId.name;
+            const byIndex = categories[service.category] || categories[Number(service.category) - 1];
+            if (byIndex) return byIndex.name;
+            // fallback to legacy CATEGORIES
+            const legacy = CATEGORIES.find(c => c.id === service.category) || {};
+            return legacy.name || '—';
+          })()}
         </div>
       </div>
 
@@ -847,8 +858,93 @@ export default function ServicesPage() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
   const isCompact = !isDesktop;
 
-  const activeCategory = CATEGORIES[activeCategoryIndex];
-  const categoryServices = SERVICES_BY_CATEGORY[activeCategory.id] || [];
+  // Dynamic services + categories fetched from API with localStorage caching
+  const [fetchedServices, setFetchedServices] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const SERVICES_CACHE_KEY = 'bbp_services_page_v1';
+  const CACHE_TTL_MS = 1000 * 60 * 10; // 10 minutes
+
+  const normalizeService = (s) => {
+    if (!s) return null;
+    const id = s.id ?? s.service_id ?? s._id ?? Math.random();
+    const name = s.service_name || s.name || s.serviceName || s.title || 'Service';
+    const priceRaw = s.price ?? s.amount ?? s.total_price ?? s.cost ?? '';
+    const price = (priceRaw === '' || priceRaw === null || priceRaw === undefined)
+      ? '₱0.00'
+      : (typeof priceRaw === 'number' ? `₱${Number(priceRaw).toFixed(2)}` : (String(priceRaw).startsWith('₱') ? String(priceRaw) : `₱${Number(priceRaw).toFixed ? Number(priceRaw).toFixed(2) : String(priceRaw)}`));
+    const duration = s.est_time || s.estimated_time || s.duration || s.time || (s.service_est_time ? `${s.service_est_time} mins` : '30 min');
+    const category = s.category ?? s.category_id ?? s.category_name ?? s.cat ?? 'Other';
+    const description = s.description || s.meta || s.details || '';
+
+    return {
+      ...s,
+      id,
+      name,
+      price,
+      duration,
+      category,
+      description,
+    };
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const raw = localStorage.getItem(SERVICES_CACHE_KEY);
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed?.ts && Date.now() - parsed.ts < CACHE_TTL_MS && Array.isArray(parsed.services)) {
+              if (!mounted) return;
+              const normalized = parsed.services.map(normalizeService).filter(Boolean);
+              setFetchedServices(normalized);
+              // build categories from cached services
+              const groupedCached = normalized.reduce((acc, s) => {
+                const cat = (s.category || 'Other').toString();
+                acc[cat] = acc[cat] || [];
+                acc[cat].push(s);
+                return acc;
+              }, {});
+              const built = Object.keys(groupedCached).map((name, idx) => ({ id: idx + 1, name, description: groupedCached[name][0]?.description || '', items: groupedCached[name].map(x => x.name || ''), services: groupedCached[name] }));
+              setCategories(built);
+              return;
+            }
+          } catch (e) {
+            // continue to fetch
+          }
+        }
+
+        const res = await fetch('/api/services');
+        if (!res.ok) throw new Error('Failed to load services');
+        const data = await res.json();
+        const servicesRaw = Array.isArray(data) ? data : (data.data || []);
+        const services = servicesRaw.map(normalizeService).filter(Boolean);
+
+        if (!mounted) return;
+        setFetchedServices(services);
+
+        const grouped = services.reduce((acc, s) => {
+          const cat = (s.category || 'Other').toString();
+          acc[cat] = acc[cat] || [];
+          acc[cat].push(s);
+          return acc;
+        }, {});
+
+        const built = Object.keys(grouped).map((name, idx) => ({ id: idx + 1, name, description: grouped[name][0]?.description || '', items: grouped[name].map(x => x.name || ''), services: grouped[name] }));
+        setCategories(built);
+        try { localStorage.setItem(SERVICES_CACHE_KEY, JSON.stringify({ ts: Date.now(), services: servicesRaw })); } catch (e) {}
+      } catch (err) {
+        console.error('[ServicesPage] failed to load services', err);
+      }
+    };
+
+    load();
+    return () => { mounted = false; };
+  }, []);
+
+  const activeCategory = categories[activeCategoryIndex] || CATEGORIES[activeCategoryIndex];
+  const categoryServices = (activeCategory && activeCategory.services) || SERVICES_BY_CATEGORY[activeCategory?.id || (activeCategoryIndex + 1)] || [];
   const activeService = categoryServices[activeServiceIndex] || categoryServices[0] || SERVICES[0];
 
   const rotateToCategory = (targetIndex) => {
@@ -917,6 +1013,7 @@ export default function ServicesPage() {
                       service={activeService}
                       onBookService={() => navigate("/login")}
                       isCompact={isCompact}
+                      categories={categories.length ? categories : CATEGORIES}
                     />
                   </div>
                 </div>
@@ -925,7 +1022,7 @@ export default function ServicesPage() {
               <div className="service-carousel-copy" style={{ minWidth: 0 }}>
                 <div>
                   <ServiceCategoryCarousel
-                    categories={CATEGORIES}
+                    categories={categories.length ? categories : CATEGORIES}
                     activeCategoryIndex={activeCategoryIndex}
                     hoveredCategoryIndex={hoveredCategoryIndex}
                     onHoverCategory={setHoveredCategoryIndex}
@@ -968,6 +1065,7 @@ export default function ServicesPage() {
                         service={activeService}
                         onBookService={() => navigate("/login")}
                         isCompact={isCompact}
+                        categories={categories.length ? categories : CATEGORIES}
                       />
                     </div>
                   </div>
@@ -977,7 +1075,7 @@ export default function ServicesPage() {
               <div className="service-carousel-copy" style={{ minWidth: 0, marginTop: "0", position: "relative", zIndex: 0 }}>
                 <div>
                   <ServiceCategoryCarousel
-                    categories={CATEGORIES}
+                    categories={categories.length ? categories : CATEGORIES}
                     activeCategoryIndex={activeCategoryIndex}
                     hoveredCategoryIndex={hoveredCategoryIndex}
                     onHoverCategory={setHoveredCategoryIndex}
