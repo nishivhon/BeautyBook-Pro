@@ -240,6 +240,37 @@ const LoadingListSkeleton = ({ variant = "staff", rows = 10 }) => {
   ));
 };
 
+// Themed scrollbar CSS (uses CSS variables set on the scroll container)
+const SCROLLBAR_CSS = `
+/* Staff summary scrollbar — reacts to [data-theme] on <html> without JS */
+:root[data-theme="light"] .staff-summary-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #e85d75 transparent;
+}
+:root:not([data-theme="light"]) .staff-summary-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(221, 144, 29, 0.45) transparent;
+}
+.staff-summary-scroll::-webkit-scrollbar {
+  width: var(--sb-width, 10px);
+  height: var(--sb-width, 10px);
+}
+:root[data-theme="light"] .staff-summary-scroll::-webkit-scrollbar-thumb {
+  background: #e85d75;
+}
+:root:not([data-theme="light"]) .staff-summary-scroll::-webkit-scrollbar-thumb {
+  background: rgba(221, 144, 29, 0.45);
+}
+.staff-summary-scroll::-webkit-scrollbar-track {
+  border-radius: 10px;
+}
+.staff-summary-scroll::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+`;
+
 const StaffSummaryPanel = ({ staffMetrics = [], loading = false, rangeLabel = "", onExport }) => {
   const rows = Array.isArray(staffMetrics) ? staffMetrics : [];
 
@@ -252,6 +283,7 @@ const StaffSummaryPanel = ({ staffMetrics = [], loading = false, rangeLabel = ""
       </div>
 
       <div
+        className="staff-summary-scroll"
         style={{
           flex: 1,
           minHeight: SUPERADMIN_LIST_VIEWPORT_HEIGHT,
@@ -261,6 +293,7 @@ const StaffSummaryPanel = ({ staffMetrics = [], loading = false, rangeLabel = ""
           gap: 12,
           overflowY: "auto",
           paddingRight: 4,
+          ['--sb-width']: '10px',
         }}
       >
         <div
@@ -811,6 +844,9 @@ export default function SuperAdminDashboard() {
       logoutConfirmText="Yes, Log Out"
       logoutCancelText="Stay Logged In"
     >
+      {/* global scrollbar styles for this dashboard */}
+      <style>{SCROLLBAR_CSS}</style>
+
       {/* Password Reminder Banner */}
       <PasswordReminderBanner />
 
