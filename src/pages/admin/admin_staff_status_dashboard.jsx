@@ -379,14 +379,14 @@ const PageTitle = () => {
 
 /* ── Metric cards for hero section ── */
 const PageMetrics = ({ stats = { available: 0, inService: 0, onBreak: 0, offToday: 0 }, loading = false, error = null }) => {
-  // Create dynamic stats array
+  // Create dynamic stats array (remove On Break)
   const dynamicStats = [
     { Icon: AdminMetricAvailableIcon, value: `${stats.available}`, label: "Available Stylist", labelClass: "staff-stat-label-green" },
     { Icon: AdminMetricInServiceIcon, value: `${stats.inService}`, label: "In Service", labelClass: "staff-stat-label-blue" },
-    { Icon: AdminMetricOnBreakIcon, value: `${stats.onBreak}`, label: "On Break", labelClass: "staff-stat-label-amber" },
     { Icon: AdminMetricOffTodayIcon, value: `${stats.offToday}`, label: "Off Today", labelClass: "staff-stat-label-tan" },
   ];
 
+  // Adjust card width to fill space (3 cards)
   return (
     <>
       {error && (
@@ -394,9 +394,9 @@ const PageMetrics = ({ stats = { available: 0, inService: 0, onBreak: 0, offToda
           Error loading staff: {error}
         </div>
       )}
-      <div className="staff-stats-row">
+      <div className="staff-stats-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }}>
         {dynamicStats.map(({ Icon, value, label, labelClass }, i) => (
-          <div key={i} className="dash-stat-card">
+          <div key={i} className="dash-stat-card" style={{ minWidth: 0 }}>
             <div className="dash-stat-top">
               <AdminIconSlot size="metric">
                 <Icon />
