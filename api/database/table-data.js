@@ -92,12 +92,13 @@ export default async (req, res) => {
         .map((item) => {
           if (!item) return null;
           if (typeof item === 'string') {
-            return { name: item, category: 'Uncategorized' };
+            return { name: item, category: 'Uncategorized', price: 0 };
           }
 
           const name = item?.name || item?.title || item?.service || '';
           const category = item?.category || item?.category_name || 'Uncategorized';
-          return name ? { name, category } : null;
+          const price = toNumber(item?.price);
+          return name ? { name, category, price } : null;
         })
         .filter(Boolean);
     }
@@ -105,11 +106,12 @@ export default async (req, res) => {
     if (typeof services === 'object') {
       const name = services?.name || services?.title || services?.service || '';
       const category = services?.category || services?.category_name || 'Uncategorized';
-      return name ? [{ name, category }] : [];
+      const price = toNumber(services?.price);
+      return name ? [{ name, category, price }] : [];
     }
 
     if (typeof services === 'string' && services.trim()) {
-      return [{ name: services.trim(), category: 'Uncategorized' }];
+      return [{ name: services.trim(), category: 'Uncategorized', price: 0 }];
     }
 
     return [];
@@ -151,6 +153,87 @@ export default async (req, res) => {
             : null,
         };
       })
+      .sort((left, right) => left.category.localeCompare(right.category));
+  };
+
+  const buildDetailedServiceMetrics = (rows = [], allServices = []) => {
+    const categoryMap = new Map();
+
+    const getServiceRevenueShare = (row, services) => {
+      const rowTotalPrice = toNumber(row?.total_price);
+      const pricedServices = services.filter((service) => toNumber(service?.price) > 0);
+      const missingPriceCount = services.length - pricedServices.length;
+
+      if (pricedServices.length === services.length) {
+        return services.map((service) => ({
+          ...service,
+          revenue: toNumber(service?.price),
+        }));
+      }
+
+      if (services.length === 1) {
+        return services.map((service) => ({
+          ...service,
+          revenue: toNumber(service?.price) || rowTotalPrice,
+        }));
+      }
+
+      const pricedTotal = pricedServices.reduce((sum, service) => sum + toNumber(service?.price), 0);
+      const remainingRevenue = Math.max(0, rowTotalPrice - pricedTotal);
+      const fallbackShare = missingPriceCount > 0 ? remainingRevenue / missingPriceCount : 0;
+
+      return services.map((service) => ({
+        ...service,
+        revenue: toNumber(service?.price) || fallbackShare,
+      }));
+    };
+
+    // Pre-populate from all known services so services with 0 usage appear
+    (Array.isArray(allServices) ? allServices : []).forEach((svc) => {
+      const categoryName = String(svc?.category || svc?.category_name || 'Uncategorized').trim() || 'Uncategorized';
+      const serviceName = String(svc?.service_name || svc?.name || svc?.title || 'Service').trim() || 'Service';
+      const unitPrice = toNumber(svc?.price);
+      const categoryEntry = categoryMap.get(categoryName) || { category: categoryName, services: new Map() };
+      if (!categoryEntry.services.has(serviceName)) {
+        categoryEntry.services.set(serviceName, { service: serviceName, usage: 0, revenue: 0, unitPrice });
+      }
+      categoryMap.set(categoryName, categoryEntry);
+    });
+
+    rows.forEach((row) => {
+      const services = normalizeServiceEntries(row?.services);
+      const serviceRevenueEntries = getServiceRevenueShare(row, services);
+
+      serviceRevenueEntries.forEach((service) => {
+        const categoryName = String(service.category || 'Uncategorized').trim() || 'Uncategorized';
+        const serviceName = String(service.name || 'Service').trim() || 'Service';
+        const categoryEntry = categoryMap.get(categoryName) || { category: categoryName, services: new Map() };
+        const existing = categoryEntry.services.get(serviceName);
+        const serviceEntry = existing || { service: serviceName, usage: 0, revenue: 0, unitPrice: toNumber(service?.price) };
+
+          serviceEntry.usage += 1;
+          serviceEntry.revenue += toNumber(service.revenue);
+          // prefer existing unitPrice if present, otherwise take from service payload
+          serviceEntry.unitPrice = serviceEntry.unitPrice || toNumber(service?.price) || serviceEntry.unitPrice || 0;
+          categoryEntry.services.set(serviceName, serviceEntry);
+        categoryMap.set(categoryName, categoryEntry);
+      });
+    });
+
+    return Array.from(categoryMap.values())
+      .map((entry) => ({
+        category: entry.category,
+        services: Array.from(entry.services.values())
+          .map((service) => ({
+            ...service,
+            revenue: Number(service.revenue.toFixed(2)),
+          }))
+          .sort((left, right) => {
+            if (right.usage !== left.usage) return right.usage - left.usage;
+            if (right.revenue !== left.revenue) return right.revenue - left.revenue;
+            return left.service.localeCompare(right.service);
+          }),
+      }))
       .sort((left, right) => left.category.localeCompare(right.category));
   };
 
@@ -418,6 +501,12 @@ export default async (req, res) => {
         // Walk-ins: use services JSON price values from walk_in_logs.
         const walkInRevenue = walkInRows.reduce((sum, row) => sum + extractWalkInServicesPrice(row?.services), 0);
         const totalRevenue = appointmentRevenue + walkInRevenue;
+        // fetch all services to include zero-usage services and unit price
+        const servicesResult = await supabase.from('services').select('service_name, category, price');
+        const allServices = Array.isArray(servicesResult.data) ? servicesResult.data : [];
+        if (servicesResult.error) {
+          console.warn('[Database] Failed to fetch services table:', servicesResult.error.message);
+        }
 
         return res.status(200).json({
           summary: 'superadmin-dashboard',
@@ -426,6 +515,7 @@ export default async (req, res) => {
           walkIns: walkInRows.length,
           revenue: Number(totalRevenue.toFixed(2)),
           serviceMetrics: buildServiceMetrics(bookedRows),
+          detailedServiceMetrics: buildDetailedServiceMetrics(bookedRows, allServices),
           staffMetrics: buildStaffMetrics({
             appointmentRows: successfulAppointmentRows,
             walkInRows,

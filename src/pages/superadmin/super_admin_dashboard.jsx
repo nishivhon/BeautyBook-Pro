@@ -207,27 +207,7 @@ const StaffSummaryPanel = ({ staffMetrics = [], loading = false, rangeLabel = ""
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
         <div>
           <h3 className="dash-stats-set-title">Staff Summary</h3>
-          <p style={{ margin: "6px 0 0", color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>{rangeLabel}</p>
         </div>
-        <button
-          type="button"
-          onClick={onExport}
-          title="Export Staff Summary to XLSX"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            borderRadius: 6,
-            ...getMetricActionButtonStyles(),
-            padding: "4px 8px",
-            fontWeight: 600,
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          <DownloadIcon size={18} />
-          <span style={{ fontSize: 11 }}>Export</span>
-        </button>
       </div>
 
       <div
@@ -339,6 +319,7 @@ export default function SuperAdminDashboard() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryData, setSummaryData] = useState({ appointments: 0, walkIns: 0, revenue: 0, staffMetrics: [] });
   const [serviceMetrics, setServiceMetrics] = useState([]);
+  const [detailedServiceMetrics, setDetailedServiceMetrics] = useState([]);
   const [dailyReport, setDailyReport] = useState([]);
   const [weeklyGraph, setWeeklyGraph] = useState([]);
   const [weeklyGraphLoading, setWeeklyGraphLoading] = useState(false);
@@ -381,6 +362,7 @@ export default function SuperAdminDashboard() {
         staffMetrics: Array.isArray(json.staffMetrics) ? json.staffMetrics : [],
       });
       setServiceMetrics(Array.isArray(json.serviceMetrics) ? json.serviceMetrics : []);
+      setDetailedServiceMetrics(Array.isArray(json.detailedServiceMetrics) ? json.detailedServiceMetrics : []);
       setDailyReport(Array.isArray(json.dailyReport) ? json.dailyReport : []);
       setWeeklyGraph(Array.isArray(json.weeklyGraph) ? json.weeklyGraph : []);
       setWeeklyGraphMode(json.graphMode || getGraphModeForRange(range.startDate, range.endDate));
@@ -570,6 +552,7 @@ export default function SuperAdminDashboard() {
     ];
 
     const dailyRows = [
+      ["Date Range", selectionLabel],
       ["Date", "Day", "Appointments", "Walk-ins", "Revenue"],
       ...dailyReport.map((day) => [
         day.date || "",
@@ -584,15 +567,50 @@ export default function SuperAdminDashboard() {
     summaryWorksheet["!cols"] = [{ wch: 24 }, { wch: 24 }];
     const dailyWorksheet = XLSX.utils.aoa_to_sheet(dailyRows);
     dailyWorksheet["!cols"] = [{ wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 16 }];
+    if (dailyRows.length >= 2) dailyWorksheet["!autofilter"] = { ref: `A2:E${dailyRows.length}` };
+
+    const staffRows = [
+      ["Date Range", selectionLabel],
+      ["Staff", "Walk-ins", "Appointments", "Revenue"],
+      ...staffMetrics.map((item) => [
+        item.staff || "",
+        Number(item.walkIns || 0),
+        Number(item.appointments || 0),
+        Number(item.revenue || 0),
+      ]),
+    ];
+    const staffWorksheet = XLSX.utils.aoa_to_sheet(staffRows);
+    staffWorksheet["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 14 }, { wch: 16 }];
+    if (staffRows.length >= 2) staffWorksheet["!autofilter"] = { ref: `A2:D${staffRows.length}` };
+
+    const categoryRows = [
+      ["Date Range", selectionLabel],
+      ["Category", "Service", "Unit Price", "Usage", "Revenue"],
+      ...detailedServiceMetrics.flatMap((category) =>
+        (category.services || []).map((service) => [
+          category.category || "",
+          service.service || "",
+          Number(service.unitPrice || 0),
+          Number(service.usage || 0),
+          Number(service.revenue || 0),
+        ])
+      ),
+    ];
+    const categoryWorksheet = XLSX.utils.aoa_to_sheet(categoryRows);
+    categoryWorksheet["!cols"] = [{ wch: 28 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 16 }];
+    if (categoryRows.length >= 2) categoryWorksheet["!autofilter"] = { ref: `A2:E${categoryRows.length}` };
 
     XLSX.utils.book_append_sheet(workbook, summaryWorksheet, "Metrics");
     XLSX.utils.book_append_sheet(workbook, dailyWorksheet, "Daily Breakdown");
+    XLSX.utils.book_append_sheet(workbook, staffWorksheet, "Staff Summary");
+    XLSX.utils.book_append_sheet(workbook, categoryWorksheet, "Services");
     downloadXlsxWorkbook(workbook, `superadmin-metrics-${summaryRange.startDate}-to-${summaryRange.endDate}.xlsx`);
   };
 
   const handleExportStaffSummaryXlsx = () => {
     const workbook = XLSX.utils.book_new();
     const rows = [
+      ["Date Range", selectionLabel],
       ["Staff", "Walk-ins", "Appointments", "Revenue"],
       ...staffMetrics.map((item) => [
         item.staff || "",
@@ -610,16 +628,22 @@ export default function SuperAdminDashboard() {
   const handleExportCategoriesXlsx = () => {
     const workbook = XLSX.utils.book_new();
     const rows = [
-      ["Category", "Top Service", "Bookings"],
-      ...serviceMetricCategories.map((category) => [
-        category.category || "",
-        category.topService?.name || "No bookings yet",
-        Number(category.topService?.count || 0),
-      ]),
+      ["Date Range", selectionLabel],
+      ["Category", "Service", "Unit Price", "Usage", "Revenue"],
+      ...detailedServiceMetrics.flatMap((category) =>
+        (category.services || []).map((service) => [
+          category.category || "",
+          service.service || "",
+          Number(service.unitPrice || 0),
+          Number(service.usage || 0),
+          Number(service.revenue || 0),
+        ])
+      ),
     ];
     const worksheet = XLSX.utils.aoa_to_sheet(rows);
-    worksheet["!cols"] = [{ wch: 28 }, { wch: 28 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Categories");
+    worksheet["!cols"] = [{ wch: 28 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 16 }];
+    if (rows.length >= 2) worksheet["!autofilter"] = { ref: `A2:E${rows.length}` };
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Services");
     downloadXlsxWorkbook(workbook, `superadmin-categories-services-${summaryRange.startDate}-to-${summaryRange.endDate}.xlsx`);
   };
   const firstDayOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
@@ -835,7 +859,7 @@ export default function SuperAdminDashboard() {
               background: "linear-gradient(180deg, rgba(221, 144, 29, 0.05) 0%, rgba(221, 144, 29, 0.02) 100%)",
             }}
           >
-              <StaffSummaryPanel staffMetrics={staffMetrics} loading={summaryLoading} rangeLabel={selectionLabel} onExport={handleExportStaffSummaryXlsx} />
+              <StaffSummaryPanel staffMetrics={staffMetrics} loading={summaryLoading} rangeLabel={selectionLabel} />
           </section>
 
           <section
@@ -853,25 +877,7 @@ export default function SuperAdminDashboard() {
               <div>
                 <h3 className="dash-stats-set-title">Categories and popular services</h3>
               </div>
-              <button
-                type="button"
-                onClick={handleExportCategoriesXlsx}
-                title="Export Categories and Popular Services to XLSX"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  borderRadius: 6,
-                  ...getMetricActionButtonStyles(),
-                  padding: "4px 8px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  flexShrink: 0,
-                }}
-              >
-                <DownloadIcon size={18} />
-                <span style={{ fontSize: 11 }}>Export</span>
-              </button>
+              {/* Export button removed per request */}
             </div>
 
             <div
@@ -885,6 +891,22 @@ export default function SuperAdminDashboard() {
                 paddingRight: 4,
               }}
             >
+              {!summaryLoading && serviceMetricCategories.length > 0 && (
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1.5fr) repeat(3, minmax(0, 0.7fr))",
+                  gap: 12,
+                  alignItems: "center",
+                  padding: "6px 14px",
+                  color: "#c9ab7b",
+                  fontWeight: 700,
+                }}>
+                  <span>Category</span>
+                  <span style={{ textAlign: "center" }}>Top Service</span>
+                  <span style={{ textAlign: "center" }}>Bookings</span>
+                  <span style={{ textAlign: "right" }}>Revenue</span>
+                </div>
+              )}
               {summaryLoading ? (
                 <LoadingListSkeleton variant="category" rows={10} />
               ) : serviceMetricCategories.length === 0 ? (
@@ -903,32 +925,26 @@ export default function SuperAdminDashboard() {
                         padding: "12px 14px",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                        <h4 style={{ margin: 0, color: "var(--color-white)", fontSize: 15, fontWeight: 700, lineHeight: 1.2 }}>{category.category}</h4>
-                        {topService ? (
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 8,
-                              padding: "6px 10px",
-                              borderRadius: 999,
-                              background: "rgba(221, 144, 29, 0.12)",
-                              border: "1px solid rgba(221, 144, 29, 0.18)",
-                              color: "var(--color-white)",
-                              fontSize: 12,
-                              fontWeight: 600,
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            <span>{topService.name}</span>
-                            <span style={{ color: "#c9ab7b", fontWeight: 700 }}>x{topService.count}</span>
-                          </span>
-                        ) : (
-                          <span style={{ color: "#9f8457", fontSize: 12, fontWeight: 600 }}>No bookings yet</span>
-                        )}
-                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(0, 1.5fr) repeat(3, minmax(0, 0.7fr))",
+                          gap: 12,
+                          alignItems: "center",
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <h4 style={{ margin: 0, color: "var(--color-white)", fontSize: 15, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{category.category}</h4>
+                        </div>
 
+                        <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 14, fontWeight: 600 }}>{topService?.name || "-"}</div>
+
+                        <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 15, fontWeight: 700 }}>{Number(category.totalBooked || 0)}</div>
+
+                        <div style={{ textAlign: "right", color: "#7fbf7f", fontSize: 15, fontWeight: 800 }}>
+                          {formatRevenueValue((detailedServiceMetrics.find((d) => d.category === category.category)?.services || []).reduce((s, svc) => s + Number(svc.revenue || 0), 0))}
+                        </div>
+                      </div>
                     </div>
                   );
                 })
