@@ -50,7 +50,7 @@ export default function SuperAdminWalkinLogsDashboard() {
           if (!tableInfo) return;
 
           let colNames = tableInfo.columns?.map(col => col.column_name) || [];
-          const hiddenColumns = ['availability', 'updated_at'];
+          const hiddenColumns = ['availability', 'updated_at', 'customer_contact'];
           colNames = colNames.filter(col => !hiddenColumns.includes(col));
 
           let rowData = [];
@@ -149,7 +149,6 @@ export default function SuperAdminWalkinLogsDashboard() {
   const formatColumnName = (colName) => {
     const columnMap = {
       'customer_name': 'customer name',
-      'customer_contact': 'customer contact',
       'assigned_staff': 'assigned staff',
       'created_at': 'created at'
     };

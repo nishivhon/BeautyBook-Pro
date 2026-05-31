@@ -4,6 +4,7 @@ import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 import { useToast } from "../../components/toast";
 import { logoutOperator } from "../../services/operatorAuth";
+import { couponService } from "../../services/couponService";
 import { SUPER_ADMIN_NAV_ITEMS } from "../../components/superadmin/superAdminDashboardIcons";
 
 // Tag icon (Heroicons outline style)
@@ -79,6 +80,22 @@ const normalizeCouponValueType = (valueType) => {
   return value === "percentage" ? "Percentage" : "Fixed Amount";
 };
 
+const mapCouponRow = (coupon) => ({
+  id: coupon.id,
+  code: coupon.code || '',
+  valueType: normalizeCouponValueType(coupon.value_type || coupon.discount_type),
+  value: coupon.value ?? 0,
+  description: coupon.description || '—',
+  startDate: coupon.start_date || coupon.created_at || null,
+  endDate: coupon.end_date || null,
+  maxUses: coupon.max_uses ?? 0,
+  timesUsed: coupon.number_of_uses ?? 0,
+  status: coupon.is_deleted ? 'Deleted' : normalizeCouponStatus(coupon.status),
+  isDeleted: Boolean(coupon.is_deleted),
+  createdAt: coupon.created_at || null,
+  lastUpdated: coupon.updated_at || coupon.created_at || null,
+});
+
 // Sidebar nav items (copy from clients dashboard, add Coupons)
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
@@ -105,7 +122,7 @@ export default function SuperAdminCouponsDashboard() {
   const [couponsData, setCouponsData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedCoupons, setSelectedCoupons] = useState(new Set());
-  const [statusFilter, setStatusFilter] = useState("Active");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [filterOpen, setFilterOpen] = useState(false);
   const [showBulkBar, setShowBulkBar] = useState(false);
   const [pendingBulkAction, setPendingBulkAction] = useState(null);
@@ -124,29 +141,8 @@ export default function SuperAdminCouponsDashboard() {
     const fetchCoupons = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/coupons/read?includeDeleted=true');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch coupons: ${response.status}`);
-        }
-
-        const body = await response.json();
-        const rows = Array.isArray(body?.data) ? body.data : [];
-
-        setCouponsData(rows.map((coupon) => ({
-          id: coupon.id,
-          code: coupon.code || '',
-          valueType: normalizeCouponValueType(coupon.value_type || coupon.discount_type),
-          value: coupon.value ?? 0,
-          description: coupon.description || '—',
-          startDate: coupon.start_date || coupon.created_at || null,
-          endDate: coupon.end_date || null,
-          maxUses: coupon.max_uses ?? 0,
-          timesUsed: coupon.number_of_uses ?? 0,
-          status: coupon.is_deleted ? 'Deleted' : normalizeCouponStatus(coupon.status),
-          isDeleted: Boolean(coupon.is_deleted),
-          createdAt: coupon.created_at || null,
-          lastUpdated: coupon.updated_at || coupon.created_at || null,
-        })));
+        const rows = await couponService.getCoupons();
+        setCouponsData(Array.isArray(rows) ? rows.map(mapCouponRow) : []);
       } catch (error) {
         console.error('[SuperAdminCoupons] Failed to fetch coupons:', error);
         setCouponsData([]);
@@ -316,7 +312,6 @@ export default function SuperAdminCouponsDashboard() {
   // Render
   return (
     <DashboardShell
-      navItems={SUPER_ADMIN_NAV_ITEMS}
       navItems={SUPER_ADMIN_NAV_ITEMS}
       activeNav={activeNav}
       roleLabel="Super Administrator"
