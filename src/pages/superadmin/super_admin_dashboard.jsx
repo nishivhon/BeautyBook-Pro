@@ -26,14 +26,6 @@ const DownloadIcon = ({ size = 18, color = "#DD901D" }) => (
   </svg>
 );
 
-const DatabaseIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="9" cy="4.5" rx="6" ry="2.5" stroke={color} strokeWidth="1.6" />
-    <path d="M3 4.5v9C3 15.09 5.686 17 9 17s6-1.91 6-3.5v-9" stroke={color} strokeWidth="1.6" />
-    <path d="M3 9c0 1.657 2.686 3 6 3s6-1.343 6-3" stroke={color} strokeWidth="1.6" />
-  </svg>
-);
-
 const formatISODate = (date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -275,9 +267,6 @@ const StaffSummaryPanel = ({ staffMetrics = [], loading = false, rangeLabel = ""
                   <p style={{ margin: 0, color: "var(--color-white)", fontSize: 15, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {item.staff}
                   </p>
-                  <p style={{ margin: "4px 0 0", color: "#9f8457", fontSize: 12, fontWeight: 600 }}>
-                    Total revenue across the selected range
-                  </p>
                 </div>
               </div>
 
@@ -460,7 +449,7 @@ export default function SuperAdminDashboard() {
     { key: "appointments", label: "Appointments", color: "#dd901d" },
     { key: "walkIns", label: "Walk-ins", color: "#e85d75" },
   ];
-  const reportGraphModeLabel = weeklyGraphMode === "weekly" ? "Weekly buckets" : "Daily points";
+  const reportGraphModeLabel = weeklyGraphMode === "weekly" ? "Weekly points" : "Daily points";
   const reportGraphCellWidth = weeklyGraphMode === "weekly" ? 118 : 76;
   const reportGraphWidth = Math.max(720, weeklyGraph.length * reportGraphCellWidth);
   const reportGraphHeight = 300;
@@ -795,9 +784,6 @@ export default function SuperAdminDashboard() {
               <div>
                 <h3 className="dash-stats-set-title">Categories and popular services</h3>
               </div>
-              <div className="dash-stat-icon-box">
-                <DatabaseIcon />
-              </div>
             </div>
 
             <div
@@ -878,33 +864,11 @@ export default function SuperAdminDashboard() {
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             <div>
-              <h3 className="dash-stats-set-title">Weekly Report Graph</h3>
+              <h3 className="dash-stats-set-title">Report Graph</h3>
               <p style={{ margin: "6px 0 0", color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>{selectionLabel}</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{ color: "#c9ab7b", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", padding: "4px 10px", borderRadius: 999, border: "1px solid rgba(221, 144, 29, 0.18)", background: "rgba(255, 255, 255, 0.02)" }}>{reportGraphModeLabel}</span>
-              <button
-                type="button"
-                onClick={handleExportWeeklyGraph}
-                title="Export Graph Data"
-                style={{
-                  border: "1px solid rgba(221, 144, 29, 0.28)",
-                  background: "rgba(255, 255, 255, 0.02)",
-                  color: "var(--color-white)",
-                  borderRadius: 10,
-                  padding: "6px 10px",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                }}
-                aria-label="Export graph data"
-              >
-                <DownloadIcon size={16} color="var(--color-white)" />
-                <span style={{ fontSize: 12 }}>Export</span>
-              </button>
             </div>
           </div>
 
@@ -918,7 +882,7 @@ export default function SuperAdminDashboard() {
               background: "linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01))",
               padding: 18,
               position: "relative",
-              overflowX: "auto",
+              overflow: "visible",
             }}
           >
             {weeklyGraphLoading ? (
@@ -934,81 +898,81 @@ export default function SuperAdminDashboard() {
                 No report data available.
               </div>
             ) : (
-              <div style={{ position: "relative", width: reportGraphWidth, height: reportGraphHeight, margin: "0 auto" }}>
+              <div style={{ position: "relative", width: "100%", height: reportGraphHeight, margin: "0 auto" }}>
                 <svg width="100%" height={reportGraphHeight} viewBox={`0 0 ${reportGraphWidth} ${reportGraphHeight}`} role="img" aria-label="Selected range report line graph">
-                  <defs>
-                    <linearGradient id="report-appointments-area" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#dd901d" stopOpacity="0.28" />
-                      <stop offset="100%" stopColor="#dd901d" stopOpacity="0.02" />
-                    </linearGradient>
-                    <linearGradient id="report-walkins-area" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#e85d75" stopOpacity="0.24" />
-                      <stop offset="100%" stopColor="#e85d75" stopOpacity="0.02" />
-                    </linearGradient>
-                  </defs>
+                    <defs>
+                      <linearGradient id="report-appointments-area" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#dd901d" stopOpacity="0.28" />
+                        <stop offset="100%" stopColor="#dd901d" stopOpacity="0.02" />
+                      </linearGradient>
+                      <linearGradient id="report-walkins-area" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#e85d75" stopOpacity="0.24" />
+                        <stop offset="100%" stopColor="#e85d75" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
 
-                  {Array.from({ length: 4 }).map((_, index) => {
-                    const y = reportGraphPadding.top + (reportGraphPlotHeight * (index / 3));
-                    const labelValue = Math.round(reportGraphMaxValue * (1 - (index / 3)));
+                    {Array.from({ length: 4 }).map((_, index) => {
+                      const y = reportGraphPadding.top + (reportGraphPlotHeight * (index / 3));
+                      const labelValue = Math.round(reportGraphMaxValue * (1 - (index / 3)));
 
-                    return (
-                      <g key={`grid-${index}`}>
-                        <line x1={reportGraphPadding.left} y1={y} x2={reportGraphWidth - reportGraphPadding.right} y2={y} stroke="rgba(152, 143, 129, 0.18)" strokeDasharray="4 6" />
-                        <text x={14} y={y + 4} fill="#9f8457" fontSize="10" fontWeight="600">{labelValue}</text>
+                      return (
+                        <g key={`grid-${index}`}>
+                          <line x1={reportGraphPadding.left} y1={y} x2={reportGraphWidth - reportGraphPadding.right} y2={y} stroke="rgba(152, 143, 129, 0.18)" strokeDasharray="4 6" />
+                          <text x={14} y={y + 4} fill="#9f8457" fontSize="10" fontWeight="600">{labelValue}</text>
+                        </g>
+                      );
+                    })}
+
+                    <path d={buildGraphAreaPath(appointmentGraphPoints)} fill="url(#report-appointments-area)" />
+                    <path d={buildGraphAreaPath(walkInGraphPoints)} fill="url(#report-walkins-area)" />
+
+                    <path d={buildGraphPath(appointmentGraphPoints)} fill="none" stroke="#dd901d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d={buildGraphPath(walkInGraphPoints)} fill="none" stroke="#e85d75" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+                    {appointmentGraphPoints.map((point, index) => (
+                      <g key={`appointment-point-${point.entry?.date || index}`}>
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="5"
+                          fill="#dd901d"
+                          stroke="rgba(17, 12, 6, 0.9)"
+                          strokeWidth="2"
+                          onMouseEnter={() => handleGraphPointHover(point, reportGraphSeries[0])}
+                          onMouseLeave={() => setHoveredTower(null)}
+                          style={{ cursor: "pointer" }}
+                        />
                       </g>
-                    );
-                  })}
+                    ))}
 
-                  <path d={buildGraphAreaPath(appointmentGraphPoints)} fill="url(#report-appointments-area)" />
-                  <path d={buildGraphAreaPath(walkInGraphPoints)} fill="url(#report-walkins-area)" />
-
-                  <path d={buildGraphPath(appointmentGraphPoints)} fill="none" stroke="#dd901d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d={buildGraphPath(walkInGraphPoints)} fill="none" stroke="#e85d75" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-
-                  {appointmentGraphPoints.map((point, index) => (
-                    <g key={`appointment-point-${point.entry?.date || index}`}>
-                      <circle
-                        cx={point.x}
-                        cy={point.y}
-                        r="5"
-                        fill="#dd901d"
-                        stroke="rgba(17, 12, 6, 0.9)"
-                        strokeWidth="2"
-                        onMouseEnter={() => handleGraphPointHover(point, reportGraphSeries[0])}
-                        onMouseLeave={() => setHoveredTower(null)}
-                        style={{ cursor: "pointer" }}
-                      />
-                    </g>
-                  ))}
-
-                  {walkInGraphPoints.map((point, index) => (
-                    <g key={`walkin-point-${point.entry?.date || index}`}>
-                      <circle
-                        cx={point.x}
-                        cy={point.y}
-                        r="5"
-                        fill="#e85d75"
-                        stroke="rgba(17, 12, 6, 0.9)"
-                        strokeWidth="2"
-                        onMouseEnter={() => handleGraphPointHover(point, reportGraphSeries[1])}
-                        onMouseLeave={() => setHoveredTower(null)}
-                        style={{ cursor: "pointer" }}
-                      />
-                    </g>
-                  ))}
-
-                  {weeklyGraph.map((dayEntry, index) => {
-                    const x = reportGraphPadding.left + (index * reportGraphXStep);
-                    const axisLabel = weeklyGraphMode === "weekly" ? dayEntry.label : dayEntry.label;
-                    const axisSubLabel = weeklyGraphMode === "weekly" ? dayEntry.rangeLabel : dayEntry.monthDay;
-
-                    return (
-                      <g key={`axis-${dayEntry.date || index}`}>
-                        <text x={x} y={reportGraphHeight - 26} fill="#fff" fontSize="11" fontWeight="700" textAnchor="middle">{axisLabel}</text>
-                        <text x={x} y={reportGraphHeight - 10} fill="#9f8457" fontSize="10" fontWeight="600" textAnchor="middle">{axisSubLabel}</text>
+                    {walkInGraphPoints.map((point, index) => (
+                      <g key={`walkin-point-${point.entry?.date || index}`}>
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="5"
+                          fill="#e85d75"
+                          stroke="rgba(17, 12, 6, 0.9)"
+                          strokeWidth="2"
+                          onMouseEnter={() => handleGraphPointHover(point, reportGraphSeries[1])}
+                          onMouseLeave={() => setHoveredTower(null)}
+                          style={{ cursor: "pointer" }}
+                        />
                       </g>
-                    );
-                  })}
+                    ))}
+
+                    {weeklyGraph.map((dayEntry, index) => {
+                      const x = reportGraphPadding.left + (index * reportGraphXStep);
+                      const axisLabel = weeklyGraphMode === "weekly" ? dayEntry.label : dayEntry.label;
+                      const axisSubLabel = weeklyGraphMode === "weekly" ? dayEntry.rangeLabel : dayEntry.monthDay;
+
+                      return (
+                        <g key={`axis-${dayEntry.date || index}`}>
+                          <text x={x} y={reportGraphHeight - 26} fill="#fff" fontSize="11" fontWeight="700" textAnchor="middle">{axisLabel}</text>
+                          <text x={x} y={reportGraphHeight - 10} fill="#9f8457" fontSize="10" fontWeight="600" textAnchor="middle">{axisSubLabel}</text>
+                        </g>
+                      );
+                    })}
                 </svg>
 
                 {hoveredTower ? (
@@ -1024,7 +988,7 @@ export default function SuperAdminDashboard() {
                       padding: "10px 12px",
                       minWidth: 150,
                       boxShadow: "0 12px 24px rgba(0, 0, 0, 0.22)",
-                      zIndex: 5,
+                      zIndex: 50,
                       pointerEvents: "none",
                     }}
                   >
