@@ -6,6 +6,8 @@ import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
 import { useToast } from "../../components/toast";
 import { SUPER_ADMIN_NAV_ITEMS } from "../../components/superadmin/superAdminDashboardIcons";
+import DateRangePicker from "../../components/shared/DateRangePicker";
+import * as XLSX from "xlsx";
 
 export default function SuperAdminWalkinLogsDashboard() {
   const navigate = useNavigate();
@@ -196,6 +198,61 @@ export default function SuperAdminWalkinLogsDashboard() {
     showToast({ message: `Exported ${rows.length} logs`, type: 'success', duration: 2800 });
   };
 
+  const [exportPickerOpen, setExportPickerOpen] = useState(false);
+  const [selectedRange, setSelectedRange] = useState(null);
+  const [columnFilters, setColumnFilters] = useState({});
+
+  const handleExportWithRange = (range) => {
+    setSelectedRange(range);
+    const start = new Date(range.startDate);
+    const end = new Date(range.endDate);
+    end.setHours(23,59,59,999);
+
+    const rows = logsData.rows || [];
+    const cols = logsData.cols || [];
+    const filteredByDate = rows.filter(r => {
+      const v = r.created_at || r.date || null;
+      const d = v ? new Date(v) : null;
+      if (!d || Number.isNaN(d.getTime())) return false;
+      return d >= start && d <= end;
+    });
+
+    const matchesFilters = (row) => {
+      for (const [col, term] of Object.entries(columnFilters)) {
+        if (!term) continue;
+        const value = String(formatCellValue(row[col], col) || '').toLowerCase();
+        if (!value.includes(String(term).toLowerCase())) return false;
+      }
+      return true;
+    };
+
+    const filtered = filteredByDate.filter(matchesFilters);
+    if (!filtered.length) {
+      showToast({ message: 'No logs in selected range / filters', type: 'warning', duration: 2800 });
+      setExportPickerOpen(false);
+      return;
+    }
+
+    const rowsOut = [];
+    rowsOut.push(['Date Range', `${range.startDate} to ${range.endDate}`]);
+    rowsOut.push(cols.map(c => formatColumnName(c)));
+    filtered.forEach(row => rowsOut.push(cols.map(c => formatCellValue(row[c], c) ?? '')));
+
+    const worksheet = XLSX.utils.aoa_to_sheet(rowsOut);
+    worksheet['!cols'] = cols.map(() => ({ wch: 20 }));
+    const colToLetter = (n) => { let s = ''; while (n >= 0) { s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26) - 1; } return s; };
+    const lastColLetter = colToLetter(cols.length - 1);
+    const endRow = 2 + filtered.length;
+    worksheet['!autofilter'] = { ref: `A2:${lastColLetter}${endRow}` };
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Walk-in Logs');
+    const filename = `walkin-logs-${range.startDate}-to-${range.endDate}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+    showToast({ message: `Exported ${filtered.length} logs`, type: 'success', duration: 2800 });
+    setExportPickerOpen(false);
+  };
+
   return (
     <DashboardShell
       navItems={SUPER_ADMIN_NAV_ITEMS}
@@ -224,9 +281,12 @@ export default function SuperAdminWalkinLogsDashboard() {
               <div style={{ position: 'relative' }}>
                 <input type="text" placeholder="Search logs..." style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(152, 143, 129, 0.3)', backgroundColor: 'rgba(35,29,26,0.8)', color: '#D4C5B9' }} />
               </div>
-              <button type="button" onClick={handleExportLogs} disabled={loading || !logsData.rows?.length} style={{ padding: '8px 16px', backgroundColor: '#6B6157', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
-                Export
-              </button>
+              <div style={{ position: 'relative' }}>
+                <button type="button" onClick={() => setExportPickerOpen(true)} disabled={loading || !logsData.rows?.length} style={{ padding: '8px 16px', backgroundColor: '#6B6157', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
+                  Export
+                </button>
+                <DateRangePicker open={exportPickerOpen} initialRange={null} onClose={() => setExportPickerOpen(false)} onConfirm={handleExportWithRange} />
+              </div>
             </div>
           </div>
 
