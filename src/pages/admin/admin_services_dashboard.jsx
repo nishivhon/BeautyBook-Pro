@@ -531,8 +531,8 @@ export const AdminDashboardServices = ({ date }) => {
   const [isManagingCoupons, setIsManagingCoupons] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [stats, setStats] = useState([
-    { Icon: AdminMetricMoneyIcon, badge: "+15%", badgeType: "green", value: "₱0.00", label: "Revenue Today" },
-    { Icon: AdminMetricPromoIcon, badge: "+8%",  badgeType: "green", value: "0",     label: "Coupons Used" },
+    { Icon: AdminMetricMoneyIcon, value: "₱0.00", label: "Revenue Today" },
+    { Icon: AdminMetricPromoIcon, value: "0", label: "Active Coupons" },
   ]);
   const [appointmentData, setAppointmentData] = useState({
     current: [],
@@ -540,7 +540,7 @@ export const AdminDashboardServices = ({ date }) => {
     done: []
   });
   const [walkInLogs, setWalkInLogs] = useState([]);
-  const [usedCouponsCount, setUsedCouponsCount] = useState(0);
+  const [activeCouponsCount, setActiveCouponsCount] = useState(0);
   const [bookingNotifications, setBookingNotifications] = useState([]);
   const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
   const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
@@ -703,9 +703,9 @@ export const AdminDashboardServices = ({ date }) => {
   useEffect(() => {
     const fetchCouponMetrics = async () => {
       try {
-        const coupons = await couponService.getCoupons();
-        const usedCoupons = coupons.reduce((sum, coupon) => sum + (Number(coupon.number_of_uses) || 0), 0);
-        setUsedCouponsCount(usedCoupons);
+        // Use available coupons endpoint to get active coupons count
+        const coupons = await couponService.getAvailableCoupons();
+        setActiveCouponsCount(Array.isArray(coupons) ? coupons.length : 0);
       } catch (err) {
         console.error('Error loading coupon metrics:', err);
       }
@@ -731,10 +731,10 @@ export const AdminDashboardServices = ({ date }) => {
     const totalRevenue = appointmentRevenue + walkInRevenue;
 
     setStats([
-      { Icon: AdminMetricMoneyIcon, badge: "+15%", badgeType: "green", value: `₱${Number(totalRevenue).toLocaleString('en-PH')}`, label: "Revenue Today" },
-      { Icon: AdminMetricPromoIcon, badge: "+8%", badgeType: "green", value: usedCouponsCount.toString(), label: "Coupons Used" },
+      { Icon: AdminMetricMoneyIcon, value: `₱${Number(totalRevenue).toLocaleString('en-PH')}`, label: "Revenue Today" },
+      { Icon: AdminMetricPromoIcon, value: activeCouponsCount.toString(), label: "Active Coupons" },
     ]);
-  }, [appointmentData.done, walkInLogs, usedCouponsCount]);
+  }, [appointmentData.done, walkInLogs, activeCouponsCount]);
 
   // Fetch services from API on component mount
   useEffect(() => {
