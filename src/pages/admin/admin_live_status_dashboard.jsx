@@ -13,8 +13,6 @@ import {
   AdminMetricWalkInIcon,
   AdminMetricQueueIcon,
   AdminQueueActiveIcon,
-  AdminAnalyticsIcon,
-  AdminDownloadIcon,
 } from "../../components/admin/adminDashboardIcons";
 import { LogoMark } from "../../components/public/publicPageIcons";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
@@ -111,6 +109,40 @@ const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
   month: '2-digit',
   day: '2-digit',
 }).format(new Date());
+
+const sortBookingNotifications = (items) => {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a?.activityAt || a?.updatedAt || a?.createdAt || 0).getTime();
+    const bTime = new Date(b?.activityAt || b?.updatedAt || b?.createdAt || 0).getTime();
+
+    if (aTime !== bTime) return bTime - aTime;
+
+    return String(b?.id || '').localeCompare(String(a?.id || ''));
+  });
+};
+
+const mergeBookingNotifications = (currentItems, incomingItems) => {
+  const notificationMap = new Map();
+
+  [...currentItems, ...incomingItems].forEach((item) => {
+    if (!item?.id) return;
+    notificationMap.set(String(item.id), item);
+  });
+
+  return sortBookingNotifications(Array.from(notificationMap.values()));
+};
+
+const getOldestBookingNotificationCursor = (items) => {
+  const sortedItems = sortBookingNotifications(items);
+  const oldestItem = sortedItems[sortedItems.length - 1];
+
+  if (!oldestItem?.createdAt || !oldestItem?.id) return null;
+
+  return {
+    createdAt: oldestItem.activityAt || oldestItem.updatedAt || oldestItem.createdAt,
+    id: oldestItem.id,
+  };
+};
 
 // Queue sections: type = "active" | "waiting" | "cancelled"
 const QUEUE_SECTIONS = [
@@ -1129,27 +1161,6 @@ function convertTo12HourFormat(time24) {
   return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
-/* ── Analytics panel ── */
-const AnalyticsPanel = () => (
-  <div className="dash-sidebar-panel">
-    <div className="dash-analytics-header">
-      <AdminIconSlot size="analytics-lg">
-        <AdminAnalyticsIcon />
-      </AdminIconSlot>
-      <div className="dash-analytics-text">
-        <h3 className="dash-analytics-title">Analytics</h3>
-        <p className="dash-analytics-sub">View Detailed Reports</p>
-      </div>
-    </div>
-    <button className="dash-download-btn">
-      Download Reports
-      <AdminIconSlot size="inline">
-        <AdminDownloadIcon />
-      </AdminIconSlot>
-    </button>
-  </div>
-);
-
 // ═══════════════════════════════════════════════════════════════════
 // MAIN EXPORT
 // ═══════════════════════════════════════════════════════════════════
@@ -1168,6 +1179,9 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   const [pendingAppointments, setPendingAppointments] = useState([]);
   const [doneAppointments, setDoneAppointments] = useState([]);
   const [walkInLogs, setWalkInLogs] = useState([]);
+  const [bookingNotifications, setBookingNotifications] = useState([]);
+  const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
+  const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
   const [queueRefreshTrigger, setQueueRefreshTrigger] = useState(0);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
@@ -1197,6 +1211,66 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     console.log("Walk-in added:", walkInData);
     setQueueRefreshTrigger((prev) => prev + 1);
     setScheduleRefreshTrigger((prev) => prev + 1);
+  };
+
+  useEffect(() => {
+    const fetchBookingNotifications = async ({ cursor = null } = {}) => {
+      try {
+        const searchParams = new URLSearchParams({ limit: '20' });
+
+        if (cursor?.createdAt && cursor?.id) {
+          searchParams.set('beforeCreatedAt', cursor.createdAt);
+          searchParams.set('beforeId', String(cursor.id));
+        }
+
+        const response = await fetch(`/api/appointments/read/recent-bookings?${searchParams.toString()}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch booking notifications');
+        }
+
+        const result = await response.json();
+        const nextNotifications = result.notifications || [];
+
+        setBookingNotifications((prev) => mergeBookingNotifications(prev, nextNotifications));
+        setBookingNotificationsHasMore(Boolean(result.hasMore));
+      } catch (error) {
+        console.error('[LiveStatus] Error loading booking notifications:', error);
+        setBookingNotificationsHasMore(false);
+      }
+    };
+
+    fetchBookingNotifications();
+  }, []);
+
+  const handleLoadMoreBookingNotifications = async () => {
+    if (loadingMoreBookingNotifications || !bookingNotificationsHasMore) return;
+
+    const oldestNotification = getOldestBookingNotificationCursor(bookingNotifications);
+
+    if (!oldestNotification?.createdAt || !oldestNotification?.id) return;
+
+    try {
+      setLoadingMoreBookingNotifications(true);
+
+      const searchParams = new URLSearchParams({
+        limit: '20',
+        beforeCreatedAt: oldestNotification.createdAt,
+        beforeId: String(oldestNotification.id),
+      });
+
+      const response = await fetch(`/api/appointments/read/recent-bookings?${searchParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to load more booking notifications');
+      }
+
+      const result = await response.json();
+      setBookingNotifications((prev) => mergeBookingNotifications(prev, result.notifications || []));
+      setBookingNotificationsHasMore(Boolean(result.hasMore));
+    } catch (error) {
+      console.error('[LiveStatus] Error loading more booking notifications:', error);
+    } finally {
+      setLoadingMoreBookingNotifications(false);
+    }
   };
 
   useEffect(() => {
@@ -1345,29 +1419,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     ];
   }, [currentAppointments, pendingAppointments, doneAppointments, walkInLogs]);
 
-  const headerNotifications = useMemo(() => {
-    const currentFeed = currentAppointments.slice(0, 2).map((apt, index) => ({
-      id: `current-${apt.id || index}`,
-      tone: "blue",
-      category: "Current appointment",
-      title: `${apt.clientName || "Client"} - ${apt.serviceName || "Service"}`,
-      description: apt.staffName ? `With ${apt.staffName}` : "Appointment in progress",
-      time: apt.appointmentTime || "Now",
-      unread: index === 0,
-    }));
-
-    const pendingFeed = pendingAppointments.slice(0, 3).map((apt, index) => ({
-      id: `pending-${apt.id || index}`,
-      tone: "amber",
-      category: "Pending appointment",
-      title: `${apt.clientName || "Client"} - ${apt.serviceName || "Service"}`,
-      description: apt.appointmentTime ? `Scheduled for ${apt.appointmentTime}` : "Pending approval",
-      time: apt.createdAt || "Today",
-      unread: index === 0,
-    }));
-
-    return [...currentFeed, ...pendingFeed].slice(0, 5);
-  }, [currentAppointments, pendingAppointments]);
+  const headerNotifications = bookingNotifications;
 
   return (
     <div
@@ -1408,7 +1460,12 @@ export const AdminDashboardLiveStatus = ({ date }) => {
               <p className="dash-page-subtitle">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
             </div>
           </div>
-          <AdminHeaderActions notifications={headerNotifications} />
+          <AdminHeaderActions
+            notifications={headerNotifications}
+            onLoadMoreNotifications={handleLoadMoreBookingNotifications}
+            hasMoreNotifications={bookingNotificationsHasMore}
+            loadingMoreNotifications={loadingMoreBookingNotifications}
+          />
         </header>
 
         <main className="dashboard-main">
@@ -1435,7 +1492,6 @@ export const AdminDashboardLiveStatus = ({ date }) => {
           {/* Right — Schedule + Analytics */}
           <div className="live-sidebar">
             <SchedulePanel date={new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} refreshTrigger={scheduleRefreshTrigger} />
-            <AnalyticsPanel />
           </div>
         </div>
       </main>

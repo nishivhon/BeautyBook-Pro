@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import * as XLSX from 'xlsx';
 
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
@@ -13,6 +14,13 @@ const CloseIcon = ({ size = 20, color = "currentColor" }) => (
 const ChevronDownIcon = ({ size = 16, color = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <path d="M6 9l6 6 6-6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const DownloadIcon = ({ size = 16, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M12 3v10m0 0l4-4m-4 4l-4-4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -36,6 +44,60 @@ const fetchCustomerHistory = async (staffName, range) => {
   }
 };
 
+const formatServiceExportValue = (item) => {
+  if (!item) return '';
+
+  if (typeof item === 'string') return item;
+
+  if (Array.isArray(item)) {
+    return item
+      .map((service) => {
+        if (!service) return null;
+        if (typeof service === 'string') return service;
+        const name = service.name || service.title || service.service || '';
+        return name || null;
+      })
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  if (typeof item === 'object') {
+    const name = item.name || item.title || item.service || '';
+    return name;
+  }
+
+  return String(item);
+};
+
+const normalizeExportServices = (servicesValue) => {
+  if (!servicesValue) return '';
+
+  if (typeof servicesValue === 'string') {
+    try {
+      return formatServiceExportValue(JSON.parse(servicesValue));
+    } catch (error) {
+      return servicesValue;
+    }
+  }
+
+  return formatServiceExportValue(servicesValue);
+};
+
+const formatDateTimeForExport = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString('en-PH', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
 // ═══════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════
@@ -45,6 +107,7 @@ export const CustomerHistoryModal = ({ isOpen, onClose, staffName = null }) => {
   const [expandedCustomer, setExpandedCustomer] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [history, setHistory] = useState([]);
   const [error, setError] = useState(null);
 
@@ -66,6 +129,106 @@ export const CustomerHistoryModal = ({ isOpen, onClose, staffName = null }) => {
     })();
     return () => { cancelled = true; };
   }, [isOpen, staffName, filterType]);
+
+  const handleExport = () => {
+    if (!history.length || exporting) return;
+
+    setExporting(true);
+
+    try {
+      const appointmentRows = [];
+      const walkInRows = [];
+
+      history.forEach((item) => {
+        const source = item.source === 'slot' ? 'appointment' : item.source;
+        const raw = item.raw || {};
+        const serviceValue = normalizeExportServices(raw.services || item.services || item.service || '');
+        const customerName = item.customer || raw.customer_name || raw.client_name || '';
+        const customerContact = item.contact || raw.customer_contact || raw.client_phone || raw.client_contact || '';
+        const hasRealAppointmentData = Boolean(
+          customerName ||
+          customerContact ||
+          serviceValue ||
+          item.amount ||
+          raw.total_price ||
+          raw.price ||
+          String(item.status || raw.status || '').trim()
+        );
+
+        if (source === 'walkin') {
+          walkInRows.push({
+            date: item.date || raw.date || '',
+            customer_name: item.customer || raw.customer_name || raw.client_name || '',
+            assigned_staff: item.staff || raw.assigned_staff || '',
+            services: serviceValue,
+            created_at: formatDateTimeForExport(raw.created_at || raw.createdAt || ''),
+          });
+          return;
+        }
+
+        if (!hasRealAppointmentData) return;
+
+        appointmentRows.push({
+          date: item.date || raw.date || raw.slot_date || raw.slotDate || '',
+          time_slot: item.time || raw.time_slot || raw.time || '',
+          customer_name: customerName,
+          customer_contact: customerContact,
+          assigned_staff: item.staff || raw.assigned_staff || '',
+          services: serviceValue,
+          status: item.status || raw.status || '',
+          total_price: item.amount ?? raw.total_price ?? raw.price ?? '',
+          reminder_sent: raw.reminder_sent ?? '',
+        });
+      });
+
+      const appointmentHeaders = [
+        'date',
+        'time_slot',
+        'customer_name',
+        'customer_contact',
+        'assigned_staff',
+        'services',
+        'status',
+        'total_price',
+        'reminder_sent',
+      ];
+
+      const walkInHeaders = [
+        'date',
+        'created_at',
+        'customer_name',
+        'assigned_staff',
+        'services',
+      ];
+
+      const appointmentWorkbookRows = [
+        appointmentHeaders,
+        ...appointmentRows.map((row) => appointmentHeaders.map((header) => row[header] ?? '')),
+      ];
+      const walkInWorkbookRows = [
+        walkInHeaders,
+        ...walkInRows.map((row) => walkInHeaders.map((header) => row[header] ?? '')),
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      const appointmentSheet = XLSX.utils.aoa_to_sheet(appointmentWorkbookRows);
+      const walkInSheet = XLSX.utils.aoa_to_sheet(walkInWorkbookRows);
+
+      const appointmentLastRow = Math.max(appointmentWorkbookRows.length, 2);
+      const walkInLastRow = Math.max(walkInWorkbookRows.length, 2);
+
+      appointmentSheet['!autofilter'] = { ref: `A1:I${appointmentLastRow}` };
+      walkInSheet['!autofilter'] = { ref: `A1:E${walkInLastRow}` };
+
+      XLSX.utils.book_append_sheet(workbook, appointmentSheet, 'Appointments');
+      XLSX.utils.book_append_sheet(workbook, walkInSheet, 'Walk-ins');
+
+      const fileName = `customer-history-${filterType}-${staffName ? staffName.replace(/\s+/g, '_') : 'all'}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -104,30 +267,59 @@ export const CustomerHistoryModal = ({ isOpen, onClose, staffName = null }) => {
           alignItems: "center",
           marginBottom: "24px"
         }}>
-          <h2 style={{
-            fontSize: "20px",
-            fontWeight: "700",
-            color: "#f5f5f5",
-            margin: 0
-          }}>Customer History</h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#988f81",
-              transition: "color 0.2s ease"
-            }}
-            onMouseOver={(e) => e.target.style.color = "#dd901d"}
-            onMouseOut={(e) => e.target.style.color = "#988f81"}
-          >
-            <CloseIcon size={20} color="currentColor" />
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <h2 style={{
+              fontSize: "20px",
+              fontWeight: "700",
+              color: "#f5f5f5",
+              margin: 0
+            }}>Customer History</h2>
+            <p style={{ margin: 0, color: '#988f81', fontSize: '13px' }}>
+              Exported view matches the selected {filterType} range.
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={handleExport}
+              disabled={loading || exporting || !history.length}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 14px',
+                backgroundColor: loading || exporting || !history.length ? 'rgba(221, 144, 29, 0.18)' : '#dd901d',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#1a1a1a',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: loading || exporting || !history.length ? 'not-allowed' : 'pointer',
+                fontFamily: 'Inter, sans-serif',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <DownloadIcon size={16} color="currentColor" />
+              {exporting ? 'Exporting...' : 'Export Excel'}
+            </button>
+            <button
+              onClick={onClose}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#988f81",
+                transition: "color 0.2s ease"
+              }}
+              onMouseOver={(e) => e.target.style.color = "#dd901d"}
+              onMouseOut={(e) => e.target.style.color = "#988f81"}
+            >
+              <CloseIcon size={20} color="currentColor" />
+            </button>
+          </div>
         </div>
 
         {/* Filter Dropdown */}
@@ -298,35 +490,45 @@ export const CustomerHistoryModal = ({ isOpen, onClose, staffName = null }) => {
                     </button>
 
                     {expandedCustomer === id && (
-                      <div style={{ backgroundColor: 'rgba(221, 144, 29, 0.05)', borderLeft: '3px solid #dd901d', padding: '16px', borderRadius: '6px', marginTop: '8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Stylist</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{stylist}</p>
-                        </div>
-
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phone</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{phone}</p>
-                        </div>
-
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{email}</p>
-                        </div>
-
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Service</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{service}</p>
-                        </div>
-
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Time Slot</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{time}</p>
-                        </div>
-
-                        <div>
-                          <p style={{ fontSize: '12px', fontWeight: '600', color: '#dd901d', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount</p>
-                          <p style={{ fontSize: '14px', color: '#f5f5f5', margin: '0' }}>{amount}</p>
+                      <div style={{ backgroundColor: 'rgba(221, 144, 29, 0.05)', borderLeft: '3px solid #dd901d', padding: '16px', borderRadius: '6px', marginTop: '8px', marginBottom: '8px' }}>
+                        {/* Receipt Section Only */}
+                        <div style={{ background: '#11100d', borderRadius: '8px', padding: '18px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', color: '#f5f1eb' }}>
+                          <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                            <div style={{ fontWeight: 700, fontSize: '18px', color: '#dd901d' }}>Receipt</div>
+                            <div style={{ fontSize: '12px', color: '#988f81' }}>Booking Summary</div>
+                          </div>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Customer</div>
+                            <div style={{ fontWeight: 600 }}>{customerName}</div>
+                          </div>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Date</div>
+                            <div style={{ fontWeight: 600 }}>{date} {time && `• ${time}`}</div>
+                          </div>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Service</div>
+                            <div style={{ fontWeight: 600 }}>{service}</div>
+                          </div>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Amount</div>
+                            <div style={{ fontWeight: 600 }}>{amount}</div>
+                          </div>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Stylist</div>
+                            <div style={{ fontWeight: 600 }}>{stylist}</div>
+                          </div>
+                          {item.status && (
+                            <div style={{ marginBottom: '10px' }}>
+                              <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Status</div>
+                              <div style={{ fontWeight: 600 }}>{item.status}</div>
+                            </div>
+                          )}
+                          {item.id && (
+                            <div style={{ marginBottom: '10px' }}>
+                              <div style={{ fontSize: '13px', color: '#988f81', marginBottom: '2px' }}>Reference No.</div>
+                              <div style={{ fontWeight: 600 }}>{item.id}</div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

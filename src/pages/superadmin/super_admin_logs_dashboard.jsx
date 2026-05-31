@@ -5,6 +5,9 @@ import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
 import { useToast } from "../../components/toast";
+import { SUPER_ADMIN_NAV_ITEMS } from "../../components/superadmin/superAdminDashboardIcons";
+import DateRangePicker from "../../components/shared/DateRangePicker";
+import * as XLSX from 'xlsx';
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -97,16 +100,6 @@ const SearchIcon = ({ color = "#988f81" }) => (
 );
 
 // ─── Navigation Items ─────────────────────────────────────────────────────
-
-const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
-  { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
-  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
-  { id: "coupons", label: "Coupons", icon: DatabaseIcon, path: "/superadmin/coupons" },
-  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
-  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
-  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
-];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -299,15 +292,87 @@ export default function SuperAdminLogsDashboard() {
     showToast({ message: `Exported ${rows.length} logs`, type: 'success', duration: 2800 });
   };
 
+  const [exportPickerOpen, setExportPickerOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleExportWithRange = (range) => {
+    const start = new Date(range.startDate);
+    const end = new Date(range.endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const rows = logsData.rows || [];
+    const cols = logsData.cols || [];
+    const filtered = rows.filter(r => {
+      const v = r.date || r.created_at || r.date;
+      const d = v ? new Date(v) : null;
+      if (!d || Number.isNaN(d.getTime())) return false;
+      return d >= start && d <= end;
+    });
+
+    if (!filtered.length) {
+      showToast({ message: 'No logs in selected range', type: 'warning', duration: 2800 });
+      setExportPickerOpen(false);
+      return;
+    }
+
+    const rowsOut = [];
+    rowsOut.push(['Date Range', `${range.startDate} to ${range.endDate}`]);
+    const header = cols.map(col => formatColumnName(col));
+    rowsOut.push(header);
+    filtered.forEach(row => {
+      rowsOut.push(cols.map(col => {
+        const v = formatCellValue(row[col], col);
+        return v ?? '';
+      }));
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(rowsOut);
+    // set reasonable column widths
+    worksheet['!cols'] = cols.map(() => ({ wch: 20 }));
+
+    // apply autofilter on header row (which is row 2)
+    const lastColIndex = cols.length - 1;
+    const colToLetter = (n) => {
+      let s = '';
+      while (n >= 0) { s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26) - 1; }
+      return s;
+    };
+    const lastColLetter = colToLetter(lastColIndex);
+    const totalDataRows = filtered.length;
+    const endRow = 2 + totalDataRows; // header row is 2, data starts at 3
+    worksheet['!autofilter'] = { ref: `A2:${lastColLetter}${endRow}` };
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Appointment Logs');
+    const filename = `appointment-logs-${range.startDate}-to-${range.endDate}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+    showToast({ message: `Exported ${filtered.length} logs`, type: 'success', duration: 2800 });
+    setExportPickerOpen(false);
+  };
+
+  // Filter rows by global search term (across all visible columns)
+  const filteredRows = (() => {
+    const all = (logsData.rows || []);
+    const term = String(searchTerm || '').trim().toLowerCase();
+    if (!term) return all;
+    const cols = logsData.cols || [];
+    return all.filter(row => {
+      return cols.some(col => {
+        const v = String(formatCellValue(row[col], col) ?? '').toLowerCase();
+        return v.includes(term);
+      });
+    });
+  })();
+
   return (
     <DashboardShell
-      navItems={NAV_ITEMS}
+      navItems={SUPER_ADMIN_NAV_ITEMS}
       activeNav={activeNav}
       roleLabel="Super Administrator"
       roleInitial="S"
       showSidebarHeader={false}
-      title="Logs & Audit"
-      subtitle="BeautyBook Pro • System activity logs"
+      title="Appointment Logs"
+      subtitle="BeautyBook Pro • View and manage all appointment logs"
       profile={null}
       notifications={[]}
       useSuperAdminHeaderActions={true}
@@ -332,12 +397,8 @@ export default function SuperAdminLogsDashboard() {
                   <input
                     type="text"
                     placeholder="Search logs..."
-                    onChange={(e) => {
-                      const value = e.target.value.toLowerCase();
-                      if (value) {
-                        console.log('[Logs] Searching for:', value);
-                      }
-                    }}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
                       padding: '8px 12px 8px 32px',
                       borderRadius: '6px',
@@ -358,32 +419,35 @@ export default function SuperAdminLogsDashboard() {
                     }}
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={handleExportLogs}
-                  disabled={loading || !logsData.rows?.length}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#6B6157',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 6,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: loading || !logsData.rows?.length ? 'not-allowed' : 'pointer',
-                    opacity: loading || !logsData.rows?.length ? 0.7 : 1,
-                  }}
-                  title={!logsData.rows?.length ? 'No logs to export' : 'Export logs as CSV'}
-                >
-                  Export
-                </button>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    onClick={() => setExportPickerOpen(true)}
+                    disabled={loading || !logsData.rows?.length}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#6B6157',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 6,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: loading || !logsData.rows?.length ? 'not-allowed' : 'pointer',
+                      opacity: loading || !logsData.rows?.length ? 0.7 : 1,
+                    }}
+                    title={!logsData.rows?.length ? 'No logs to export' : 'Export logs as CSV'}
+                  >
+                    Export
+                  </button>
+                  <DateRangePicker open={exportPickerOpen} initialRange={null} onClose={() => setExportPickerOpen(false)} onConfirm={handleExportWithRange} />
+                </div>
               </div>
             </div>
 
             {/* Logs Table View */}
             {loading ? (
               <div className="container-empty-state">Loading logs...</div>
-            ) : logsData.rows && logsData.rows.length > 0 ? (
+            ) : (filteredRows && filteredRows.length > 0) ? (
               <div style={{ marginTop: '0px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                 <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
@@ -396,7 +460,7 @@ export default function SuperAdminLogsDashboard() {
                   <tbody>
                     {(() => {
                       const itemsPerPage = rowsPerPage || 7;
-                      const totalRows = logsData.rows.length;
+                      const totalRows = filteredRows.length;
                       const totalPages = Math.ceil(totalRows / itemsPerPage);
                       // Only the last page can have fewer than itemsPerPage rows
                       let startIdx = (currentLogsPage - 1) * itemsPerPage;
@@ -407,7 +471,7 @@ export default function SuperAdminLogsDashboard() {
                       } else {
                         endIdx = totalRows;
                       }
-                      return logsData.rows.slice(startIdx, endIdx).map((log, idx) => (
+                      return filteredRows.slice(startIdx, endIdx).map((log, idx) => (
                         <tr key={idx} className="db-row" style={{ minHeight: 80, height: 80 }}>
                           {logsData.cols.map((col) => {
                             const cellValue = log[col];
@@ -421,11 +485,11 @@ export default function SuperAdminLogsDashboard() {
                     })()}
                   </tbody>
                 </table>
-                {logsData.rows.length > 0 && (() => {
+                {filteredRows.length > 0 && (() => {
                   const itemsPerPage = rowsPerPage || 7;
-                  const totalPages = Math.ceil(logsData.rows.length / itemsPerPage);
+                  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
                   const startIdx = (currentLogsPage - 1) * itemsPerPage + 1;
-                  const endIdx = Math.min(currentLogsPage * itemsPerPage, logsData.rows.length);
+                  const endIdx = Math.min(currentLogsPage * itemsPerPage, filteredRows.length);
                   return (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>

@@ -16,6 +16,7 @@ import SuperAdminUsersDashboard from './pages/superadmin/super_admin_users_dashb
 import SuperAdminClientsDashboard from './pages/superadmin/super_admin_clients_dashboard'
 import SuperAdminServicesDashboard from './pages/superadmin/super_admin_services_dashboard'
 import SuperAdminLogsDashboard from './pages/superadmin/super_admin_logs_dashboard'
+import SuperAdminWalkinLogsDashboard from './pages/superadmin/super_admin_walkin_logs_dashboard'
 import SuperAdminSecurityDashboard from './pages/superadmin/super_admin_security_dashboard'
 import SuperAdminLandingPageEditor from './pages/superadmin/super_admin_landpage_edit_dashboard'
 import SuperAdminCouponsDashboard from './pages/superadmin/super_admin_coupons_dashboard'
@@ -153,6 +154,14 @@ function App() {
             element={
               <ProtectedRoute requiredRole="super admin">
                 <SuperAdminLogsDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/superadmin/walkin-logs"
+            element={
+              <ProtectedRoute requiredRole="super admin">
+                <SuperAdminWalkinLogsDashboard />
               </ProtectedRoute>
             }
           />

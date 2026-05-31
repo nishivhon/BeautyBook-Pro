@@ -134,74 +134,27 @@ async function syncDailyStaffStats() {
     
     console.log('[Scheduler] Starting daily staff statistics sync at', phtDate.toISOString(), '(Philippine Time)');
 
-    const staff_list = await supabase
+    const resetData = {
+      total_clients: 0,
+      done_clients: 0,
+      total_walk_in: 0,
+      clock_in: null,
+      clock_out: null,
+      status: 'off',
+      in_service: null,
+      walk_in: false
+    };
+
+    const { data: resetRows, error: resetError } = await supabase
       .from('staffs')
+      .update(resetData)
+      .not('id', 'is', null)
       .select('id, names');
 
-    if (staff_list.error) throw staff_list.error;
+    if (resetError) throw resetError;
 
-    const today = phtDate.toISOString().split('T')[0];
-    const updates = [];
-
-    for (const s of staff_list.data || []) {
-      try {
-        // Count total bookings for this staff from available_slots
-        const { count: totalBookings, error: totalError } = await supabase
-          .from('available_slots')
-          .select('id', { count: 'exact', head: true })
-          .eq('assigned_staff', s.names);
-
-        // Count same-day walk-ins for this staff
-        const { count: walkInTotalBookings, error: walkInTotalError } = await supabase
-          .from('walk_in_logs')
-          .select('id', { count: 'exact', head: true })
-          .eq('assigned_staff', s.names)
-          .eq('date', today);
-
-        // Count done/completed bookings for this staff
-        const { count: doneBookings, error: doneError } = await supabase
-          .from('available_slots')
-          .select('id', { count: 'exact', head: true })
-          .eq('assigned_staff', s.names)
-          .eq('status', 'done');
-
-        // Count same-day walk-in logs that are done for this staff
-        const { count: walkInDoneBookings, error: walkInDoneError } = await supabase
-          .from('walk_in_logs')
-          .select('id', { count: 'exact', head: true })
-          .eq('assigned_staff', s.names)
-          .eq('date', today)
-          .eq('status', 'done');
-
-        const totalCount = totalBookings || 0;
-        const doneCount = (doneBookings || 0) + (walkInDoneBookings || 0);
-        const totalWalkInCount = walkInTotalBookings || 0;
-
-        // Update the staffs table
-        const { error: updateError } = await supabase
-          .from('staffs')
-          .update({
-            total_clients: 0,
-            done_clients: 0,
-            total_walk_in: 0,
-            clock_in: null,
-            clock_out: null,
-            status: 'off',
-            in_service: null,
-            walk_in: false
-          })
-          .eq('id', s.id);
-
-        if (!updateError) {
-          updates.push({ name: s.names, total: 0, done: 0, totalWalkIn: 0 });
-          console.log(`[Scheduler] ✓ Updated ${s.names}: archive complete, counters reset to zero`);
-        }
-      } catch (err) {
-        console.error(`[Scheduler] Error updating ${s.names}:`, err.message);
-      }
-    }
-
-    console.log(`[Scheduler] ✓ Daily stats sync completed for ${updates.length} staff members\n`);
+    const resetCount = Array.isArray(resetRows) ? resetRows.length : 0;
+    console.log(`[Scheduler] ✓ Daily stats sync completed for ${resetCount} staff members\n`);
 
   } catch (error) {
     console.error('[Scheduler] Error syncing daily stats:', error.message);

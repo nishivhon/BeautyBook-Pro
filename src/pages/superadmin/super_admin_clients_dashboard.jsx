@@ -6,6 +6,7 @@ import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { AddClientModal } from "../../components/modal/superadmin/add_client_modal";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 import { useToast } from "../../components/toast";
+import { SUPER_ADMIN_NAV_ITEMS } from "../../components/superadmin/superAdminDashboardIcons";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -90,16 +91,6 @@ const ShieldIcon = ({ color = "currentColor" }) => (
 const ROWS_PER_PAGE = 7;
 const TABLE_CELL_STYLE = { fontSize: '13px', whiteSpace: 'normal', wordBreak: 'break-word', padding: '12px 8px' };
 const TABLE_CHECKBOX_CELL_STYLE = { ...TABLE_CELL_STYLE, width: 40, textAlign: 'center' };
-
-const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
-  { id: "staff-management", label: "Staff Management", icon: NavUserIcon, path: "/superadmin/users" },
-  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
-  { id: "coupons", label: "Coupons", icon: DatabaseIcon, path: "/superadmin/coupons" },
-  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
-  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
-  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
-];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -312,7 +303,7 @@ export default function SuperAdminClientsDashboard() {
 
   return (
     <DashboardShell
-      navItems={NAV_ITEMS}
+      navItems={SUPER_ADMIN_NAV_ITEMS}
       activeNav={activeNav}
       roleLabel="Super Administrator"
       roleInitial="S"

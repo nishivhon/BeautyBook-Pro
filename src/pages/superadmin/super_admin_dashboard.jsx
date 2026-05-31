@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
 import { logoutOperator } from "../../services/operatorAuth";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import PasswordReminderBanner from "../../components/PasswordReminderBanner";
@@ -26,14 +27,6 @@ const DownloadIcon = ({ size = 18, color = "#DD901D" }) => (
   </svg>
 );
 
-const DatabaseIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="9" cy="4.5" rx="6" ry="2.5" stroke={color} strokeWidth="1.6" />
-    <path d="M3 4.5v9C3 15.09 5.686 17 9 17s6-1.91 6-3.5v-9" stroke={color} strokeWidth="1.6" />
-    <path d="M3 9c0 1.657 2.686 3 6 3s6-1.343 6-3" stroke={color} strokeWidth="1.6" />
-  </svg>
-);
-
 const formatISODate = (date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -44,6 +37,337 @@ const formatISODate = (date) => {
 const parseISODate = (value) => {
   const [year, month, day] = String(value).split("-").map(Number);
   return new Date(year, month - 1, day);
+};
+
+// Format created_at values for exports and displays
+// For walk-ins we store timestamps as `YYYY-MM-DD HH:mm:ss` in Manila time.
+// This helper returns only the time portion in PHT (Asia/Manila) 12-hour format, e.g. "4:40 PM".
+const formatCreatedAtForExport = (value) => {
+  if (!value && value !== 0) return "";
+  try {
+    // If value is a string like "YYYY-MM-DD HH:mm:ss", extract time directly
+    if (typeof value === 'string') {
+      // common format from backend: "2026-05-30 16:40:34"
+      const isoSpaceMatch = value.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(?:\.\d+)?(?:Z)?$/);
+      if (isoSpaceMatch) {
+        const timePart = isoSpaceMatch[2];
+        const [hh, mm] = timePart.split(':');
+        let hour = Number(hh);
+        const minute = mm;
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        hour = hour % 12;
+        if (hour === 0) hour = 12;
+        return `${hour}:${minute} ${ampm}`;
+      }
+
+      // fallback: try parsing as Date and format in Asia/Manila
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleString('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit', hour12: true });
+      }
+
+      return String(value);
+    }
+
+    // If value is a Date object
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return value.toLocaleString('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+
+    return String(value);
+  } catch (e) {
+    return String(value);
+  }
+};
+
+const getGraphModeForRange = (rangeStart, rangeEnd) => {
+  const start = new Date(rangeStart);
+  const end = new Date(rangeEnd);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return "daily";
+  }
+
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  const totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
+  return totalDays > 14 ? "weekly" : "daily";
+};
+
+const buildReportGraphSkeleton = (rangeStart, rangeEnd) => {
+  const mode = getGraphModeForRange(rangeStart, rangeEnd);
+  const start = new Date(rangeStart);
+  const end = new Date(rangeEnd);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return { mode: "daily", points: [] };
+  }
+
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  const bucketSize = mode === "weekly" ? 7 : 1;
+  const formatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+  const points = [];
+
+  for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, bucketSize)) {
+    const bucketEnd = new Date(cursor);
+    bucketEnd.setDate(bucketEnd.getDate() + bucketSize - 1);
+
+    if (bucketEnd > end) {
+      bucketEnd.setTime(end.getTime());
+    }
+
+    const bucketLabel = mode === "weekly"
+      ? `${formatter.format(cursor)} - ${formatter.format(bucketEnd)}`
+      : cursor.toLocaleDateString("en-US", { weekday: "short" });
+
+    points.push({
+      date: formatISODate(cursor),
+      label: mode === "weekly"
+        ? cursor.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        : cursor.toLocaleDateString("en-US", { weekday: "short" }),
+      monthDay: bucketLabel,
+      rangeLabel: bucketLabel,
+      appointments: 0,
+      walkIns: 0,
+      revenue: 0,
+    });
+  }
+
+  return { mode, points };
+};
+
+const isDarkMode = () => {
+  if (typeof document === 'undefined') return true;
+  return document.documentElement.getAttribute('data-theme') !== 'light';
+};
+
+const getMetricActionButtonStyles = () => {
+  if (isDarkMode()) {
+    return {
+      background: 'rgba(221, 144, 29, 0.12)',
+      border: '1px solid rgba(221, 144, 29, 0.35)',
+      color: 'var(--color-white)',
+    };
+  }
+
+  return {
+    background: '#fff',
+    border: '1px solid rgba(221, 144, 29, 0.45)',
+    color: '#6e4b12',
+  };
+};
+
+const formatRevenueValue = (value) => `₱${Number(value || 0).toLocaleString('en-PH')}`;
+const SUPERADMIN_LIST_VIEWPORT_HEIGHT = 560;
+
+const downloadXlsxWorkbook = (workbook, fileName) => {
+  const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(url);
+};
+
+const LoadingRowSkeleton = ({ variant = "staff", index = 0 }) => {
+  const baseDelay = `${index * 0.08}s`;
+
+  if (variant === "category") {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          borderRadius: 16,
+          border: "1px solid rgba(152, 143, 129, 0.35)",
+          background: "rgba(255, 255, 255, 0.02)",
+          padding: "12px 14px",
+          animation: "pulse 1.4s ease-in-out infinite",
+          animationDelay: baseDelay,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+          <div style={{ width: 92, height: 16, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+        </div>
+        <div style={{ width: 108, height: 24, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1.5fr) repeat(3, minmax(0, 0.7fr))",
+        gap: 12,
+        alignItems: "center",
+        borderRadius: 16,
+        border: "1px solid rgba(152, 143, 129, 0.35)",
+        background: "rgba(255, 255, 255, 0.02)",
+        padding: "12px 14px",
+        animation: "pulse 1.4s ease-in-out infinite",
+        animationDelay: baseDelay,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)", flexShrink: 0 }} />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ width: "70%", height: 15, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+          <div style={{ width: "55%", height: 10, borderRadius: 999, background: "rgba(221, 144, 29, 0.08)", marginTop: 8 }} />
+        </div>
+      </div>
+
+      <div style={{ margin: "0 auto", width: 40, height: 15, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+      <div style={{ margin: "0 auto", width: 40, height: 15, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+      <div style={{ marginLeft: "auto", width: 72, height: 15, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+    </div>
+  );
+};
+
+const LoadingListSkeleton = ({ variant = "staff", rows = 10 }) => {
+  return Array.from({ length: rows }, (_, index) => (
+    <LoadingRowSkeleton key={`${variant}-skeleton-${index}`} variant={variant} index={index} />
+  ));
+};
+
+// Themed scrollbar CSS (uses CSS variables set on the scroll container)
+const SCROLLBAR_CSS = `
+/* Staff summary scrollbar — reacts to [data-theme] on <html> without JS */
+:root[data-theme="light"] .staff-summary-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #e85d75 transparent;
+}
+:root:not([data-theme="light"]) .staff-summary-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(221, 144, 29, 0.45) transparent;
+}
+.staff-summary-scroll::-webkit-scrollbar {
+  width: var(--sb-width, 10px);
+  height: var(--sb-width, 10px);
+}
+:root[data-theme="light"] .staff-summary-scroll::-webkit-scrollbar-thumb {
+  background: #e85d75;
+}
+:root:not([data-theme="light"]) .staff-summary-scroll::-webkit-scrollbar-thumb {
+  background: rgba(221, 144, 29, 0.45);
+}
+.staff-summary-scroll::-webkit-scrollbar-track {
+  border-radius: 10px;
+}
+.staff-summary-scroll::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+`;
+
+const StaffSummaryPanel = ({ staffMetrics = [], loading = false, rangeLabel = "", onExport }) => {
+  const rows = Array.isArray(staffMetrics) ? staffMetrics : [];
+
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+        <div>
+          <h3 className="dash-stats-set-title">Staff Summary</h3>
+        </div>
+      </div>
+
+      <div
+        className="staff-summary-scroll"
+        style={{
+          flex: 1,
+          minHeight: SUPERADMIN_LIST_VIEWPORT_HEIGHT,
+          maxHeight: SUPERADMIN_LIST_VIEWPORT_HEIGHT,
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          overflowY: "auto",
+          paddingRight: 4,
+          ['--sb-width']: '10px',
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1.5fr) repeat(3, minmax(0, 0.7fr))",
+            gap: 12,
+            padding: "0 4px 4px",
+            color: "#9f8457",
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+          }}
+        >
+          <span>Staff</span>
+          <span style={{ textAlign: "center" }}>Walk-ins</span>
+          <span style={{ textAlign: "center" }}>Appointments</span>
+          <span style={{ textAlign: "right" }}>Revenue</span>
+        </div>
+
+        {loading ? (
+          <LoadingListSkeleton variant="staff" rows={10} />
+        ) : rows.length === 0 ? (
+          <div style={{ padding: "24px 6px", color: "#9f8457", fontWeight: 600 }}>No staff activity in the selected range.</div>
+        ) : (
+          rows.map((item) => (
+            <div
+              key={item.staff}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1.5fr) repeat(3, minmax(0, 0.7fr))",
+                gap: 12,
+                alignItems: "center",
+                borderRadius: 16,
+                border: "1px solid rgba(152, 143, 129, 0.35)",
+                background: "rgba(255, 255, 255, 0.02)",
+                padding: "12px 14px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 999,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "rgba(221, 144, 29, 0.14)",
+                    border: "1px solid rgba(221, 144, 29, 0.22)",
+                    color: "var(--color-white)",
+                    fontWeight: 800,
+                    flexShrink: 0,
+                  }}
+                >
+                  {String(item.staff || "?").trim().charAt(0).toUpperCase()}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: 0, color: "var(--color-white)", fontSize: 15, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {item.staff}
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 15, fontWeight: 700 }}>{item.walkIns}</div>
+              <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 15, fontWeight: 700 }}>{item.appointments}</div>
+              <div style={{ textAlign: "right", color: "#7fbf7f", fontSize: 15, fontWeight: 800 }}>{formatRevenueValue(item.revenue)}</div>
+            </div>
+          ))
+        )}
+      </div>
+    </>
+  );
 };
 
 export default function SuperAdminDashboard() {
@@ -67,12 +391,16 @@ export default function SuperAdminDashboard() {
   const [awaitingEndDate, setAwaitingEndDate] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(defaultPastDate.getFullYear(), defaultPastDate.getMonth(), 1));
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryData, setSummaryData] = useState({ appointments: 0, walkIns: 0, revenue: 0 });
+  const [summaryData, setSummaryData] = useState({ appointments: 0, walkIns: 0, revenue: 0, staffMetrics: [] });
   const [serviceMetrics, setServiceMetrics] = useState([]);
+  const [detailedServiceMetrics, setDetailedServiceMetrics] = useState([]);
+  const [dailyReport, setDailyReport] = useState([]);
   const [weeklyGraph, setWeeklyGraph] = useState([]);
   const [weeklyGraphLoading, setWeeklyGraphLoading] = useState(false);
   const [weeklyGraphError, setWeeklyGraphError] = useState("");
-  const [graphWeekAnchor, setGraphWeekAnchor] = useState(() => new Date(defaultPastDate));
+  const [weeklyGraphMode, setWeeklyGraphMode] = useState("daily");
+  const [appointmentRowsState, setAppointmentRowsState] = useState([]);
+  const [walkInRowsState, setWalkInRowsState] = useState([]);
   const [hoveredTower, setHoveredTower] = useState(null);
   const calendarRef = useRef(null);
   const graphChartRef = useRef(null);
@@ -90,16 +418,50 @@ export default function SuperAdminDashboard() {
   const fetchSummary = async (range = summaryRange) => {
     try {
       setSummaryLoading(true);
-      const params = new URLSearchParams({ summary: 'superadmin-dashboard', startDate: range.startDate, endDate: range.endDate });
+      setWeeklyGraphLoading(true);
+      setWeeklyGraphError("");
+
+      const params = new URLSearchParams({
+        summary: 'superadmin-dashboard',
+        startDate: range.startDate,
+        endDate: range.endDate,
+        graphStartDate: range.startDate,
+        graphEndDate: range.endDate,
+      });
       const resp = await fetch(`/api/database/table-data?${params.toString()}`);
       if (!resp.ok) throw new Error('Failed to load summary');
       const json = await resp.json();
-      setSummaryData({ appointments: json.appointments || 0, walkIns: json.walkIns || 0, revenue: json.revenue || 0 });
+      setSummaryData({
+        appointments: json.appointments || 0,
+        walkIns: json.walkIns || 0,
+        revenue: json.revenue || 0,
+        staffMetrics: Array.isArray(json.staffMetrics) ? json.staffMetrics : [],
+      });
       setServiceMetrics(Array.isArray(json.serviceMetrics) ? json.serviceMetrics : []);
+      setDetailedServiceMetrics(Array.isArray(json.detailedServiceMetrics) ? json.detailedServiceMetrics : []);
+      setDailyReport(Array.isArray(json.dailyReport) ? json.dailyReport : []);
+      setWeeklyGraph(Array.isArray(json.weeklyGraph) ? json.weeklyGraph : []);
+      setWeeklyGraphMode(json.graphMode || getGraphModeForRange(range.startDate, range.endDate));
+      setAppointmentRowsState(Array.isArray(json.appointmentRows) ? json.appointmentRows : []);
+      setWalkInRowsState(Array.isArray(json.walkInRows) ? json.walkInRows : []);
     } catch (err) {
       console.error('Summary load error', err);
+      const fallbackGraph = buildReportGraphSkeleton(range.startDate, range.endDate);
+      setWeeklyGraphError('Unable to load report graph right now.');
+      setDailyReport(fallbackGraph.points.map((point) => ({
+        date: point.date,
+        label: point.label,
+        monthDay: point.monthDay,
+        rangeLabel: point.rangeLabel,
+        appointments: point.appointments,
+        walkIns: point.walkIns,
+        revenue: point.revenue,
+      })));
+      setWeeklyGraph(fallbackGraph.points);
+      setWeeklyGraphMode(fallbackGraph.mode);
     } finally {
       setSummaryLoading(false);
+      setWeeklyGraphLoading(false);
     }
   };
 
@@ -124,74 +486,10 @@ export default function SuperAdminDashboard() {
     return next;
   };
 
-  const formatGraphRangeLabel = (startDate, endDate) => {
-    const formatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
-    return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
-  };
-
-  const buildWeeklyGraphSkeleton = (rangeStart, rangeEnd) => {
-    const start = getMondayStart(rangeStart);
-    const end = addDays(start, 6);
-    const days = [];
-
-    for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, 1)) {
-      days.push({
-        date: formatISODate(cursor),
-        label: cursor.toLocaleDateString("en-US", { weekday: "short" }),
-        monthDay: cursor.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-        appointments: 0,
-        walkIns: 0,
-        revenue: 0,
-      });
-    }
-
-    return days;
-  };
-
-  const graphWeekStart = getMondayStart(graphWeekAnchor);
-  const graphWeekEnd = addDays(graphWeekStart, 6);
-  const graphRangeLabel = formatGraphRangeLabel(graphWeekStart, graphWeekEnd);
-
-  const fetchWeeklyGraph = async (rangeStart = graphWeekStart, rangeEnd = graphWeekEnd) => {
-    try {
-      setWeeklyGraphLoading(true);
-      setWeeklyGraphError("");
-
-      const params = new URLSearchParams({
-        summary: "superadmin-dashboard",
-        startDate: summaryRange.startDate,
-        endDate: summaryRange.endDate,
-        graphStartDate: formatISODate(rangeStart),
-        graphEndDate: formatISODate(rangeEnd),
-      });
-
-      const response = await fetch(`/api/database/table-data?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error("Failed to load weekly graph");
-      }
-
-      const json = await response.json();
-      const nextGraph = Array.isArray(json.weeklyGraph) && json.weeklyGraph.length > 0
-        ? json.weeklyGraph
-        : buildWeeklyGraphSkeleton(rangeStart, rangeEnd);
-      setWeeklyGraph(nextGraph);
-    } catch (error) {
-      console.error("Weekly graph load error", error);
-      setWeeklyGraphError("Unable to load weekly graph right now.");
-      setWeeklyGraph(buildWeeklyGraphSkeleton(rangeStart, rangeEnd));
-    } finally {
-      setWeeklyGraphLoading(false);
-    }
-  };
-
   // Load initial summary for the default range
   useEffect(() => {
     fetchSummary(summaryRange);
   }, []);
-
-  useEffect(() => {
-    fetchWeeklyGraph(graphWeekStart, graphWeekEnd);
-  }, [graphWeekAnchor]);
 
   useEffect(() => {
     if (!calendarOpen) return undefined;
@@ -251,76 +549,245 @@ export default function SuperAdminDashboard() {
 
   // Simple metrics cards for summary data
   const cards = metricsCardsFor(summaryData);
+  const staffMetrics = Array.isArray(summaryData.staffMetrics) ? summaryData.staffMetrics : [];
   const serviceMetricCategories = serviceMetrics;
-  const chartSeries = [
+  const reportGraphSeries = [
     { key: "appointments", label: "Appointments", color: "#dd901d" },
     { key: "walkIns", label: "Walk-ins", color: "#e85d75" },
   ];
-  const chartMaxValue = Math.max(
+  const reportGraphModeLabel = weeklyGraphMode === "weekly" ? "Weekly points" : "Daily points";
+  const reportGraphCellWidth = weeklyGraphMode === "weekly" ? 118 : 76;
+  const reportGraphWidth = Math.max(720, weeklyGraph.length * reportGraphCellWidth);
+  const reportGraphHeight = 300;
+  const reportGraphPadding = { top: 24, right: 24, bottom: 60, left: 50 };
+  const reportGraphPlotWidth = Math.max(1, reportGraphWidth - reportGraphPadding.left - reportGraphPadding.right);
+  const reportGraphPlotHeight = Math.max(1, reportGraphHeight - reportGraphPadding.top - reportGraphPadding.bottom);
+  const reportGraphMaxValue = Math.max(
     1,
-    ...weeklyGraph.flatMap((entry) => chartSeries.map((series) => Number(entry?.[series.key] || 0)))
+    ...weeklyGraph.flatMap((entry) => reportGraphSeries.map((series) => Number(entry?.[series.key] || 0)))
   );
+  const reportGraphXStep = weeklyGraph.length > 1 ? reportGraphPlotWidth / (weeklyGraph.length - 1) : 0;
 
-  const handleTowerHover = (event, dayEntry, series) => {
-    if (!graphChartRef.current) return;
+  const buildGraphPoints = (seriesKey) => weeklyGraph.map((entry, index) => {
+    const value = Number(entry?.[seriesKey] || 0);
+    return {
+      x: reportGraphPadding.left + (index * reportGraphXStep),
+      y: reportGraphPadding.top + (reportGraphPlotHeight - ((value / reportGraphMaxValue) * reportGraphPlotHeight)),
+      value,
+      entry,
+    };
+  });
 
-    const chartRect = graphChartRef.current.getBoundingClientRect();
-    const targetRect = event.currentTarget.getBoundingClientRect();
-    const left = targetRect.left - chartRect.left + targetRect.width / 2;
-    const top = targetRect.top - chartRect.top;
+  const appointmentGraphPoints = buildGraphPoints("appointments");
+  const walkInGraphPoints = buildGraphPoints("walkIns");
 
+  const buildGraphPath = (points) => {
+    if (points.length === 0) return "";
+    return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  };
+
+  const buildGraphAreaPath = (points) => {
+    if (points.length === 0) return "";
+
+    const firstPoint = points[0];
+    const lastPoint = points[points.length - 1];
+    return [
+      `M ${firstPoint.x} ${reportGraphPadding.top + reportGraphPlotHeight}`,
+      `L ${firstPoint.x} ${firstPoint.y}`,
+      ...points.slice(1).map((point) => `L ${point.x} ${point.y}`),
+      `L ${lastPoint.x} ${reportGraphPadding.top + reportGraphPlotHeight}`,
+      "Z",
+    ].join(" ");
+  };
+
+  const handleGraphPointHover = (point, series) => {
     setHoveredTower({
-      left,
-      top,
+      x: point.x,
+      y: point.y,
       title: series.label,
-      value: Number(dayEntry?.[series.key] || 0),
-      dayLabel: dayEntry?.label,
-      monthDay: dayEntry?.monthDay,
+      value: point.value,
+      dayLabel: point.entry?.label,
+      monthDay: point.entry?.monthDay,
+      rangeLabel: point.entry?.rangeLabel,
       color: series.color,
+      appointments: point.entry?.appointments || 0,
+      walkIns: point.entry?.walkIns || 0,
+      revenue: point.entry?.revenue || 0,
     });
   };
 
   const selectionLabel = `${summaryRange.startDate} to ${summaryRange.endDate}`;
   const monthTitle = calendarMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  const handleExportAllData = () => {
-    const exportData = {
-      metrics: {
-        appointments: summaryData.appointments,
-        walkIns: summaryData.walkIns,
-        revenue: summaryData.revenue,
-      },
-      dateRange: {
-        startDate: summaryRange.startDate,
-        endDate: summaryRange.endDate,
-      },
-      categories: serviceMetricCategories.map((cat) => ({
-        category: cat.category,
-        topService: cat.topService ? { name: cat.topService.name, count: cat.topService.count } : null,
-      })),
-      timestamp: new Date().toISOString(),
+  const handleExportMetricsXlsx = () => {
+    const workbook = XLSX.utils.book_new();
+    const summaryRows = [
+      ["Metric", "Value"],
+      ["Date Range", selectionLabel],
+      ["Total Appointments", summaryData.appointments || 0],
+      ["Total Walk-ins", summaryData.walkIns || 0],
+      ["Total Revenue", summaryData.revenue || 0],
+    ];
+
+    const dailyRows = [
+      ["Date Range", selectionLabel],
+      ["Date", "Day", "Appointments", "Walk-ins", "Revenue"],
+      ...dailyReport.map((day) => [
+        day.date || "",
+        day.label || "",
+        Number(day.appointments || 0),
+        Number(day.walkIns || 0),
+        Number(day.revenue || 0),
+      ]),
+    ];
+
+    const summaryWorksheet = XLSX.utils.aoa_to_sheet(summaryRows);
+    summaryWorksheet["!cols"] = [{ wch: 24 }, { wch: 24 }];
+    const dailyWorksheet = XLSX.utils.aoa_to_sheet(dailyRows);
+    dailyWorksheet["!cols"] = [{ wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 16 }];
+    if (dailyRows.length >= 2) dailyWorksheet["!autofilter"] = { ref: `A2:E${dailyRows.length}` };
+
+    const staffRows = [
+      ["Date Range", selectionLabel],
+      ["Staff", "Walk-ins", "Appointments", "Revenue"],
+      ...staffMetrics.map((item) => [
+        item.staff || "",
+        Number(item.walkIns || 0),
+        Number(item.appointments || 0),
+        Number(item.revenue || 0),
+      ]),
+    ];
+    const staffWorksheet = XLSX.utils.aoa_to_sheet(staffRows);
+    staffWorksheet["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 14 }, { wch: 16 }];
+    if (staffRows.length >= 2) staffWorksheet["!autofilter"] = { ref: `A2:D${staffRows.length}` };
+
+    const categoryRows = [
+      ["Date Range", selectionLabel],
+      ["Category", "Service", "Unit Price", "Usage", "Revenue"],
+      ...detailedServiceMetrics.flatMap((category) =>
+        (category.services || []).map((service) => [
+          category.category || "",
+          service.service || "",
+          Number(service.unitPrice || 0),
+          Number(service.usage || 0),
+          Number(service.revenue || 0),
+        ])
+      ),
+    ];
+    const categoryWorksheet = XLSX.utils.aoa_to_sheet(categoryRows);
+    categoryWorksheet["!cols"] = [{ wch: 28 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 16 }];
+    if (categoryRows.length >= 2) categoryWorksheet["!autofilter"] = { ref: `A2:E${categoryRows.length}` };
+
+    XLSX.utils.book_append_sheet(workbook, summaryWorksheet, "Metrics");
+    XLSX.utils.book_append_sheet(workbook, dailyWorksheet, "Daily Breakdown");
+    XLSX.utils.book_append_sheet(workbook, staffWorksheet, "Staff Summary");
+    XLSX.utils.book_append_sheet(workbook, categoryWorksheet, "Services");
+
+    // Helper: clean services JSON to readable string
+    const cleanServicesForExport = (servicesValue) => {
+      if (!servicesValue && servicesValue !== 0) return "";
+      let services = servicesValue;
+      if (typeof servicesValue === 'string') {
+        try { services = JSON.parse(servicesValue); } catch (e) { return String(servicesValue); }
+      }
+      if (Array.isArray(services)) {
+        return services.map(s => (s?.name || s?.title || s?.service || s?.label || '')).filter(Boolean).join(' • ');
+      }
+      if (typeof services === 'object') {
+        return services?.name || services?.title || services?.service || '';
+      }
+      return String(services);
     };
-    console.log('Exporting Metrics, Categories, and Services data...');
-    console.log(JSON.stringify(exportData, null, 2));
+
+    const extractWalkInPrice = (servicesValue) => {
+      if (!servicesValue && servicesValue !== 0) return 0;
+      let services = servicesValue;
+      if (typeof servicesValue === 'string') {
+        try { services = JSON.parse(servicesValue); } catch (e) { return 0; }
+      }
+      if (Array.isArray(services)) {
+        return services.reduce((sum, item) => sum + (Number(item?.price) || 0), 0);
+      }
+      if (typeof services === 'object') return Number(services?.price) || 0;
+      return 0;
+    };
+
+    // Appointments sheet
+    const appointmentSheetRows = [
+      ["Date", "Time Slot", "Customer Name", "Customer Contact", "Assigned Staff", "Services", "Total Price"],
+      ...appointmentRowsState.map((row) => [
+        row.date || row.created_at || "",
+        row.time_slot || row.time_slots || row.time || "",
+        row.customer_name || row.customer || "",
+        row.customer_contact || row.customer_phone || "",
+        row.assigned_staff || row.staff || row.staff_name || "",
+        cleanServicesForExport(row.services),
+        Number(row.total_price || 0),
+      ]),
+    ];
+    const appointmentWorksheet = XLSX.utils.aoa_to_sheet(appointmentSheetRows);
+    appointmentWorksheet["!cols"] = [{ wch: 14 }, { wch: 16 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 40 }, { wch: 14 }];
+    if (appointmentSheetRows.length >= 1) appointmentWorksheet["!autofilter"] = { ref: `A1:G${appointmentSheetRows.length}` };
+    XLSX.utils.book_append_sheet(workbook, appointmentWorksheet, "Appointments");
+
+    // Walk-ins sheet
+    const walkinSheetRows = [
+      ["Date", "Created At", "Customer Name", "Assigned Staff", "Services", "Status", "Price"],
+      ...walkInRowsState.map((row) => [
+        row.date || row.created_at || "",
+        formatCreatedAtForExport(row.created_at || row.date || ""),
+        row.customer_name || row.customer || "",
+        row.assigned_staff || row.staff || row.staff_name || "",
+        cleanServicesForExport(row.services),
+        row.status || "",
+        Number(extractWalkInPrice(row.services)),
+      ]),
+    ];
+    const walkinWorksheet = XLSX.utils.aoa_to_sheet(walkinSheetRows);
+    walkinWorksheet["!cols"] = [{ wch: 14 }, { wch: 20 }, { wch: 22 }, { wch: 18 }, { wch: 40 }, { wch: 12 }, { wch: 12 }];
+    if (walkinSheetRows.length >= 1) walkinWorksheet["!autofilter"] = { ref: `A1:G${walkinSheetRows.length}` };
+    XLSX.utils.book_append_sheet(workbook, walkinWorksheet, "Walk-ins");
+    downloadXlsxWorkbook(workbook, `superadmin-metrics-${summaryRange.startDate}-to-${summaryRange.endDate}.xlsx`);
   };
 
-  const handleExportWeeklyGraph = () => {
-    const exportData = {
-      weeklyReport: {
-        dateRange: `${formatGraphRangeLabel(graphWeekStart, graphWeekEnd)}`,
-        data: weeklyGraph.map((day) => ({
-          date: day.date,
-          day: day.label,
-          monthDay: day.monthDay,
-          appointments: day.appointments,
-          walkIns: day.walkIns,
-          revenue: day.revenue,
-        })),
-      },
-      timestamp: new Date().toISOString(),
-    };
-    console.log('Exporting Weekly Report Graph data...');
-    console.log(JSON.stringify(exportData, null, 2));
+  const handleExportStaffSummaryXlsx = () => {
+    const workbook = XLSX.utils.book_new();
+    const rows = [
+      ["Date Range", selectionLabel],
+      ["Staff", "Walk-ins", "Appointments", "Revenue"],
+      ...staffMetrics.map((item) => [
+        item.staff || "",
+        Number(item.walkIns || 0),
+        Number(item.appointments || 0),
+        Number(item.revenue || 0),
+      ]),
+    ];
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    worksheet["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 14 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Staff Summary");
+    downloadXlsxWorkbook(workbook, `superadmin-staff-summary-${summaryRange.startDate}-to-${summaryRange.endDate}.xlsx`);
+  };
+
+  const handleExportCategoriesXlsx = () => {
+    const workbook = XLSX.utils.book_new();
+    const rows = [
+      ["Date Range", selectionLabel],
+      ["Category", "Service", "Unit Price", "Usage", "Revenue"],
+      ...detailedServiceMetrics.flatMap((category) =>
+        (category.services || []).map((service) => [
+          category.category || "",
+          service.service || "",
+          Number(service.unitPrice || 0),
+          Number(service.usage || 0),
+          Number(service.revenue || 0),
+        ])
+      ),
+    ];
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    worksheet["!cols"] = [{ wch: 28 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 16 }];
+    if (rows.length >= 2) worksheet["!autofilter"] = { ref: `A2:E${rows.length}` };
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Services");
+    downloadXlsxWorkbook(workbook, `superadmin-categories-services-${summaryRange.startDate}-to-${summaryRange.endDate}.xlsx`);
   };
   const firstDayOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
   const lastDayOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0);
@@ -377,6 +844,9 @@ export default function SuperAdminDashboard() {
       logoutConfirmText="Yes, Log Out"
       logoutCancelText="Stay Logged In"
     >
+      {/* global scrollbar styles for this dashboard */}
+      <style>{SCROLLBAR_CSS}</style>
+
       {/* Password Reminder Banner */}
       <PasswordReminderBanner />
 
@@ -394,9 +864,7 @@ export default function SuperAdminDashboard() {
                   alignItems: 'center',
                   gap: 4,
                   borderRadius: 6,
-                  border: '1px solid rgba(221, 144, 29, 0.45)',
-                  background: '#fff',
-                  color: '#6e4b12',
+                  ...getMetricActionButtonStyles(),
                   padding: '4px 8px',
                   fontWeight: 600,
                 }}
@@ -486,22 +954,17 @@ export default function SuperAdminDashboard() {
               </div>
             )}
 
-              {summaryLoading && (
-                <p style={{ margin: '8px 2px 0', fontSize: 12, color: '#8a6b36', fontWeight: 600 }}>Loading metrics...</p>
-              )}
             </div>
-            <button
-              type="button"
-              onClick={handleExportAllData}
-              title="Export Metrics, Categories & Services data"
+              <button
+                type="button"
+                onClick={handleExportMetricsXlsx}
+                title="Export Metrics to XLSX"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
                 borderRadius: 6,
-                border: '1px solid rgba(221, 144, 29, 0.45)',
-                background: '#fff',
-                color: '#6e4b12',
+                ...getMetricActionButtonStyles(),
                 padding: '4px 8px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -542,173 +1005,7 @@ export default function SuperAdminDashboard() {
               background: "linear-gradient(180deg, rgba(221, 144, 29, 0.05) 0%, rgba(221, 144, 29, 0.02) 100%)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-              <div>
-                <h3 className="dash-stats-set-title">Weekly Report Graph</h3>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setGraphWeekAnchor((prev) => addDays(prev, -7))}
-                  style={{
-                    border: "1px solid rgba(221, 144, 29, 0.28)",
-                    background: "rgba(255, 255, 255, 0.02)",
-                    color: "var(--color-white)",
-                    borderRadius: 10,
-                    width: 30,
-                    height: 30,
-                    cursor: "pointer",
-                    fontWeight: 700,
-                  }}
-                  aria-label="Previous week"
-                >
-                  {'<'}
-                </button>
-                <span style={{ color: "#c9ab7b", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{graphRangeLabel}</span>
-                <button
-                  type="button"
-                  onClick={() => setGraphWeekAnchor((prev) => addDays(prev, 7))}
-                  style={{
-                    border: "1px solid rgba(221, 144, 29, 0.28)",
-                    background: "rgba(255, 255, 255, 0.02)",
-                    color: "var(--color-white)",
-                    borderRadius: 10,
-                    width: 30,
-                    height: 30,
-                    cursor: "pointer",
-                    fontWeight: 700,
-                  }}
-                  aria-label="Next week"
-                >
-                  {'>'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExportWeeklyGraph}
-                  title="Export Graph Data"
-                  style={{
-                    border: "1px solid rgba(221, 144, 29, 0.28)",
-                    background: "rgba(255, 255, 255, 0.02)",
-                    color: "var(--color-white)",
-                    borderRadius: 10,
-                    width: 30,
-                    height: 30,
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  aria-label="Export graph data"
-                >
-                  <DownloadIcon size={16} color="var(--color-white)" />
-                </button>
-              </div>
-            </div>
-
-            <div
-              ref={graphChartRef}
-              style={{
-                flex: 1,
-                minHeight: 260,
-                borderRadius: 18,
-                border: "1px solid rgba(152, 143, 129, 0.35)",
-                background: "linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01))",
-                padding: 18,
-                position: "relative",
-              }}
-            >
-              {weeklyGraphLoading ? (
-                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
-                  Loading weekly graph...
-                </div>
-              ) : weeklyGraphError ? (
-                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#c08a4d", fontWeight: 600 }}>
-                  {weeklyGraphError}
-                </div>
-              ) : weeklyGraph.length === 0 ? (
-                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
-                  No weekly data available.
-                </div>
-              ) : (
-                <>
-                  {hoveredTower ? (
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: hoveredTower.left,
-                        top: Math.max(10, hoveredTower.top - 14),
-                        transform: "translate(-50%, -100%)",
-                        background: "rgba(17, 12, 6, 0.96)",
-                        border: `1px solid ${hoveredTower.color}`,
-                        borderRadius: 12,
-                        padding: "8px 10px",
-                        minWidth: 138,
-                        boxShadow: "0 12px 24px rgba(0, 0, 0, 0.22)",
-                        zIndex: 5,
-                        pointerEvents: "none",
-                      }}
-                    >
-                      <p style={{ margin: 0, color: "#fff", fontSize: 12, fontWeight: 700 }}>{hoveredTower.title}</p>
-                      <p style={{ margin: "2px 0 0", color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>{hoveredTower.dayLabel} · {hoveredTower.monthDay}</p>
-                      <p style={{ margin: "4px 0 0", color: hoveredTower.color, fontSize: 16, fontWeight: 800 }}>
-                        {hoveredTower.title === "Revenue" ? `₱${Number(hoveredTower.value || 0).toLocaleString()}` : hoveredTower.value}
-                      </p>
-                    </div>
-                  ) : null}
-
-                  <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 10, flex: 1, alignItems: "end" }}>
-                      {weeklyGraph.map((dayEntry, dayIndex) => (
-                        <div key={dayEntry.date} style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center", height: "100%", minHeight: 210 }}>
-                          <div style={{ width: "100%", flex: 1, display: "flex", alignItems: "end", justifyContent: "center", gap: 6, position: "relative" }}>
-                            {chartSeries.map((series) => {
-                              const rawValue = Number(dayEntry?.[series.key] || 0);
-                              const height = Math.max(8, Math.round((rawValue / chartMaxValue) * 160));
-
-                              return (
-                                <div
-                                  key={`${dayEntry.date}-${series.key}`}
-                                  onMouseEnter={(event) => handleTowerHover(event, dayEntry, series)}
-                                  onMouseLeave={() => setHoveredTower(null)}
-                                  style={{
-                                    width: 14,
-                                    height,
-                                    borderRadius: 999,
-                                    background: series.color,
-                                    boxShadow: `0 0 0 1px rgba(255,255,255,0.08) inset, 0 6px 18px ${series.color}22`,
-                                    cursor: "pointer",
-                                    transition: "transform 0.15s ease, opacity 0.15s ease",
-                                    opacity: 0.95,
-                                  }}
-                                />
-                              );
-                            })}
-                          </div>
-
-                          <div style={{ textAlign: "center", lineHeight: 1.15 }}>
-                            <div style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>{dayEntry.label}</div>
-                            <div style={{ color: "#9f8457", fontSize: 11, fontWeight: 600 }}>{dayEntry.monthDay}</div>
-                            <div style={{ color: "#7fbf7f", fontSize: 11, fontWeight: 700, marginTop: 3 }}>
-                              ₱{Number(dayEntry.revenue || 0).toLocaleString('en-PH')}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
-                      {chartSeries.map((series) => (
-                        <div key={series.key} style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>
-                          <span style={{ width: 10, height: 10, borderRadius: 999, background: series.color, display: "inline-block" }} />
-                          {series.label}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+              <StaffSummaryPanel staffMetrics={staffMetrics} loading={summaryLoading} rangeLabel={selectionLabel} />
           </section>
 
           <section
@@ -726,14 +1023,41 @@ export default function SuperAdminDashboard() {
               <div>
                 <h3 className="dash-stats-set-title">Categories and popular services</h3>
               </div>
-              <div className="dash-stat-icon-box">
-                <DatabaseIcon />
-              </div>
+              {/* Export button removed per request */}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, overflow: "auto", paddingRight: 4 }}>
-              {serviceMetricCategories.length === 0 ? (
-                <div style={{ padding: "24px 6px", color: "#9f8457", fontWeight: 600 }}>No service categories found.</div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                minHeight: SUPERADMIN_LIST_VIEWPORT_HEIGHT,
+                maxHeight: SUPERADMIN_LIST_VIEWPORT_HEIGHT,
+                overflowY: "auto",
+                paddingRight: 4,
+              }}
+            >
+              {!summaryLoading && serviceMetricCategories.length > 0 && (
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1.5fr) repeat(4, minmax(0, 0.7fr))",
+                  gap: 12,
+                  alignItems: "center",
+                  padding: "6px 14px",
+                  color: "#c9ab7b",
+                  fontWeight: 700,
+                }}>
+                  <span>Category</span>
+                  <span style={{ textAlign: "center" }}>Top Service</span>
+                  <span style={{ textAlign: "center" }}>Unit Price</span>
+                  <span style={{ textAlign: "center" }}>Bookings</span>
+                  <span style={{ textAlign: "right" }}>Revenue</span>
+                </div>
+              )}
+              {summaryLoading ? (
+                <LoadingListSkeleton variant="category" rows={10} />
+              ) : serviceMetricCategories.length === 0 ? (
+                <div style={{ padding: "24px 6px", color: "#9f8457", fontWeight: 600 }}>No service in the selected range.</div>
               ) : (
                 serviceMetricCategories.map((category) => {
                   const topService = category.topService;
@@ -748,32 +1072,35 @@ export default function SuperAdminDashboard() {
                         padding: "12px 14px",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                        <h4 style={{ margin: 0, color: "var(--color-white)", fontSize: 15, fontWeight: 700, lineHeight: 1.2 }}>{category.category}</h4>
-                        {topService ? (
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 8,
-                              padding: "6px 10px",
-                              borderRadius: 999,
-                              background: "rgba(221, 144, 29, 0.12)",
-                              border: "1px solid rgba(221, 144, 29, 0.18)",
-                              color: "var(--color-white)",
-                              fontSize: 12,
-                              fontWeight: 600,
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            <span>{topService.name}</span>
-                            <span style={{ color: "#c9ab7b", fontWeight: 700 }}>x{topService.count}</span>
-                          </span>
-                        ) : (
-                          <span style={{ color: "#9f8457", fontSize: 12, fontWeight: 600 }}>No bookings yet</span>
-                        )}
-                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(0, 1.5fr) repeat(4, minmax(0, 0.7fr))",
+                          gap: 12,
+                          alignItems: "center",
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <h4 style={{ margin: 0, color: "var(--color-white)", fontSize: 15, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{category.category}</h4>
+                        </div>
 
+                        <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 14, fontWeight: 600 }}>{topService?.name || "-"}</div>
+
+                        <div style={{ textAlign: "center", color: "#c9ab7b", fontSize: 14, fontWeight: 700 }}>
+                          {topService ? (
+                            (() => {
+                              const svc = (detailedServiceMetrics.find((d) => d.category === category.category)?.services || []).find((s) => s.service === topService.name);
+                              return svc ? formatRevenueValue(svc.unitPrice) : "-";
+                            })()
+                          ) : "-"}
+                        </div>
+
+                        <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 15, fontWeight: 700 }}>{Number(category.totalBooked || 0)}</div>
+
+                        <div style={{ textAlign: "right", color: "#7fbf7f", fontSize: 15, fontWeight: 800 }}>
+                          {formatRevenueValue((detailedServiceMetrics.find((d) => d.category === category.category)?.services || []).reduce((s, svc) => s + Number(svc.revenue || 0), 0))}
+                        </div>
+                      </div>
                     </div>
                   );
                 })
@@ -781,6 +1108,162 @@ export default function SuperAdminDashboard() {
             </div>
           </section>
         </div>
+
+        <section
+          className="dash-stat-card no-hover"
+          style={{
+            width: "100%",
+            minHeight: 360,
+            padding: 24,
+            display: "flex",
+            flexDirection: "column",
+            gap: 18,
+            marginTop: 16,
+            background: "linear-gradient(180deg, rgba(221, 144, 29, 0.05) 0%, rgba(221, 144, 29, 0.02) 100%)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+            <div>
+              <h3 className="dash-stats-set-title">Report Graph</h3>
+              <p style={{ margin: "6px 0 0", color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>{selectionLabel}</p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ color: "#c9ab7b", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", padding: "4px 10px", borderRadius: 999, border: "1px solid rgba(221, 144, 29, 0.18)", background: "rgba(255, 255, 255, 0.02)" }}>{reportGraphModeLabel}</span>
+            </div>
+          </div>
+
+          <div
+            ref={graphChartRef}
+            style={{
+              flex: 1,
+              minHeight: 260,
+              borderRadius: 18,
+              border: "1px solid rgba(152, 143, 129, 0.35)",
+              background: "linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01))",
+              padding: 18,
+              position: "relative",
+              overflow: "visible",
+            }}
+          >
+            {weeklyGraphLoading ? (
+              <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
+                Loading report graph...
+              </div>
+            ) : weeklyGraphError ? (
+              <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "#c08a4d", fontWeight: 600 }}>
+                {weeklyGraphError}
+              </div>
+            ) : weeklyGraph.length === 0 ? (
+              <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
+                No report data available.
+              </div>
+            ) : (
+              <div style={{ position: "relative", width: "100%", height: reportGraphHeight, margin: "0 auto" }}>
+                <svg width="100%" height={reportGraphHeight} viewBox={`0 0 ${reportGraphWidth} ${reportGraphHeight}`} role="img" aria-label="Selected range report line graph">
+                    <defs>
+                      <linearGradient id="report-appointments-area" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#dd901d" stopOpacity="0.28" />
+                        <stop offset="100%" stopColor="#dd901d" stopOpacity="0.02" />
+                      </linearGradient>
+                      <linearGradient id="report-walkins-area" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#e85d75" stopOpacity="0.24" />
+                        <stop offset="100%" stopColor="#e85d75" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
+
+                    {Array.from({ length: 4 }).map((_, index) => {
+                      const y = reportGraphPadding.top + (reportGraphPlotHeight * (index / 3));
+                      const labelValue = Math.round(reportGraphMaxValue * (1 - (index / 3)));
+
+                      return (
+                        <g key={`grid-${index}`}>
+                          <line x1={reportGraphPadding.left} y1={y} x2={reportGraphWidth - reportGraphPadding.right} y2={y} stroke="rgba(152, 143, 129, 0.18)" strokeDasharray="4 6" />
+                          <text x={14} y={y + 4} fill="#9f8457" fontSize="10" fontWeight="600">{labelValue}</text>
+                        </g>
+                      );
+                    })}
+
+                    <path d={buildGraphAreaPath(appointmentGraphPoints)} fill="url(#report-appointments-area)" />
+                    <path d={buildGraphAreaPath(walkInGraphPoints)} fill="url(#report-walkins-area)" />
+
+                    <path d={buildGraphPath(appointmentGraphPoints)} fill="none" stroke="#dd901d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d={buildGraphPath(walkInGraphPoints)} fill="none" stroke="#e85d75" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+                    {appointmentGraphPoints.map((point, index) => (
+                      <g key={`appointment-point-${point.entry?.date || index}`}>
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="5"
+                          fill="#dd901d"
+                          stroke="rgba(17, 12, 6, 0.9)"
+                          strokeWidth="2"
+                          onMouseEnter={() => handleGraphPointHover(point, reportGraphSeries[0])}
+                          onMouseLeave={() => setHoveredTower(null)}
+                          style={{ cursor: "pointer" }}
+                        />
+                      </g>
+                    ))}
+
+                    {walkInGraphPoints.map((point, index) => (
+                      <g key={`walkin-point-${point.entry?.date || index}`}>
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="5"
+                          fill="#e85d75"
+                          stroke="rgba(17, 12, 6, 0.9)"
+                          strokeWidth="2"
+                          onMouseEnter={() => handleGraphPointHover(point, reportGraphSeries[1])}
+                          onMouseLeave={() => setHoveredTower(null)}
+                          style={{ cursor: "pointer" }}
+                        />
+                      </g>
+                    ))}
+
+                    {weeklyGraph.map((dayEntry, index) => {
+                      const x = reportGraphPadding.left + (index * reportGraphXStep);
+                      const axisLabel = weeklyGraphMode === "weekly" ? dayEntry.label : dayEntry.label;
+                      const axisSubLabel = weeklyGraphMode === "weekly" ? dayEntry.rangeLabel : dayEntry.monthDay;
+
+                      return (
+                        <g key={`axis-${dayEntry.date || index}`}>
+                          <text x={x} y={reportGraphHeight - 26} fill="#fff" fontSize="11" fontWeight="700" textAnchor="middle">{axisLabel}</text>
+                          <text x={x} y={reportGraphHeight - 10} fill="#9f8457" fontSize="10" fontWeight="600" textAnchor="middle">{axisSubLabel}</text>
+                        </g>
+                      );
+                    })}
+                </svg>
+
+                {hoveredTower ? (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: `${Math.min(95, Math.max(5, (hoveredTower.x / reportGraphWidth) * 100))}%`,
+                      top: Math.max(10, hoveredTower.y - 14),
+                      transform: "translateY(-100%)",
+                      background: "rgba(17, 12, 6, 0.96)",
+                      border: `1px solid ${hoveredTower.color}`,
+                      borderRadius: 12,
+                      padding: "10px 12px",
+                      minWidth: 150,
+                      boxShadow: "0 12px 24px rgba(0, 0, 0, 0.22)",
+                      zIndex: 50,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <p style={{ margin: 0, color: "#fff", fontSize: 12, fontWeight: 700 }}>{hoveredTower.title}</p>
+                    <p style={{ margin: "2px 0 0", color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>{hoveredTower.rangeLabel}</p>
+                    <p style={{ margin: "4px 0 0", color: hoveredTower.color, fontSize: 16, fontWeight: 800 }}>{hoveredTower.value}</p>
+                    <p style={{ margin: "6px 0 0", color: "#c9ab7b", fontSize: 11, fontWeight: 600 }}>
+                      Revenue: {formatRevenueValue(hoveredTower.revenue)}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </section>
 
       </div>
 

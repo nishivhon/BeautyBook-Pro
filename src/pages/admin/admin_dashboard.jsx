@@ -18,10 +18,6 @@ import {
   AdminMetricMoneyIcon,
   AdminMetricClockIcon,
   AdminMetricWalkInIcon,
-  AdminSummaryCompletedIcon,
-  AdminSummaryInProgressIcon,
-  AdminSummaryPendingIcon,
-  AdminSummaryCancelledIcon,
   AdminQueueActiveIcon,
   AdminAnalyticsIcon,
   AdminDownloadIcon,
@@ -53,6 +49,30 @@ const isDarkMode = (theme) => theme !== 'light';
 
 const getThemeStyles = (theme, darkStyles, lightStyles) => {
   return isDarkMode(theme) ? darkStyles : lightStyles;
+};
+
+const getWalkInRevenue = (walkIn) => {
+  const directTotal = Number(walkIn?.total_price || 0);
+  if (Number.isFinite(directTotal) && directTotal > 0) return directTotal;
+
+  let services = walkIn?.services;
+  if (typeof services === 'string') {
+    try {
+      services = JSON.parse(services);
+    } catch (_) {
+      services = [];
+    }
+  }
+
+  if (Array.isArray(services)) {
+    return services.reduce((sum, service) => sum + (Number(service?.price || 0) || 0), 0);
+  }
+
+  if (services && typeof services === 'object') {
+    return Number(services?.price || 0) || 0;
+  }
+
+  return 0;
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -126,19 +146,46 @@ const STAFF = [
   { initial: "C", name: "Antonio Marquez", subStatus: "On Break",         dotClass: "dash-staff-status-dot-gray",  nextTime: "1:30 PM"  },
 ];
 
-const SUMMARY = [
-  { Icon: AdminSummaryCompletedIcon, label: "Completed",   value: 0 },
-  { Icon: AdminSummaryInProgressIcon, label: "In Progress", value: 0 },
-  { Icon: AdminSummaryPendingIcon, label: "Pending",     value: 0 },
-  { Icon: AdminSummaryCancelledIcon, label: "Cancelled",   value: 0 },
-];
-
 const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Manila',
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',
 }).format(new Date());
+
+const sortBookingNotifications = (items) => {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a?.activityAt || a?.updatedAt || a?.createdAt || 0).getTime();
+    const bTime = new Date(b?.activityAt || b?.updatedAt || b?.createdAt || 0).getTime();
+
+    if (aTime !== bTime) return bTime - aTime;
+
+    return String(b?.id || '').localeCompare(String(a?.id || ''));
+  });
+};
+
+const mergeBookingNotifications = (currentItems, incomingItems) => {
+  const notificationMap = new Map();
+
+  [...currentItems, ...incomingItems].forEach((item) => {
+    if (!item?.id) return;
+    notificationMap.set(String(item.id), item);
+  });
+
+  return sortBookingNotifications(Array.from(notificationMap.values()));
+};
+
+const getOldestBookingNotificationCursor = (items) => {
+  const sortedItems = sortBookingNotifications(items);
+  const oldestItem = sortedItems[sortedItems.length - 1];
+
+  if (!oldestItem?.createdAt || !oldestItem?.id) return null;
+
+  return {
+    createdAt: oldestItem.activityAt || oldestItem.updatedAt || oldestItem.createdAt,
+    id: oldestItem.id,
+  };
+};
 
 // ═══════════════════════════════════════════════════════════════════
 // SUB-COMPONENTS
@@ -1177,64 +1224,7 @@ const StaffStatus = () => {
   );
 };
 
-const SummaryPanel = () => {
-  const [summary, setSummary] = useState(SUMMARY);
-
-  useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        const [resCompleted, resInProgress, resPending, resCancelled] = await Promise.all([
-          fetch('/api/appointments/read/by-status?status=done'),
-          fetch('/api/appointments/read/by-status?status=current'),
-          fetch('/api/appointments/read/by-status?status=pending'),
-          fetch(`/api/appointments/read/daily-cancellations?date=${getManilaDateString()}`)
-        ]);
-
-        const completedData = resCompleted.ok ? await resCompleted.json() : {};
-        const inProgressData = resInProgress.ok ? await resInProgress.json() : {};
-        const pendingData = resPending.ok ? await resPending.json() : {};
-        const cancelledData = resCancelled.ok ? await resCancelled.json() : {};
-
-        // Extract counts from the API response structure (has count property and appointments array)
-        const completedCount = completedData.count || (Array.isArray(completedData.appointments) ? completedData.appointments.length : 0);
-        const inProgressCount = inProgressData.count || (Array.isArray(inProgressData.appointments) ? inProgressData.appointments.length : 0);
-        const pendingCount = pendingData.count || (Array.isArray(pendingData.appointments) ? pendingData.appointments.length : 0);
-        const cancelledCount = cancelledData.totalCancellations || cancelledData.count || 0;
-
-        setSummary([
-          { Icon: AdminSummaryCompletedIcon, label: "Completed",   value: completedCount },
-          { Icon: AdminSummaryInProgressIcon, label: "In Progress", value: inProgressCount },
-          { Icon: AdminSummaryPendingIcon, label: "Pending",     value: pendingCount },
-          { Icon: AdminSummaryCancelledIcon, label: "Cancelled",   value: cancelledCount },
-        ]);
-      } catch (error) {
-      }
-    };
-
-    fetchSummary();
-  }, []);
-
-  return (
-    <div className="dash-sidebar-panel">
-      <h3 className="dash-sidebar-title">Summary</h3>
-      <div className="dash-summary-list">
-        {summary.map(({ Icon, label, value }, i) => (
-          <div key={i} className="dash-summary-row">
-            <div className="dash-summary-left">
-              <AdminIconSlot size="summary-lg">
-                <Icon />
-              </AdminIconSlot>
-              <span className="dash-summary-label">{label}</span>
-            </div>
-            <span className="dash-summary-value">{value}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const AnalyticsPanel = () => (
+const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
   <div className="dash-sidebar-panel">
     <div className="dash-analytics-header">
       <AdminIconSlot size="analytics-lg">
@@ -1242,11 +1232,11 @@ const AnalyticsPanel = () => (
       </AdminIconSlot>
       <div className="dash-analytics-text">
         <h3 className="dash-analytics-title">Analytics</h3>
-        <p className="dash-analytics-sub">View Detailed Reports</p>
+        <p className="dash-analytics-sub">View monthly detailed report</p>
       </div>
     </div>
-    <button className="dash-download-btn">
-      Download Reports
+    <button className="dash-download-btn" onClick={onDownloadReports} disabled={isDownloading}>
+      {isDownloading ? 'Downloading...' : 'Download Reports'}
       <AdminIconSlot size="inline">
         <AdminDownloadIcon />
       </AdminIconSlot>
@@ -1533,6 +1523,9 @@ export const AdminDashboard = ({ date }) => {
   const [doneAppointments, setDoneAppointments] = useState([]);
   const [walkInLogs, setWalkInLogs] = useState([]);
   const [bookingNotifications, setBookingNotifications] = useState([]);
+  const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
+  const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
+  const [isDownloadingReports, setIsDownloadingReports] = useState(false);
   const [stats, setStats] = useState([
     { Icon: AdminMetricCalendarIcon, badge: null, badgeType: null, value: '0', label: "Total Appointments Today" },
     { Icon: AdminMetricWalkInIcon, iconSlot: "metric-walkin", badge: null, badgeType: null, value: '0', label: "Total Walk In" },
@@ -1597,48 +1590,27 @@ export const AdminDashboard = ({ date }) => {
   }, []);
 
   useEffect(() => {
-    const formatServiceLabel = (services) => {
-      if (!services) return 'a service';
-      if (typeof services === 'string') return services;
-      if (Array.isArray(services)) {
-        const names = services
-          .map((service) => service?.name || service?.title || service?.service || service)
-          .filter(Boolean);
-        return names.length > 0 ? names.join(', ') : 'a service';
-      }
-      if (typeof services === 'object') {
-        return services.name || services.title || services.service || Object.values(services).filter(Boolean).join(', ') || 'a service';
-      }
-      return 'a service';
-    };
-
-    const formatRelativeTime = (value) => {
-      if (!value) return 'Just now';
-      const dateValue = new Date(value);
-      if (Number.isNaN(dateValue.getTime())) return 'Just now';
-
-      const diffMs = Date.now() - dateValue.getTime();
-      const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
-      if (diffMinutes < 1) return 'Just now';
-      if (diffMinutes < 60) return `${diffMinutes}m ago`;
-      const diffHours = Math.floor(diffMinutes / 60);
-      if (diffHours < 24) return `${diffHours}h ago`;
-      const diffDays = Math.floor(diffHours / 24);
-      return `${diffDays}d ago`;
-    };
-
-    const fetchBookingNotifications = async () => {
+    const fetchBookingNotifications = async ({ cursor = null } = {}) => {
       try {
-        const response = await fetch('/api/appointments/read/recent-bookings?limit=5');
+        const searchParams = new URLSearchParams({ limit: '20' });
+
+        if (cursor?.createdAt && cursor?.id) {
+          searchParams.set('beforeCreatedAt', cursor.createdAt);
+          searchParams.set('beforeId', String(cursor.id));
+        }
+
+        const response = await fetch(`/api/appointments/read/recent-bookings?${searchParams.toString()}`);
         if (!response.ok) {
           throw new Error('Failed to fetch booking notifications');
         }
 
         const result = await response.json();
-        setBookingNotifications(result.notifications || []);
+        const nextNotifications = result.notifications || [];
+        setBookingNotifications((prev) => mergeBookingNotifications(prev, nextNotifications));
+        setBookingNotificationsHasMore(Boolean(result.hasMore));
       } catch (error) {
         console.error('[AdminDashboard] Error loading booking notifications:', error);
-        setBookingNotifications([]);
+        setBookingNotificationsHasMore(false);
       }
     };
 
@@ -1667,15 +1639,43 @@ export const AdminDashboard = ({ date }) => {
         createdAt,
       };
 
-      setBookingNotifications((prev) => {
-        const next = [newNotification, ...prev.filter((item) => String(item.id) !== String(detail.id))];
-        return next.slice(0, 5);
-      });
+      setBookingNotifications((prev) => mergeBookingNotifications(prev, [newNotification]));
     };
 
     window.addEventListener('admin:walkin-created', handleWalkInCreated);
     return () => window.removeEventListener('admin:walkin-created', handleWalkInCreated);
   }, []);
+
+  const handleLoadMoreBookingNotifications = async () => {
+    if (loadingMoreBookingNotifications || !bookingNotificationsHasMore) return;
+
+    const oldestNotification = getOldestBookingNotificationCursor(bookingNotifications);
+
+    if (!oldestNotification?.createdAt || !oldestNotification?.id) return;
+
+    try {
+      setLoadingMoreBookingNotifications(true);
+
+      const searchParams = new URLSearchParams({
+        limit: '20',
+        beforeCreatedAt: oldestNotification.createdAt,
+        beforeId: String(oldestNotification.id),
+      });
+
+      const response = await fetch(`/api/appointments/read/recent-bookings?${searchParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to load more booking notifications');
+      }
+
+      const result = await response.json();
+      setBookingNotifications((prev) => mergeBookingNotifications(prev, result.notifications || []));
+      setBookingNotificationsHasMore(Boolean(result.hasMore));
+    } catch (error) {
+      console.error('[AdminDashboard] Error loading more booking notifications:', error);
+    } finally {
+      setLoadingMoreBookingNotifications(false);
+    }
+  };
 
   // Calculate stats dynamically
   useEffect(() => {
@@ -1709,9 +1709,18 @@ export const AdminDashboard = ({ date }) => {
       }),
     ].length;
 
-    const totalRevenue = doneAppointments
+    const appointmentRevenue = doneAppointments
       .filter(apt => apt.date === today)
       .reduce((sum, apt) => sum + (Number(apt.price || apt.total_price || 0) || 0), 0);
+
+    const walkInRevenue = walkInLogs
+      .filter((walkIn) => {
+        const walkInDate = walkIn.date || walkIn.created_at?.split('T')[0] || walkIn.createdAt?.split('T')[0];
+        return walkInDate === today;
+      })
+      .reduce((sum, walkIn) => sum + getWalkInRevenue(walkIn), 0);
+
+    const totalRevenue = appointmentRevenue + walkInRevenue;
 
     console.log('[AdminDash] Total today:', totalToday, 'Walk-ins:', totalWalkIns, 'In queue:', inQueueCount, 'Revenue:', totalRevenue);
 
@@ -1794,6 +1803,43 @@ export const AdminDashboard = ({ date }) => {
     console.log("Walk-in added:", walkInData);
     // Here you can integrate with your API or state management
     // For now, just logging the data
+  };
+
+  const handleDownloadReports = async () => {
+    try {
+      setIsDownloadingReports(true);
+
+      const response = await fetch('/api/cron/dashboard-analytics-export');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to download reports: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'dashboard_analytics_monthly.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      showToast({
+        message: 'Dashboard analytics CSV downloaded successfully.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('[AdminDashboard] Error downloading analytics CSV:', error);
+      showToast({
+        message: `Failed to download reports: ${error.message}`,
+        type: 'error',
+        duration: 3000,
+      });
+    } finally {
+      setIsDownloadingReports(false);
+    }
   };
 
   const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
@@ -1922,7 +1968,12 @@ export const AdminDashboard = ({ date }) => {
               <p className="dash-page-subtitle">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
             </div>
           </div>
-          <AdminHeaderActions notifications={headerNotifications} />
+          <AdminHeaderActions
+            notifications={headerNotifications}
+            onLoadMoreNotifications={handleLoadMoreBookingNotifications}
+            hasMoreNotifications={bookingNotificationsHasMore}
+            loadingMoreNotifications={loadingMoreBookingNotifications}
+          />
         </header>
 
         {/* Main Content Area */}
@@ -1948,8 +1999,7 @@ export const AdminDashboard = ({ date }) => {
 
             <div className="dash-sidebar">
               <StaffStatus />
-              <SummaryPanel />
-              <AnalyticsPanel />
+              <AnalyticsPanel onDownloadReports={handleDownloadReports} isDownloading={isDownloadingReports} />
             </div>
           </div>
         </main>

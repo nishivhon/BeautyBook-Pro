@@ -379,7 +379,66 @@ const ServicesSection = () => {
   const wheelCooldownRef = useRef(false);
   const touchStateRef = useRef({ active: false, startX: 0, startY: 0 });
   const containerRef = useRef(null);
-  const currentCategory = SERVICE_CATEGORIES[activeSlide];
+  const [fetchedCategories, setFetchedCategories] = useState([]);
+  const CATEGORIES_CACHE_KEY = 'bbp_landing_services_v1';
+  const CACHE_TTL_MS = 1000 * 60 * 10; // 10 minutes
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadServices = async () => {
+      try {
+        const raw = localStorage.getItem(CATEGORIES_CACHE_KEY);
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed?.ts && Date.now() - parsed.ts < CACHE_TTL_MS && Array.isArray(parsed.categories)) {
+              setFetchedCategories(parsed.categories);
+              return;
+            }
+          } catch (e) {
+            // fall through to fetch
+          }
+        }
+
+        const res = await fetch('/api/services');
+        if (!res.ok) return;
+        const data = await res.json();
+        const services = Array.isArray(data) ? data : (data.data || []);
+
+        const grouped = services.reduce((acc, s) => {
+          const cat = (s.category || s.category_name || 'Other Services').trim() || 'Other Services';
+          acc[cat] = acc[cat] || [];
+          acc[cat].push(s);
+          return acc;
+        }, {});
+
+        const categories = Object.keys(grouped).map((name) => {
+          const group = grouped[name];
+          const first = group[0] || {};
+          const description = first.description || first.meta || '';
+          const items = group.map((svc) => svc.service_name || svc.name || svc.serviceName || 'Service');
+          return { name, description, items, services: group };
+        });
+
+        if (mounted) {
+          setFetchedCategories(categories);
+          try {
+            localStorage.setItem(CATEGORIES_CACHE_KEY, JSON.stringify({ ts: Date.now(), categories }));
+          } catch (e) {
+            // ignore localStorage write failures
+          }
+        }
+      } catch (err) {
+        console.error('[Landing] Failed to load services for categories', err);
+      }
+    };
+
+    loadServices();
+    return () => { mounted = false; };
+  }, []);
+  const effectiveCategories = fetchedCategories.length > 0 ? fetchedCategories : SERVICE_CATEGORIES;
+  const currentCategory = effectiveCategories[activeSlide] || SERVICE_CATEGORIES[0];
   const sectionSidePadding = isCompact ? 12 : 40;
   const contentGridWidth = isCompact ? 1000 : 860;
   const leftAlignedGridInset = `max(0px, calc((100% - ${contentGridWidth}px) / 2))`;
@@ -393,7 +452,7 @@ const ServicesSection = () => {
   const rotateTo = (targetIndex) => {
     if (isSliding || targetIndex === activeSlide) return;
 
-    const total = SERVICE_CATEGORIES.length;
+    const total = effectiveCategories.length;
     const forwardSteps = (targetIndex - activeSlide + total) % total;
     const backwardSteps = (activeSlide - targetIndex + total) % total;
     const direction = forwardSteps <= backwardSteps ? 1 : -1;
@@ -439,9 +498,10 @@ const ServicesSection = () => {
 
     const deltaX = touch.clientX - touchStateRef.current.startX;
     const deltaY = touch.clientY - touchStateRef.current.startY;
-    if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
       const direction = deltaX < 0 ? 1 : -1;
-      const target = ((activeSlide + direction) % SERVICE_CATEGORIES.length + SERVICE_CATEGORIES.length) % SERVICE_CATEGORIES.length;
+      const total = effectiveCategories.length;
+      const target = ((activeSlide + direction) % total + total) % total;
       rotateTo(target);
     }
 
@@ -460,7 +520,8 @@ const ServicesSection = () => {
       if (wheelCooldownRef.current) return;
       const delta = event.deltaY;
       const dir = delta > 0 ? 1 : -1;
-      const target = ((activeSlide + dir) % SERVICE_CATEGORIES.length + SERVICE_CATEGORIES.length) % SERVICE_CATEGORIES.length;
+      const total = effectiveCategories.length;
+      const target = ((activeSlide + dir) % total + total) % total;
       rotateTo(target);
       wheelCooldownRef.current = true;
       window.setTimeout(() => { wheelCooldownRef.current = false; }, 200);
@@ -470,11 +531,11 @@ const ServicesSection = () => {
     return () => el.removeEventListener('wheel', listener);
   }, [isHovered, activeSlide]);
 
-  const orderedCategories = SERVICE_CATEGORIES.map((_, offset) => {
-    const sourceIndex = (activeSlide + offset) % SERVICE_CATEGORIES.length;
+  const orderedCategories = effectiveCategories.map((_, offset) => {
+    const sourceIndex = (activeSlide + offset) % effectiveCategories.length;
     return {
       sourceIndex,
-      category: SERVICE_CATEGORIES[sourceIndex],
+      category: effectiveCategories[sourceIndex],
     };
   });
 
@@ -657,7 +718,15 @@ const ServicesSection = () => {
                       textAlign: "left",
                     }}
                   >
-                    {category.name}
+                    <div style={{fontWeight:700}}>{category.name}</div>
+                    <div style={{fontSize: isPrimary ? '0.8rem' : '0.72rem', marginTop:6, opacity:0.95}}>
+                      {(category.items && category.items.length > 0 ? category.items : (category.services || []) ).slice(0,4).map((it, idx) => (
+                        <div key={idx} style={{display:'flex', gap:8, alignItems:'center'}}>
+                          <CheckItem />
+                          <span style={{whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{typeof it === 'string' ? it : (it.service_name || it.name || it.serviceName || '')}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
               </button>
                 );
@@ -666,7 +735,7 @@ const ServicesSection = () => {
           </div>
 
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
-            {SERVICE_CATEGORIES.map((category, index) => {
+            {effectiveCategories.map((category, index) => {
               const isActive = index === activeSlide;
               // Use pink accent for active pill in light mode, amber for dark mode
               const PINK = "#f38ba6"; // rgb(243,139,166)

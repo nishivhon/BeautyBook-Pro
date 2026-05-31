@@ -31,7 +31,12 @@ const getDisplayUsername = (session) => {
   return session?.username || emailPrefix || "Administrator";
 };
 
-export function AdminHeaderActions({ notifications: externalNotifications = [] }) {
+export function AdminHeaderActions({
+  notifications: externalNotifications = [],
+  onLoadMoreNotifications,
+  hasMoreNotifications = false,
+  loadingMoreNotifications = false,
+}) {
   const wrapperRef = useRef(null);
   const [openMenu, setOpenMenu] = useState(null);
   const [settingsView, setSettingsView] = useState("main");
@@ -225,13 +230,23 @@ export function AdminHeaderActions({ notifications: externalNotifications = [] }
                           <p className="admin-notification-title">{notification.title}</p>
                           <p className="admin-notification-description">{notification.description}</p>
                         </div>
-                        <span className="admin-notification-time">{notification.time}</span>
                       </button>
                     ))
                   )}
                 </div>
 
                 <div className="admin-dropdown-footer">
+                  {hasMoreNotifications && onLoadMoreNotifications && (
+                    <button
+                      type="button"
+                      className="admin-dropdown-link"
+                      onClick={onLoadMoreNotifications}
+                      disabled={loadingMoreNotifications}
+                      style={{ alignSelf: 'flex-start', marginBottom: 8, opacity: loadingMoreNotifications ? 0.7 : 1 }}
+                    >
+                      {loadingMoreNotifications ? 'Loading more...' : 'Load more notifications'}
+                    </button>
+                  )}
                   <span className="admin-dropdown-footnote">Showing recent booking activity (new bookings and booking changes).</span>
                 </div>
               </>

@@ -4,6 +4,7 @@ import { logoutOperator } from "../../services/operatorAuth";
 import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
+import { SUPER_ADMIN_NAV_ITEMS } from "../../components/superadmin/superAdminDashboardIcons";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -104,12 +105,7 @@ const EditIconSmall = () => (
 
 // ─── Navigation Items ─────────────────────────────────────────────────────
 
-const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
-  { id: "staff-management", label: "Staff Management", icon: NavUserIcon, path: "/superadmin/users" },
-  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
-  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
-];
+const NAV_ITEMS = SUPER_ADMIN_NAV_ITEMS;
 
 // ─── Database Tables Data ───────────────────────────────────────────────────
 // Tables are now fetched from the API at component mount
@@ -260,7 +256,7 @@ export default function SuperAdminDatabaseDashboard() {
 
   return (
     <DashboardShell
-      navItems={NAV_ITEMS}
+      navItems={SUPER_ADMIN_NAV_ITEMS}
       activeNav={activeNav}
       roleLabel="Super Administrator"
       roleInitial="S"
