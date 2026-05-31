@@ -46,6 +46,193 @@ const parseISODate = (value) => {
   return new Date(year, month - 1, day);
 };
 
+const isDarkMode = () => {
+  if (typeof document === 'undefined') return true;
+  return document.documentElement.getAttribute('data-theme') !== 'light';
+};
+
+const getMetricActionButtonStyles = () => {
+  if (isDarkMode()) {
+    return {
+      background: 'rgba(221, 144, 29, 0.12)',
+      border: '1px solid rgba(221, 144, 29, 0.35)',
+      color: 'var(--color-white)',
+    };
+  }
+
+  return {
+    background: '#fff',
+    border: '1px solid rgba(221, 144, 29, 0.45)',
+    color: '#6e4b12',
+  };
+};
+
+const formatRevenueValue = (value) => `₱${Number(value || 0).toLocaleString('en-PH')}`;
+const SUPERADMIN_LIST_VIEWPORT_HEIGHT = 560;
+
+const LoadingRowSkeleton = ({ variant = "staff", index = 0 }) => {
+  const baseDelay = `${index * 0.08}s`;
+
+  if (variant === "category") {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          borderRadius: 16,
+          border: "1px solid rgba(152, 143, 129, 0.35)",
+          background: "rgba(255, 255, 255, 0.02)",
+          padding: "12px 14px",
+          animation: "pulse 1.4s ease-in-out infinite",
+          animationDelay: baseDelay,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+          <div style={{ width: 92, height: 16, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+        </div>
+        <div style={{ width: 108, height: 24, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1.5fr) repeat(3, minmax(0, 0.7fr))",
+        gap: 12,
+        alignItems: "center",
+        borderRadius: 16,
+        border: "1px solid rgba(152, 143, 129, 0.35)",
+        background: "rgba(255, 255, 255, 0.02)",
+        padding: "12px 14px",
+        animation: "pulse 1.4s ease-in-out infinite",
+        animationDelay: baseDelay,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)", flexShrink: 0 }} />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ width: "70%", height: 15, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+          <div style={{ width: "55%", height: 10, borderRadius: 999, background: "rgba(221, 144, 29, 0.08)", marginTop: 8 }} />
+        </div>
+      </div>
+
+      <div style={{ margin: "0 auto", width: 40, height: 15, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+      <div style={{ margin: "0 auto", width: 40, height: 15, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+      <div style={{ marginLeft: "auto", width: 72, height: 15, borderRadius: 999, background: "rgba(221, 144, 29, 0.12)" }} />
+    </div>
+  );
+};
+
+const LoadingListSkeleton = ({ variant = "staff", rows = 10 }) => {
+  return Array.from({ length: rows }, (_, index) => (
+    <LoadingRowSkeleton key={`${variant}-skeleton-${index}`} variant={variant} index={index} />
+  ));
+};
+
+const StaffSummaryPanel = ({ staffMetrics = [], loading = false, rangeLabel = "" }) => {
+  const rows = Array.isArray(staffMetrics) ? staffMetrics : [];
+
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+        <div>
+          <h3 className="dash-stats-set-title">Staff Summary</h3>
+        </div>
+      </div>
+
+      <div
+        style={{
+          flex: 1,
+          minHeight: SUPERADMIN_LIST_VIEWPORT_HEIGHT,
+          maxHeight: SUPERADMIN_LIST_VIEWPORT_HEIGHT,
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          overflowY: "auto",
+          paddingRight: 4,
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1.5fr) repeat(3, minmax(0, 0.7fr))",
+            gap: 12,
+            padding: "0 4px 4px",
+            color: "#9f8457",
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+          }}
+        >
+          <span>Staff</span>
+          <span style={{ textAlign: "center" }}>Walk-ins</span>
+          <span style={{ textAlign: "center" }}>Appointments</span>
+          <span style={{ textAlign: "right" }}>Revenue</span>
+        </div>
+
+        {loading ? (
+          <LoadingListSkeleton variant="staff" rows={10} />
+        ) : rows.length === 0 ? (
+          <div style={{ padding: "24px 6px", color: "#9f8457", fontWeight: 600 }}>No staff activity in the selected range.</div>
+        ) : (
+          rows.map((item) => (
+            <div
+              key={item.staff}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1.5fr) repeat(3, minmax(0, 0.7fr))",
+                gap: 12,
+                alignItems: "center",
+                borderRadius: 16,
+                border: "1px solid rgba(152, 143, 129, 0.35)",
+                background: "rgba(255, 255, 255, 0.02)",
+                padding: "12px 14px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 999,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "rgba(221, 144, 29, 0.14)",
+                    border: "1px solid rgba(221, 144, 29, 0.22)",
+                    color: "var(--color-white)",
+                    fontWeight: 800,
+                    flexShrink: 0,
+                  }}
+                >
+                  {String(item.staff || "?").trim().charAt(0).toUpperCase()}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: 0, color: "var(--color-white)", fontSize: 15, fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {item.staff}
+                  </p>
+                  <p style={{ margin: "4px 0 0", color: "#9f8457", fontSize: 12, fontWeight: 600 }}>
+                    Total revenue across the selected range
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 15, fontWeight: 700 }}>{item.walkIns}</div>
+              <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 15, fontWeight: 700 }}>{item.appointments}</div>
+              <div style={{ textAlign: "right", color: "#7fbf7f", fontSize: 15, fontWeight: 800 }}>{formatRevenueValue(item.revenue)}</div>
+            </div>
+          ))
+        )}
+      </div>
+    </>
+  );
+};
+
 export default function SuperAdminDashboard() {
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState("dashboard");
@@ -67,7 +254,7 @@ export default function SuperAdminDashboard() {
   const [awaitingEndDate, setAwaitingEndDate] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(defaultPastDate.getFullYear(), defaultPastDate.getMonth(), 1));
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryData, setSummaryData] = useState({ appointments: 0, walkIns: 0, revenue: 0 });
+  const [summaryData, setSummaryData] = useState({ appointments: 0, walkIns: 0, revenue: 0, staffMetrics: [] });
   const [serviceMetrics, setServiceMetrics] = useState([]);
   const [weeklyGraph, setWeeklyGraph] = useState([]);
   const [weeklyGraphLoading, setWeeklyGraphLoading] = useState(false);
@@ -94,7 +281,12 @@ export default function SuperAdminDashboard() {
       const resp = await fetch(`/api/database/table-data?${params.toString()}`);
       if (!resp.ok) throw new Error('Failed to load summary');
       const json = await resp.json();
-      setSummaryData({ appointments: json.appointments || 0, walkIns: json.walkIns || 0, revenue: json.revenue || 0 });
+      setSummaryData({
+        appointments: json.appointments || 0,
+        walkIns: json.walkIns || 0,
+        revenue: json.revenue || 0,
+        staffMetrics: Array.isArray(json.staffMetrics) ? json.staffMetrics : [],
+      });
       setServiceMetrics(Array.isArray(json.serviceMetrics) ? json.serviceMetrics : []);
     } catch (err) {
       console.error('Summary load error', err);
@@ -251,6 +443,7 @@ export default function SuperAdminDashboard() {
 
   // Simple metrics cards for summary data
   const cards = metricsCardsFor(summaryData);
+  const staffMetrics = Array.isArray(summaryData.staffMetrics) ? summaryData.staffMetrics : [];
   const serviceMetricCategories = serviceMetrics;
   const chartSeries = [
     { key: "appointments", label: "Appointments", color: "#dd901d" },
@@ -394,9 +587,7 @@ export default function SuperAdminDashboard() {
                   alignItems: 'center',
                   gap: 4,
                   borderRadius: 6,
-                  border: '1px solid rgba(221, 144, 29, 0.45)',
-                  background: '#fff',
-                  color: '#6e4b12',
+                  ...getMetricActionButtonStyles(),
                   padding: '4px 8px',
                   fontWeight: 600,
                 }}
@@ -486,9 +677,6 @@ export default function SuperAdminDashboard() {
               </div>
             )}
 
-              {summaryLoading && (
-                <p style={{ margin: '8px 2px 0', fontSize: 12, color: '#8a6b36', fontWeight: 600 }}>Loading metrics...</p>
-              )}
             </div>
             <button
               type="button"
@@ -499,9 +687,7 @@ export default function SuperAdminDashboard() {
                 alignItems: 'center',
                 gap: 4,
                 borderRadius: 6,
-                border: '1px solid rgba(221, 144, 29, 0.45)',
-                background: '#fff',
-                color: '#6e4b12',
+                ...getMetricActionButtonStyles(),
                 padding: '4px 8px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -542,173 +728,7 @@ export default function SuperAdminDashboard() {
               background: "linear-gradient(180deg, rgba(221, 144, 29, 0.05) 0%, rgba(221, 144, 29, 0.02) 100%)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-              <div>
-                <h3 className="dash-stats-set-title">Weekly Report Graph</h3>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setGraphWeekAnchor((prev) => addDays(prev, -7))}
-                  style={{
-                    border: "1px solid rgba(221, 144, 29, 0.28)",
-                    background: "rgba(255, 255, 255, 0.02)",
-                    color: "var(--color-white)",
-                    borderRadius: 10,
-                    width: 30,
-                    height: 30,
-                    cursor: "pointer",
-                    fontWeight: 700,
-                  }}
-                  aria-label="Previous week"
-                >
-                  {'<'}
-                </button>
-                <span style={{ color: "#c9ab7b", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{graphRangeLabel}</span>
-                <button
-                  type="button"
-                  onClick={() => setGraphWeekAnchor((prev) => addDays(prev, 7))}
-                  style={{
-                    border: "1px solid rgba(221, 144, 29, 0.28)",
-                    background: "rgba(255, 255, 255, 0.02)",
-                    color: "var(--color-white)",
-                    borderRadius: 10,
-                    width: 30,
-                    height: 30,
-                    cursor: "pointer",
-                    fontWeight: 700,
-                  }}
-                  aria-label="Next week"
-                >
-                  {'>'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExportWeeklyGraph}
-                  title="Export Graph Data"
-                  style={{
-                    border: "1px solid rgba(221, 144, 29, 0.28)",
-                    background: "rgba(255, 255, 255, 0.02)",
-                    color: "var(--color-white)",
-                    borderRadius: 10,
-                    width: 30,
-                    height: 30,
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  aria-label="Export graph data"
-                >
-                  <DownloadIcon size={16} color="var(--color-white)" />
-                </button>
-              </div>
-            </div>
-
-            <div
-              ref={graphChartRef}
-              style={{
-                flex: 1,
-                minHeight: 260,
-                borderRadius: 18,
-                border: "1px solid rgba(152, 143, 129, 0.35)",
-                background: "linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01))",
-                padding: 18,
-                position: "relative",
-              }}
-            >
-              {weeklyGraphLoading ? (
-                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
-                  Loading weekly graph...
-                </div>
-              ) : weeklyGraphError ? (
-                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#c08a4d", fontWeight: 600 }}>
-                  {weeklyGraphError}
-                </div>
-              ) : weeklyGraph.length === 0 ? (
-                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
-                  No weekly data available.
-                </div>
-              ) : (
-                <>
-                  {hoveredTower ? (
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: hoveredTower.left,
-                        top: Math.max(10, hoveredTower.top - 14),
-                        transform: "translate(-50%, -100%)",
-                        background: "rgba(17, 12, 6, 0.96)",
-                        border: `1px solid ${hoveredTower.color}`,
-                        borderRadius: 12,
-                        padding: "8px 10px",
-                        minWidth: 138,
-                        boxShadow: "0 12px 24px rgba(0, 0, 0, 0.22)",
-                        zIndex: 5,
-                        pointerEvents: "none",
-                      }}
-                    >
-                      <p style={{ margin: 0, color: "#fff", fontSize: 12, fontWeight: 700 }}>{hoveredTower.title}</p>
-                      <p style={{ margin: "2px 0 0", color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>{hoveredTower.dayLabel} · {hoveredTower.monthDay}</p>
-                      <p style={{ margin: "4px 0 0", color: hoveredTower.color, fontSize: 16, fontWeight: 800 }}>
-                        {hoveredTower.title === "Revenue" ? `₱${Number(hoveredTower.value || 0).toLocaleString()}` : hoveredTower.value}
-                      </p>
-                    </div>
-                  ) : null}
-
-                  <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 10, flex: 1, alignItems: "end" }}>
-                      {weeklyGraph.map((dayEntry, dayIndex) => (
-                        <div key={dayEntry.date} style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center", height: "100%", minHeight: 210 }}>
-                          <div style={{ width: "100%", flex: 1, display: "flex", alignItems: "end", justifyContent: "center", gap: 6, position: "relative" }}>
-                            {chartSeries.map((series) => {
-                              const rawValue = Number(dayEntry?.[series.key] || 0);
-                              const height = Math.max(8, Math.round((rawValue / chartMaxValue) * 160));
-
-                              return (
-                                <div
-                                  key={`${dayEntry.date}-${series.key}`}
-                                  onMouseEnter={(event) => handleTowerHover(event, dayEntry, series)}
-                                  onMouseLeave={() => setHoveredTower(null)}
-                                  style={{
-                                    width: 14,
-                                    height,
-                                    borderRadius: 999,
-                                    background: series.color,
-                                    boxShadow: `0 0 0 1px rgba(255,255,255,0.08) inset, 0 6px 18px ${series.color}22`,
-                                    cursor: "pointer",
-                                    transition: "transform 0.15s ease, opacity 0.15s ease",
-                                    opacity: 0.95,
-                                  }}
-                                />
-                              );
-                            })}
-                          </div>
-
-                          <div style={{ textAlign: "center", lineHeight: 1.15 }}>
-                            <div style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>{dayEntry.label}</div>
-                            <div style={{ color: "#9f8457", fontSize: 11, fontWeight: 600 }}>{dayEntry.monthDay}</div>
-                            <div style={{ color: "#7fbf7f", fontSize: 11, fontWeight: 700, marginTop: 3 }}>
-                              ₱{Number(dayEntry.revenue || 0).toLocaleString('en-PH')}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
-                      {chartSeries.map((series) => (
-                        <div key={series.key} style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>
-                          <span style={{ width: 10, height: 10, borderRadius: 999, background: series.color, display: "inline-block" }} />
-                          {series.label}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <StaffSummaryPanel staffMetrics={staffMetrics} loading={summaryLoading} rangeLabel={selectionLabel} />
           </section>
 
           <section
@@ -731,9 +751,21 @@ export default function SuperAdminDashboard() {
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, overflow: "auto", paddingRight: 4 }}>
-              {serviceMetricCategories.length === 0 ? (
-                <div style={{ padding: "24px 6px", color: "#9f8457", fontWeight: 600 }}>No service categories found.</div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                minHeight: SUPERADMIN_LIST_VIEWPORT_HEIGHT,
+                maxHeight: SUPERADMIN_LIST_VIEWPORT_HEIGHT,
+                overflowY: "auto",
+                paddingRight: 4,
+              }}
+            >
+              {summaryLoading ? (
+                <LoadingListSkeleton variant="category" rows={10} />
+              ) : serviceMetricCategories.length === 0 ? (
+                <div style={{ padding: "24px 6px", color: "#9f8457", fontWeight: 600 }}>No service in the selected range.</div>
               ) : (
                 serviceMetricCategories.map((category) => {
                   const topService = category.topService;
@@ -781,6 +813,188 @@ export default function SuperAdminDashboard() {
             </div>
           </section>
         </div>
+
+        <section
+          className="dash-stat-card no-hover"
+          style={{
+            width: "100%",
+            minHeight: 360,
+            padding: 24,
+            display: "flex",
+            flexDirection: "column",
+            gap: 18,
+            marginTop: 16,
+            background: "linear-gradient(180deg, rgba(221, 144, 29, 0.05) 0%, rgba(221, 144, 29, 0.02) 100%)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+            <div>
+              <h3 className="dash-stats-set-title">Weekly Report Graph</h3>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setGraphWeekAnchor((prev) => addDays(prev, -7))}
+                style={{
+                  border: "1px solid rgba(221, 144, 29, 0.28)",
+                  background: "rgba(255, 255, 255, 0.02)",
+                  color: "var(--color-white)",
+                  borderRadius: 10,
+                  width: 30,
+                  height: 30,
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+                aria-label="Previous week"
+              >
+                {'<'}
+              </button>
+              <span style={{ color: "#c9ab7b", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{graphRangeLabel}</span>
+              <button
+                type="button"
+                onClick={() => setGraphWeekAnchor((prev) => addDays(prev, 7))}
+                style={{
+                  border: "1px solid rgba(221, 144, 29, 0.28)",
+                  background: "rgba(255, 255, 255, 0.02)",
+                  color: "var(--color-white)",
+                  borderRadius: 10,
+                  width: 30,
+                  height: 30,
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+                aria-label="Next week"
+              >
+                {'>'}
+              </button>
+              <button
+                type="button"
+                onClick={handleExportWeeklyGraph}
+                title="Export Graph Data"
+                style={{
+                  border: "1px solid rgba(221, 144, 29, 0.28)",
+                  background: "rgba(255, 255, 255, 0.02)",
+                  color: "var(--color-white)",
+                  borderRadius: 10,
+                  width: 30,
+                  height: 30,
+                  cursor: "pointer",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                aria-label="Export graph data"
+              >
+                <DownloadIcon size={16} color="var(--color-white)" />
+              </button>
+            </div>
+          </div>
+
+          <div
+            ref={graphChartRef}
+            style={{
+              flex: 1,
+              minHeight: 260,
+              borderRadius: 18,
+              border: "1px solid rgba(152, 143, 129, 0.35)",
+              background: "linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01))",
+              padding: 18,
+              position: "relative",
+            }}
+          >
+            {weeklyGraphLoading ? (
+              <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
+                Loading weekly graph...
+              </div>
+            ) : weeklyGraphError ? (
+              <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#c08a4d", fontWeight: 600 }}>
+                {weeklyGraphError}
+              </div>
+            ) : weeklyGraph.length === 0 ? (
+              <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
+                No weekly data available.
+              </div>
+            ) : (
+              <>
+                {hoveredTower ? (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: hoveredTower.left,
+                      top: Math.max(10, hoveredTower.top - 14),
+                      transform: "translate(-50%, -100%)",
+                      background: "rgba(17, 12, 6, 0.96)",
+                      border: `1px solid ${hoveredTower.color}`,
+                      borderRadius: 12,
+                      padding: "8px 10px",
+                      minWidth: 138,
+                      boxShadow: "0 12px 24px rgba(0, 0, 0, 0.22)",
+                      zIndex: 5,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <p style={{ margin: 0, color: "#fff", fontSize: 12, fontWeight: 700 }}>{hoveredTower.title}</p>
+                    <p style={{ margin: "2px 0 0", color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>{hoveredTower.dayLabel} · {hoveredTower.monthDay}</p>
+                    <p style={{ margin: "4px 0 0", color: hoveredTower.color, fontSize: 16, fontWeight: 800 }}>
+                      {hoveredTower.title === "Revenue" ? `₱${Number(hoveredTower.value || 0).toLocaleString()}` : hoveredTower.value}
+                    </p>
+                  </div>
+                ) : null}
+
+                <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 10, flex: 1, alignItems: "end" }}>
+                    {weeklyGraph.map((dayEntry) => (
+                      <div key={dayEntry.date} style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center", height: "100%", minHeight: 210 }}>
+                        <div style={{ width: "100%", flex: 1, display: "flex", alignItems: "end", justifyContent: "center", gap: 6, position: "relative" }}>
+                          {chartSeries.map((series) => {
+                            const rawValue = Number(dayEntry?.[series.key] || 0);
+                            const height = Math.max(8, Math.round((rawValue / chartMaxValue) * 160));
+
+                            return (
+                              <div
+                                key={`${dayEntry.date}-${series.key}`}
+                                onMouseEnter={(event) => handleTowerHover(event, dayEntry, series)}
+                                onMouseLeave={() => setHoveredTower(null)}
+                                style={{
+                                  width: 14,
+                                  height,
+                                  borderRadius: 999,
+                                  background: series.color,
+                                  boxShadow: `0 0 0 1px rgba(255,255,255,0.08) inset, 0 6px 18px ${series.color}22`,
+                                  cursor: "pointer",
+                                  transition: "transform 0.15s ease, opacity 0.15s ease",
+                                  opacity: 0.95,
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+
+                        <div style={{ textAlign: "center", lineHeight: 1.15 }}>
+                          <div style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>{dayEntry.label}</div>
+                          <div style={{ color: "#9f8457", fontSize: 11, fontWeight: 600 }}>{dayEntry.monthDay}</div>
+                          <div style={{ color: "#7fbf7f", fontSize: 11, fontWeight: 700, marginTop: 3 }}>
+                            ₱{Number(dayEntry.revenue || 0).toLocaleString('en-PH')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
+                    {chartSeries.map((series) => (
+                      <div key={series.key} style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: 999, background: series.color, display: "inline-block" }} />
+                        {series.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
 
       </div>
 

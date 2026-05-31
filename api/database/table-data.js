@@ -154,6 +154,58 @@ export default async (req, res) => {
       .sort((left, right) => left.category.localeCompare(right.category));
   };
 
+  const normalizeStaffName = (value) => {
+    if (value === null || value === undefined) return '';
+    return String(value).trim();
+  };
+
+  const buildStaffMetrics = ({ appointmentRows = [], walkInRows = [] }) => {
+    const staffMap = new Map();
+
+    const getBucket = (staffName) => {
+      const normalizedName = normalizeStaffName(staffName) || 'Unassigned';
+      if (!staffMap.has(normalizedName)) {
+        staffMap.set(normalizedName, {
+          staff: normalizedName,
+          appointments: 0,
+          walkIns: 0,
+          revenue: 0,
+        });
+      }
+
+      return staffMap.get(normalizedName);
+    };
+
+    appointmentRows.forEach((row) => {
+      const status = String(row?.status || '').trim().toLowerCase();
+      const hasTotalPrice = row?.total_price !== null && row?.total_price !== undefined && String(row?.total_price).trim() !== '';
+
+      if (status !== 'done' || !hasTotalPrice) return;
+
+      const bucket = getBucket(row?.assigned_staff || row?.staff || row?.staff_name);
+      bucket.appointments += 1;
+      bucket.revenue += toNumber(row?.total_price);
+    });
+
+    walkInRows.forEach((row) => {
+      const bucket = getBucket(row?.assigned_staff || row?.staff || row?.staff_name);
+      bucket.walkIns += 1;
+      bucket.revenue += extractWalkInServicesPrice(row?.services);
+    });
+
+    return Array.from(staffMap.values())
+      .map((entry) => ({
+        ...entry,
+        revenue: Number(entry.revenue.toFixed(2)),
+      }))
+      .sort((left, right) => {
+        if (right.revenue !== left.revenue) return right.revenue - left.revenue;
+        if (right.appointments !== left.appointments) return right.appointments - left.appointments;
+        if (right.walkIns !== left.walkIns) return right.walkIns - left.walkIns;
+        return left.staff.localeCompare(right.staff);
+      });
+  };
+
   const buildWeeklyGraph = ({ startDate, endDate, appointmentRows = [], walkInRows = [] }) => {
     const start = createLocalDateFromISO(startDate);
     const end = createLocalDateFromISO(endDate);
@@ -310,6 +362,10 @@ export default async (req, res) => {
           walkIns: walkInRows.length,
           revenue: Number(totalRevenue.toFixed(2)),
           serviceMetrics: buildServiceMetrics(bookedRows),
+          staffMetrics: buildStaffMetrics({
+            appointmentRows: successfulAppointmentRows,
+            walkInRows,
+          }),
           weeklyGraph,
         });
       }
