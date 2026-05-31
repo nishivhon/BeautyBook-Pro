@@ -297,6 +297,63 @@ export default async (req, res) => {
     };
   };
 
+  const buildDailyReport = ({ startDate, endDate, appointmentRows = [], walkInRows = [] }) => {
+    const start = createLocalDateFromISO(startDate);
+    const end = createLocalDateFromISO(endDate);
+
+    if (!start || !end) {
+      return [];
+    }
+
+    const days = [];
+    for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, 1)) {
+      days.push({
+        date: formatISODate(cursor),
+        label: cursor.toLocaleDateString('en-US', { weekday: 'short' }),
+        monthDay: cursor.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        rangeLabel: cursor.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        appointments: 0,
+        walkIns: 0,
+        revenue: 0,
+      });
+    }
+
+    const getDayIndex = (rowDate) => {
+      const current = createLocalDateFromISO(rowDate);
+      if (!current) return -1;
+
+      const diffDays = Math.floor((current.getTime() - start.getTime()) / 86400000);
+      if (diffDays < 0 || diffDays >= days.length) return -1;
+      return diffDays;
+    };
+
+    appointmentRows.forEach((row) => {
+      const dayIndex = getDayIndex(extractRowDate(row));
+      if (dayIndex < 0) return;
+
+      const status = String(row?.status || '').trim().toLowerCase();
+      const hasTotalPrice = row?.total_price !== null && row?.total_price !== undefined && String(row?.total_price).trim() !== '';
+
+      if (status === 'done' && hasTotalPrice) {
+        days[dayIndex].appointments += 1;
+        days[dayIndex].revenue += toNumber(row?.total_price);
+      }
+    });
+
+    walkInRows.forEach((row) => {
+      const dayIndex = getDayIndex(extractRowDate(row));
+      if (dayIndex < 0) return;
+
+      days[dayIndex].walkIns += 1;
+      days[dayIndex].revenue += extractWalkInServicesPrice(row?.services);
+    });
+
+    return days.map((entry) => ({
+      ...entry,
+      revenue: Number(entry.revenue.toFixed(2)),
+    }));
+  };
+
   try {
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
@@ -343,6 +400,12 @@ export default async (req, res) => {
           appointmentRows,
           walkInRows,
         });
+        const dailyReport = buildDailyReport({
+          startDate,
+          endDate,
+          appointmentRows,
+          walkInRows,
+        });
 
         const successfulAppointmentRows = appointmentRows.filter((row) => {
           const status = String(row?.status || '').trim().toLowerCase();
@@ -369,6 +432,7 @@ export default async (req, res) => {
           }),
           graphMode: graphResult.mode,
           weeklyGraph: graphResult.points,
+          dailyReport,
         });
       }
 

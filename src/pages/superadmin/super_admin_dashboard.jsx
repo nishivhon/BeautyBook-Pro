@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
 import { logoutOperator } from "../../services/operatorAuth";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import PasswordReminderBanner from "../../components/PasswordReminderBanner";
@@ -121,6 +122,20 @@ const getMetricActionButtonStyles = () => {
 const formatRevenueValue = (value) => `₱${Number(value || 0).toLocaleString('en-PH')}`;
 const SUPERADMIN_LIST_VIEWPORT_HEIGHT = 560;
 
+const downloadXlsxWorkbook = (workbook, fileName) => {
+  const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(url);
+};
+
 const LoadingRowSkeleton = ({ variant = "staff", index = 0 }) => {
   const baseDelay = `${index * 0.08}s`;
 
@@ -184,7 +199,7 @@ const LoadingListSkeleton = ({ variant = "staff", rows = 10 }) => {
   ));
 };
 
-const StaffSummaryPanel = ({ staffMetrics = [], loading = false, rangeLabel = "" }) => {
+const StaffSummaryPanel = ({ staffMetrics = [], loading = false, rangeLabel = "", onExport }) => {
   const rows = Array.isArray(staffMetrics) ? staffMetrics : [];
 
   return (
@@ -192,7 +207,27 @@ const StaffSummaryPanel = ({ staffMetrics = [], loading = false, rangeLabel = ""
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
         <div>
           <h3 className="dash-stats-set-title">Staff Summary</h3>
+          <p style={{ margin: "6px 0 0", color: "#c9ab7b", fontSize: 12, fontWeight: 600 }}>{rangeLabel}</p>
         </div>
+        <button
+          type="button"
+          onClick={onExport}
+          title="Export Staff Summary to XLSX"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            borderRadius: 6,
+            ...getMetricActionButtonStyles(),
+            padding: "4px 8px",
+            fontWeight: 600,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <DownloadIcon size={18} />
+          <span style={{ fontSize: 11 }}>Export</span>
+        </button>
       </div>
 
       <div
@@ -304,6 +339,7 @@ export default function SuperAdminDashboard() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryData, setSummaryData] = useState({ appointments: 0, walkIns: 0, revenue: 0, staffMetrics: [] });
   const [serviceMetrics, setServiceMetrics] = useState([]);
+  const [dailyReport, setDailyReport] = useState([]);
   const [weeklyGraph, setWeeklyGraph] = useState([]);
   const [weeklyGraphLoading, setWeeklyGraphLoading] = useState(false);
   const [weeklyGraphError, setWeeklyGraphError] = useState("");
@@ -345,12 +381,22 @@ export default function SuperAdminDashboard() {
         staffMetrics: Array.isArray(json.staffMetrics) ? json.staffMetrics : [],
       });
       setServiceMetrics(Array.isArray(json.serviceMetrics) ? json.serviceMetrics : []);
+      setDailyReport(Array.isArray(json.dailyReport) ? json.dailyReport : []);
       setWeeklyGraph(Array.isArray(json.weeklyGraph) ? json.weeklyGraph : []);
       setWeeklyGraphMode(json.graphMode || getGraphModeForRange(range.startDate, range.endDate));
     } catch (err) {
       console.error('Summary load error', err);
       const fallbackGraph = buildReportGraphSkeleton(range.startDate, range.endDate);
       setWeeklyGraphError('Unable to load report graph right now.');
+      setDailyReport(fallbackGraph.points.map((point) => ({
+        date: point.date,
+        label: point.label,
+        monthDay: point.monthDay,
+        rangeLabel: point.rangeLabel,
+        appointments: point.appointments,
+        walkIns: point.walkIns,
+        revenue: point.revenue,
+      })));
       setWeeklyGraph(fallbackGraph.points);
       setWeeklyGraphMode(fallbackGraph.mode);
     } finally {
@@ -513,45 +559,68 @@ export default function SuperAdminDashboard() {
   const selectionLabel = `${summaryRange.startDate} to ${summaryRange.endDate}`;
   const monthTitle = calendarMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  const handleExportAllData = () => {
-    const exportData = {
-      metrics: {
-        appointments: summaryData.appointments,
-        walkIns: summaryData.walkIns,
-        revenue: summaryData.revenue,
-      },
-      dateRange: {
-        startDate: summaryRange.startDate,
-        endDate: summaryRange.endDate,
-      },
-      categories: serviceMetricCategories.map((cat) => ({
-        category: cat.category,
-        topService: cat.topService ? { name: cat.topService.name, count: cat.topService.count } : null,
-      })),
-      timestamp: new Date().toISOString(),
-    };
-    console.log('Exporting Metrics, Categories, and Services data...');
-    console.log(JSON.stringify(exportData, null, 2));
+  const handleExportMetricsXlsx = () => {
+    const workbook = XLSX.utils.book_new();
+    const summaryRows = [
+      ["Metric", "Value"],
+      ["Date Range", selectionLabel],
+      ["Total Appointments", summaryData.appointments || 0],
+      ["Total Walk-ins", summaryData.walkIns || 0],
+      ["Total Revenue", summaryData.revenue || 0],
+    ];
+
+    const dailyRows = [
+      ["Date", "Day", "Appointments", "Walk-ins", "Revenue"],
+      ...dailyReport.map((day) => [
+        day.date || "",
+        day.label || "",
+        Number(day.appointments || 0),
+        Number(day.walkIns || 0),
+        Number(day.revenue || 0),
+      ]),
+    ];
+
+    const summaryWorksheet = XLSX.utils.aoa_to_sheet(summaryRows);
+    summaryWorksheet["!cols"] = [{ wch: 24 }, { wch: 24 }];
+    const dailyWorksheet = XLSX.utils.aoa_to_sheet(dailyRows);
+    dailyWorksheet["!cols"] = [{ wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 16 }];
+
+    XLSX.utils.book_append_sheet(workbook, summaryWorksheet, "Metrics");
+    XLSX.utils.book_append_sheet(workbook, dailyWorksheet, "Daily Breakdown");
+    downloadXlsxWorkbook(workbook, `superadmin-metrics-${summaryRange.startDate}-to-${summaryRange.endDate}.xlsx`);
   };
 
-  const handleExportWeeklyGraph = () => {
-    const exportData = {
-      weeklyReport: {
-        dateRange: selectionLabel,
-        mode: weeklyGraphMode,
-        data: weeklyGraph.map((day) => ({
-          date: day.date,
-          day: day.label,
-          monthDay: day.monthDay,
-          appointments: day.appointments,
-          walkIns: day.walkIns,
-          revenue: day.revenue,
-        })),
-      },
-      timestamp: new Date().toISOString(),
-    };
-    console.log('Exporting Weekly Report Graph data...');
-    console.log(JSON.stringify(exportData, null, 2));
+  const handleExportStaffSummaryXlsx = () => {
+    const workbook = XLSX.utils.book_new();
+    const rows = [
+      ["Staff", "Walk-ins", "Appointments", "Revenue"],
+      ...staffMetrics.map((item) => [
+        item.staff || "",
+        Number(item.walkIns || 0),
+        Number(item.appointments || 0),
+        Number(item.revenue || 0),
+      ]),
+    ];
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    worksheet["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 14 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Staff Summary");
+    downloadXlsxWorkbook(workbook, `superadmin-staff-summary-${summaryRange.startDate}-to-${summaryRange.endDate}.xlsx`);
+  };
+
+  const handleExportCategoriesXlsx = () => {
+    const workbook = XLSX.utils.book_new();
+    const rows = [
+      ["Category", "Top Service", "Bookings"],
+      ...serviceMetricCategories.map((category) => [
+        category.category || "",
+        category.topService?.name || "No bookings yet",
+        Number(category.topService?.count || 0),
+      ]),
+    ];
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    worksheet["!cols"] = [{ wch: 28 }, { wch: 28 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Categories");
+    downloadXlsxWorkbook(workbook, `superadmin-categories-services-${summaryRange.startDate}-to-${summaryRange.endDate}.xlsx`);
   };
   const firstDayOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
   const lastDayOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0);
@@ -716,10 +785,10 @@ export default function SuperAdminDashboard() {
             )}
 
             </div>
-            <button
-              type="button"
-              onClick={handleExportAllData}
-              title="Export Metrics, Categories & Services data"
+              <button
+                type="button"
+                onClick={handleExportMetricsXlsx}
+                title="Export Metrics to XLSX"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -766,7 +835,7 @@ export default function SuperAdminDashboard() {
               background: "linear-gradient(180deg, rgba(221, 144, 29, 0.05) 0%, rgba(221, 144, 29, 0.02) 100%)",
             }}
           >
-            <StaffSummaryPanel staffMetrics={staffMetrics} loading={summaryLoading} rangeLabel={selectionLabel} />
+              <StaffSummaryPanel staffMetrics={staffMetrics} loading={summaryLoading} rangeLabel={selectionLabel} onExport={handleExportStaffSummaryXlsx} />
           </section>
 
           <section
@@ -784,6 +853,25 @@ export default function SuperAdminDashboard() {
               <div>
                 <h3 className="dash-stats-set-title">Categories and popular services</h3>
               </div>
+              <button
+                type="button"
+                onClick={handleExportCategoriesXlsx}
+                title="Export Categories and Popular Services to XLSX"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  borderRadius: 6,
+                  ...getMetricActionButtonStyles(),
+                  padding: "4px 8px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  flexShrink: 0,
+                }}
+              >
+                <DownloadIcon size={18} />
+                <span style={{ fontSize: 11 }}>Export</span>
+              </button>
             </div>
 
             <div
