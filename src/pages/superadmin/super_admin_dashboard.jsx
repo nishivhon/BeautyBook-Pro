@@ -3,39 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import PasswordReminderBanner from "../../components/PasswordReminderBanner";
-
-// ─── SVG Icons ───────────────────────────────────────────────────────────────
-
-const DashboardIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="1" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6" />
-    <rect x="10" y="1" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6" />
-    <rect x="1" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6" />
-    <rect x="10" y="10" width="7" height="7" rx="1.5" stroke={color} strokeWidth="1.6" />
-  </svg>
-);
-
-const UserIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="9" cy="5.5" r="3.5" stroke={color} strokeWidth="1.6" />
-    <path d="M2 16c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
-);
-
-const DatabaseIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="9" cy="4.5" rx="6" ry="2.5" stroke={color} strokeWidth="1.6" />
-    <path d="M3 4.5v9C3 15.09 5.686 17 9 17s6-1.91 6-3.5v-9" stroke={color} strokeWidth="1.6" />
-    <path d="M3 9c0 1.657 2.686 3 6 3s6-1.343 6-3" stroke={color} strokeWidth="1.6" />
-  </svg>
-);
-
-const ShieldIcon = ({ color = "currentColor" }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M9 1.5L3 4v5.5C3 13.09 5.686 16.3 9 17c3.314-.7 6-3.91 6-7.5V4L9 1.5z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
-    <path d="M6.5 9l1.75 1.75L11.5 7" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
+import {
+  SUPER_ADMIN_NAV_ITEMS,
+  SuperAdminIconSlot,
+  SuperAdminLogOutIcon,
+  SuperAdminMetricCalendarIcon,
+  SuperAdminMetricWalkInIcon,
+  SuperAdminMetricMoneyIcon,
+} from "../../components/superadmin/superAdminDashboardIcons";
 
 const CalendarIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -44,24 +19,18 @@ const CalendarIcon = () => (
   </svg>
 );
 
-const QueueIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="10" cy="5" r="3" stroke="#DD901D" strokeWidth="1.7" />
-    <path d="M4 18c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="#DD901D" strokeWidth="1.7" strokeLinecap="round" />
-  </svg>
-);
-
-const RevenueIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="10" cy="10" r="8.5" stroke="#DD901D" strokeWidth="1.7" />
-    <path d="M10 5v10M7.5 7.5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5S11.38 10 10 10s-2.5 1.12-2.5 2.5S8.62 15 10 15s2.5-1.12 2.5-2.5" stroke="#DD901D" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-);
-
 const DownloadIcon = ({ size = 18, color = "#DD901D" }) => (
   <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M14 7L10 11M10 11L6 7M10 11V2" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     <path d="M17 11v5c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-5" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+);
+
+const DatabaseIcon = ({ color = "currentColor" }) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="9" cy="4.5" rx="6" ry="2.5" stroke={color} strokeWidth="1.6" />
+    <path d="M3 4.5v9C3 15.09 5.686 17 9 17s6-1.91 6-3.5v-9" stroke={color} strokeWidth="1.6" />
+    <path d="M3 9c0 1.657 2.686 3 6 3s6-1.343 6-3" stroke={color} strokeWidth="1.6" />
   </svg>
 );
 
@@ -76,17 +45,6 @@ const parseISODate = (value) => {
   const [year, month, day] = String(value).split("-").map(Number);
   return new Date(year, month - 1, day);
 };
-
-const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
-  { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
-  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
-  { id: "coupons", label: "Coupons", icon: DatabaseIcon, path: "/superadmin/coupons" },
-  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
-  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
-  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
-  // { id: "landing-page", label: "Landing Page", icon: GlobeIcon },
-];
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate();
@@ -269,19 +227,22 @@ export default function SuperAdminDashboard() {
 
   const metricsCardsFor = (data = { appointments: 0, walkIns: 0, revenue: 0 }) => [
     {
-      icon: <CalendarIcon />,
+      Icon: SuperAdminMetricCalendarIcon,
+      iconSlot: "metric",
       value: String(data.appointments || 0),
       label: "Total Appointments",
       badge: null,
     },
     {
-      icon: <QueueIcon />,
+      Icon: SuperAdminMetricWalkInIcon,
+      iconSlot: "metric-walkin",
       value: String(data.walkIns || 0),
       label: "Total Walk-ins",
       badge: null,
     },
     {
-      icon: <RevenueIcon />,
+      Icon: SuperAdminMetricMoneyIcon,
+      iconSlot: "metric",
       value: `₱${Number((data.revenue || 0)).toLocaleString()}`,
       label: "Total Revenue",
       badge: null,
@@ -397,7 +358,8 @@ export default function SuperAdminDashboard() {
 
   return (
     <DashboardShell
-      navItems={NAV_ITEMS}
+      navItems={SUPER_ADMIN_NAV_ITEMS}
+      LogOutIcon={SuperAdminLogOutIcon}
       activeNav={activeNav}
       roleLabel="Super Administrator"
       roleInitial="S"
@@ -545,7 +507,7 @@ export default function SuperAdminDashboard() {
                 cursor: 'pointer',
               }}
             >
-              <DownloadIcon size={16} />
+              <DownloadIcon size={20} />
               <span style={{ fontSize: 11 }}>Export</span>
             </button>
           </div>
@@ -553,14 +515,16 @@ export default function SuperAdminDashboard() {
 
         {/* Metrics Cards - simplified 3-card layout */}
         <div className="dash-stats-row" style={{ display: 'flex', gap: 16, marginTop: 8 }}>
-          {cards.map((m) => (
-            <div key={m.label} className="dash-stat-card" style={{ flex: '1 1 0' }}>
+          {cards.map(({ Icon, iconSlot = "metric", label, value }) => (
+            <div key={label} className="dash-stat-card" style={{ flex: '1 1 0' }}>
               <div className="dash-stat-top">
-                <div className="dash-stat-icon-box">{m.icon}</div>
+                <SuperAdminIconSlot size={iconSlot}>
+                  <Icon />
+                </SuperAdminIconSlot>
               </div>
               <div className="dash-stat-bottom">
-                <p className="dash-stat-value">{m.value}</p>
-                <p className="dash-stat-label">{m.label}</p>
+                <p className="dash-stat-value">{value}</p>
+                <p className="dash-stat-label">{label}</p>
               </div>
             </div>
           ))}
