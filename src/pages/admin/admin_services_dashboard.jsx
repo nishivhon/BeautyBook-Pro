@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
 import { couponService } from "../../services/couponService";
@@ -49,6 +49,40 @@ const NAV_ITEMS = [
   { id: "live-status", label: "Live Status", icon: AdminLiveStatusNavIcon },
   { id: "staff-status", label: "Staff Status", icon: AdminStaffStatusNavIcon },
 ];
+
+const sortBookingNotifications = (items) => {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a?.activityAt || a?.updatedAt || a?.createdAt || 0).getTime();
+    const bTime = new Date(b?.activityAt || b?.updatedAt || b?.createdAt || 0).getTime();
+
+    if (aTime !== bTime) return bTime - aTime;
+
+    return String(b?.id || '').localeCompare(String(a?.id || ''));
+  });
+};
+
+const mergeBookingNotifications = (currentItems, incomingItems) => {
+  const notificationMap = new Map();
+
+  [...currentItems, ...incomingItems].forEach((item) => {
+    if (!item?.id) return;
+    notificationMap.set(String(item.id), item);
+  });
+
+  return sortBookingNotifications(Array.from(notificationMap.values()));
+};
+
+const getOldestBookingNotificationCursor = (items) => {
+  const sortedItems = sortBookingNotifications(items);
+  const oldestItem = sortedItems[sortedItems.length - 1];
+
+  if (!oldestItem?.createdAt || !oldestItem?.id) return null;
+
+  return {
+    createdAt: oldestItem.activityAt || oldestItem.updatedAt || oldestItem.createdAt,
+    id: oldestItem.id,
+  };
+};
 
 const SERVICE_GROUPS = [
   {
@@ -431,7 +465,7 @@ const QuickActionsPanel = ({ onNewService, onManageCoupons }) => (
 );
 
 /* ── Analytics sidebar panel ── */
-const AnalyticsPanel = () => (
+const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
   <div className="dash-sidebar-panel svc-analytics-wrap">
     <div className="dash-analytics-header">
       <AdminIconSlot size="analytics-lg">
@@ -439,11 +473,11 @@ const AnalyticsPanel = () => (
       </AdminIconSlot>
       <div className="dash-analytics-text">
         <h3 className="dash-analytics-title">Analytics</h3>
-        <p className="dash-analytics-sub">View past 7 days detailed report</p>
+        <p className="dash-analytics-sub">Service usage and revenue report</p>
       </div>
     </div>
-    <button className="dash-download-btn">
-      Download Reports
+    <button className="dash-download-btn" onClick={onDownloadReports} disabled={isDownloading}>
+      {isDownloading ? 'Downloading...' : 'Download Reports'}
       <AdminIconSlot size="inline">
         <AdminDownloadIcon />
       </AdminIconSlot>
@@ -473,6 +507,10 @@ export const AdminDashboardServices = ({ date }) => {
     pending: [],
     done: []
   });
+  const [bookingNotifications, setBookingNotifications] = useState([]);
+  const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
+  const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
+  const [isDownloadingReports, setIsDownloadingReports] = useState(false);
   const [activeNav, setActiveNav] = useState("services");
   const [mounted, setMounted] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
@@ -529,6 +567,66 @@ export const AdminDashboardServices = ({ date }) => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    const fetchBookingNotifications = async ({ cursor = null } = {}) => {
+      try {
+        const searchParams = new URLSearchParams({ limit: '20' });
+
+        if (cursor?.createdAt && cursor?.id) {
+          searchParams.set('beforeCreatedAt', cursor.createdAt);
+          searchParams.set('beforeId', String(cursor.id));
+        }
+
+        const response = await fetch(`/api/appointments/read/recent-bookings?${searchParams.toString()}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch booking notifications');
+        }
+
+        const result = await response.json();
+        const nextNotifications = result.notifications || [];
+
+        setBookingNotifications((prev) => mergeBookingNotifications(prev, nextNotifications));
+        setBookingNotificationsHasMore(Boolean(result.hasMore));
+      } catch (error) {
+        console.error('[AdminServices] Error loading booking notifications:', error);
+        setBookingNotificationsHasMore(false);
+      }
+    };
+
+    fetchBookingNotifications();
+  }, []);
+
+  const handleLoadMoreBookingNotifications = async () => {
+    if (loadingMoreBookingNotifications || !bookingNotificationsHasMore) return;
+
+    const oldestNotification = getOldestBookingNotificationCursor(bookingNotifications);
+
+    if (!oldestNotification?.createdAt || !oldestNotification?.id) return;
+
+    try {
+      setLoadingMoreBookingNotifications(true);
+
+      const searchParams = new URLSearchParams({
+        limit: '20',
+        beforeCreatedAt: oldestNotification.createdAt,
+        beforeId: String(oldestNotification.id),
+      });
+
+      const response = await fetch(`/api/appointments/read/recent-bookings?${searchParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to load more booking notifications');
+      }
+
+      const result = await response.json();
+      setBookingNotifications((prev) => mergeBookingNotifications(prev, result.notifications || []));
+      setBookingNotificationsHasMore(Boolean(result.hasMore));
+    } catch (error) {
+      console.error('[AdminServices] Error loading more booking notifications:', error);
+    } finally {
+      setLoadingMoreBookingNotifications(false);
+    }
+  };
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -773,40 +871,44 @@ export const AdminDashboardServices = ({ date }) => {
   const handleOpenCoupons = () => setIsManagingCoupons(true);
   const handleCloseCoupons = () => setIsManagingCoupons(false);
 
-  // Generate header notifications from appointment and service data
-  const headerNotifications = useMemo(() => {
-    const pendingFeed = appointmentData.pending.slice(0, 2).map((appointment, index) => ({
-      id: `services-pending-${appointment.id || index}`,
-      tone: "amber",
-      category: "New booking",
-      title: `${appointment.name || "Customer"} booked ${appointment.service || "a service"}`,
-      description: `${appointment.time || "TBA"} • ${appointment.staff || "Any available stylist"}`,
-      time: "Today",
-      unread: index === 0,
-    }));
+  const handleDownloadReports = async () => {
+    try {
+      setIsDownloadingReports(true);
 
-    const completedFeed = appointmentData.done.slice(0, 1).map((appointment, index) => ({
-      id: `services-done-${appointment.id || index}`,
-      tone: "green",
-      category: "Completed",
-      title: `${appointment.name || "Customer"} appointment finished`,
-      description: `${appointment.service || "Service"} marked done successfully.`,
-      time: "Today",
-      unread: false,
-    }));
+      const response = await fetch('/api/services/usage-export');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to download reports: ${response.status}`);
+      }
 
-    const serviceFeed = services.slice(0, 1).map((service, index) => ({
-      id: `services-item-${service.id || index}`,
-      tone: service.available ? "green" : "red",
-      category: "Service catalog",
-      title: `${service.name || "Service"} is ${service.available ? "available" : "hidden"}`,
-      description: service.meta || service.description || "Service record updated.",
-      time: "Now",
-      unread: false,
-    }));
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'services_usage_report.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
 
-    return [...pendingFeed, ...completedFeed, ...serviceFeed].slice(0, 5);
-  }, [appointmentData, services]);
+      showToast({
+        message: 'Services usage report downloaded successfully.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('[AdminServices] Error downloading services usage report:', error);
+      showToast({
+        message: `Failed to download report: ${error.message}`,
+        type: 'error',
+        duration: 3000,
+      });
+    } finally {
+      setIsDownloadingReports(false);
+    }
+  };
+
+  const headerNotifications = bookingNotifications;
 
   return (
     <div
@@ -841,7 +943,12 @@ export const AdminDashboardServices = ({ date }) => {
               <p className="dash-page-subtitle">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
             </div>
           </div>
-          <AdminHeaderActions notifications={headerNotifications} />
+          <AdminHeaderActions
+            notifications={headerNotifications}
+            onLoadMoreNotifications={handleLoadMoreBookingNotifications}
+            hasMoreNotifications={bookingNotificationsHasMore}
+            loadingMoreNotifications={loadingMoreBookingNotifications}
+          />
         </header>
 
         <main className="dashboard-main">
@@ -865,7 +972,7 @@ export const AdminDashboardServices = ({ date }) => {
                       onNewService={handleNewService} 
                       onManageCoupons={handleOpenCoupons}
                     />
-            <AnalyticsPanel />
+            <AnalyticsPanel onDownloadReports={handleDownloadReports} isDownloading={isDownloadingReports} />
           </div>
         </div>
       </main>

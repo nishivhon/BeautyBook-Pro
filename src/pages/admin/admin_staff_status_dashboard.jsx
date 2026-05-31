@@ -110,6 +110,40 @@ const STATS = [
   { Icon: AdminMetricOffTodayIcon, value: "0", label: "Off Today", labelClass: "staff-stat-label-tan" },
 ];
 
+const sortBookingNotifications = (items) => {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a?.activityAt || a?.updatedAt || a?.createdAt || 0).getTime();
+    const bTime = new Date(b?.activityAt || b?.updatedAt || b?.createdAt || 0).getTime();
+
+    if (aTime !== bTime) return bTime - aTime;
+
+    return String(b?.id || '').localeCompare(String(a?.id || ''));
+  });
+};
+
+const mergeBookingNotifications = (currentItems, incomingItems) => {
+  const notificationMap = new Map();
+
+  [...currentItems, ...incomingItems].forEach((item) => {
+    if (!item?.id) return;
+    notificationMap.set(String(item.id), item);
+  });
+
+  return sortBookingNotifications(Array.from(notificationMap.values()));
+};
+
+const getOldestBookingNotificationCursor = (items) => {
+  const sortedItems = sortBookingNotifications(items);
+  const oldestItem = sortedItems[sortedItems.length - 1];
+
+  if (!oldestItem?.createdAt || !oldestItem?.id) return null;
+
+  return {
+    createdAt: oldestItem.activityAt || oldestItem.updatedAt || oldestItem.createdAt,
+    id: oldestItem.id,
+  };
+};
+
 // statusClass maps to CSS class names defined in index.css
 const STAFF = [
   { initial: "A", name: "Antonio Marquez", status: "On Break",   statusClass: "staff-status-amber", subStatus: "No Client Yet", 
@@ -907,6 +941,9 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   const [serviceCategories, setServiceCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [isDownloadingReports, setIsDownloadingReports] = useState(false);
+  const [bookingNotifications, setBookingNotifications] = useState([]);
+  const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
+  const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem('adminSidebarExpanded');
     return saved !== null ? JSON.parse(saved) : true;
@@ -937,6 +974,66 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    const fetchBookingNotifications = async ({ cursor = null } = {}) => {
+      try {
+        const searchParams = new URLSearchParams({ limit: '20' });
+
+        if (cursor?.createdAt && cursor?.id) {
+          searchParams.set('beforeCreatedAt', cursor.createdAt);
+          searchParams.set('beforeId', String(cursor.id));
+        }
+
+        const response = await fetch(`/api/appointments/read/recent-bookings?${searchParams.toString()}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch booking notifications');
+        }
+
+        const result = await response.json();
+        const nextNotifications = result.notifications || [];
+
+        setBookingNotifications((prev) => mergeBookingNotifications(prev, nextNotifications));
+        setBookingNotificationsHasMore(Boolean(result.hasMore));
+      } catch (error) {
+        console.error('[AdminStaffStatus] Error loading booking notifications:', error);
+        setBookingNotificationsHasMore(false);
+      }
+    };
+
+    fetchBookingNotifications();
+  }, []);
+
+  const handleLoadMoreBookingNotifications = async () => {
+    if (loadingMoreBookingNotifications || !bookingNotificationsHasMore) return;
+
+    const oldestNotification = getOldestBookingNotificationCursor(bookingNotifications);
+
+    if (!oldestNotification?.createdAt || !oldestNotification?.id) return;
+
+    try {
+      setLoadingMoreBookingNotifications(true);
+
+      const searchParams = new URLSearchParams({
+        limit: '20',
+        beforeCreatedAt: oldestNotification.createdAt,
+        beforeId: String(oldestNotification.id),
+      });
+
+      const response = await fetch(`/api/appointments/read/recent-bookings?${searchParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to load more booking notifications');
+      }
+
+      const result = await response.json();
+      setBookingNotifications((prev) => mergeBookingNotifications(prev, result.notifications || []));
+      setBookingNotificationsHasMore(Boolean(result.hasMore));
+    } catch (error) {
+      console.error('[AdminStaffStatus] Error loading more booking notifications:', error);
+    } finally {
+      setLoadingMoreBookingNotifications(false);
+    }
+  };
 
   // Fetch service categories from API dynamically
   useEffect(() => {
@@ -1336,32 +1433,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     }
   };
 
-  const headerNotifications = useMemo(() => {
-    const statusFeed = staff.slice(0, 3).map((member, index) => ({
-      id: `staff-${member.name || index}`,
-      tone: member.statusClass === "staff-status-green" ? "green" : member.statusClass === "staff-status-blue" ? "blue" : member.statusClass === "staff-status-amber" ? "amber" : "tan",
-      category: "Staff status",
-      title: `${member.name || "Staff member"} is ${member.status || "Available"}`,
-      description: member.subStatus || "Status updated.",
-      time: member.details?.timeOfClockIn || "Today",
-      unread: index === 0,
-    }));
-
-    const serviceFeed = staff
-      .filter((member) => member.details?.availableForWalkIn)
-      .slice(0, 1)
-      .map((member, index) => ({
-        id: `staff-walkin-${member.name || index}`,
-        tone: "amber",
-        category: "Walk-in ready",
-        title: `${member.name || "Staff member"} can accept walk-ins`,
-        description: "This stylist is currently available for a walk-in customer.",
-        time: "Now",
-        unread: true,
-      }));
-
-    return [...statusFeed, ...serviceFeed].slice(0, 5);
-  }, [staff]);
+  const headerNotifications = bookingNotifications;
 
   return (
     <div
@@ -1396,7 +1468,12 @@ export const AdminDashboardStaffStatus = ({ date }) => {
               <p className="dash-page-subtitle">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
             </div>
           </div>
-          <AdminHeaderActions notifications={headerNotifications} />
+          <AdminHeaderActions
+            notifications={headerNotifications}
+            onLoadMoreNotifications={handleLoadMoreBookingNotifications}
+            hasMoreNotifications={bookingNotificationsHasMore}
+            loadingMoreNotifications={loadingMoreBookingNotifications}
+          />
         </header>
 
         <main className="dashboard-main">
