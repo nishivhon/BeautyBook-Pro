@@ -51,6 +51,30 @@ const getThemeStyles = (theme, darkStyles, lightStyles) => {
   return isDarkMode(theme) ? darkStyles : lightStyles;
 };
 
+const getWalkInRevenue = (walkIn) => {
+  const directTotal = Number(walkIn?.total_price || 0);
+  if (Number.isFinite(directTotal) && directTotal > 0) return directTotal;
+
+  let services = walkIn?.services;
+  if (typeof services === 'string') {
+    try {
+      services = JSON.parse(services);
+    } catch (_) {
+      services = [];
+    }
+  }
+
+  if (Array.isArray(services)) {
+    return services.reduce((sum, service) => sum + (Number(service?.price || 0) || 0), 0);
+  }
+
+  if (services && typeof services === 'object') {
+    return Number(services?.price || 0) || 0;
+  }
+
+  return 0;
+};
+
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS (UI controls — dashboard assets live in adminDashboardIcons)
 // ═══════════════════════════════════════════════════════════════════
@@ -1685,9 +1709,18 @@ export const AdminDashboard = ({ date }) => {
       }),
     ].length;
 
-    const totalRevenue = doneAppointments
+    const appointmentRevenue = doneAppointments
       .filter(apt => apt.date === today)
       .reduce((sum, apt) => sum + (Number(apt.price || apt.total_price || 0) || 0), 0);
+
+    const walkInRevenue = walkInLogs
+      .filter((walkIn) => {
+        const walkInDate = walkIn.date || walkIn.created_at?.split('T')[0] || walkIn.createdAt?.split('T')[0];
+        return walkInDate === today;
+      })
+      .reduce((sum, walkIn) => sum + getWalkInRevenue(walkIn), 0);
+
+    const totalRevenue = appointmentRevenue + walkInRevenue;
 
     console.log('[AdminDash] Total today:', totalToday, 'Walk-ins:', totalWalkIns, 'In queue:', inQueueCount, 'Revenue:', totalRevenue);
 

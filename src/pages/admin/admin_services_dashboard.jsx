@@ -39,6 +39,38 @@ const getThemeStyles = (darkStyles, lightStyles) => {
   return isDarkMode() ? darkStyles : lightStyles;
 };
 
+const getManilaDateString = () =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
+const getWalkInRevenue = (walkIn) => {
+  const directTotal = Number(walkIn?.total_price || 0);
+  if (Number.isFinite(directTotal) && directTotal > 0) return directTotal;
+
+  let services = walkIn?.services;
+  if (typeof services === 'string') {
+    try {
+      services = JSON.parse(services);
+    } catch (_) {
+      services = [];
+    }
+  }
+
+  if (Array.isArray(services)) {
+    return services.reduce((sum, service) => sum + (Number(service?.price || 0) || 0), 0);
+  }
+
+  if (services && typeof services === 'object') {
+    return Number(services?.price || 0) || 0;
+  }
+
+  return 0;
+};
+
 // ═══════════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════════
@@ -507,6 +539,8 @@ export const AdminDashboardServices = ({ date }) => {
     pending: [],
     done: []
   });
+  const [walkInLogs, setWalkInLogs] = useState([]);
+  const [usedCouponsCount, setUsedCouponsCount] = useState(0);
   const [bookingNotifications, setBookingNotifications] = useState([]);
   const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
   const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
@@ -631,6 +665,7 @@ export const AdminDashboardServices = ({ date }) => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
+        const today = getManilaDateString();
         const [currentRes, pendingRes, doneRes] = await Promise.all([
           fetch('/api/appointments/read/by-status?status=current'),
           fetch('/api/appointments/read/by-status?status=pending'),
@@ -648,6 +683,14 @@ export const AdminDashboardServices = ({ date }) => {
           pending: pendingData.appointments || [],
           done: doneData.appointments || []
         });
+
+        const walkInRes = await fetch(`/api/appointments/walk-in-logs?date=${today}`);
+        if (walkInRes.ok) {
+          const walkInData = await walkInRes.json();
+          setWalkInLogs(Array.isArray(walkInData) ? walkInData : []);
+        } else {
+          setWalkInLogs([]);
+        }
       } catch (err) {
         console.error('Error fetching appointments:', err);
       }
@@ -662,11 +705,7 @@ export const AdminDashboardServices = ({ date }) => {
       try {
         const coupons = await couponService.getCoupons();
         const usedCoupons = coupons.reduce((sum, coupon) => sum + (Number(coupon.number_of_uses) || 0), 0);
-
-        setStats([
-          { Icon: AdminMetricMoneyIcon, badge: "+15%", badgeType: "green", value: "₱12,450", label: "Revenue Today" },
-          { Icon: AdminMetricPromoIcon, badge: "+8%", badgeType: "green", value: usedCoupons.toString(), label: "Coupons Used" },
-        ]);
+        setUsedCouponsCount(usedCoupons);
       } catch (err) {
         console.error('Error loading coupon metrics:', err);
       }
@@ -674,6 +713,28 @@ export const AdminDashboardServices = ({ date }) => {
 
     fetchCouponMetrics();
   }, []);
+
+  useEffect(() => {
+    const today = getManilaDateString();
+
+    const appointmentRevenue = (appointmentData.done || [])
+      .filter((apt) => apt.date === today)
+      .reduce((sum, apt) => sum + (Number(apt.price || apt.total_price || 0) || 0), 0);
+
+    const walkInRevenue = (walkInLogs || [])
+      .filter((walkIn) => {
+        const walkInDate = walkIn.date || walkIn.created_at?.split('T')[0] || walkIn.createdAt?.split('T')[0];
+        return walkInDate === today;
+      })
+      .reduce((sum, walkIn) => sum + getWalkInRevenue(walkIn), 0);
+
+    const totalRevenue = appointmentRevenue + walkInRevenue;
+
+    setStats([
+      { Icon: AdminMetricMoneyIcon, badge: "+15%", badgeType: "green", value: `₱${Number(totalRevenue).toLocaleString('en-PH')}`, label: "Revenue Today" },
+      { Icon: AdminMetricPromoIcon, badge: "+8%", badgeType: "green", value: usedCouponsCount.toString(), label: "Coupons Used" },
+    ]);
+  }, [appointmentData.done, walkInLogs, usedCouponsCount]);
 
   // Fetch services from API on component mount
   useEffect(() => {
