@@ -1138,7 +1138,7 @@ const AnalyticsPanel = () => (
       </AdminIconSlot>
       <div className="dash-analytics-text">
         <h3 className="dash-analytics-title">Analytics</h3>
-        <p className="dash-analytics-sub">View Detailed Reports</p>
+        <p className="dash-analytics-sub">View past 7 days detailed report</p>
       </div>
     </div>
     <button className="dash-download-btn">
