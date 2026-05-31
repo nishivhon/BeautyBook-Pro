@@ -39,6 +39,47 @@ const parseISODate = (value) => {
   return new Date(year, month - 1, day);
 };
 
+// Format created_at values for exports and displays
+// For walk-ins we store timestamps as `YYYY-MM-DD HH:mm:ss` in Manila time.
+// This helper returns only the time portion in PHT (Asia/Manila) 12-hour format, e.g. "4:40 PM".
+const formatCreatedAtForExport = (value) => {
+  if (!value && value !== 0) return "";
+  try {
+    // If value is a string like "YYYY-MM-DD HH:mm:ss", extract time directly
+    if (typeof value === 'string') {
+      // common format from backend: "2026-05-30 16:40:34"
+      const isoSpaceMatch = value.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(?:\.\d+)?(?:Z)?$/);
+      if (isoSpaceMatch) {
+        const timePart = isoSpaceMatch[2];
+        const [hh, mm] = timePart.split(':');
+        let hour = Number(hh);
+        const minute = mm;
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        hour = hour % 12;
+        if (hour === 0) hour = 12;
+        return `${hour}:${minute} ${ampm}`;
+      }
+
+      // fallback: try parsing as Date and format in Asia/Manila
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleString('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit', hour12: true });
+      }
+
+      return String(value);
+    }
+
+    // If value is a Date object
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return value.toLocaleString('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+
+    return String(value);
+  } catch (e) {
+    return String(value);
+  }
+};
+
 const getGraphModeForRange = (rangeStart, rangeEnd) => {
   const start = new Date(rangeStart);
   const end = new Date(rangeEnd);
@@ -325,6 +366,8 @@ export default function SuperAdminDashboard() {
   const [weeklyGraphLoading, setWeeklyGraphLoading] = useState(false);
   const [weeklyGraphError, setWeeklyGraphError] = useState("");
   const [weeklyGraphMode, setWeeklyGraphMode] = useState("daily");
+  const [appointmentRowsState, setAppointmentRowsState] = useState([]);
+  const [walkInRowsState, setWalkInRowsState] = useState([]);
   const [hoveredTower, setHoveredTower] = useState(null);
   const calendarRef = useRef(null);
   const graphChartRef = useRef(null);
@@ -366,6 +409,8 @@ export default function SuperAdminDashboard() {
       setDailyReport(Array.isArray(json.dailyReport) ? json.dailyReport : []);
       setWeeklyGraph(Array.isArray(json.weeklyGraph) ? json.weeklyGraph : []);
       setWeeklyGraphMode(json.graphMode || getGraphModeForRange(range.startDate, range.endDate));
+      setAppointmentRowsState(Array.isArray(json.appointmentRows) ? json.appointmentRows : []);
+      setWalkInRowsState(Array.isArray(json.walkInRows) ? json.walkInRows : []);
     } catch (err) {
       console.error('Summary load error', err);
       const fallbackGraph = buildReportGraphSkeleton(range.startDate, range.endDate);
@@ -604,6 +649,71 @@ export default function SuperAdminDashboard() {
     XLSX.utils.book_append_sheet(workbook, dailyWorksheet, "Daily Breakdown");
     XLSX.utils.book_append_sheet(workbook, staffWorksheet, "Staff Summary");
     XLSX.utils.book_append_sheet(workbook, categoryWorksheet, "Services");
+
+    // Helper: clean services JSON to readable string
+    const cleanServicesForExport = (servicesValue) => {
+      if (!servicesValue && servicesValue !== 0) return "";
+      let services = servicesValue;
+      if (typeof servicesValue === 'string') {
+        try { services = JSON.parse(servicesValue); } catch (e) { return String(servicesValue); }
+      }
+      if (Array.isArray(services)) {
+        return services.map(s => (s?.name || s?.title || s?.service || s?.label || '')).filter(Boolean).join(' • ');
+      }
+      if (typeof services === 'object') {
+        return services?.name || services?.title || services?.service || '';
+      }
+      return String(services);
+    };
+
+    const extractWalkInPrice = (servicesValue) => {
+      if (!servicesValue && servicesValue !== 0) return 0;
+      let services = servicesValue;
+      if (typeof servicesValue === 'string') {
+        try { services = JSON.parse(servicesValue); } catch (e) { return 0; }
+      }
+      if (Array.isArray(services)) {
+        return services.reduce((sum, item) => sum + (Number(item?.price) || 0), 0);
+      }
+      if (typeof services === 'object') return Number(services?.price) || 0;
+      return 0;
+    };
+
+    // Appointments sheet
+    const appointmentSheetRows = [
+      ["Date", "Time Slot", "Customer Name", "Customer Contact", "Assigned Staff", "Services", "Total Price"],
+      ...appointmentRowsState.map((row) => [
+        row.date || row.created_at || "",
+        row.time_slot || row.time_slots || row.time || "",
+        row.customer_name || row.customer || "",
+        row.customer_contact || row.customer_phone || "",
+        row.assigned_staff || row.staff || row.staff_name || "",
+        cleanServicesForExport(row.services),
+        Number(row.total_price || 0),
+      ]),
+    ];
+    const appointmentWorksheet = XLSX.utils.aoa_to_sheet(appointmentSheetRows);
+    appointmentWorksheet["!cols"] = [{ wch: 14 }, { wch: 16 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 40 }, { wch: 14 }];
+    if (appointmentSheetRows.length >= 1) appointmentWorksheet["!autofilter"] = { ref: `A1:G${appointmentSheetRows.length}` };
+    XLSX.utils.book_append_sheet(workbook, appointmentWorksheet, "Appointments");
+
+    // Walk-ins sheet
+    const walkinSheetRows = [
+      ["Date", "Created At", "Customer Name", "Assigned Staff", "Services", "Status", "Price"],
+      ...walkInRowsState.map((row) => [
+        row.date || row.created_at || "",
+        formatCreatedAtForExport(row.created_at || row.date || ""),
+        row.customer_name || row.customer || "",
+        row.assigned_staff || row.staff || row.staff_name || "",
+        cleanServicesForExport(row.services),
+        row.status || "",
+        Number(extractWalkInPrice(row.services)),
+      ]),
+    ];
+    const walkinWorksheet = XLSX.utils.aoa_to_sheet(walkinSheetRows);
+    walkinWorksheet["!cols"] = [{ wch: 14 }, { wch: 20 }, { wch: 22 }, { wch: 18 }, { wch: 40 }, { wch: 12 }, { wch: 12 }];
+    if (walkinSheetRows.length >= 1) walkinWorksheet["!autofilter"] = { ref: `A1:G${walkinSheetRows.length}` };
+    XLSX.utils.book_append_sheet(workbook, walkinWorksheet, "Walk-ins");
     downloadXlsxWorkbook(workbook, `superadmin-metrics-${summaryRange.startDate}-to-${summaryRange.endDate}.xlsx`);
   };
 
@@ -894,7 +1004,7 @@ export default function SuperAdminDashboard() {
               {!summaryLoading && serviceMetricCategories.length > 0 && (
                 <div style={{
                   display: "grid",
-                  gridTemplateColumns: "minmax(0, 1.5fr) repeat(3, minmax(0, 0.7fr))",
+                  gridTemplateColumns: "minmax(0, 1.5fr) repeat(4, minmax(0, 0.7fr))",
                   gap: 12,
                   alignItems: "center",
                   padding: "6px 14px",
@@ -903,6 +1013,7 @@ export default function SuperAdminDashboard() {
                 }}>
                   <span>Category</span>
                   <span style={{ textAlign: "center" }}>Top Service</span>
+                  <span style={{ textAlign: "center" }}>Unit Price</span>
                   <span style={{ textAlign: "center" }}>Bookings</span>
                   <span style={{ textAlign: "right" }}>Revenue</span>
                 </div>
@@ -928,7 +1039,7 @@ export default function SuperAdminDashboard() {
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "minmax(0, 1.5fr) repeat(3, minmax(0, 0.7fr))",
+                          gridTemplateColumns: "minmax(0, 1.5fr) repeat(4, minmax(0, 0.7fr))",
                           gap: 12,
                           alignItems: "center",
                         }}
@@ -938,6 +1049,15 @@ export default function SuperAdminDashboard() {
                         </div>
 
                         <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 14, fontWeight: 600 }}>{topService?.name || "-"}</div>
+
+                        <div style={{ textAlign: "center", color: "#c9ab7b", fontSize: 14, fontWeight: 700 }}>
+                          {topService ? (
+                            (() => {
+                              const svc = (detailedServiceMetrics.find((d) => d.category === category.category)?.services || []).find((s) => s.service === topService.name);
+                              return svc ? formatRevenueValue(svc.unitPrice) : "-";
+                            })()
+                          ) : "-"}
+                        </div>
 
                         <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 15, fontWeight: 700 }}>{Number(category.totalBooked || 0)}</div>
 

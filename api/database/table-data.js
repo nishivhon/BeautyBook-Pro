@@ -516,6 +516,8 @@ export default async (req, res) => {
           revenue: Number(totalRevenue.toFixed(2)),
           serviceMetrics: buildServiceMetrics(bookedRows),
           detailedServiceMetrics: buildDetailedServiceMetrics(bookedRows, allServices),
+          appointmentRows,
+          walkInRows,
           staffMetrics: buildStaffMetrics({
             appointmentRows: successfulAppointmentRows,
             walkInRows,
