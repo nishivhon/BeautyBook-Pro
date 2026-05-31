@@ -293,6 +293,7 @@ export default function SuperAdminLogsDashboard() {
   };
 
   const [exportPickerOpen, setExportPickerOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleExportWithRange = (range) => {
     const start = new Date(range.startDate);
@@ -349,6 +350,20 @@ export default function SuperAdminLogsDashboard() {
     setExportPickerOpen(false);
   };
 
+  // Filter rows by global search term (across all visible columns)
+  const filteredRows = (() => {
+    const all = (logsData.rows || []);
+    const term = String(searchTerm || '').trim().toLowerCase();
+    if (!term) return all;
+    const cols = logsData.cols || [];
+    return all.filter(row => {
+      return cols.some(col => {
+        const v = String(formatCellValue(row[col], col) ?? '').toLowerCase();
+        return v.includes(term);
+      });
+    });
+  })();
+
   return (
     <DashboardShell
       navItems={SUPER_ADMIN_NAV_ITEMS}
@@ -382,12 +397,8 @@ export default function SuperAdminLogsDashboard() {
                   <input
                     type="text"
                     placeholder="Search logs..."
-                    onChange={(e) => {
-                      const value = e.target.value.toLowerCase();
-                      if (value) {
-                        console.log('[Logs] Searching for:', value);
-                      }
-                    }}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
                       padding: '8px 12px 8px 32px',
                       borderRadius: '6px',
@@ -436,7 +447,7 @@ export default function SuperAdminLogsDashboard() {
             {/* Logs Table View */}
             {loading ? (
               <div className="container-empty-state">Loading logs...</div>
-            ) : logsData.rows && logsData.rows.length > 0 ? (
+            ) : (filteredRows && filteredRows.length > 0) ? (
               <div style={{ marginTop: '0px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                 <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                   <thead>
@@ -449,7 +460,7 @@ export default function SuperAdminLogsDashboard() {
                   <tbody>
                     {(() => {
                       const itemsPerPage = rowsPerPage || 7;
-                      const totalRows = logsData.rows.length;
+                      const totalRows = filteredRows.length;
                       const totalPages = Math.ceil(totalRows / itemsPerPage);
                       // Only the last page can have fewer than itemsPerPage rows
                       let startIdx = (currentLogsPage - 1) * itemsPerPage;
@@ -460,7 +471,7 @@ export default function SuperAdminLogsDashboard() {
                       } else {
                         endIdx = totalRows;
                       }
-                      return logsData.rows.slice(startIdx, endIdx).map((log, idx) => (
+                      return filteredRows.slice(startIdx, endIdx).map((log, idx) => (
                         <tr key={idx} className="db-row" style={{ minHeight: 80, height: 80 }}>
                           {logsData.cols.map((col) => {
                             const cellValue = log[col];
@@ -474,11 +485,11 @@ export default function SuperAdminLogsDashboard() {
                     })()}
                   </tbody>
                 </table>
-                {logsData.rows.length > 0 && (() => {
+                {filteredRows.length > 0 && (() => {
                   const itemsPerPage = rowsPerPage || 7;
-                  const totalPages = Math.ceil(logsData.rows.length / itemsPerPage);
+                  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
                   const startIdx = (currentLogsPage - 1) * itemsPerPage + 1;
-                  const endIdx = Math.min(currentLogsPage * itemsPerPage, logsData.rows.length);
+                  const endIdx = Math.min(currentLogsPage * itemsPerPage, filteredRows.length);
                   return (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)' }}>
                       <div style={{ color: '#988f81', fontSize: '13px' }}>

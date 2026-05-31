@@ -420,25 +420,7 @@ export default function SuperAdminCouponsDashboard() {
                   transition: 'all 0.2s',
                 }}
               />
-              {/* Export button */}
-              <button
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#6B6157',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'not-allowed',
-                  opacity: 0.7,
-                  position: 'relative',
-                }}
-                title="Coming Soon"
-                disabled
-              >
-                Export
-              </button>
+              {/* Export removed per request */}
               <div className="staff-filter-container" style={{ position: 'relative', flexShrink: 0 }}>
                 <button
                   className="staff-filter-btn"

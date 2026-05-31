@@ -201,6 +201,7 @@ export default function SuperAdminWalkinLogsDashboard() {
   const [exportPickerOpen, setExportPickerOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState(null);
   const [columnFilters, setColumnFilters] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleExportWithRange = (range) => {
     setSelectedRange(range);
@@ -217,11 +218,17 @@ export default function SuperAdminWalkinLogsDashboard() {
       return d >= start && d <= end;
     });
 
+    const term = String(searchTerm || '').trim().toLowerCase();
     const matchesFilters = (row) => {
-      for (const [col, term] of Object.entries(columnFilters)) {
-        if (!term) continue;
+      for (const [col, termVal] of Object.entries(columnFilters)) {
+        if (!termVal) continue;
         const value = String(formatCellValue(row[col], col) || '').toLowerCase();
-        if (!value.includes(String(term).toLowerCase())) return false;
+        if (!value.includes(String(termVal).toLowerCase())) return false;
+      }
+      if (term) {
+        const cols = logsData.cols || [];
+        const found = cols.some(col => String(formatCellValue(row[col], col) || '').toLowerCase().includes(term));
+        if (!found) return false;
       }
       return true;
     };
@@ -253,6 +260,15 @@ export default function SuperAdminWalkinLogsDashboard() {
     setExportPickerOpen(false);
   };
 
+  // filtered rows for display based on global search
+  const filteredRows = (() => {
+    const all = (logsData.rows || []);
+    const term = String(searchTerm || '').trim().toLowerCase();
+    if (!term) return all;
+    const cols = logsData.cols || [];
+    return all.filter(row => cols.some(col => String(formatCellValue(row[col], col) || '').toLowerCase().includes(term)));
+  })();
+
   return (
     <DashboardShell
       navItems={SUPER_ADMIN_NAV_ITEMS}
@@ -279,7 +295,7 @@ export default function SuperAdminWalkinLogsDashboard() {
             <div className="panel-title">All Walk-in Logs ({logsData.rows?.length || 0})</div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <div style={{ position: 'relative' }}>
-                <input type="text" placeholder="Search logs..." style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(152, 143, 129, 0.3)', backgroundColor: 'rgba(35,29,26,0.8)', color: '#D4C5B9' }} />
+                <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} type="text" placeholder="Search logs..." style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(152, 143, 129, 0.3)', backgroundColor: 'rgba(35,29,26,0.8)', color: '#D4C5B9' }} />
               </div>
               <div style={{ position: 'relative' }}>
                 <button type="button" onClick={() => setExportPickerOpen(true)} disabled={loading || !logsData.rows?.length} style={{ padding: '8px 16px', backgroundColor: '#6B6157', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
@@ -292,7 +308,7 @@ export default function SuperAdminWalkinLogsDashboard() {
 
           {loading ? (
             <div className="container-empty-state">Loading walk-in logs...</div>
-          ) : logsData.rows && logsData.rows.length > 0 ? (
+          ) : (filteredRows && filteredRows.length > 0) ? (
             <div style={{ marginTop: '0px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                 <thead>
@@ -305,12 +321,12 @@ export default function SuperAdminWalkinLogsDashboard() {
                 <tbody>
                   {(() => {
                     const itemsPerPage = rowsPerPage || 7;
-                    const totalRows = logsData.rows.length;
+                      const totalRows = filteredRows.length;
                     const totalPages = Math.ceil(totalRows / itemsPerPage);
                     let startIdx = (currentLogsPage - 1) * itemsPerPage;
                     let endIdx = startIdx + itemsPerPage;
                     if (currentLogsPage < totalPages) endIdx = startIdx + itemsPerPage; else endIdx = totalRows;
-                    return logsData.rows.slice(startIdx, endIdx).map((log, idx) => (
+                    return filteredRows.slice(startIdx, endIdx).map((log, idx) => (
                       <tr key={idx} className="db-row" style={{ minHeight: 80, height: 80 }}>
                         {logsData.cols.map((col) => (
                           <td key={col} style={{ fontSize: '13px', whiteSpace: 'normal', wordBreak: 'break-word', padding: '12px 8px', minHeight: 80, height: 80, verticalAlign: 'middle' }}>{formatCellValue(log[col], col)}</td>
@@ -320,11 +336,11 @@ export default function SuperAdminWalkinLogsDashboard() {
                   })()}
                 </tbody>
               </table>
-              {logsData.rows.length > 0 && (() => {
+              {filteredRows.length > 0 && (() => {
                 const itemsPerPage = rowsPerPage || 7;
-                const totalPages = Math.ceil(logsData.rows.length / itemsPerPage);
+                const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
                 const startIdx = (currentLogsPage - 1) * itemsPerPage + 1;
-                const endIdx = Math.min(currentLogsPage * itemsPerPage, logsData.rows.length);
+                const endIdx = Math.min(currentLogsPage * itemsPerPage, filteredRows.length);
                 return (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid rgba(152, 143, 129, 0.2)' }}>
                     <div style={{ color: '#988f81', fontSize: '13px' }}>Showing {startIdx}–{endIdx} of {logsData.rows.length} logs</div>
