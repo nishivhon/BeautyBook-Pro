@@ -5,6 +5,7 @@ import { databaseAPI } from "../../services/databaseApi";
 import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import DatabaseTableModal from "../../components/modal/superadmin/DatabaseTableModal";
 import { useToast } from "../../components/toast";
+import { SUPER_ADMIN_NAV_ITEMS } from "../../components/superadmin/superAdminDashboardIcons";
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -97,16 +98,6 @@ const SearchIcon = ({ color = "#988f81" }) => (
 );
 
 // ─── Navigation Items ─────────────────────────────────────────────────────
-
-const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: DashboardIcon, path: "/superadmin/dashboard" },
-  { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
-  { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
-  { id: "coupons", label: "Coupons", icon: DatabaseIcon, path: "/superadmin/coupons" },
-  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
-  { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
-  { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
-];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -301,13 +292,13 @@ export default function SuperAdminLogsDashboard() {
 
   return (
     <DashboardShell
-      navItems={NAV_ITEMS}
+      navItems={SUPER_ADMIN_NAV_ITEMS}
       activeNav={activeNav}
       roleLabel="Super Administrator"
       roleInitial="S"
       showSidebarHeader={false}
-      title="Logs & Audit"
-      subtitle="BeautyBook Pro • System activity logs"
+      title="Appointment Logs"
+      subtitle="BeautyBook Pro • View and manage all appointment logs"
       profile={null}
       notifications={[]}
       useSuperAdminHeaderActions={true}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logoutOperator } from "../../services/operatorAuth";
+import { SUPER_ADMIN_NAV_ITEMS } from "../../components/superadmin/superAdminDashboardIcons";
 import { HowItWorksStepEditModal } from "../../components/modal/superadmin/howitworks_step_edit";
 import { ServiceEditModal } from "../../components/modal/superadmin/service_edit";
 import { FooterEditModal } from "../../components/modal/superadmin/footer_edit";
@@ -469,15 +470,7 @@ export default function SuperAdminLandingPageEditor() {
     </svg>
   );
 
-  const NAV_ITEMS = [
-    { id: "dashboard", label: "Dashboard", icon: DashboardIcon },
-    { id: "staff-management", label: "Staff Management", icon: UserIcon },
-    { id: "database", label: "Database", icon: DatabaseIcon },
-    { id: "services", label: "Services", icon: DatabaseIcon },
-    { id: "logs", label: "Logs", icon: DatabaseIcon },
-    { id: "security", label: "Security", icon: ShieldIcon },
-    // { id: "landing-page", label: "Landing Page", icon: GlobeIcon, disabled: true },
-  ];
+  const NAV_ITEMS = SUPER_ADMIN_NAV_ITEMS;
 
   const today = new Date();
   const dateStr = today.toLocaleDateString("en-US", {
@@ -526,20 +519,8 @@ export default function SuperAdminLandingPageEditor() {
                 key={item.id}
                 onClick={() => {
                   if (item.disabled) return;
-                  if (item.id === "dashboard") {
-                    navigate("/superadmin/dashboard");
-                  } else if (item.id === "staff-management") {
-                    navigate("/superadmin/users");
-                  } else if (item.id === "database") {
-                    navigate("/superadmin/database");
-                  } else if (item.id === "services") {
-                    navigate("/superadmin/services");
-                  } else if (item.id === "logs") {
-                    navigate("/superadmin/logs");
-                  } else if (item.id === "security") {
-                    navigate("/superadmin/security");
-                  } else if (item.id === "landing-page") {
-                    navigate("/superadmin/landing-page");
+                  if (item.path) {
+                    navigate(item.path);
                   } else {
                     setActiveNav(item.id);
                   }

@@ -4,6 +4,7 @@ import { DashboardShell } from "../../components/dashboard/DashboardShell";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 import { useToast } from "../../components/toast";
 import { logoutOperator } from "../../services/operatorAuth";
+import { SUPER_ADMIN_NAV_ITEMS } from "../../components/superadmin/superAdminDashboardIcons";
 
 // Tag icon (Heroicons outline style)
 const TagIcon = ({ color = "currentColor" }) => (
@@ -84,11 +85,10 @@ const NAV_ITEMS = [
   { id: "staff-management", label: "Staff Management", icon: UserIcon, path: "/superadmin/users" },
   { id: "clients", label: "Client Accounts", icon: DatabaseIcon, path: "/superadmin/clients" },
   { id: "coupons", label: "Coupons", icon: DatabaseIcon, path: "/superadmin/coupons" },
-  { id: "logs", label: "Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
+  { id: "logs", label: "Appointment Logs", icon: DatabaseIcon, path: "/superadmin/logs" },
   { id: "services", label: "Services", icon: DatabaseIcon, path: "/superadmin/services" },
   { id: "security", label: "Security", icon: ShieldIcon, path: "/superadmin/security" },
 ];
-
 const STATUS_TABS = ["All", "Active", "Expired", "Upcoming", "Deleted"];
 
 const ROWS_PER_PAGE = 7;
@@ -316,7 +316,8 @@ export default function SuperAdminCouponsDashboard() {
   // Render
   return (
     <DashboardShell
-      navItems={NAV_ITEMS}
+      navItems={SUPER_ADMIN_NAV_ITEMS}
+      navItems={SUPER_ADMIN_NAV_ITEMS}
       activeNav={activeNav}
       roleLabel="Super Administrator"
       roleInitial="S"
