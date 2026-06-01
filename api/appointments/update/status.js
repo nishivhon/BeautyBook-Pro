@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+const ADMIN_SUPABASE_KEY = SUPABASE_SERVICE_KEY || SUPABASE_KEY;
 
 const getPhtTimestampString = (date = new Date()) => {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -384,12 +386,16 @@ export default async (req, res) => {
   }
 
   try {
-    if (!SUPABASE_URL || !SUPABASE_KEY) {
+    if (!SUPABASE_URL || !ADMIN_SUPABASE_KEY) {
       console.error('[UpdateStatus] Missing Supabase config');
       return res.status(500).json({ error: 'Server misconfigured' });
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false }
+    });
+
+    const adminSupabase = createClient(SUPABASE_URL, ADMIN_SUPABASE_KEY, {
       auth: { persistSession: false }
     });
 
@@ -410,7 +416,7 @@ export default async (req, res) => {
     let slotFetchError = null;
 
     if (!isWalkInPrefixedId && isUuid(id)) {
-      const availableSlotResult = await supabase
+      const availableSlotResult = await adminSupabase
         .from('available_slots')
         .select('id, date, time_slot, customer_name, customer_contact, assigned_staff, services, status, created_at')
         .eq('id', id)
@@ -429,7 +435,7 @@ export default async (req, res) => {
     actualSlotData = slotData;
     if (slotFetchError || !slotData || isWalkInPrefixedId) {
       console.log('[UpdateStatus] Slot not found in available_slots, trying walk_in_logs...');
-      const walkInQuery = supabase
+      const walkInQuery = adminSupabase
         .from('walk_in_logs')
         .select('id, date, customer_name, customer_contact, assigned_staff, services, status, created_at');
 
@@ -456,15 +462,31 @@ export default async (req, res) => {
     
     // Update the appropriate table
     const resolvedAssignedStaff = incomingStaffName || actualSlotData?.assigned_staff || null;
+    const rowId = isWalkIn ? actualSlotData?.id : id;
 
-    if (resolvedAssignedStaff && incomingStaffName) {
+    if (resolvedAssignedStaff) {
       actualSlotData = {
         ...actualSlotData,
         assigned_staff: resolvedAssignedStaff,
       };
+
+      const assignmentUpdate = await adminSupabase
+        .from(isWalkIn ? 'walk_in_logs' : 'available_slots')
+        .update({
+          assigned_staff: resolvedAssignedStaff,
+          updated_at: isWalkIn ? getPhtTimestampString() : new Date().toISOString()
+        })
+        .eq('id', rowId)
+        .select();
+
+      if (assignmentUpdate.error) {
+        console.error('[UpdateStatus] Staff assignment update error:', assignmentUpdate.error);
+      } else {
+        console.log('[UpdateStatus] Staff assignment updated:', assignmentUpdate.data);
+      }
     }
 
-    const updateQuery = supabase
+    const updateQuery = adminSupabase
       .from(isWalkIn ? 'walk_in_logs' : 'available_slots')
       .update({
         status,
@@ -472,7 +494,7 @@ export default async (req, res) => {
         ...(isWalkIn ? {} : (status === 'cancelled' ? { reminder_sent: false, reminder_sent_at: null } : {})),
         updated_at: isWalkIn ? getPhtTimestampString() : new Date().toISOString()
       })
-      .eq('id', isWalkIn ? normalizedWalkInId : id)
+      .eq('id', rowId)
       .select();
 
     const { data, error } = await updateQuery;
@@ -502,10 +524,10 @@ export default async (req, res) => {
     // Otherwise update the existing history entry status
     if (status === 'done') {
       console.log('[UpdateStatus] Status is "done" - creating new complete history entry');
-      historySync = await addDoneHistoryToCustomer(supabase, actualSlotData);
+      historySync = await addDoneHistoryToCustomer(adminSupabase, actualSlotData);
     } else {
       console.log('[UpdateStatus] Status is "' + status + '" - updating existing history entry');
-      historySync = await updateCustomerHistoryStatus(supabase, actualSlotData, status);
+      historySync = await updateCustomerHistoryStatus(adminSupabase, actualSlotData, status);
     }
     
     console.log('[UpdateStatus] History sync result:', historySync);
@@ -537,7 +559,7 @@ export default async (req, res) => {
         const staffUpdateData = { in_service: staffInServiceValue };
         staffUpdateData.walk_in = walkInValue;
 
-        const { data: staffData, error: staffError } = await supabase
+        const { data: staffData, error: staffError } = await adminSupabase
           .from('staffs')
           .update(staffUpdateData)
           .eq('names', resolvedStaffName)
@@ -563,10 +585,11 @@ export default async (req, res) => {
     try {
       const previousStatus = actualSlotData?.status;
       if (status === 'current' && previousStatus !== 'current' && resolvedStaffName) {
-        console.log('[UpdateStatus] Incrementing total_clients for', resolvedStaffName);
+        const counterField = isWalkIn ? 'total_walk_in' : 'total_clients';
+        console.log(`[UpdateStatus] Incrementing ${counterField} for`, resolvedStaffName);
 
         // Fetch current staff counters
-        const { data: staffRows, error: staffFetchErr } = await supabase
+        const { data: staffRows, error: staffFetchErr } = await adminSupabase
           .from('staffs')
           .select('id, total_clients, total_walk_in')
           .eq('names', resolvedStaffName)
@@ -578,15 +601,15 @@ export default async (req, res) => {
           console.warn('[UpdateStatus] No staff row found to increment for', resolvedStaffName);
         } else {
           const staffRow = staffRows[0];
-          const updateObj = {
-            total_clients: (Number(staffRow.total_clients) || 0) + 1,
-          };
+          const updateObj = isWalkIn
+            ? {
+                total_walk_in: (Number(staffRow.total_walk_in) || 0) + 1,
+              }
+            : {
+                total_clients: (Number(staffRow.total_clients) || 0) + 1,
+              };
 
-          if (isWalkIn) {
-            updateObj.total_walk_in = (Number(staffRow.total_walk_in) || 0) + 1;
-          }
-
-          const { data: updatedStaff, error: staffIncErr } = await supabase
+          const { data: updatedStaff, error: staffIncErr } = await adminSupabase
             .from('staffs')
             .update(updateObj)
             .eq('id', staffRow.id)
@@ -601,7 +624,7 @@ export default async (req, res) => {
       } else if (status === 'done' && previousStatus !== 'done' && resolvedStaffName) {
         console.log('[UpdateStatus] Incrementing done_clients for', resolvedStaffName);
 
-        const { data: staffRows, error: staffFetchErr } = await supabase
+        const { data: staffRows, error: staffFetchErr } = await adminSupabase
           .from('staffs')
           .select('id, done_clients, total_walk_in')
           .eq('names', resolvedStaffName)
@@ -621,7 +644,7 @@ export default async (req, res) => {
             updateObj.total_walk_in = (Number(staffRow.total_walk_in) || 0) + 1;
           }
 
-          const { data: updatedStaff, error: staffIncErr } = await supabase
+          const { data: updatedStaff, error: staffIncErr } = await adminSupabase
             .from('staffs')
             .update(updateObj)
             .eq('id', staffRow.id)

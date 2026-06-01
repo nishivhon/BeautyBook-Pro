@@ -1056,6 +1056,7 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
             style={{ 
               display: "flex", 
               flexDirection: "row", 
+              alignItems: "stretch",
               gap: "12px",
               padding: "16px 20px",
               background: "rgba(0,0,0,0.5)",
@@ -1065,12 +1066,12 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
           >
             {/* Only show footer buttons for Step 1 and Step 4 */}
             {step === 1 && (
-              <>
+              <div style={{ display: "flex", gap: "12px", width: "100%" }}>
                 <button 
                   className="appt-cancel-btn"
                   onClick={handleCancelClick}
                   title="Cancel and close"
-                  style={{flex: 1}}
+                  style={{ flex: 1, minWidth: 0 }}
                 >
                   Cancel
                 </button>
@@ -1078,12 +1079,14 @@ export const AddWalkInModal = ({ isOpen, onClose, onSubmit }) => {
                   className="appt-continue-btn" 
                   onClick={handleContinue}
                   disabled={!!nameError || !walkInName.trim()}
-                  style={(!!nameError || !walkInName.trim()) ? { opacity: 0.5, cursor: "not-allowed", flex: 1 } : { opacity: 1, flex: 1 }}
+                  style={(!!nameError || !walkInName.trim())
+                    ? { opacity: 0.5, cursor: "not-allowed", flex: 1, minWidth: 0 }
+                    : { opacity: 1, flex: 1, minWidth: 0 }}
                   title={nameError || "Continue to service selection"}
                 >
-                  Continue
+                  Continue →
                 </button>
-              </>
+              </div>
             )}
             {step === 4 && !isConfirmed && (
               <button 

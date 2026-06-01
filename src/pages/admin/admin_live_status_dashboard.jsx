@@ -33,6 +33,16 @@ const getThemeStyles = (darkStyles, lightStyles) => {
   return isDarkMode() ? darkStyles : lightStyles;
 };
 
+const isAnyStylistAssignment = (value) => {
+  const normalizedValue = String(value || '').trim().toLowerCase();
+  return normalizedValue === 'any'
+    || normalizedValue === 'any available'
+    || normalizedValue === 'any available stylist'
+    || normalizedValue === 'any stylist'
+    || normalizedValue.includes('any available')
+    || normalizedValue.includes('any stylist');
+};
+
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS
 // ═══════════════════════════════════════════════════════════════════
@@ -324,7 +334,7 @@ const PageMetrics = ({ stats }) => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick, isWalkIn = false, onCancelWalkIn }) => {
+const QueueItem = ({ id, actualId = null, type, number, name, service, staff, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick, isWalkIn = false, onCancelWalkIn }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -343,7 +353,7 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
 
   const handleProceed = () => {
     if (onProceedClick && isProceedEnabled) {
-      onProceedClick(id, name, service);
+      onProceedClick(id, name, service, staff, actualId, isWalkIn);
     }
   };
 
@@ -561,10 +571,10 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
     setExpandedItemId(expandedItemId === id ? null : id);
   };
 
-  const handleProceedClick = (id, name, service, staff) => {
+  const handleProceedClick = (id, name, service, staff, actualId = null, isWalkIn = false) => {
     // Call parent handler to show confirmation dialog
     if (onProceedClick) {
-      onProceedClick(id, name, service, staff);
+      onProceedClick(id, name, service, staff, actualId, isWalkIn);
     }
   };
 
@@ -701,6 +711,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   const formatQueueItems = (appointments, type) => {
     return appointments.map((apt, index) => ({
       id: apt.id,
+      actualId: apt.id,
       type: type,
       number: index + 1,
       name: apt.name,
@@ -746,6 +757,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
       
       return {
         id: `walkin-${walkin.id}`,
+        actualId: walkin.id,
         type: type,
         number: index + 1,
         name: walkin.customer_name,
@@ -1309,16 +1321,18 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   const handleCompleteServiceFromDialog = async (itemId, customerName, service, staffNameOverride = null) => {
     try {
       console.log(`[LiveQueue] Moving appointment ${itemId} to current for ${customerName}`);
+      const apiId = proceedConfirmData?.actualId || itemId;
+      const isWalkIn = proceedConfirmData?.isWalkIn || String(itemId || '').startsWith('walkin-');
       const resolvedStaffName = staffNameOverride || proceedConfirmData?.staff;
       console.log(`[LiveQueue] Staff data:`, resolvedStaffName);
-      console.log(`[LiveQueue] Request payload:`, { id: itemId, status: 'current', staffName: resolvedStaffName });
+      console.log(`[LiveQueue] Request payload:`, { id: apiId, status: 'current', staffName: resolvedStaffName, isWalkIn });
       
       // Call API to update appointment status to 'current' and staff to 'in-service'
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: itemId,
+          id: apiId,
           status: 'current',
           staffName: resolvedStaffName
         })
@@ -1486,10 +1500,10 @@ export const AdminDashboardLiveStatus = ({ date }) => {
             setPendingAppointments={setPendingAppointments}
             onOpenWalkInModal={() => setShowWalkInModal(true)}
             refreshTrigger={queueRefreshTrigger}
-            onProceedClick={(id, name, service, staff) => {
+            onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
               setProceedConfirmId(id);
-              setProceedConfirmData({ name, service, staff });
-              setShowAssignStylistModal(String(staff || '').toLowerCase().includes('any available stylist'));
+              setProceedConfirmData({ name, service, staff, actualId, isWalkIn });
+              setShowAssignStylistModal(isAnyStylistAssignment(staff));
             }}
           />
 

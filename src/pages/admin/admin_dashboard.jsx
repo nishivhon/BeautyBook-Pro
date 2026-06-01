@@ -77,6 +77,16 @@ const getWalkInRevenue = (walkIn) => {
   return 0;
 };
 
+const isAnyStylistAssignment = (value) => {
+  const normalizedValue = String(value || '').trim().toLowerCase();
+  return normalizedValue === 'any'
+    || normalizedValue === 'any available'
+    || normalizedValue === 'any available stylist'
+    || normalizedValue === 'any stylist'
+    || normalizedValue.includes('any available')
+    || normalizedValue.includes('any stylist');
+};
+
 // ═══════════════════════════════════════════════════════════════════
 // SVG ICONS (UI controls — dashboard assets live in adminDashboardIcons)
 // ═══════════════════════════════════════════════════════════════════
@@ -2016,7 +2026,7 @@ export const AdminDashboard = ({ date }) => {
                 onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
                   setProceedConfirmId(id);
                   setProceedConfirmData({ name, service, staff, actualId, isWalkIn });
-                  setShowAssignStylistModal(String(staff || '').toLowerCase().includes('any available stylist'));
+                  setShowAssignStylistModal(isAnyStylistAssignment(staff));
                 }}
               />
               <CouponsPanel />
