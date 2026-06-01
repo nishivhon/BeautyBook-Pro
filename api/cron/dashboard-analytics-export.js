@@ -108,34 +108,43 @@ export default async function handler(req, res) {
     });
 
     const today = getPhtDateString();
-    const startDate = `${today.slice(0, 7)}-01`;
+    const defaultStartDate = `${today.slice(0, 7)}-01`;
+    const queryStartDate = String(req.query?.fromDate || req.query?.startDate || '').trim();
+    const queryEndDate = String(req.query?.toDate || req.query?.endDate || '').trim();
+    const startDate = /^\d{4}-\d{2}-\d{2}$/.test(queryStartDate) ? queryStartDate : defaultStartDate;
+    const endDate = /^\d{4}-\d{2}-\d{2}$/.test(queryEndDate) ? queryEndDate : today;
 
     const startDateObj = new Date(`${startDate}T00:00:00+08:00`);
+    const endDateObj = new Date(`${endDate}T00:00:00+08:00`);
     const todayObj = new Date(`${today}T00:00:00+08:00`);
     const yesterdayObj = new Date(todayObj);
     yesterdayObj.setDate(yesterdayObj.getDate() - 1);
     const yesterday = getPhtDateString(yesterdayObj);
+    const includeToday = startDate <= today && endDate >= today;
+    const lastAppointmentDate = endDate < today ? endDate : yesterday;
 
-    const appointmentPastPromise = startDate <= yesterday
+    const appointmentPastPromise = startDate <= lastAppointmentDate
       ? supabase
         .from('appointment_logs')
         .select('date, total_price, customer_name, customer_contact, assigned_staff, services')
         .gte('date', startDate)
-        .lte('date', yesterday)
+        .lte('date', lastAppointmentDate)
       : Promise.resolve({ data: [], error: null });
 
     const [appointmentPastResult, appointmentTodayResult, walkInResult] = await Promise.all([
       appointmentPastPromise,
-      supabase
-        .from('available_slots')
-        .select('date, total_price, customer_name, customer_contact, assigned_staff, services, status')
-        .in('status', ['pending', 'current', 'done'])
-        .eq('date', today),
+      includeToday
+        ? supabase
+          .from('available_slots')
+          .select('date, total_price, customer_name, customer_contact, assigned_staff, services, status')
+          .in('status', ['pending', 'current', 'done'])
+          .eq('date', today)
+        : Promise.resolve({ data: [], error: null }),
       supabase
         .from('walk_in_logs')
         .select('date, services, customer_name')
         .gte('date', startDate)
-        .lte('date', today),
+        .lte('date', endDate),
     ]);
 
     if (appointmentPastResult.error) {
@@ -152,7 +161,7 @@ export default async function handler(req, res) {
 
     const dayMap = new Map();
 
-    for (let cursor = new Date(startDateObj); cursor <= todayObj; cursor.setDate(cursor.getDate() + 1)) {
+    for (let cursor = new Date(startDateObj); cursor <= endDateObj; cursor.setDate(cursor.getDate() + 1)) {
       const date = getPhtDateString(cursor);
       dayMap.set(date, {
         date,
@@ -211,7 +220,7 @@ export default async function handler(req, res) {
     }
 
     const csv = csvLines.join('\r\n');
-    const filename = `dashboard_analytics_monthly_${today.slice(0, 7)}.csv`;
+    const filename = `dashboard_analytics_${startDate}_to_${endDate}.csv`;
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

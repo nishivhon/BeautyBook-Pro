@@ -5,6 +5,7 @@ import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
 import { useToast } from "../../components/toast";
+import DateRangePicker from "../../components/shared/DateRangePicker";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import {
   AdminDashboardNavIcon,
@@ -1224,7 +1225,7 @@ const StaffStatus = () => {
   );
 };
 
-const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
+const AnalyticsPanel = ({ onDownloadReports, isDownloading, exportPickerOpen, setExportPickerOpen }) => (
   <div className="dash-sidebar-panel">
     <div className="dash-analytics-header">
       <AdminIconSlot size="analytics-lg">
@@ -1235,12 +1236,24 @@ const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
         <p className="dash-analytics-sub">View monthly detailed report</p>
       </div>
     </div>
-    <button className="dash-download-btn" onClick={onDownloadReports} disabled={isDownloading}>
-      {isDownloading ? 'Downloading...' : 'Download Reports'}
-      <AdminIconSlot size="inline">
-        <AdminDownloadIcon />
-      </AdminIconSlot>
-    </button>
+    <div style={{ position: 'relative' }}>
+      <button
+        className="dash-download-btn"
+        onClick={() => setExportPickerOpen(true)}
+        disabled={isDownloading}
+      >
+        {isDownloading ? 'Downloading...' : 'Download Reports'}
+        <AdminIconSlot size="inline">
+          <AdminDownloadIcon />
+        </AdminIconSlot>
+      </button>
+      <DateRangePicker
+        open={exportPickerOpen}
+        initialRange={null}
+        onClose={() => setExportPickerOpen(false)}
+        onConfirm={onDownloadReports}
+      />
+    </div>
   </div>
 );
 
@@ -1526,6 +1539,7 @@ export const AdminDashboard = ({ date }) => {
   const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
   const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
   const [isDownloadingReports, setIsDownloadingReports] = useState(false);
+  const [exportPickerOpen, setExportPickerOpen] = useState(false);
   const [stats, setStats] = useState([
     { Icon: AdminMetricCalendarIcon, badge: null, badgeType: null, value: '0', label: "Total Appointments Today" },
     { Icon: AdminMetricWalkInIcon, iconSlot: "metric-walkin", badge: null, badgeType: null, value: '0', label: "Total Walk In" },
@@ -1805,11 +1819,15 @@ export const AdminDashboard = ({ date }) => {
     // For now, just logging the data
   };
 
-  const handleDownloadReports = async () => {
+  const handleDownloadReports = async (range) => {
     try {
       setIsDownloadingReports(true);
 
-      const response = await fetch('/api/cron/dashboard-analytics-export');
+      const searchParams = new URLSearchParams();
+      if (range?.startDate) searchParams.set('fromDate', range.startDate);
+      if (range?.endDate) searchParams.set('toDate', range.endDate);
+
+      const response = await fetch(`/api/cron/dashboard-analytics-export?${searchParams.toString()}`);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || `Failed to download reports: ${response.status}`);
@@ -1819,7 +1837,8 @@ export const AdminDashboard = ({ date }) => {
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = 'dashboard_analytics_monthly.csv';
+      const rangeLabel = range?.startDate && range?.endDate ? `${range.startDate}_to_${range.endDate}` : new Date().toISOString().slice(0, 10);
+      link.download = `dashboard_analytics_${rangeLabel}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1838,6 +1857,7 @@ export const AdminDashboard = ({ date }) => {
         duration: 3000,
       });
     } finally {
+      setExportPickerOpen(false);
       setIsDownloadingReports(false);
     }
   };
@@ -1999,7 +2019,12 @@ export const AdminDashboard = ({ date }) => {
 
             <div className="dash-sidebar">
               <StaffStatus />
-              <AnalyticsPanel onDownloadReports={handleDownloadReports} isDownloading={isDownloadingReports} />
+              <AnalyticsPanel
+                onDownloadReports={handleDownloadReports}
+                isDownloading={isDownloadingReports}
+                exportPickerOpen={exportPickerOpen}
+                setExportPickerOpen={setExportPickerOpen}
+              />
             </div>
           </div>
         </main>
