@@ -69,32 +69,61 @@ const getManilaNow = () => {
   };
 };
 
+const DRY_RUN = String(process.env.REMINDERS_DRY_RUN || '').trim() === '1';
+
 const parseTimeToMinutes = (timeValue) => {
-  if (!timeValue || typeof timeValue !== 'string') return null;
+  if (!timeValue) return null;
 
-  const normalized = timeValue.trim().toUpperCase();
-  const match = normalized.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/);
-  if (!match) return null;
+  // Accept strings like "10:30", "10:30 AM", "10:30:00", or ISO datetimes
+  try {
+    const asString = String(timeValue).trim();
 
-  let hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  const meridiem = match[3] || null;
+    // 1) Try common HH:MM or HH:MM AM/PM formats
+    const normalized = asString.toUpperCase();
+    const match = normalized.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/);
+    if (match) {
+      let hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      const meridiem = match[4] || null;
 
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
-  if (minutes < 0 || minutes > 59) return null;
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+      if (minutes < 0 || minutes > 59) return null;
 
-  if (meridiem) {
-    if (hours < 1 || hours > 12) return null;
-    if (meridiem === 'AM') {
-      hours = hours === 12 ? 0 : hours;
-    } else if (meridiem === 'PM') {
-      hours = hours === 12 ? 12 : hours + 12;
+      if (meridiem) {
+        if (hours < 1 || hours > 12) return null;
+        if (meridiem === 'AM') {
+          hours = hours === 12 ? 0 : hours;
+        } else if (meridiem === 'PM') {
+          hours = hours === 12 ? 12 : hours + 12;
+        }
+      } else if (hours < 0 || hours > 23) {
+        return null;
+      }
+
+      return (hours * 60) + minutes;
     }
-  } else if (hours < 0 || hours > 23) {
-    return null;
+
+    // 2) Try parseable date/time strings (ISO etc.). Convert to Asia/Manila time parts
+    const parsed = Date.parse(asString);
+    if (!Number.isNaN(parsed)) {
+      const d = new Date(parsed);
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Manila',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).formatToParts(d).reduce((acc, p) => { if (p.type !== 'literal') acc[p.type] = p.value; return acc; }, {});
+
+      const h = Number(parts.hour || 0);
+      const m = Number(parts.minute || 0);
+      if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+      return (h * 60) + m;
+    }
+  } catch (err) {
+    // Fall through to null
   }
 
-  return (hours * 60) + minutes;
+  return null;
 };
 
 const formatAppointmentTime = (timeValue) => {
@@ -166,7 +195,15 @@ const sendSmsAsync = async (phone, name, appointmentTime, serviceSummary, staffN
     throw new Error(`SMS request failed with HTTP ${response.status}: ${errorText}`);
   }
 
-  return response.json().catch(() => ({}));
+  const body = await response.json().catch(() => ({}));
+
+  console.log('[AppointmentReminders] SMS sent successfully:', {
+    to: phone,
+    status: response.status,
+    providerResponse: body,
+  });
+
+  return { ok: true, httpStatus: response.status, providerResponse: body };
 };
 
 const sendEmailAsync = async (email, name, appointmentTime, serviceSummary, staffName) => {
@@ -220,10 +257,31 @@ const sendEmailAsync = async (email, name, appointmentTime, serviceSummary, staf
     throw new Error(`Email request failed with HTTP ${response.status}: ${errorText}`);
   }
 
-  return response.json().catch(() => ({}));
+  const body = await response.json().catch(() => ({}));
+
+  console.log('[AppointmentReminders] Email sent successfully:', {
+    to: email,
+    status: response.status,
+    providerResponse: body,
+  });
+
+  return { ok: true, httpStatus: response.status, providerResponse: body };
 };
 
 export default async (req, res) => {
+  // Helpful for Vercel cron debugging
+  console.log('[AppointmentReminders] request:', {
+    method: req.method,
+    url: req?.url,
+    headers: { 'x-vercel-id': req?.headers?.['x-vercel-id'] },
+    env: {
+      DRY_RUN,
+      BREVO_API_KEY_SET: !!BREVO_API_KEY,
+      BREVO_SENDER_EMAIL_SET: !!BREVO_SENDER_EMAIL,
+      UNISMS_API_KEY_SET: !!process.env.UNISMS_API_KEY,
+    }
+  });
+
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -233,22 +291,57 @@ export default async (req, res) => {
     const manilaNow = getManilaNow();
     const reminderTargetMinutes = manilaNow.minutesOfDay + 15;
 
+  console.log('[AppointmentReminders] manilaNow:', manilaNow, 'reminderTargetMinutes:', reminderTargetMinutes, 'DRY_RUN:', DRY_RUN);
+
+    const runAt = new Date().toISOString();
+    console.log('[AppointmentReminders] runAtISO:', runAt);
+
     const { data: slots, error } = await supabase
-      .from('available_slots')
-      .select('id, date, time_slot, customer_name, customer_contact, assigned_staff, services, status, availability, reminder_sent, reminder_sent_at')
-      .eq('date', manilaNow.date)
-      .eq('availability', false)
-      .in('status', ['pending', 'current'])
-      .eq('reminder_sent', false);
+    .from('available_slots')
+    .select('id, date, time_slot, customer_name, customer_contact, assigned_staff, services, status, availability, reminder_sent, reminder_sent_at')
+    .eq('date', manilaNow.date)
+    // Send based on status only (availability may be true/false depending on how booking sets the row)
+    .in('status', ['pending', 'current'])
+    .eq('reminder_sent', false);
 
     if (error) {
       throw error;
     }
 
     const candidates = (slots || []).filter((slot) => {
-      const slotMinutes = parseTimeToMinutes(String(slot.time_slot || ''));
-      return slotMinutes !== null && slotMinutes === reminderTargetMinutes;
+      const rawTime = slot.time_slot || '';
+      const slotMinutes = parseTimeToMinutes(String(rawTime));
+      if (slotMinutes === null) {
+        console.log('[AppointmentReminders] Could not parse time for slot', slot.id, 'raw:', rawTime);
+        return false;
+      }
+      // allow tolerance window in case scheduler timing/server clock differs
+      return Math.abs(slotMinutes - reminderTargetMinutes) <= 10;
     });
+
+    console.log('[AppointmentReminders] fetched slots:', (slots || []).length, 'candidates after filter:', candidates.length);
+
+    // Minimal time debug for local testing:
+    // show only the upcoming 15-min window and whether each slot falls inside it.
+    // (No large per-slot diff logs.)
+    if (slots && slots.length > 0) {
+      const windowStart = reminderTargetMinutes - 10;
+      const windowEnd = reminderTargetMinutes + 10;
+      const within = candidates.map((slot) => ({
+        id: slot.id,
+        time_slot: slot.time_slot,
+        channel: isEmailContact(String(slot.customer_contact || '').trim()) ? 'email' : 'sms',
+      }));
+
+      console.log('[AppointmentReminders][Window] nowMinutes:', manilaNow.minutesOfDay, {
+        reminderTargetMinutes,
+        toleranceWindowMinutes: 10,
+        windowStart,
+        windowEnd,
+        withinCount: within.length,
+        within,
+      });
+    }
 
     const sent = [];
     const skipped = [];
@@ -270,29 +363,98 @@ export default async (req, res) => {
       });
 
       try {
-        if (isEmailContact(contact)) {
-          const normalizedEmail = normalizeEmail(contact);
-          await sendEmailAsync(
-            normalizedEmail,
-            slot.customer_name || 'Customer',
-            appointmentTime,
-            serviceSummary,
-            slot.assigned_staff
-          );
-        } else {
-          const phone = formatPhoneForSms(contact);
-          if (!phone) {
-            skipped.push({ id: slot.id, reason: 'invalid_phone' });
-            continue;
-          }
+        if (DRY_RUN) {
+          // In dry-run mode, just record what would be sent
+          console.log('[AppointmentReminders] DRY_RUN candidate:', {
+            slotId: slot.id,
+            contact,
+            channel: isEmailContact(contact) ? 'email' : 'sms',
+            to: isEmailContact(contact) ? normalizeEmail(contact) : formatPhoneForSms(contact),
+            preview: reminderText,
+          });
 
-          await sendSmsAsync(
-            phone,
-            slot.customer_name || 'Customer',
-            appointmentTime,
-            serviceSummary,
-            slot.assigned_staff
-          );
+          sent.push({
+            id: slot.id,
+            customer: slot.customer_name,
+            time_slot: slot.time_slot,
+            channel: isEmailContact(contact) ? 'email' : 'sms',
+            preview: reminderText,
+            dryRun: true,
+          });
+          console.log('[AppointmentReminders] DRY_RUN - would send to', contact, 'preview:', reminderText);
+        } else {
+          if (isEmailContact(contact)) {
+            const normalizedEmail = normalizeEmail(contact);
+            const emailResult = await sendEmailAsync(
+              normalizedEmail,
+              slot.customer_name || 'Customer',
+              appointmentTime,
+              serviceSummary,
+              slot.assigned_staff
+            );
+
+            const { error: updateError } = await supabase
+              .from('available_slots')
+              .update({
+                reminder_sent: true,
+                reminder_sent_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', slot.id);
+
+            if (updateError) {
+              throw updateError;
+            }
+
+            sent.push({
+              id: slot.id,
+              customer: slot.customer_name,
+              time_slot: slot.time_slot,
+              channel: 'email',
+              to: normalizedEmail,
+              provider: 'brevo',
+              providerHttpStatus: emailResult?.httpStatus,
+              preview: reminderText,
+            });
+          } else {
+            const phone = formatPhoneForSms(contact);
+            if (!phone) {
+              skipped.push({ id: slot.id, reason: 'invalid_phone' });
+              continue;
+            }
+
+            const smsResult = await sendSmsAsync(
+              phone,
+              slot.customer_name || 'Customer',
+              appointmentTime,
+              serviceSummary,
+              slot.assigned_staff
+            );
+
+            const { error: updateError } = await supabase
+              .from('available_slots')
+              .update({
+                reminder_sent: true,
+                reminder_sent_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', slot.id);
+
+            if (updateError) {
+              throw updateError;
+            }
+
+            sent.push({
+              id: slot.id,
+              customer: slot.customer_name,
+              time_slot: slot.time_slot,
+              channel: 'sms',
+              to: phone,
+              provider: 'unisms',
+              providerHttpStatus: smsResult?.httpStatus,
+              preview: reminderText,
+            });
+          }
         }
       } catch (sendError) {
         skipped.push({
@@ -302,27 +464,6 @@ export default async (req, res) => {
         });
         continue;
       }
-
-      const { error: updateError } = await supabase
-        .from('available_slots')
-        .update({
-          reminder_sent: true,
-          reminder_sent_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', slot.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      sent.push({
-        id: slot.id,
-        customer: slot.customer_name,
-        time_slot: slot.time_slot,
-        channel: isEmailContact(contact) ? 'email' : 'sms',
-        preview: reminderText,
-      });
     }
 
     return res.status(200).json({
