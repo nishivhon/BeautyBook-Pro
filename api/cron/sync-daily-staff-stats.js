@@ -11,7 +11,11 @@ import { createClient } from '@supabase/supabase-js';
  * 4. Updates the staffs table with these counts
  */
 export default async (req, res) => {
-  if (!['GET', 'POST'].includes(req.method)) {
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (!['GET', 'POST', 'HEAD'].includes(req.method)) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
