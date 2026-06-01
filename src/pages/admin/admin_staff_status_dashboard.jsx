@@ -6,6 +6,7 @@ import CustomerHistoryModal from "../../components/modal/admin/customer_history"
 import { StatusUpdateModal } from "../../components/modal/admin/status_update";
 import { ManageServiceModal } from "../../components/modal/admin/manage_service";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
+import DateRangePicker from "../../components/shared/DateRangePicker";
 import {
   AdminDashboardNavIcon,
   AdminServicesNavIcon,
@@ -902,7 +903,7 @@ const QuickActionsPanel = ({ onCustomerHistory }) => (
 );
 
 /* ── Analytics panel ── */
-const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
+const AnalyticsPanel = ({ onDownloadReports, isDownloading, exportPickerOpen, setExportPickerOpen }) => (
   <div className="dash-sidebar-panel">
     <div className="dash-analytics-header">
       <AdminIconSlot size="analytics-lg">
@@ -913,12 +914,20 @@ const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
         <p className="dash-analytics-sub">View past 7 days detailed report</p>
       </div>
     </div>
-    <button className="dash-download-btn" onClick={onDownloadReports} disabled={isDownloading}>
-      {isDownloading ? 'Downloading...' : 'Download Reports'}
-      <AdminIconSlot size="inline">
-        <AdminDownloadIcon />
-      </AdminIconSlot>
-    </button>
+    <div style={{ position: 'relative' }}>
+      <button className="dash-download-btn" onClick={() => setExportPickerOpen(true)} disabled={isDownloading}>
+        {isDownloading ? 'Downloading...' : 'Download Reports'}
+        <AdminIconSlot size="inline">
+          <AdminDownloadIcon />
+        </AdminIconSlot>
+      </button>
+      <DateRangePicker
+        open={exportPickerOpen}
+        initialRange={null}
+        onClose={() => setExportPickerOpen(false)}
+        onConfirm={onDownloadReports}
+      />
+    </div>
   </div>
 );
 
@@ -941,6 +950,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
   const [serviceCategories, setServiceCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [isDownloadingReports, setIsDownloadingReports] = useState(false);
+  const [exportPickerOpen, setExportPickerOpen] = useState(false);
   const [bookingNotifications, setBookingNotifications] = useState([]);
   const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
   const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
@@ -1397,11 +1407,15 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     }
   };
 
-  const handleDownloadReports = async () => {
+  const handleDownloadReports = async (range) => {
     try {
       setIsDownloadingReports(true);
 
-      const response = await fetch('/api/cron/staff-logs-export');
+      const searchParams = new URLSearchParams();
+      if (range?.startDate) searchParams.set('fromDate', range.startDate);
+      if (range?.endDate) searchParams.set('toDate', range.endDate);
+
+      const response = await fetch(`/api/cron/staff-logs-export?${searchParams.toString()}`);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || `Failed to download reports: ${response.status}`);
@@ -1411,7 +1425,8 @@ export const AdminDashboardStaffStatus = ({ date }) => {
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = 'staff_logs_last_7_days.xlsx';
+      const rangeLabel = range?.startDate && range?.endDate ? `${range.startDate}_to_${range.endDate}` : new Date().toISOString().slice(0, 10);
+      link.download = `staff_logs_${rangeLabel}.xlsx`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1430,6 +1445,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
         duration: 3000,
       });
     } finally {
+      setExportPickerOpen(false);
       setIsDownloadingReports(false);
     }
   };
@@ -1505,7 +1521,12 @@ export const AdminDashboardStaffStatus = ({ date }) => {
             <QuickActionsPanel 
               onCustomerHistory={() => setIsCustomerHistoryOpen(true)}
             />
-            <AnalyticsPanel onDownloadReports={handleDownloadReports} isDownloading={isDownloadingReports} />
+            <AnalyticsPanel
+              onDownloadReports={handleDownloadReports}
+              isDownloading={isDownloadingReports}
+              exportPickerOpen={exportPickerOpen}
+              setExportPickerOpen={setExportPickerOpen}
+            />
           </div>
         </div>
         </main>

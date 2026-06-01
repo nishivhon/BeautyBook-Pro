@@ -51,13 +51,17 @@ export default async function handler(req, res) {
     });
 
     const today = getPhtDateString();
-    const startDate = shiftDateString(today, -6);
+    const queryStartDate = String(req.query?.fromDate || req.query?.startDate || '').trim();
+    const queryEndDate = String(req.query?.toDate || req.query?.endDate || '').trim();
+    const defaultStartDate = shiftDateString(today, -6);
+    const startDate = /^\d{4}-\d{2}-\d{2}$/.test(queryStartDate) ? queryStartDate : defaultStartDate;
+    const endDate = /^\d{4}-\d{2}-\d{2}$/.test(queryEndDate) ? queryEndDate : today;
 
     const { data: rows, error } = await supabase
       .from('staff_logs')
       .select('date, staff_name, clock_in, clock_out, total_clients, total_walk_in, done_clients')
       .gte('date', startDate)
-      .lte('date', today)
+      .lte('date', endDate)
       .order('date', { ascending: true })
       .order('staff_name', { ascending: true });
 
@@ -86,7 +90,7 @@ export default async function handler(req, res) {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Staff Logs');
 
     const xlsxBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-    const filename = `staff_logs_last_7_days_${today}.xlsx`;
+    const filename = `staff_logs_${startDate}_to_${endDate}.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
