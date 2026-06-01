@@ -1725,11 +1725,10 @@ export const AdminDashboard = ({ date }) => {
     const totalWalkIns = walkInLogs.length;
 
     const inQueueCount = [
-      ...currentAppointments.filter(apt => apt.date === today),
       ...pendingAppointments.filter(apt => apt.date === today),
       ...walkInLogs.filter((walkIn) => {
         const walkInStatus = String(walkIn.status || '').toLowerCase();
-        if (walkInStatus && !['current', 'pending'].includes(walkInStatus)) return false;
+        if (walkInStatus && !['pending'].includes(walkInStatus)) return false;
         const walkInDate = walkIn.date || walkIn.created_at?.split('T')[0] || walkIn.createdAt?.split('T')[0];
         return walkInDate === today;
       }),
