@@ -163,6 +163,9 @@ const getMetricActionButtonStyles = () => {
 const formatRevenueValue = (value) => `₱${Number(value || 0).toLocaleString('en-PH')}`;
 const SUPERADMIN_LIST_VIEWPORT_HEIGHT = 560;
 
+// Theme-aware revenue text color: keep existing dark-mode green, use darker green for light mode
+const getRevenueTextColor = () => (isDarkMode() ? '#7fbf7f' : '#1e5e2b');
+
 const downloadXlsxWorkbook = (workbook, fileName) => {
   const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
   const blob = new Blob([buffer], {
@@ -361,7 +364,7 @@ const StaffSummaryPanel = ({ staffMetrics = [], loading = false, rangeLabel = ""
 
               <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 15, fontWeight: 700 }}>{item.walkIns}</div>
               <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 15, fontWeight: 700 }}>{item.appointments}</div>
-              <div style={{ textAlign: "right", color: "#7fbf7f", fontSize: 15, fontWeight: 800 }}>{formatRevenueValue(item.revenue)}</div>
+              <div style={{ textAlign: "right", color: getRevenueTextColor(), fontSize: 15, fontWeight: 800 }}>{formatRevenueValue(item.revenue)}</div>
             </div>
           ))
         )}
@@ -558,7 +561,7 @@ export default function SuperAdminDashboard() {
   const reportGraphModeLabel = weeklyGraphMode === "weekly" ? "Weekly points" : "Daily points";
   const reportGraphCellWidth = weeklyGraphMode === "weekly" ? 118 : 76;
   const reportGraphWidth = Math.max(720, weeklyGraph.length * reportGraphCellWidth);
-  const reportGraphHeight = 300;
+  const reportGraphHeight = 450;
   const reportGraphPadding = { top: 24, right: 24, bottom: 60, left: 50 };
   const reportGraphPlotWidth = Math.max(1, reportGraphWidth - reportGraphPadding.left - reportGraphPadding.right);
   const reportGraphPlotHeight = Math.max(1, reportGraphHeight - reportGraphPadding.top - reportGraphPadding.bottom);
@@ -1097,7 +1100,7 @@ export default function SuperAdminDashboard() {
 
                         <div style={{ textAlign: "center", color: "var(--color-white)", fontSize: 15, fontWeight: 700 }}>{Number(category.totalBooked || 0)}</div>
 
-                        <div style={{ textAlign: "right", color: "#7fbf7f", fontSize: 15, fontWeight: 800 }}>
+                        <div style={{ textAlign: "right", color: getRevenueTextColor(), fontSize: 15, fontWeight: 800 }}>
                           {formatRevenueValue((detailedServiceMetrics.find((d) => d.category === category.category)?.services || []).reduce((s, svc) => s + Number(svc.revenue || 0), 0))}
                         </div>
                       </div>
@@ -1113,7 +1116,7 @@ export default function SuperAdminDashboard() {
           className="dash-stat-card no-hover"
           style={{
             width: "100%",
-            minHeight: 360,
+            minHeight: 550,
             padding: 24,
             display: "flex",
             flexDirection: "column",
@@ -1136,7 +1139,7 @@ export default function SuperAdminDashboard() {
             ref={graphChartRef}
             style={{
               flex: 1,
-              minHeight: 260,
+              minHeight: 400,
               borderRadius: 18,
               border: "1px solid rgba(152, 143, 129, 0.35)",
               background: "linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01))",
@@ -1146,15 +1149,15 @@ export default function SuperAdminDashboard() {
             }}
           >
             {weeklyGraphLoading ? (
-              <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
+              <div style={{ height: 450, display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
                 Loading report graph...
               </div>
             ) : weeklyGraphError ? (
-              <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "#c08a4d", fontWeight: 600 }}>
+              <div style={{ height: 450, display: "flex", alignItems: "center", justifyContent: "center", color: "#c08a4d", fontWeight: 600 }}>
                 {weeklyGraphError}
               </div>
             ) : weeklyGraph.length === 0 ? (
-              <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
+              <div style={{ height: 450, display: "flex", alignItems: "center", justifyContent: "center", color: "#9f8457", fontWeight: 600 }}>
                 No report data available.
               </div>
             ) : (
@@ -1177,8 +1180,8 @@ export default function SuperAdminDashboard() {
 
                       return (
                         <g key={`grid-${index}`}>
-                          <line x1={reportGraphPadding.left} y1={y} x2={reportGraphWidth - reportGraphPadding.right} y2={y} stroke="rgba(152, 143, 129, 0.18)" strokeDasharray="4 6" />
-                          <text x={14} y={y + 4} fill="#9f8457" fontSize="10" fontWeight="600">{labelValue}</text>
+                          <line x1={reportGraphPadding.left} y1={y} x2={reportGraphWidth - reportGraphPadding.right} y2={y} stroke="rgba(152, 143, 129, 0.18)" strokeDasharray="4 6" strokeWidth="5" />
+                          <text x={14} y={y + 6} fill="#9f8457" fontSize="18" fontWeight="700">{labelValue}</text>
                         </g>
                       );
                     })}
@@ -1194,10 +1197,10 @@ export default function SuperAdminDashboard() {
                         <circle
                           cx={point.x}
                           cy={point.y}
-                          r="5"
+                          r="14"
                           fill="#dd901d"
                           stroke="rgba(17, 12, 6, 0.9)"
-                          strokeWidth="2"
+                          strokeWidth="4"
                           onMouseEnter={() => handleGraphPointHover(point, reportGraphSeries[0])}
                           onMouseLeave={() => setHoveredTower(null)}
                           style={{ cursor: "pointer" }}
@@ -1210,10 +1213,10 @@ export default function SuperAdminDashboard() {
                         <circle
                           cx={point.x}
                           cy={point.y}
-                          r="5"
+                          r="14"
                           fill="#e85d75"
                           stroke="rgba(17, 12, 6, 0.9)"
-                          strokeWidth="2"
+                          strokeWidth="4"
                           onMouseEnter={() => handleGraphPointHover(point, reportGraphSeries[1])}
                           onMouseLeave={() => setHoveredTower(null)}
                           style={{ cursor: "pointer" }}
@@ -1228,8 +1231,8 @@ export default function SuperAdminDashboard() {
 
                       return (
                         <g key={`axis-${dayEntry.date || index}`}>
-                          <text x={x} y={reportGraphHeight - 26} fill="#fff" fontSize="11" fontWeight="700" textAnchor="middle">{axisLabel}</text>
-                          <text x={x} y={reportGraphHeight - 10} fill="#9f8457" fontSize="10" fontWeight="600" textAnchor="middle">{axisSubLabel}</text>
+                          <text x={x} y={reportGraphHeight - 30} fill="#fff" fontSize="18" fontWeight="700" textAnchor="middle">{axisLabel}</text>
+                          <text x={x} y={reportGraphHeight - 10} fill="#9f8457" fontSize="16" fontWeight="700" textAnchor="middle">{axisSubLabel}</text>
                         </g>
                       );
                     })}
