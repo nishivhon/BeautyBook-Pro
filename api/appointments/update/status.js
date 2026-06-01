@@ -455,10 +455,20 @@ export default async (req, res) => {
     console.log(`[UpdateStatus] === STEP 2: Updating slot status to '${status}' ===`);
     
     // Update the appropriate table
+    const resolvedAssignedStaff = incomingStaffName || actualSlotData?.assigned_staff || null;
+
+    if (resolvedAssignedStaff && incomingStaffName) {
+      actualSlotData = {
+        ...actualSlotData,
+        assigned_staff: resolvedAssignedStaff,
+      };
+    }
+
     const updateQuery = supabase
       .from(isWalkIn ? 'walk_in_logs' : 'available_slots')
       .update({
         status,
+        ...(resolvedAssignedStaff ? { assigned_staff: resolvedAssignedStaff } : {}),
         ...(isWalkIn ? {} : (status === 'cancelled' ? { reminder_sent: false, reminder_sent_at: null } : {})),
         updated_at: isWalkIn ? getPhtTimestampString() : new Date().toISOString()
       })
@@ -507,29 +517,25 @@ export default async (req, res) => {
     }
 
     // Update staff in_service based on status
-    const resolvedStaffName = incomingStaffName || actualSlotData?.assigned_staff || null;
+    const resolvedStaffName = resolvedAssignedStaff;
 
     if (resolvedStaffName) {
       console.log(`[UpdateStatus] Processing staff update for: ${resolvedStaffName}`);
-      let staffInServiceValue = 'avail'; // default for 'done'
-      let walkInValue = null;
+      let staffInServiceValue = 'avail';
+      let walkInValue = false;
       
       if (status === 'current') {
         staffInServiceValue = 'in-service';
-        walkInValue = false;
         console.log(`[UpdateStatus] Setting staff ${resolvedStaffName} in_service to 'in-service'`);
       } else if (status === 'done') {
         staffInServiceValue = 'avail';
-        walkInValue = true;
         console.log(`[UpdateStatus] Setting staff ${resolvedStaffName} in_service to 'avail'`);
       }
       
       if (status === 'current' || status === 'done') {
         console.log(`[UpdateStatus] Querying staff table for name = '${resolvedStaffName}'`);
         const staffUpdateData = { in_service: staffInServiceValue };
-        if (walkInValue !== null) {
-          staffUpdateData.walk_in = walkInValue;
-        }
+        staffUpdateData.walk_in = walkInValue;
 
         const { data: staffData, error: staffError } = await supabase
           .from('staffs')
@@ -553,16 +559,16 @@ export default async (req, res) => {
       console.log(`[UpdateStatus] No staff name provided, skipping staff update`);
     }
 
-    // If slot transitioned to 'done' (and wasn't already done), increment staff counters.
+    // If slot transitioned to 'current' or 'done', increment the relevant staff counters.
     try {
       const previousStatus = actualSlotData?.status;
-      if (status === 'done' && previousStatus !== 'done' && resolvedStaffName) {
-        console.log('[UpdateStatus] Incrementing staff counters for', resolvedStaffName);
+      if (status === 'current' && previousStatus !== 'current' && resolvedStaffName) {
+        console.log('[UpdateStatus] Incrementing total_clients for', resolvedStaffName);
 
         // Fetch current staff counters
         const { data: staffRows, error: staffFetchErr } = await supabase
           .from('staffs')
-          .select('id, total_clients, done_clients, total_walk_in')
+          .select('id, total_clients, total_walk_in')
           .eq('names', resolvedStaffName)
           .limit(1);
 
@@ -572,15 +578,47 @@ export default async (req, res) => {
           console.warn('[UpdateStatus] No staff row found to increment for', resolvedStaffName);
         } else {
           const staffRow = staffRows[0];
-          const updateObj = {};
+          const updateObj = {
+            total_clients: (Number(staffRow.total_clients) || 0) + 1,
+          };
 
-          // If this was a walk-in appointment, increment total_walk_in
           if (isWalkIn) {
             updateObj.total_walk_in = (Number(staffRow.total_walk_in) || 0) + 1;
-            updateObj.done_clients = (Number(staffRow.done_clients) || 0) + 1;
+          }
+
+          const { data: updatedStaff, error: staffIncErr } = await supabase
+            .from('staffs')
+            .update(updateObj)
+            .eq('id', staffRow.id)
+            .select();
+
+          if (staffIncErr) {
+            console.error('[UpdateStatus] Error incrementing staff counters:', staffIncErr.message);
           } else {
-            updateObj.total_clients = (Number(staffRow.total_clients) || 0) + 1;
-            updateObj.done_clients = (Number(staffRow.done_clients) || 0) + 1;
+            console.log('[UpdateStatus] Staff counters incremented:', updatedStaff);
+          }
+        }
+      } else if (status === 'done' && previousStatus !== 'done' && resolvedStaffName) {
+        console.log('[UpdateStatus] Incrementing done_clients for', resolvedStaffName);
+
+        const { data: staffRows, error: staffFetchErr } = await supabase
+          .from('staffs')
+          .select('id, done_clients, total_walk_in')
+          .eq('names', resolvedStaffName)
+          .limit(1);
+
+        if (staffFetchErr) {
+          console.error('[UpdateStatus] Failed to fetch staff counters:', staffFetchErr.message);
+        } else if (!staffRows || staffRows.length === 0) {
+          console.warn('[UpdateStatus] No staff row found to increment for', resolvedStaffName);
+        } else {
+          const staffRow = staffRows[0];
+          const updateObj = {
+            done_clients: (Number(staffRow.done_clients) || 0) + 1,
+          };
+
+          if (isWalkIn) {
+            updateObj.total_walk_in = (Number(staffRow.total_walk_in) || 0) + 1;
           }
 
           const { data: updatedStaff, error: staffIncErr } = await supabase

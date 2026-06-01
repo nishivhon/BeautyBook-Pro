@@ -4,6 +4,7 @@ import { logoutOperator } from "../../services/operatorAuth";
 import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { AssignStylistModal } from "../../components/modal/admin/assign_stylist";
 import { useToast } from "../../components/toast";
 import DateRangePicker from "../../components/shared/DateRangePicker";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
@@ -1528,6 +1529,7 @@ export const AdminDashboard = ({ date }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [showAssignStylistModal, setShowAssignStylistModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [proceedConfirmId, setProceedConfirmId] = useState(null);
   const [proceedConfirmData, setProceedConfirmData] = useState(null);
@@ -1862,15 +1864,16 @@ export const AdminDashboard = ({ date }) => {
     }
   };
 
-  const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
+  const handleCompleteServiceFromDialog = async (itemId, customerName, service, staffNameOverride = null) => {
     try {
       // For walk-ins, use actualId instead of prefixed id
       const apiId = proceedConfirmData?.actualId || itemId;
       const isWalkIn = proceedConfirmData?.isWalkIn || false;
+      const resolvedStaffName = staffNameOverride || proceedConfirmData?.staff;
       
       console.log(`[AdminDashboard] Moving appointment ${itemId} to current for ${customerName}`);
       console.log(`[AdminDashboard] isWalkIn:`, isWalkIn, 'actualId:', apiId);
-      console.log(`[AdminDashboard] Request payload:`, { id: apiId, status: 'current', staffName: proceedConfirmData?.staff });
+      console.log(`[AdminDashboard] Request payload:`, { id: apiId, status: 'current', staffName: resolvedStaffName });
       
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
@@ -1878,7 +1881,7 @@ export const AdminDashboard = ({ date }) => {
         body: JSON.stringify({
           id: apiId,
           status: 'current',
-          staffName: proceedConfirmData?.staff
+          staffName: resolvedStaffName
         })
       });
 
@@ -1923,6 +1926,7 @@ export const AdminDashboard = ({ date }) => {
 
       // Close dialog and show success
       setProceedConfirmId(null);
+      setProceedConfirmData(null);
       showToast({
         message: `✓ Status updated!`,
         type: 'success',
@@ -1951,9 +1955,9 @@ export const AdminDashboard = ({ date }) => {
     >
       {/* Sidebar */}
       <div
-        inert={showWalkInModal ? "" : undefined}
-        aria-hidden={showWalkInModal ? "true" : undefined}
-        style={{ pointerEvents: showWalkInModal ? "none" : "auto" }}
+        inert={showWalkInModal || showAssignStylistModal ? "" : undefined}
+        aria-hidden={showWalkInModal || showAssignStylistModal ? "true" : undefined}
+        style={{ pointerEvents: showWalkInModal || showAssignStylistModal ? "none" : "auto" }}
       >
         <AdminSidebar 
           activeNav={activeNav}
@@ -2012,6 +2016,7 @@ export const AdminDashboard = ({ date }) => {
                 onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
                   setProceedConfirmId(id);
                   setProceedConfirmData({ name, service, staff, actualId, isWalkIn });
+                  setShowAssignStylistModal(String(staff || '').toLowerCase().includes('any available stylist'));
                 }}
               />
               <CouponsPanel />
@@ -2036,7 +2041,23 @@ export const AdminDashboard = ({ date }) => {
         onSubmit={handleAddWalkIn}
       />
 
-      {proceedConfirmId && (
+      <AssignStylistModal
+        isOpen={showAssignStylistModal}
+        title="Choose an available stylist"
+        message={`Select the stylist who will serve ${proceedConfirmData?.name} for ${proceedConfirmData?.service}.`}
+        onClose={() => {
+          setShowAssignStylistModal(false);
+          setProceedConfirmId(null);
+          setProceedConfirmData(null);
+        }}
+        onSelect={(selectedStaff) => {
+          const selectedStaffName = selectedStaff?.names || null;
+          setShowAssignStylistModal(false);
+          handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData?.name, proceedConfirmData?.service, selectedStaffName);
+        }}
+      />
+
+      {proceedConfirmId && !showAssignStylistModal && (
         <ConfirmationDialog
           isOpen={true}
           title="Move to Serving?"
@@ -2044,7 +2065,10 @@ export const AdminDashboard = ({ date }) => {
           confirmText="Yes, Proceed"
           cancelText="Cancel"
           onConfirm={() => handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData.name, proceedConfirmData.service, proceedConfirmData.staff)}
-          onCancel={() => setProceedConfirmId(null)}
+          onCancel={() => {
+            setProceedConfirmId(null);
+            setProceedConfirmData(null);
+          }}
         />
       )}
 
