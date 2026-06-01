@@ -1175,6 +1175,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
           id: s.id,
           initial: staffName ? staffName.charAt(0).toUpperCase() : '?',
           name: staffName,
+          category_specialty: s.category_specialty,
           isInService,
           walk_in: isInService ? false : Boolean(s.walk_in),
           status: status,
