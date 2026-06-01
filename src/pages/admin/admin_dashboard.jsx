@@ -4,7 +4,9 @@ import { logoutOperator } from "../../services/operatorAuth";
 import PasswordReminderBanner from "../../components/PasswordReminderBanner";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { AssignStylistModal } from "../../components/modal/admin/assign_stylist";
 import { useToast } from "../../components/toast";
+import DateRangePicker from "../../components/shared/DateRangePicker";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import {
   AdminDashboardNavIcon,
@@ -73,6 +75,16 @@ const getWalkInRevenue = (walkIn) => {
   }
 
   return 0;
+};
+
+const isAnyStylistAssignment = (value) => {
+  const normalizedValue = String(value || '').trim().toLowerCase();
+  return normalizedValue === 'any'
+    || normalizedValue === 'any available'
+    || normalizedValue === 'any available stylist'
+    || normalizedValue === 'any stylist'
+    || normalizedValue.includes('any available')
+    || normalizedValue.includes('any stylist');
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1224,7 +1236,7 @@ const StaffStatus = () => {
   );
 };
 
-const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
+const AnalyticsPanel = ({ onDownloadReports, isDownloading, exportPickerOpen, setExportPickerOpen }) => (
   <div className="dash-sidebar-panel">
     <div className="dash-analytics-header">
       <AdminIconSlot size="analytics-lg">
@@ -1235,12 +1247,24 @@ const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
         <p className="dash-analytics-sub">View monthly detailed report</p>
       </div>
     </div>
-    <button className="dash-download-btn" onClick={onDownloadReports} disabled={isDownloading}>
-      {isDownloading ? 'Downloading...' : 'Download Reports'}
-      <AdminIconSlot size="inline">
-        <AdminDownloadIcon />
-      </AdminIconSlot>
-    </button>
+    <div style={{ position: 'relative' }}>
+      <button
+        className="dash-download-btn"
+        onClick={() => setExportPickerOpen(true)}
+        disabled={isDownloading}
+      >
+        {isDownloading ? 'Downloading...' : 'Download Reports'}
+        <AdminIconSlot size="inline">
+          <AdminDownloadIcon />
+        </AdminIconSlot>
+      </button>
+      <DateRangePicker
+        open={exportPickerOpen}
+        initialRange={null}
+        onClose={() => setExportPickerOpen(false)}
+        onConfirm={onDownloadReports}
+      />
+    </div>
   </div>
 );
 
@@ -1515,6 +1539,7 @@ export const AdminDashboard = ({ date }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [showAssignStylistModal, setShowAssignStylistModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [proceedConfirmId, setProceedConfirmId] = useState(null);
   const [proceedConfirmData, setProceedConfirmData] = useState(null);
@@ -1526,6 +1551,7 @@ export const AdminDashboard = ({ date }) => {
   const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
   const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
   const [isDownloadingReports, setIsDownloadingReports] = useState(false);
+  const [exportPickerOpen, setExportPickerOpen] = useState(false);
   const [stats, setStats] = useState([
     { Icon: AdminMetricCalendarIcon, badge: null, badgeType: null, value: '0', label: "Total Appointments Today" },
     { Icon: AdminMetricWalkInIcon, iconSlot: "metric-walkin", badge: null, badgeType: null, value: '0', label: "Total Walk In" },
@@ -1699,11 +1725,10 @@ export const AdminDashboard = ({ date }) => {
     const totalWalkIns = walkInLogs.length;
 
     const inQueueCount = [
-      ...currentAppointments.filter(apt => apt.date === today),
       ...pendingAppointments.filter(apt => apt.date === today),
       ...walkInLogs.filter((walkIn) => {
         const walkInStatus = String(walkIn.status || '').toLowerCase();
-        if (walkInStatus && !['current', 'pending'].includes(walkInStatus)) return false;
+        if (walkInStatus && !['pending'].includes(walkInStatus)) return false;
         const walkInDate = walkIn.date || walkIn.created_at?.split('T')[0] || walkIn.createdAt?.split('T')[0];
         return walkInDate === today;
       }),
@@ -1805,11 +1830,15 @@ export const AdminDashboard = ({ date }) => {
     // For now, just logging the data
   };
 
-  const handleDownloadReports = async () => {
+  const handleDownloadReports = async (range) => {
     try {
       setIsDownloadingReports(true);
 
-      const response = await fetch('/api/cron/dashboard-analytics-export');
+      const searchParams = new URLSearchParams();
+      if (range?.startDate) searchParams.set('fromDate', range.startDate);
+      if (range?.endDate) searchParams.set('toDate', range.endDate);
+
+      const response = await fetch(`/api/cron/dashboard-analytics-export?${searchParams.toString()}`);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || `Failed to download reports: ${response.status}`);
@@ -1819,7 +1848,8 @@ export const AdminDashboard = ({ date }) => {
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = 'dashboard_analytics_monthly.csv';
+      const rangeLabel = range?.startDate && range?.endDate ? `${range.startDate}_to_${range.endDate}` : new Date().toISOString().slice(0, 10);
+      link.download = `dashboard_analytics_${rangeLabel}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1838,19 +1868,21 @@ export const AdminDashboard = ({ date }) => {
         duration: 3000,
       });
     } finally {
+      setExportPickerOpen(false);
       setIsDownloadingReports(false);
     }
   };
 
-  const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
+  const handleCompleteServiceFromDialog = async (itemId, customerName, service, staffNameOverride = null) => {
     try {
       // For walk-ins, use actualId instead of prefixed id
       const apiId = proceedConfirmData?.actualId || itemId;
       const isWalkIn = proceedConfirmData?.isWalkIn || false;
+      const resolvedStaffName = staffNameOverride || proceedConfirmData?.staff;
       
       console.log(`[AdminDashboard] Moving appointment ${itemId} to current for ${customerName}`);
       console.log(`[AdminDashboard] isWalkIn:`, isWalkIn, 'actualId:', apiId);
-      console.log(`[AdminDashboard] Request payload:`, { id: apiId, status: 'current', staffName: proceedConfirmData?.staff });
+      console.log(`[AdminDashboard] Request payload:`, { id: apiId, status: 'current', staffName: resolvedStaffName });
       
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
@@ -1858,7 +1890,7 @@ export const AdminDashboard = ({ date }) => {
         body: JSON.stringify({
           id: apiId,
           status: 'current',
-          staffName: proceedConfirmData?.staff
+          staffName: resolvedStaffName
         })
       });
 
@@ -1903,6 +1935,7 @@ export const AdminDashboard = ({ date }) => {
 
       // Close dialog and show success
       setProceedConfirmId(null);
+      setProceedConfirmData(null);
       showToast({
         message: `✓ Status updated!`,
         type: 'success',
@@ -1931,9 +1964,9 @@ export const AdminDashboard = ({ date }) => {
     >
       {/* Sidebar */}
       <div
-        inert={showWalkInModal ? "" : undefined}
-        aria-hidden={showWalkInModal ? "true" : undefined}
-        style={{ pointerEvents: showWalkInModal ? "none" : "auto" }}
+        inert={showWalkInModal || showAssignStylistModal ? "" : undefined}
+        aria-hidden={showWalkInModal || showAssignStylistModal ? "true" : undefined}
+        style={{ pointerEvents: showWalkInModal || showAssignStylistModal ? "none" : "auto" }}
       >
         <AdminSidebar 
           activeNav={activeNav}
@@ -1992,6 +2025,7 @@ export const AdminDashboard = ({ date }) => {
                 onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
                   setProceedConfirmId(id);
                   setProceedConfirmData({ name, service, staff, actualId, isWalkIn });
+                  setShowAssignStylistModal(isAnyStylistAssignment(staff));
                 }}
               />
               <CouponsPanel />
@@ -1999,7 +2033,12 @@ export const AdminDashboard = ({ date }) => {
 
             <div className="dash-sidebar">
               <StaffStatus />
-              <AnalyticsPanel onDownloadReports={handleDownloadReports} isDownloading={isDownloadingReports} />
+              <AnalyticsPanel
+                onDownloadReports={handleDownloadReports}
+                isDownloading={isDownloadingReports}
+                exportPickerOpen={exportPickerOpen}
+                setExportPickerOpen={setExportPickerOpen}
+              />
             </div>
           </div>
         </main>
@@ -2011,7 +2050,23 @@ export const AdminDashboard = ({ date }) => {
         onSubmit={handleAddWalkIn}
       />
 
-      {proceedConfirmId && (
+      <AssignStylistModal
+        isOpen={showAssignStylistModal}
+        title="Choose an available stylist"
+        message={`Select the stylist who will serve ${proceedConfirmData?.name} for ${proceedConfirmData?.service}.`}
+        onClose={() => {
+          setShowAssignStylistModal(false);
+          setProceedConfirmId(null);
+          setProceedConfirmData(null);
+        }}
+        onSelect={(selectedStaff) => {
+          const selectedStaffName = selectedStaff?.names || null;
+          setShowAssignStylistModal(false);
+          handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData?.name, proceedConfirmData?.service, selectedStaffName);
+        }}
+      />
+
+      {proceedConfirmId && !showAssignStylistModal && (
         <ConfirmationDialog
           isOpen={true}
           title="Move to Serving?"
@@ -2019,7 +2074,10 @@ export const AdminDashboard = ({ date }) => {
           confirmText="Yes, Proceed"
           cancelText="Cancel"
           onConfirm={() => handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData.name, proceedConfirmData.service, proceedConfirmData.staff)}
-          onCancel={() => setProceedConfirmId(null)}
+          onCancel={() => {
+            setProceedConfirmId(null);
+            setProceedConfirmData(null);
+          }}
         />
       )}
 

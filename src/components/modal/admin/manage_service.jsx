@@ -58,11 +58,73 @@ export const ManageServiceModal = ({ isOpen, staff, onClose, onSave, serviceCate
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [toast, setToast] = useState(null);
 
+  const normalizeSpecialtyItem = (item) => {
+    if (item === null || item === undefined) return [];
+
+    if (Array.isArray(item)) {
+      return item.flatMap((entry) => normalizeSpecialtyItem(entry));
+    }
+
+    const text = String(item).trim();
+    if (!text) return [];
+
+    if (text.startsWith('[') || text.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(text);
+        return normalizeSpecialtyItem(parsed);
+      } catch (_error) {
+        // fall through to plain string handling
+      }
+    }
+
+    const cleaned = text
+      .replace(/^\[+|\]+$/g, '')
+      .replace(/^"|"$/g, '')
+      .replace(/^'|'$/g, '')
+      .trim();
+
+    return cleaned ? [cleaned] : [];
+  };
+
+  const normalizeSpecialties = (value) => {
+    if (!value) return [];
+
+    if (Array.isArray(value)) {
+      return value.flatMap((item) => normalizeSpecialtyItem(item)).filter(Boolean);
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return [];
+
+      try {
+        const parsed = JSON.parse(trimmed);
+        return normalizeSpecialtyItem(parsed);
+      } catch (_error) {
+        // fall through to comma splitting
+      }
+
+      return trimmed
+        .split(',')
+        .flatMap((item) => normalizeSpecialtyItem(item))
+        .filter(Boolean);
+    }
+
+    return normalizeSpecialtyItem(value).filter(Boolean);
+  };
+
   // Initialize on mount or when staff changes
   useEffect(() => {
     if (isOpen && staff) {
-      // Initialize with current staff categories or empty array
-      const initialCategories = staff.details?.categories || [];
+      // Initialize with current staff category_specialty values mapped to category IDs
+      const currentSpecialties = normalizeSpecialties(
+        staff.category_specialty || staff.details?.categories || staff.details?.category_specialty
+      );
+
+      const initialCategories = serviceCategories
+        .filter((category) => currentSpecialties.some((specialty) => specialty.toLowerCase() === String(category.name).toLowerCase()))
+        .map((category) => category.id);
+
       setSelectedCategories(initialCategories);
     }
   }, [isOpen, staff, serviceCategories]);
@@ -74,6 +136,18 @@ export const ManageServiceModal = ({ isOpen, staff, onClose, onSave, serviceCate
   }, [toast]);
 
   if (!isOpen || !staff) return null;
+
+  const currentSpecialties = normalizeSpecialties(
+    staff.category_specialty || staff.details?.categories || staff.details?.category_specialty
+  );
+
+  const currentSpecialtyNames = serviceCategories
+    .filter((category) => currentSpecialties.some((specialty) => specialty.toLowerCase() === String(category.name).toLowerCase()))
+    .map((category) => category.name);
+
+  const specialtySummary = currentSpecialtyNames.length > 0
+    ? currentSpecialtyNames
+    : currentSpecialties;
 
   const handleCategoryToggle = (categoryId) => {
     if (selectedCategories.includes(categoryId)) {
@@ -190,6 +264,22 @@ export const ManageServiceModal = ({ isOpen, staff, onClose, onSave, serviceCate
             </p>
             <p style={{ fontSize: "16px", fontWeight: "600", color: "#f5f5f5", margin: 0 }}>
               {staff.name}
+            </p>
+          </div>
+
+          {/* Current Specialty Summary */}
+          <div style={{
+            backgroundColor: "rgba(34, 197, 94, 0.08)",
+            border: "1px solid rgba(34, 197, 94, 0.22)",
+            borderRadius: "8px",
+            padding: "12px 14px",
+            marginBottom: "24px",
+          }}>
+            <p style={{ fontSize: "12px", color: "#988f81", margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Current Specialty
+            </p>
+            <p style={{ fontSize: "14px", fontWeight: "600", color: "#d7f7df", margin: 0, lineHeight: 1.5 }}>
+              {specialtySummary.length > 0 ? specialtySummary.join(", ") : "No specialty assigned yet"}
             </p>
           </div>
 

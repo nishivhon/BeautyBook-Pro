@@ -4,6 +4,7 @@ import { logoutOperator } from "../../services/operatorAuth";
 import { couponService } from "../../services/couponService";
 import { EditServiceModal } from "../../components/modal/admin/edit_service";
 import CouponModal from "../../components/modal/admin/coupon_modal";
+import DateRangePicker from "../../components/shared/DateRangePicker";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import {
   AdminDashboardNavIcon,
@@ -497,7 +498,7 @@ const QuickActionsPanel = ({ onNewService, onManageCoupons }) => (
 );
 
 /* ── Analytics sidebar panel ── */
-const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
+const AnalyticsPanel = ({ onDownloadReports, isDownloading, exportPickerOpen, setExportPickerOpen }) => (
   <div className="dash-sidebar-panel svc-analytics-wrap">
     <div className="dash-analytics-header">
       <AdminIconSlot size="analytics-lg">
@@ -508,12 +509,20 @@ const AnalyticsPanel = ({ onDownloadReports, isDownloading }) => (
         <p className="dash-analytics-sub">Service usage and revenue report</p>
       </div>
     </div>
-    <button className="dash-download-btn" onClick={onDownloadReports} disabled={isDownloading}>
-      {isDownloading ? 'Downloading...' : 'Download Reports'}
-      <AdminIconSlot size="inline">
-        <AdminDownloadIcon />
-      </AdminIconSlot>
-    </button>
+    <div style={{ position: 'relative' }}>
+      <button className="dash-download-btn" onClick={() => setExportPickerOpen(true)} disabled={isDownloading}>
+        {isDownloading ? 'Downloading...' : 'Download Reports'}
+        <AdminIconSlot size="inline">
+          <AdminDownloadIcon />
+        </AdminIconSlot>
+      </button>
+      <DateRangePicker
+        open={exportPickerOpen}
+        initialRange={null}
+        onClose={() => setExportPickerOpen(false)}
+        onConfirm={onDownloadReports}
+      />
+    </div>
   </div>
 );
 
@@ -545,6 +554,7 @@ export const AdminDashboardServices = ({ date }) => {
   const [bookingNotificationsHasMore, setBookingNotificationsHasMore] = useState(false);
   const [loadingMoreBookingNotifications, setLoadingMoreBookingNotifications] = useState(false);
   const [isDownloadingReports, setIsDownloadingReports] = useState(false);
+  const [exportPickerOpen, setExportPickerOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("services");
   const [mounted, setMounted] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
@@ -932,11 +942,15 @@ export const AdminDashboardServices = ({ date }) => {
   const handleOpenCoupons = () => setIsManagingCoupons(true);
   const handleCloseCoupons = () => setIsManagingCoupons(false);
 
-  const handleDownloadReports = async () => {
+  const handleDownloadReports = async (range) => {
     try {
       setIsDownloadingReports(true);
 
-      const response = await fetch('/api/services/usage-export');
+      const searchParams = new URLSearchParams();
+      if (range?.startDate) searchParams.set('fromDate', range.startDate);
+      if (range?.endDate) searchParams.set('toDate', range.endDate);
+
+      const response = await fetch(`/api/services/usage-export?${searchParams.toString()}`);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || `Failed to download reports: ${response.status}`);
@@ -946,7 +960,8 @@ export const AdminDashboardServices = ({ date }) => {
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = 'services_usage_report.xlsx';
+      const rangeLabel = range?.startDate && range?.endDate ? `${range.startDate}_to_${range.endDate}` : new Date().toISOString().slice(0, 10);
+      link.download = `services_usage_report_${rangeLabel}.xlsx`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -965,6 +980,7 @@ export const AdminDashboardServices = ({ date }) => {
         duration: 3000,
       });
     } finally {
+      setExportPickerOpen(false);
       setIsDownloadingReports(false);
     }
   };
@@ -1033,7 +1049,12 @@ export const AdminDashboardServices = ({ date }) => {
                       onNewService={handleNewService} 
                       onManageCoupons={handleOpenCoupons}
                     />
-            <AnalyticsPanel onDownloadReports={handleDownloadReports} isDownloading={isDownloadingReports} />
+            <AnalyticsPanel
+              onDownloadReports={handleDownloadReports}
+              isDownloading={isDownloadingReports}
+              exportPickerOpen={exportPickerOpen}
+              setExportPickerOpen={setExportPickerOpen}
+            />
           </div>
         </div>
       </main>

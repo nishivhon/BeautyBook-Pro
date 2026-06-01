@@ -17,6 +17,7 @@ import {
 import { LogoMark } from "../../components/public/publicPageIcons";
 import { AddWalkInModal } from "../../components/modal/customer/add_walkin";
 import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { AssignStylistModal } from "../../components/modal/admin/assign_stylist";
 import { useToast } from "../../components/toast";
 
 // ═══════════════════════════════════════════════════════════════════
@@ -30,6 +31,16 @@ const isDarkMode = () => {
 
 const getThemeStyles = (darkStyles, lightStyles) => {
   return isDarkMode() ? darkStyles : lightStyles;
+};
+
+const isAnyStylistAssignment = (value) => {
+  const normalizedValue = String(value || '').trim().toLowerCase();
+  return normalizedValue === 'any'
+    || normalizedValue === 'any available'
+    || normalizedValue === 'any available stylist'
+    || normalizedValue === 'any stylist'
+    || normalizedValue.includes('any available')
+    || normalizedValue.includes('any stylist');
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -323,7 +334,7 @@ const PageMetrics = ({ stats }) => (
 );
 
 /* ── Single queue item ── */
-const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick, isWalkIn = false, onCancelWalkIn }) => {
+const QueueItem = ({ id, actualId = null, type, number, name, service, staff, statusTop, statusSub, details, isExpanded, onExpandToggle, onCompleteService, showProceedButton = false, isProceedEnabled = false, onProceedClick, isWalkIn = false, onCancelWalkIn }) => {
   const isActive    = type === "active";
   const isCancelled = type === "cancelled";
   const rowClass    = isActive ? "live-queue-row-active"
@@ -342,7 +353,7 @@ const QueueItem = ({ id, type, number, name, service, staff, statusTop, statusSu
 
   const handleProceed = () => {
     if (onProceedClick && isProceedEnabled) {
-      onProceedClick(id, name, service);
+      onProceedClick(id, name, service, staff, actualId, isWalkIn);
     }
   };
 
@@ -560,10 +571,10 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
     setExpandedItemId(expandedItemId === id ? null : id);
   };
 
-  const handleProceedClick = (id, name, service, staff) => {
+  const handleProceedClick = (id, name, service, staff, actualId = null, isWalkIn = false) => {
     // Call parent handler to show confirmation dialog
     if (onProceedClick) {
-      onProceedClick(id, name, service, staff);
+      onProceedClick(id, name, service, staff, actualId, isWalkIn);
     }
   };
 
@@ -700,6 +711,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
   const formatQueueItems = (appointments, type) => {
     return appointments.map((apt, index) => ({
       id: apt.id,
+      actualId: apt.id,
       type: type,
       number: index + 1,
       name: apt.name,
@@ -745,6 +757,7 @@ const LiveQueuePanel = ({ currentAppointments, setCurrentAppointments, pendingAp
       
       return {
         id: `walkin-${walkin.id}`,
+        actualId: walkin.id,
         type: type,
         number: index + 1,
         name: walkin.customer_name,
@@ -1169,6 +1182,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [showAssignStylistModal, setShowAssignStylistModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [proceedConfirmId, setProceedConfirmId] = useState(null);
   const [proceedConfirmData, setProceedConfirmData] = useState(null);
@@ -1304,20 +1318,23 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     };
   }, []);
 
-  const handleCompleteServiceFromDialog = async (itemId, customerName, service) => {
+  const handleCompleteServiceFromDialog = async (itemId, customerName, service, staffNameOverride = null) => {
     try {
       console.log(`[LiveQueue] Moving appointment ${itemId} to current for ${customerName}`);
-      console.log(`[LiveQueue] Staff data:`, proceedConfirmData?.staff);
-      console.log(`[LiveQueue] Request payload:`, { id: itemId, status: 'current', staffName: proceedConfirmData?.staff });
+      const apiId = proceedConfirmData?.actualId || itemId;
+      const isWalkIn = proceedConfirmData?.isWalkIn || String(itemId || '').startsWith('walkin-');
+      const resolvedStaffName = staffNameOverride || proceedConfirmData?.staff;
+      console.log(`[LiveQueue] Staff data:`, resolvedStaffName);
+      console.log(`[LiveQueue] Request payload:`, { id: apiId, status: 'current', staffName: resolvedStaffName, isWalkIn });
       
       // Call API to update appointment status to 'current' and staff to 'in-service'
       const response = await fetch('/api/appointments/update/status', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: itemId,
+          id: apiId,
           status: 'current',
-          staffName: proceedConfirmData?.staff
+          staffName: resolvedStaffName
         })
       });
 
@@ -1348,7 +1365,7 @@ export const AdminDashboardLiveStatus = ({ date }) => {
       
       // Close dialog
       setProceedConfirmId(null);
-      setProceedConfirmData({});
+      setProceedConfirmData(null);
     } catch (error) {
       console.error('[LiveQueue] Error moving appointment:', error);
       console.error('[LiveQueue] Full error:', error.toString());
@@ -1402,11 +1419,10 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     const totalWalkIn = walkInLogs.length;
 
     const inQueue = [
-      ...currentAppointments.filter((apt) => apt.date === today),
       ...pendingAppointments.filter((apt) => apt.date === today),
       ...walkInLogs.filter((walkIn) => {
         const walkInStatus = String(walkIn.status || '').toLowerCase();
-        if (walkInStatus && !['current', 'pending'].includes(walkInStatus)) return false;
+        if (walkInStatus && !['pending'].includes(walkInStatus)) return false;
         const walkInDate = walkIn.date || walkIn.created_at?.split('T')[0] || walkIn.createdAt?.split('T')[0];
         return walkInDate === today;
       }),
@@ -1428,9 +1444,9 @@ export const AdminDashboardLiveStatus = ({ date }) => {
     >
       {/* Sidebar */}
       <div
-        inert={showWalkInModal ? "" : undefined}
-        aria-hidden={showWalkInModal ? "true" : undefined}
-        style={{ pointerEvents: showWalkInModal ? "none" : "auto" }}
+        inert={showWalkInModal || showAssignStylistModal ? "" : undefined}
+        aria-hidden={showWalkInModal || showAssignStylistModal ? "true" : undefined}
+        style={{ pointerEvents: showWalkInModal || showAssignStylistModal ? "none" : "auto" }}
       >
         <AdminSidebar 
           activeNav={activeNav}
@@ -1483,9 +1499,10 @@ export const AdminDashboardLiveStatus = ({ date }) => {
             setPendingAppointments={setPendingAppointments}
             onOpenWalkInModal={() => setShowWalkInModal(true)}
             refreshTrigger={queueRefreshTrigger}
-            onProceedClick={(id, name, service, staff) => {
+            onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
               setProceedConfirmId(id);
-              setProceedConfirmData({ name, service, staff });
+              setProceedConfirmData({ name, service, staff, actualId, isWalkIn });
+              setShowAssignStylistModal(isAnyStylistAssignment(staff));
             }}
           />
 
@@ -1504,7 +1521,23 @@ export const AdminDashboardLiveStatus = ({ date }) => {
         onSubmit={handleAddWalkIn}
       />
 
-      {proceedConfirmId && (
+      <AssignStylistModal
+        isOpen={showAssignStylistModal}
+        title="Choose an available stylist"
+        message={`Select the stylist who will serve ${proceedConfirmData?.name} for ${proceedConfirmData?.service}.`}
+        onClose={() => {
+          setShowAssignStylistModal(false);
+          setProceedConfirmId(null);
+          setProceedConfirmData(null);
+        }}
+        onSelect={(selectedStaff) => {
+          const selectedStaffName = selectedStaff?.names || null;
+          setShowAssignStylistModal(false);
+          handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData?.name, proceedConfirmData?.service, selectedStaffName);
+        }}
+      />
+
+      {proceedConfirmId && !showAssignStylistModal && (
         <ConfirmationDialog
           isOpen={true}
           title="Move to Serving?"
@@ -1512,7 +1545,10 @@ export const AdminDashboardLiveStatus = ({ date }) => {
           confirmText="Yes, Proceed"
           cancelText="Cancel"
           onConfirm={() => handleCompleteServiceFromDialog(proceedConfirmId, proceedConfirmData.name, proceedConfirmData.service)}
-          onCancel={() => setProceedConfirmId(null)}
+          onCancel={() => {
+            setProceedConfirmId(null);
+            setProceedConfirmData(null);
+          }}
         />
       )}
 

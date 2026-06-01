@@ -80,10 +80,17 @@ export default async function handler(req, res) {
       auth: { persistSession: false },
     });
 
+    const today = getPhtDateString();
+    const queryStartDate = String(req.query?.fromDate || req.query?.startDate || '').trim();
+    const queryEndDate = String(req.query?.toDate || req.query?.endDate || '').trim();
+    const defaultStartDate = `${today.slice(0, 7)}-01`;
+    const startDate = /^\d{4}-\d{2}-\d{2}$/.test(queryStartDate) ? queryStartDate : defaultStartDate;
+    const endDate = /^\d{4}-\d{2}-\d{2}$/.test(queryEndDate) ? queryEndDate : today;
+
     const [servicesResult, appointmentResult, walkInResult] = await Promise.all([
       supabase.from('services').select('id, service_name, category, price'),
-      supabase.from('appointment_logs').select('date, services'),
-      supabase.from('walk_in_logs').select('date, services'),
+      supabase.from('appointment_logs').select('date, services').gte('date', startDate).lte('date', endDate),
+      supabase.from('walk_in_logs').select('date, services').gte('date', startDate).lte('date', endDate),
     ]);
 
     if (servicesResult.error) {
@@ -170,12 +177,8 @@ export default async function handler(req, res) {
       return String(a.service_name || '').localeCompare(String(b.service_name || ''));
     });
 
-    const appointmentDates = (appointmentResult.data || []).map((row) => row?.date).filter(Boolean);
-    const walkInDates = (walkInResult.data || []).map((row) => row?.date).filter(Boolean);
-    const allDates = [...appointmentDates, ...walkInDates].sort();
-    const defaultToday = getPhtDateString();
-    const rangeStart = allDates[0] || defaultToday;
-    const rangeEnd = allDates[allDates.length - 1] || defaultToday;
+    const rangeStart = startDate;
+    const rangeEnd = endDate;
 
     const worksheetRows = [
       ['Date Range', `${rangeStart} to ${rangeEnd}`],
@@ -204,8 +207,7 @@ export default async function handler(req, res) {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Services Usage');
 
     const xlsxBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-    const dateStamp = new Date().toISOString().slice(0, 10);
-    const filename = `services_usage_report_${dateStamp}.xlsx`;
+    const filename = `services_usage_report_${rangeStart}_to_${rangeEnd}.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
