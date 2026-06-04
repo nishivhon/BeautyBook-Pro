@@ -45,7 +45,7 @@ export default async (req, res) => {
       total_walk_in: 0,
       clock_in: null,
       clock_out: null,
-      status: 'off',
+      status: 'avail',
       in_service: null,
       walk_in: false
     };

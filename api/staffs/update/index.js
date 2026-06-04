@@ -45,8 +45,9 @@ const normalizeStatusValue = (value) => {
   if (!normalized) return null;
 
   // Keep DB status aligned with existing values used elsewhere.
-  if (normalized === 'absent') return 'off';
+  if (normalized === 'absent') return 'avail';
   if (normalized === 'available' || normalized === 'open slots') return 'avail';
+
   if (normalized === 'in service') return 'in-service';
   if (normalized === 'on break') return 'on-break';
   if (normalized === 'off today' || normalized === 'clocked out') return 'off';
