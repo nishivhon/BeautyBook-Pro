@@ -273,7 +273,7 @@ const SolutionSection = ({ isDesktop }) => {
     'Online booking with real-time availability',
     'Automated SMS reminders and notifications',
     'Customer service histories and profiles',
-    'Smart queue for scheduled and walk-in clients',
+    'Streamline queuing for scheduled and walk-in clients',
     'Data-driven insights for business growth',
     'Multi-role access: customers, staff, admins',
   ];
