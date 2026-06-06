@@ -10,17 +10,16 @@ import {
   SuperAdminSecurityPanelIcon,
   SuperAdminAdminSecurityPanelIcon,
   SuperAdminSystemSettingsPanelIcon,
-  SuperAdminMaintenanceRowIcon,
 } from "../../components/superadmin/superAdminDashboardIcons";
+
 
 const SECURITY_PANEL_HEADER_ICONS = {
   "super-admin": SuperAdminSecurityPanelIcon,
   admin: SuperAdminAdminSecurityPanelIcon,
 };
 
-const initialSecurityItems = [
-  { label: "System Maintenance", status: "Disabled", enabled: false, Icon: SuperAdminMaintenanceRowIcon },
-];
+const initialSecurityItems = [];
+
 
 const SECURITY_PANELS = [
   { panelKey: 'super-admin', role: 'super admin', title: 'Super Admin Security Settings' },
@@ -101,16 +100,7 @@ export default function SuperAdminSecurityDashboard() {
   });
   const [secItems, setSecItems] = useState(initialSecurityItems);
 
-  // Maintenance states
-  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
-  const [showMaintenanceConfirm, setShowMaintenanceConfirm] = useState(false);
-  const [activeUsers, setActiveUsers] = useState(12); // Mock data
-  const [maintenanceStartTime, setMaintenanceStartTime] = useState(null);
-  const [countdown, setCountdown] = useState(null);
-  const [maintenanceWhitelist, setMaintenanceWhitelist] = useState([]);
-  const [whitelistInput, setWhitelistInput] = useState("");
-  const [showWarningBanner, setShowWarningBanner] = useState(false);
-  const [showCountdownBanner, setShowCountdownBanner] = useState(false);
+
   const [securitySummaries, setSecuritySummaries] = useState({
     'super admin': {
       lastLogin: null,
@@ -190,29 +180,7 @@ export default function SuperAdminSecurityDashboard() {
     fetchSecuritySummary();
   }, []);
 
-  // Countdown timer
-  useEffect(() => {
-    if (!maintenanceStartTime) return;
-    
-    const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const startTime = new Date(maintenanceStartTime).getTime();
-      const diff = startTime - now;
-      
-      if (diff <= 0) {
-        setCountdown(null);
-        setShowCountdownBanner(false);
-        clearInterval(interval);
-      } else if (diff <= 5 * 60 * 1000) { // 5 minutes
-        setShowCountdownBanner(true);
-        setCountdown(Math.floor(diff / 1000));
-      } else if (diff <= 24 * 60 * 60 * 1000) { // 24 hours
-        setShowWarningBanner(true);
-      }
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, [maintenanceStartTime]);
+
 
   const handleLogout = () => {
     logoutOperator();
@@ -298,58 +266,15 @@ export default function SuperAdminSecurityDashboard() {
   };
 
   const toggleSecurityItem = (idx) => {
-    setSecItems(prev => prev.map((item, i) => {
-      if (i !== idx) return item;
-      const next = !item.enabled;
-      
-      // Handle maintenance toggle
-      if (item.label === "System Maintenance") {
-        if (next) {
-          setShowMaintenanceConfirm(true);
-        } else {
-          setMaintenanceEnabled(false);
-          setMaintenanceStartTime(null);
-          showToast({ message: 'System maintenance disabled', type: 'success', duration: 2800 });
-        }
-        return item; // Don't update status yet
-      }
-      
-      return { ...item, enabled: next, status: next ? "Enabled" : "Disabled" };
-    }));
+    setSecItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== idx) return item;
+        const next = !item.enabled;
+        return { ...item, enabled: next, status: next ? "Enabled" : "Disabled" };
+      })
+    );
   };
 
-  const handleMaintenanceConfirm = () => {
-    setMaintenanceEnabled(true);
-    setMaintenanceStartTime(new Date(Date.now() + 5 * 60 * 1000)); // 5 minutes from now
-    setShowMaintenanceConfirm(false);
-    setSecItems(prev => prev.map(item => 
-      item.label === "System Maintenance" 
-        ? { ...item, enabled: true, status: "Enabled" }
-        : item
-    ));
-    showToast({ message: 'System maintenance enabled', type: 'success', duration: 2800 });
-  };
-
-  const handleAddToWhitelist = () => {
-    if (whitelistInput && /^(\d{1,3}\.){3}\d{1,3}$/.test(whitelistInput)) {
-      setMaintenanceWhitelist([...maintenanceWhitelist, whitelistInput]);
-      setWhitelistInput("");
-      showToast({ message: `IP ${whitelistInput} added to whitelist`, type: 'success', duration: 2800 });
-    } else {
-      showToast({ message: 'Invalid IP address format', type: 'warning', duration: 2800 });
-    }
-  };
-
-  const handleRemoveFromWhitelist = (ip) => {
-    setMaintenanceWhitelist(maintenanceWhitelist.filter(item => item !== ip));
-    showToast({ message: `IP ${ip} removed from whitelist`, type: 'success', duration: 2800 });
-  };
-
-  const formatCountdown = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const renderSecurityRow = (panelKey, rowKey, title, summary, updatedLabel, details) => {
     const currentRowKey = `${panelKey}:${rowKey}`;
@@ -480,31 +405,8 @@ export default function SuperAdminSecurityDashboard() {
       logoutConfirmText="Yes, Log Out"
       logoutCancelText="Stay Logged In"
     >
-      {/* ─── WARNING BANNERS ─── */}
-      {showWarningBanner && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, background: 'rgba(221, 144, 29, 0.15)', border: '1px solid rgba(221, 144, 29, 0.3)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', zIndex: 1001, fontFamily: "'Inter', sans-serif" }}>
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
-            <path d="M10 2L18.5 17H1.5L10 2z" stroke="#DD901D" strokeWidth="1.3" strokeLinejoin="round"/>
-            <line x1="10" y1="9" x2="10" y2="13" stroke="#DD901D" strokeWidth="1.4" strokeLinecap="round"/>
-            <circle cx="10" cy="15.5" r="0.8" fill="#DD901D"/>
-          </svg>
-          <span style={{ color: '#DD901D', fontSize: '13px', fontWeight: 600 }}>Scheduled system maintenance in 24 hours. Users will be notified and logged out.</span>
-        </div>
-      )}
-
-      {showCountdownBanner && (
-        <div style={{ position: 'fixed', top: showWarningBanner ? 48 : 0, left: 0, right: 0, background: 'rgba(239, 67, 67, 0.15)', border: '1px solid rgba(239, 67, 67, 0.3)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', zIndex: 1001, fontFamily: "'Inter', sans-serif" }}>
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, animation: 'pulse 1s infinite' }}>
-            <circle cx="10" cy="10" r="7.5" stroke="#EF4343" strokeWidth="1.3"/>
-            <path d="M10 6v4l2.5 2.5" stroke="#EF4343" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          <span style={{ color: '#EF4343', fontSize: '13px', fontWeight: 600 }}>CRITICAL: System maintenance starts in {formatCountdown(countdown || 0)}</span>
-        </div>
-      )}
-
-      {/* ─── SIDEBAR & HEADER HANDLED BY DASHBOARDSHELL ─── */}
-
       <div className="superadmin-page-content" style={{ paddingTop: '20px' }}>
+
         {SECURITY_PANELS.map(({ panelKey, role, title }) => {
           const summary = securitySummaries[role] || {
             lastLogin: null,
@@ -573,98 +475,9 @@ export default function SuperAdminSecurityDashboard() {
             </div>
           );
         })}
-
-          <div className="dashboard-panel">
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: "16px", marginBottom: "16px" }}>
-              <SuperAdminIconSlot size="inline">
-                <SuperAdminSystemSettingsPanelIcon />
-              </SuperAdminIconSlot>
-              System Settings
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
-              {secItems.map((item, idx) => (
-                <div key={idx} className="db-row" style={{ padding: "16px", height: "auto" }}>
-                  <div className="db-icon admin-icon-btn-bare" style={{ background: item.enabled ? "rgba(34, 197, 94, 0.1)" : "rgba(152, 143, 129, 0.1)", borderRadius: "8px", width: "36px", height: "36px", marginRight: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <SuperAdminIconSlot size="action">
-                      <item.Icon />
-                    </SuperAdminIconSlot>
-                  </div>
-                  <div className="db-name-wrap">
-                    <span className="db-name">{item.label}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
-                    <div style={{
-                      height: "23px",
-                      padding: "0 12px",
-                      display: "flex",
-                      alignItems: "center",
-                      borderRadius: "48px",
-                      background: item.enabled ? "rgba(34, 197, 94, 0.15)" : "rgba(152, 143, 129, 0.15)",
-                      fontSize: "13px",
-                      fontWeight: "700",
-                      color: item.enabled ? "#22c55e" : "#988f81",
-                      whiteSpace: "nowrap",
-                    }}>
-                      {item.status}
-                    </div>
-                    <Toggle enabled={item.enabled} onToggle={() => {
-                      toggleSecurityItem(idx);
-                      showToast({
-                        message: `${item.label} ${item.enabled ? 'disabled' : 'enabled'}`,
-                        type: 'success',
-                        duration: 2800,
-                      });
-                    }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
-      {/* ─── MAINTENANCE CONFIRMATION DIALOG ─── */}
-      {showMaintenanceConfirm && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div style={{ background: 'var(--bg-darker)', border: '1px solid rgba(239, 67, 67, 0.3)', borderRadius: '12px', padding: '24px', maxWidth: '400px', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)' }}>
-            <div style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 700, fontSize: '18px', color: '#EF4343', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 2L18.5 17H1.5L10 2z" stroke="#EF4343" strokeWidth="1.3" strokeLinejoin="round"/>
-                <line x1="10" y1="9" x2="10" y2="13" stroke="#EF4343" strokeWidth="1.4" strokeLinecap="round"/>
-                <circle cx="10" cy="15.5" r="0.8" fill="#EF4343"/>
-              </svg>
-              Start System Maintenance?
-            </div>
-            <div style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400, fontSize: '13px', color: '#D4C5B9', marginBottom: '16px', lineHeight: '1.6' }}>
-              <div style={{ marginBottom: '8px' }}>There are <span style={{ color: '#EF4343', fontWeight: 600 }}>{activeUsers} active users</span>.</div>
-              <div>Starting maintenance will:</div>
-              <ul style={{ margin: '8px 0 0 16px', padding: 0 }}>
-                <li>Log out all non-admin users</li>
-                <li>Display maintenance page to visitors</li>
-                <li>May cause data loss if services are interrupted</li>
-              </ul>
-            </div>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button 
-                onClick={() => setShowMaintenanceConfirm(false)} 
-                style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid rgba(152, 143, 129, 0.3)', background: 'transparent', color: '#ffffff', fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.15s' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(152, 143, 129, 0.1)'; e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.5)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(152, 143, 129, 0.3)'; }}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleMaintenanceConfirm} 
-                style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #EF4343', background: 'rgba(239, 67, 67, 0.15)', color: '#EF4343', fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.15s' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 67, 67, 0.25)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 67, 67, 0.15)'; }}
-              >
-                Start Maintenance
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </DashboardShell>
   );
 }
