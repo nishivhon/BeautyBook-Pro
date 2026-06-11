@@ -350,7 +350,7 @@ export default function SuperAdminLandingPageEditor() {
   const [footer, setFooter] = useState({
     address: "Canvas city, Abc st., 245 lot B",
     phone: "(02) 123-4567",
-    email: "beautybookpro@gmail.com",
+    email: "beautybookpro33@gmail.com",
     hours: "Mon-Fri: 8:00 AM - 5:00 PM",
     socialLinks: [],
     additionalSubheadings: [],
