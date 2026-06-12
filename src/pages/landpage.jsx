@@ -789,11 +789,17 @@ const FooterSection = () => (
         <span className="footer-label">
           Contact us
         </span>
-        {["beautybookpro33@gmail.com"].map((t,i) => (
+        {[
+          "beautybookpro33@gmail.com",
+          "Anonas Street, Santa Mesa, Manila",
+          "09123456789",
+          "8AM - 5PM",
+        ].map((t,i) => (
           <span key={i} className="footer-text">
             {t}
           </span>
         ))}
+
       </div>
 
       {/* Follow row */}
