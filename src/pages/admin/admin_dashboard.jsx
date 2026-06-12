@@ -2028,7 +2028,7 @@ export const AdminDashboard = ({ date }) => {
                   setShowAssignStylistModal(isAnyStylistAssignment(staff));
                 }}
               />
-              <CouponsPanel />
+
             </div>
 
             <div className="dash-sidebar">

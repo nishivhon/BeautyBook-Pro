@@ -86,11 +86,24 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
   }, [toast]);
 
   const getCouponDisplayStatus = (coupon) => {
-    if (coupon?.is_deleted === true) return 'deleted';
-    if (coupon?.start_date && coupon.start_date > todayISO) return 'upcoming';
-    if (coupon?.status === 'inactive') return 'inactive';
-    return 'active';
+    // Filtering requested: use coupons.status directly (exact strings after normalization).
+    // Deleted filter requested: use coupons.is_deleted (or status==='deleted' if that is how API marks it).
+
+    const rawStatus = String(coupon?.status || '').trim().toLowerCase();
+    const isDeleted = coupon?.is_deleted === true || rawStatus === 'deleted';
+    if (isDeleted) return 'deleted';
+
+    // Filtering requested: inactive/active/expired must come ONLY from coupons.status.
+    // If is_deleted is false, an 'inactive' status must show in the Inactive filter.
+    if (rawStatus === 'active') return 'active';
+    if (rawStatus === 'inactive') return 'inactive';
+    if (rawStatus === 'expired') return 'expired';
+
+    // Unknown status: keep it out of active/inactive/expired.
+    return 'unknown';
   };
+
+
 
   const filteredCoupons = useMemo(() => {
     const normalizedQuery = couponSearch.trim().toLowerCase();
@@ -98,9 +111,15 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
     return coupons
       .map((coupon) => ({ ...coupon, _displayStatus: getCouponDisplayStatus(coupon) }))
       .filter((coupon) => {
-        if (coupon._displayStatus !== 'deleted' && couponFilter && coupon._displayStatus !== couponFilter) return false;
+        // Deleted must never appear when filtering for active/inactive/expired.
+        if (couponFilter && couponFilter !== 'deleted' && coupon._displayStatus === 'deleted') return false;
+        if (couponFilter && coupon._displayStatus !== couponFilter) return false;
+
+        // Requested: filtering for active/inactive/expired must match coupon.status only.
+        // (No end_date/date-based inference in this modal.)
 
         if (!normalizedQuery) return true;
+
 
         const searchableText = [
           coupon.code,
@@ -119,8 +138,9 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
         return searchableText.includes(normalizedQuery);
       })
       .sort((a, b) => {
-        const order = { upcoming: 0, active: 1, inactive: 2, deleted: 3 };
+        const order = { active: 1, inactive: 2, expired: 3, deleted: 4 };
         return (order[a._displayStatus] ?? 99) - (order[b._displayStatus] ?? 99);
+
       });
   }, [coupons, couponFilter, couponSearch, todayISO]);
 
@@ -415,7 +435,9 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
-                      <option value="upcoming">Upcoming</option>
+                      <option value="expired">Expired</option>
+                      <option value="deleted">Deleted</option>
+
                     </select>
                   </div>
                 </div>
@@ -433,7 +455,14 @@ export const CouponModal = ({ isOpen, onClose, services = [] }) => {
                           {c._displayStatus === 'active' && <span style={{color:'#10b981',fontSize:11,fontWeight:600,marginLeft:8}}>ACTIVE</span>}
                         </div>
                         <div style={{color:'#9a9a9a',fontSize:13}}>{c.description || '—'}</div>
-                        <div style={{color:'#6b7280',fontSize:12,marginTop:6}}>Uses: {c.number_of_uses}/{c.max_uses ? c.max_uses : '∞'}</div>
+                        <div style={{color:'#6b7280',fontSize:12,marginTop:6}}>
+                          Uses: {c.number_of_uses}/{c.max_uses ? c.max_uses : '∞'}
+                        </div>
+                        {c._displayStatus === 'expired' && (
+                          <div style={{color:'#f59e0b',fontSize:12,marginTop:6}}>
+                            End date: {c.end_date || '—'}
+                          </div>
+                        )}
                       </div>
                       <div style={{display:'flex',gap:8,alignItems:'center'}}>
                         {!c.is_deleted ? (
