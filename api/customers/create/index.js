@@ -28,6 +28,19 @@ export default async (req, res) => {
       return res.status(400).json({ error: 'Email or phone is required' });
     }
 
+    // Email validation: only allow gmail.com addresses
+    if (normalizedEmail) {
+      // Require exact domain match (case-insensitive via normalizeEmail)
+      const domain = normalizedEmail.split('@')[1] || '';
+      if (domain !== 'gmail.com') {
+        return res.status(400).json({
+          error: 'Invalid email',
+          details: 'Only @gmail.com emails are allowed.'
+        });
+      }
+    }
+
+
     // CHECK FOR VERIFIED OTP BEFORE ALLOWING ACCOUNT CREATION
     console.log('[Customers:Create] Checking for verified OTP...');
     

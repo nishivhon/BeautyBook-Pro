@@ -234,12 +234,12 @@ export const LogIn = () => {
     if (!email) {
       e.email = "Email or phone number is required";
     } else if (inputKind === "email") {
-      if (!/\S+@\S+\.\S+/.test(email)) e.email = "Enter a valid email";
+      if (!/\S+@\S+\.\S+/.test(email)) e.email = "Enter a valid Gmail address";
     } else if (inputKind === "phone") {
       const digitsOnly = email.replace(/\D/g, "");
       if (digitsOnly.length < 10) e.email = "Enter a valid phone number";
     } else {
-      e.email = "Enter a valid email or phone number";
+      e.email = "Enter a valid Gmail address or phone number";
     }
     if (!password)                         e.password = "Password is required";
     return e;
@@ -744,7 +744,7 @@ const InlineOtp = ({ onClose, onVerified, selectedPhone, selectedEmail, otpType 
               type="text"
               value={email}
               onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: null })); }}
-              placeholder="you@example.com or 09123456789"
+              placeholder="you@gmail.com or 09123456789"
               aria-label="Email or phone number"
             />
           </div>
@@ -951,7 +951,7 @@ const InlineOtp = ({ onClose, onVerified, selectedPhone, selectedEmail, otpType 
                     type="email"
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder="you@gmail.com"
                     aria-label="Email address"
                   />
                 </div>

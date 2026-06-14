@@ -48,7 +48,12 @@ const LockIcon = () => (
 
 const normalizeEmail = (value) => (typeof value === "string" ? value.trim().toLowerCase() : "");
 const normalizePhone = (value) => (typeof value === "string" ? value.replace(/\D/g, "") : "");
-const validateEmail = (value) => /^\S+@\S+\.\S+$/.test(value);
+const validateEmail = (value) => {
+  const normalized = (typeof value === "string" ? value.trim().toLowerCase() : "");
+  // Only allow gmail.com emails
+  return /^\S+@gmail\.com$/.test(normalized);
+};
+
 
 const validateForm = ({ name, email, phone, password, confirmPassword, verificationMode }) => {
   const errs = {};
@@ -60,9 +65,9 @@ const validateForm = ({ name, email, phone, password, confirmPassword, verificat
 
   if (verificationMode === "email") {
     if (!normalizedEmail) errs.email = "Email is required";
-    else if (!validateEmail(normalizedEmail)) errs.email = "Enter a valid email";
+    else if (!validateEmail(normalizedEmail)) errs.email = "Enter a valid Gmail address";
   } else if (normalizedEmail && !validateEmail(normalizedEmail)) {
-    errs.email = "Enter a valid email";
+    errs.email = "Enter a valid Gmail address";
   }
 
   if (verificationMode === "phone") {
@@ -371,12 +376,12 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
                 type="email"
                 value={email}
                 onChange={(event) => { setEmail(event.target.value); setErrors((prev) => ({ ...prev, email: null })); }}
-                placeholder="you@example.com"
+                placeholder="you@gmail.com"
                 aria-label="Email address"
               />
             </div>
             <span style={{ display: "block", marginTop: "4px", color: theme.modalText, fontSize: "0.74rem" }}>
-              Enter your email address to receive a verification code.
+              Please use your Gmail account to verify.
             </span>
             {errors.email && <span className="login-error-msg">{errors.email}</span>}
           </div>
