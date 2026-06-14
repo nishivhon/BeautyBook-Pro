@@ -340,7 +340,7 @@ export const LogIn = () => {
   const handleForgotPassword = async (ev) => {
     ev.preventDefault();
     if (forgotResetMode === "email" && !forgotEmail) {
-      setForgotMessage("Please enter your email address");
+      setForgotMessage("Please enter your gmail address");
       return;
     }
     if (forgotResetMode === "phone" && !forgotPhone) {

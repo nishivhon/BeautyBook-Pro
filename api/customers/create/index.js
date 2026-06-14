@@ -135,7 +135,16 @@ export default async (req, res) => {
       });
     }
 
+    // Disallow spaces in password (prevents accidental whitespace)
+    if (typeof password !== 'string' || /\s/.test(password)) {
+      return res.status(400).json({
+        error: 'Invalid password',
+        details: 'Password must not contain spaces.'
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
+
 
     // Set histories to null if not provided
     const insertData = {

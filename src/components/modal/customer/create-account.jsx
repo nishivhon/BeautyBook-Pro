@@ -78,7 +78,9 @@ const validateForm = ({ name, email, phone, password, confirmPassword, verificat
   }
 
   if (!password) errs.password = "Password is required";
+  else if (/\s/.test(password)) errs.password = "Password must not contain spaces";
   else if (password.length < 8) errs.password = "Password must be at least 8 characters";
+
 
   if (!confirmPassword) errs.confirmPassword = "Please confirm your password";
   else if (password !== confirmPassword) errs.confirmPassword = "Passwords do not match";
@@ -399,7 +401,7 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
               />
             </div>
             <span style={{ display: "block", marginTop: "4px", color: theme.modalText, fontSize: "0.74rem" }}>
-              Enter your mobile number to receive a verification code.
+              Enter your mobile number to verify.
             </span>
             {errors.phone && <span className="login-error-msg">{errors.phone}</span>}
           </div>
@@ -412,7 +414,10 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
             <input
               type={showPassword ? "text" : "password"}
               value={password}
-              onChange={(event) => { setPassword(event.target.value); setErrors((prev) => ({ ...prev, password: null })); }}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setErrors((prev) => ({ ...prev, password: null, confirmPassword: null }));
+              }}
               placeholder="••••••••"
               aria-label="Password"
             />
@@ -425,8 +430,34 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
               {showPassword ? <EyeOpenIcon /> : <EyeClosedIcon />}
             </button>
           </div>
+
+          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+            {(() => {
+              const hasNoSpaces = !/\s/.test(password);
+              const isLongEnough = String(password || "").length >= 8;
+              const makeLine = (ok, text) => (
+                <div style={{
+                  fontSize: "0.74rem",
+                  color: ok ? "#22c55e" : "#ef4343",
+
+
+                }}>
+                  {text}
+                </div>
+
+              );
+              return (
+                <>
+                  {makeLine(hasNoSpaces, "Password must not contain spaces")}
+                  {makeLine(isLongEnough, "Password must be at least 8 characters")}
+                </>
+              );
+            })()}
+          </div>
+
           {errors.password && <span className="login-error-msg">{errors.password}</span>}
         </div>
+
 
         <div>
           <label style={labelStyle}>Confirm Password</label>
