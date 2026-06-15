@@ -1851,9 +1851,10 @@ export const AdminDashboard = ({ date }) => {
       const link = document.createElement('a');
       link.href = downloadUrl;
       const rangeLabel = range?.startDate && range?.endDate ? `${range.startDate}_to_${range.endDate}` : new Date().toISOString().slice(0, 10);
-      link.download = `dashboard_analytics_${rangeLabel}.csv`;
+      link.download = `dashboard_analytics_${rangeLabel}_appointment_logs.xlsx`;
       document.body.appendChild(link);
       link.click();
+
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
 

@@ -1,5 +1,7 @@
-- [ ] Remove “System Maintenance” row from Super Admin Security Settings
-- [ ] Remove maintenance-related state/effects/handlers/UI from super_admin_security_dashboard.jsx
-- [ ] Ensure file compiles (no unused variables or references)
-- [ ] Quick manual verification: /superadmin/security shows only Change Password / Last Login / Failed Attempts + System Settings (minus maintenance)
+- [ ] Inspect current XLSX export endpoint for staff logs (api/cron/staff-logs-export.js)
+- [ ] Modify the XLSX generator to include appointment_logs rows (not only staff_logs counts)
+- [ ] Verify required DB columns exist (appointment_logs schema)
+- [ ] Add new sheet(s) or extend existing sheet with per-appointment rows
+- [ ] Update any frontend download naming/expectations if needed
+- [ ] Run a local build/lint/test if available
 

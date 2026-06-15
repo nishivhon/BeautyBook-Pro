@@ -919,7 +919,7 @@ const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, expo
       </AdminIconSlot>
       <div className="dash-analytics-text">
         <h3 className="dash-analytics-title">Analytics</h3>
-        <p className="dash-analytics-sub">View past 7 days detailed report</p>
+        <p className="dash-analytics-sub">Staffs analytics and report</p>
       </div>
     </div>
       <div style={{ position: 'relative' }}>
