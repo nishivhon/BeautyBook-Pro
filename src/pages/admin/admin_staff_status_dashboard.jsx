@@ -933,29 +933,185 @@ const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, expo
       </div>
 
       {exportSetupOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
-          <div style={{ width: 640, maxWidth: '95%', borderRadius: 8, padding: 18, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', ...modalTheme }}>
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}
+          onMouseDown={(e) => {
+            // Only close when user presses on the overlay itself
+            if (e.target === e.currentTarget) setExportSetupOpen(false);
+          }}
+        >
+          <div
+            style={{ width: 640, maxWidth: '95%', borderRadius: 8, padding: 18, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', ...modalTheme, pointerEvents: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 style={{ margin: 0, marginBottom: 12, color: modalTheme.color }}>Choose staff to include</h3>
+
             <div style={{ display: 'flex', gap: 12 }}>
-              <select
-                multiple
-                size={8}
-                value={selectedStaffNames}
-                onChange={(e) => {
-                  const opts = Array.from(e.target.selectedOptions || []).map(o => o.value);
-                  setSelectedStaffNames(opts);
+              <div
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 6,
+                  border: `1px solid ${isDarkMode() ? '#374151' : '#cbd5e1'}`,
+                  background: isDarkMode() ? '#0b1220' : '#fff',
+                  color: modalTheme.color,
+                  minWidth: '280px',
+                  maxWidth: 360,
+                  width: '100%',
                 }}
-                style={{ padding: '8px', borderRadius: '6px', minWidth: '280px', border: `1px solid ${isDarkMode() ? '#374151' : '#cbd5e1'}`, background: isDarkMode() ? '#0b1220' : '#fff', color: modalTheme.color }}
-                title="Hold Ctrl (Windows) or Cmd (Mac) to select multiple staff"
               >
-                <option value="">All staff</option>
-                {staffList.map((s) => (
-                  <option key={s.id || s.name} value={s.name}>{s.name}</option>
-                ))}
-              </select>
+                <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 10 }}>
+                  Select one or more staff (no Ctrl/Cmd needed)
+                </div>
+
+                <div style={{ maxHeight: 220, overflowY: 'auto', paddingRight: 6, pointerEvents: 'auto' }}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={() => {
+                      const allKeys = (staffList || []).map((s) => s.id ?? s.name).filter(Boolean);
+                      const allSelected = allKeys.length > 0 && selectedStaffNames.length === allKeys.length;
+                      if (allSelected) return;
+                      setSelectedStaffNames(allKeys);
+                    }}
+                    style={{
+                      pointerEvents: 'auto',
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                      gap: 10,
+                      padding: '6px 4px',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      border: `1px solid ${
+                        (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length > 0 &&
+                        selectedStaffNames.length === (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length
+                          ? '#2563eb'
+                          : 'transparent'
+                      }`,
+                      borderRadius: 6,
+                      background: (() => {
+                        const allKeys = (staffList || []).map((s) => s.id ?? s.name).filter(Boolean);
+                        const allSelected = allKeys.length > 0 && selectedStaffNames.length === allKeys.length;
+                        return allSelected ? 'rgba(37,99,235,0.12)' : 'transparent';
+                      })(),
+                      color: modalTheme.color,
+                    }}
+                    aria-pressed={
+                      (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length > 0 &&
+                      selectedStaffNames.length === (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length
+                    }
+                    title="Select all staff"
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: 4,
+                        border: `1px solid ${
+                          (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length > 0 &&
+                          selectedStaffNames.length === (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length
+                            ? '#2563eb'
+                            : (isDarkMode() ? '#374151' : '#cbd5e1')
+                        }`,
+                        background:
+                          (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length > 0 &&
+                          selectedStaffNames.length === (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length
+                            ? '#2563eb'
+                            : 'transparent',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#fff',
+                        fontSize: 12,
+                        lineHeight: '16px',
+                        flex: '0 0 auto',
+                      }}
+                    >
+                      {(
+                        (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length > 0 &&
+                        selectedStaffNames.length === (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length
+                      ) ? '✓' : ''}
+                    </span>
+
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      Select all staff
+                    </span>
+                  </button>
+
+                  {staffList.map((s) => {
+                    const staffKey = s.id ?? s.name;
+                    const name = s.name ?? s.id ?? "";
+                    const checked = selectedStaffNames.includes(staffKey);
+
+                    return (
+                      <button
+                        key={staffKey}
+                        type="button"
+                        onClick={() => {
+                          setSelectedStaffNames((prev) => {
+                            const has = prev.includes(staffKey);
+                            if (has) return prev.filter((n) => n !== staffKey);
+                            return [...prev, staffKey];
+                          });
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        style={{
+                          pointerEvents: 'auto',
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-start',
+                          gap: 10,
+                          padding: '6px 4px',
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          border: `1px solid ${checked ? '#2563eb' : 'transparent'}`,
+                          borderRadius: 6,
+                          background: checked ? 'rgba(37,99,235,0.12)' : 'transparent',
+                          color: modalTheme.color,
+                        }}
+                        title={name}
+                        aria-pressed={checked}
+                      >
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: 4,
+                            border: `1px solid ${checked ? '#2563eb' : (isDarkMode() ? '#374151' : '#cbd5e1')}`,
+                            background: checked ? '#2563eb' : 'transparent',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            fontSize: 12,
+                            lineHeight: '16px',
+                            flex: '0 0 auto',
+                          }}
+                        >
+                          {checked ? '✓' : ''}
+                        </span>
+
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 'auto' }}>
-                  <button onClick={() => { setExportSetupOpen(false); setExportPickerOpen(true); }} style={{ padding: '10px 14px', borderRadius: 6, background: '#2563eb', color: '#fff', border: 'none' }}>Continue</button>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 'auto', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => { setExportSetupOpen(false); setExportPickerOpen(true); }}
+                    style={{ padding: '10px 14px', borderRadius: 6, background: '#2563eb', color: '#fff', border: 'none' }}
+                  >
+                    Continue
+                  </button>
                 </div>
               </div>
             </div>
@@ -966,7 +1122,19 @@ const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, expo
         open={exportPickerOpen}
         initialRange={null}
         onClose={() => setExportPickerOpen(false)}
-        onConfirm={(range) => onDownloadReports(range, selectedStaffNames.length ? selectedStaffNames : null)}
+        onConfirm={(range) => {
+          const staffNamesForApi =
+            selectedStaffNames.length
+              ? selectedStaffNames
+                  .map((key) => {
+                    const found = staffList.find((s) => (s.id ?? s.name) === key);
+                    return found?.name ?? found?.id ?? null;
+                  })
+                  .filter(Boolean)
+              : null;
+
+          return onDownloadReports(range, staffNamesForApi && staffNamesForApi.length ? staffNamesForApi : null);
+        }}
       />
     </div>
   </div>
