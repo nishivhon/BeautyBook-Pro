@@ -1914,14 +1914,20 @@ export const AdminDashboard = ({ date }) => {
       console.log(`[AdminDashboard] History synced:`, result.historyUpdated, result.historyUpdateReason);
       
       // Update local state instead of reloading page
+      const updatedAppointment = result.appointment || null;
+
       if (isWalkIn) {
+        if (updatedAppointment) {
+          setWalkInAppointments(prev => prev.map(w => String(w.id) === String(apiId) ? { ...w, ...updatedAppointment } : w));
+        }
       } else {
-        // Move appointment from pending to current
-        setCurrentAppointments(prev => [
-          ...prev,
-          ...pendingAppointments.filter(apt => apt.id === apiId)
-        ]);
-        setPendingAppointments(prev => prev.filter(apt => apt.id !== apiId));
+        // Move appointment from pending to current, preferring API-updated row
+        const moved = pendingAppointments.find(apt => String(apt.id) === String(apiId));
+        const toPush = updatedAppointment || moved || null;
+        if (toPush) {
+          setCurrentAppointments(prev => [ ...prev, toPush ]);
+        }
+        setPendingAppointments(prev => prev.filter(apt => String(apt.id) !== String(apiId)));
       }
 
       window.dispatchEvent(new CustomEvent('live-queue:status-changed', {
@@ -2025,10 +2031,11 @@ export const AdminDashboard = ({ date }) => {
               <LiveQueue 
                 onOpenWalkInModal={() => setShowWalkInModal(true)}
                 onProceedClick={(id, name, service, staff, actualId, isWalkIn) => {
-                  setProceedConfirmId(id);
-                  setProceedConfirmData({ name, service, staff, actualId, isWalkIn });
-                  setShowAssignStylistModal(isAnyStylistAssignment(staff));
-                }}
+                    setProceedConfirmId(id);
+                    setProceedConfirmData({ name, service, staff, actualId, isWalkIn });
+                    // Always open assign-stylist modal so admin confirms the stylist.
+                    setShowAssignStylistModal(true);
+                  }}
               />
 
             </div>
@@ -2054,8 +2061,9 @@ export const AdminDashboard = ({ date }) => {
 
       <AssignStylistModal
         isOpen={showAssignStylistModal}
-        title="Choose an available stylist"
-        message={`Select the stylist who will serve ${proceedConfirmData?.name} for ${proceedConfirmData?.service}.`}
+        title="Confirm to serve"
+        message={`Confirm to serve "${proceedConfirmData?.name}" • "${proceedConfirmData?.staff}"`}
+        initialStaffName={proceedConfirmData?.staff}
         onClose={() => {
           setShowAssignStylistModal(false);
           setProceedConfirmId(null);

@@ -63,7 +63,7 @@ const getStaffStatusLabel = (staff) => {
   return staff?.status || staff?.in_service || "Unknown";
 };
 
-export const AssignStylistModal = ({ isOpen, title, message, onClose, onSelect }) => {
+export const AssignStylistModal = ({ isOpen, title, message, onClose, onSelect, initialStaffName = null, initialStaffId = null }) => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -91,13 +91,36 @@ export const AssignStylistModal = ({ isOpen, title, message, onClose, onSelect }
         }
 
         const result = await response.json();
-        const availableStaff = Array.isArray(result.staff)
-          ? result.staff.filter(isStylistAvailable)
-          : [];
+        const allStaff = Array.isArray(result.staff) ? result.staff : [];
+        const availableStaff = allStaff.filter(isStylistAvailable);
+
+        // Ensure the originally assigned staff is present in the choices even if not available
+        let mergedStaff = [...availableStaff];
+        if (initialStaffId || initialStaffName) {
+          const normName = initialStaffName ? String(initialStaffName).toLowerCase().trim() : null;
+          const orig = allStaff.find(s => (
+            (initialStaffId && String(s.id) === String(initialStaffId)) ||
+            (normName && String(s.names).toLowerCase().trim() === normName)
+          ));
+
+          if (orig) {
+            const exists = mergedStaff.some(s => String(s.id) === String(orig.id));
+            if (!exists) mergedStaff = [orig, ...mergedStaff];
+          }
+        }
 
         if (!cancelled) {
-          setStaff(availableStaff);
-          setSelectedStaffId(availableStaff[0]?.id ?? null);
+          setStaff(mergedStaff);
+          // Preselect staff if initialStaffId or initialStaffName provided
+          let preselectId = null;
+          if (initialStaffId) {
+            preselectId = mergedStaff.find(s => String(s.id) === String(initialStaffId))?.id ?? null;
+          }
+          if (!preselectId && initialStaffName) {
+            const norm = String(initialStaffName).toLowerCase().trim();
+            preselectId = mergedStaff.find(s => String(s.names).toLowerCase().trim() === norm)?.id ?? null;
+          }
+          setSelectedStaffId(preselectId ?? mergedStaff[0]?.id ?? null);
         }
       } catch (fetchError) {
         if (!cancelled) {
