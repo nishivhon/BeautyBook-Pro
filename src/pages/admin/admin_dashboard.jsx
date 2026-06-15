@@ -792,7 +792,6 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
             <div className="live-queue-info">
               <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
                 <span className="live-queue-name">{name}</span>
-                <span className="live-queue-id" style={{ color: '#988f81', fontSize: 12 }}>#{getQueueItemId(id)}</span>
               </div>
               <span className="live-queue-service">{service}</span>
             </div>
