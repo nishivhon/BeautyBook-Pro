@@ -944,7 +944,7 @@ const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, expo
             style={{ width: 640, maxWidth: '95%', borderRadius: 8, padding: 18, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', ...modalTheme, pointerEvents: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: 0, marginBottom: 12, color: modalTheme.color }}>Choose staff to include</h3>
+            <h3 style={{ margin: 0, marginBottom: 12, color: modalTheme.color }}>Choose staff to download</h3>
 
             <div style={{ display: 'flex', gap: 12 }}>
               <div
@@ -959,10 +959,6 @@ const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, expo
                   width: '100%',
                 }}
               >
-                <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 10 }}>
-                  Select one or more staff (no Ctrl/Cmd needed)
-                </div>
-
                 <div style={{ maxHeight: 220, overflowY: 'auto', paddingRight: 6, pointerEvents: 'auto' }}>
                   <button
                     type="button"
@@ -1104,15 +1100,15 @@ const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, expo
                 </div>
               </div>
 
+                  </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 'auto', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-start', marginTop: 'auto', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => { setExportSetupOpen(false); setExportPickerOpen(true); }}
                     style={{ padding: '10px 14px', borderRadius: 6, background: '#2563eb', color: '#fff', border: 'none' }}
                   >
                     Continue
                   </button>
-                </div>
               </div>
             </div>
           </div>
