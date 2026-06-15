@@ -296,10 +296,10 @@ const formatTimeTo12Hour = (timeValue) => {
 };
 
 const STEPS = [
-  { number: 1, label: "Schedule" },
-  { number: 2, label: "Service"  },
-  { number: 3, label: "Stylist"  },
-  { number: 4, label: "Confirm"  },
+  { number: 1, label: "Service", order: 1 },
+  { number: 2, label: "Stylist", order: 2 },
+  { number: 3, label: "Schedule", order: 3 },
+  { number: 4, label: "Confirm", order: 4 },
 ];
 
 /* ══════════════════════════════════════════
@@ -321,14 +321,17 @@ const BookingHeader = ({ onBack, title = "Book Appointment" }) => (
 /* ── Progress bar — Phase 3 state ── */
 /* Steps 1+2 done (✓), step 3 active, step 4 inactive */
 /* Connectors 1→2 and 2→3 are amber; connector 3→4 is gray */
-const ProgressIndicator = ({ currentStep = 3, steps = STEPS }) => (
+const ProgressIndicator = ({ currentStep = 2, steps = STEPS }) => {
+  const currentOrder = currentStep;
+
+  return (
   <div className="appt-progress">
     <div className="appt-progress-track">
       {steps.map((step, i) => {
-        const isDone   = step.number < currentStep;
-        const isActive = step.number === currentStep;
+        const isDone   = step.order < currentOrder;
+        const isActive = step.order === currentOrder;
         /* connector after this step is amber if this step is done */
-        const lineAmber = step.number < currentStep;
+        const lineAmber = step.order < currentOrder;
         return (
           <div key={step.number} className="appt-progress-item">
             <div className={`appt-step-circle${isActive ? " active" : isDone ? " done" : ""}`}>
@@ -352,8 +355,8 @@ const ProgressIndicator = ({ currentStep = 3, steps = STEPS }) => (
         <span
           key={step.number}
           className={`appt-step-label${
-            step.number === currentStep ? " active"
-            : step.number < currentStep ? " done"
+            step.order === currentOrder ? " active"
+            : step.order < currentOrder ? " done"
             : ""
           }`}
         >
@@ -362,7 +365,8 @@ const ProgressIndicator = ({ currentStep = 3, steps = STEPS }) => (
       ))}
     </div>
   </div>
-);
+  );
+};
 
 /* ── "Any available" row ── */
 const AnyRow = ({ isSelected, onSelect }) => (
@@ -685,7 +689,7 @@ export const AppointmentFormPhase3 = ({ onBack, onContinue, onCancel, onClose, i
         >
         <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ ...BOOKING_MODAL_THEME_VARS, pointerEvents: 'auto' }}>
           <BookingHeader onBack={handleBack} title={headerTitle} />
-          <ProgressIndicator currentStep={3} steps={stepLabels} />
+          <ProgressIndicator currentStep={2} steps={stepLabels} />
 
           {/* ── Scrollable body ── */}
           <div className="appt-body">

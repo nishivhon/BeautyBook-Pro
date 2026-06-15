@@ -46,7 +46,7 @@ export function CustomerShell({ activeNav, profile, children }) {
   const [showAppointment, setShowAppointment] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [appointmentData, setAppointmentData] = useState(null);
-  const [appointmentPhase, setAppointmentPhase] = useState(1);
+  const [appointmentPhase, setAppointmentPhase] = useState(2);
   const [showBackdropConfirm, setShowBackdropConfirm] = useState(false);
   const [appointments] = useCustomerAppointmentsData();
   const { showToast } = useToast();
@@ -138,6 +138,7 @@ export function CustomerShell({ activeNav, profile, children }) {
     }
     
     // No active appointments, proceed with booking
+    setAppointmentPhase(2);
     setShowAppointment(true);
   };
 
@@ -153,14 +154,14 @@ export function CustomerShell({ activeNav, profile, children }) {
 
   const handleCancelBooking = () => {
     setShowAppointment(false);
-    setAppointmentPhase(1);
+    setAppointmentPhase(2);
     setAppointmentData(null);
     setShowBackdropConfirm(false);
   };
 
   const handleAppointmentContinue = (details) => {
     setAppointmentData((prev) => ({ ...(prev || {}), schedule: details }));
-    setAppointmentPhase(2);
+    setAppointmentPhase(4);
   };
 
   const handlePhase2Continue = (details) => {
@@ -179,12 +180,16 @@ export function CustomerShell({ activeNav, profile, children }) {
       return;
     }
     setAppointmentData((prev) => ({ ...(prev || {}), stylist: details.stylist }));
-    setAppointmentPhase(4);
+    setAppointmentPhase(1);
   };
 
   const handleBackPhase3 = (details) => {
     setAppointmentData((prev) => ({ ...(prev || {}), stylist: details?.stylist }));
     setAppointmentPhase(2);
+  };
+
+  const handleBackPhase1 = () => {
+    setAppointmentPhase(3);
   };
 
   const formatBooking = () => {
@@ -395,10 +400,10 @@ export function CustomerShell({ activeNav, profile, children }) {
           onClick={handleBackdropClick}
         >
           {appointmentPhase === 1 ? (
-            <AppointmentForm onBack={handleCancelBooking} onContinue={handleAppointmentContinue} />
+            <AppointmentForm onBack={handleBackPhase1} onContinue={handleAppointmentContinue} />
           ) : appointmentPhase === 2 ? (
             <AppointmentFormPhase2
-              onBack={() => setAppointmentPhase(1)}
+              onBack={handleCancelBooking}
               onContinue={handlePhase2Continue}
               onCancel={handleCancelBooking}
               onClose={handleCancelBooking}

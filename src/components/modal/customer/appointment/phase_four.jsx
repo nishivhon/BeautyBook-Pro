@@ -387,10 +387,10 @@ const BOOKING = {
 };
 
 const STEPS = [
-  { number: 1, label: "Schedule" },
-  { number: 2, label: "Service"  },
-  { number: 3, label: "Stylist"  },
-  { number: 4, label: "Confirm"  },
+  { number: 1, label: "Service", order: 1 },
+  { number: 2, label: "Stylist", order: 2 },
+  { number: 3, label: "Schedule", order: 3 },
+  { number: 4, label: "Confirm", order: 4 },
 ];
 
 /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
@@ -417,15 +417,18 @@ const BookingHeader = ({ onBack, isConfirmed }) => (
 
 /* ΓöÇΓöÇ Progress bar ΓÇö Phase 4 state ΓöÇΓöÇ */
 /* Steps 1, 2, 3 done (Γ£ô); all connectors amber; step 4 active */
-const ProgressIndicator = ({ currentStep = 4 }) => (
+const ProgressIndicator = ({ currentStep = 4 }) => {
+  const currentOrder = currentStep;
+
+  return (
   <div className="appt-progress">
     <div className="appt-progress-track">
       {STEPS.map((step, i) => {
-        const isDone   = step.number < currentStep;
+        const isDone   = step.order < currentOrder;
         const isActive = step.number === currentStep;
         return (
           <div key={step.number} className="appt-progress-item">
-            <div className={`appt-step-circle${isActive ? " active" : isDone ? " done" : ""}`}>
+            <div className={`appt-step-circle${step.order === currentOrder ? " active" : isDone ? " done" : ""}`}>
               {isDone
                 ? <svg viewBox="0 0 12 12" fill="none" width={13} height={13}>
                     <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -445,14 +448,15 @@ const ProgressIndicator = ({ currentStep = 4 }) => (
       {STEPS.map((step) => (
         <span
           key={step.number}
-          className={`appt-step-label${step.number === currentStep ? " active" : " done"}`}
+          className={`appt-step-label${step.order === currentOrder ? " active" : step.order < currentOrder ? " done" : ""}`}
         >
           {step.label}
         </span>
       ))}
     </div>
   </div>
-);
+  );
+};
 
 /* ΓöÇΓöÇ Thin divider ΓöÇΓöÇ */
 const Divider = () => (

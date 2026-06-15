@@ -315,10 +315,10 @@ const SERVICE_GROUP_CONFIG = {
 };
 
 const STEPS = [
-  { number: 1, label: "Schedule" },
-  { number: 2, label: "Service"  },
-  { number: 3, label: "Stylist"  },
-  { number: 4, label: "Confirm"  },
+  { number: 1, label: "Service", order: 1 },
+  { number: 2, label: "Stylist", order: 2 },
+  { number: 3, label: "Schedule", order: 3 },
+  { number: 4, label: "Confirm", order: 4 },
 ];
 
 /* ── Header ── */
@@ -336,12 +336,16 @@ const BookingHeader = ({ onBack, title = "Book Appointment" }) => (
 );
 
 /* ── Progress bar — phase 2 state ── */
-const ProgressIndicator = ({ currentStep = 2, steps = STEPS }) => (
+const ProgressIndicator = ({ currentStep = 1, steps = STEPS }) => (
   <div className="appt-progress">
+    {(() => {
+      const currentOrder = currentStep;
+      return (
+    <>
     <div className="appt-progress-track">
       {steps.map((step, i) => {
-        const isCompleted = step.number < currentStep;
-        const isActive    = step.number === currentStep;
+        const isCompleted = step.order < currentOrder;
+        const isActive    = step.order === currentOrder;
         return (
           <div key={step.number} className="appt-progress-item">
             <div className={`appt-step-circle${isActive ? " active" : isCompleted ? " done" : ""}`}>
@@ -361,8 +365,8 @@ const ProgressIndicator = ({ currentStep = 2, steps = STEPS }) => (
     </div>
     <div className="appt-progress-labels">
       {steps.map((step) => {
-        const isCompleted = step.number < currentStep;
-        const isActive    = step.number === currentStep;
+        const isCompleted = step.order < currentOrder;
+        const isActive    = step.order === currentOrder;
         return (
           <span
             key={step.number}
@@ -373,6 +377,9 @@ const ProgressIndicator = ({ currentStep = 2, steps = STEPS }) => (
         );
       })}
     </div>
+    </>
+      );
+    })()}
   </div>
 );
 
@@ -943,7 +950,7 @@ export const AppointmentFormPhase2 = ({ onBack, onContinue, onCancel, onClose, i
         >
         <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ ...BOOKING_MODAL_THEME_VARS, pointerEvents: 'auto' }}>
           <BookingHeader onBack={handleBack} title={headerTitle} />
-          <ProgressIndicator currentStep={2} steps={stepLabels} />
+          <ProgressIndicator currentStep={1} steps={stepLabels} />
 
       {/* ── Scrollable body ── */}
       <div className="appt-body">

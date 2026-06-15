@@ -432,10 +432,10 @@ const BackArrowIcon = () => (
 
 /* ── Step labels for progress bar ── */
 const STEPS = [
-  { number: 1, label: "Schedule" },
-  { number: 2, label: "Service" },
-  { number: 3, label: "Stylist" },
-  { number: 4, label: "Confirm" },
+  { number: 1, label: "Service", order: 1 },
+  { number: 2, label: "Stylist", order: 2 },
+  { number: 3, label: "Schedule", order: 3 },
+  { number: 4, label: "Confirm", order: 4 },
 ];
 
 // Format service data for display and selection tracking
@@ -464,41 +464,42 @@ const ServiceHeader = ({ title, onBack, isSaving = false }) => (
 );
 
 /* ── Progress bar — Phase 2 state ── */
-const ProgressIndicator = ({ currentStep = 2 }) => (
-  <div className="appt-progress">
-    <div className="appt-progress-track">
-      {STEPS.map((step, i) => {
-        const isDone   = step.number < currentStep;
-        const isActive = step.number === currentStep;
-        return (
-          <div key={step.number} className="appt-progress-item">
-            <div className={`appt-step-circle${isActive ? " active" : isDone ? " done" : ""}`}>
-              {isDone
-                ? <svg viewBox="0 0 12 12" fill="none" width={13} height={13}>
-                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                : step.number
-              }
+const ProgressIndicator = ({ currentStep = 1 }) => {
+  const currentOrder = currentStep;
+
+  return (
+    <div className="appt-progress">
+      <div className="appt-progress-track">
+        {STEPS.map((step, i) => {
+          const isDone = step.order < currentOrder;
+          const isActive = step.order === currentOrder;
+          return (
+            <div key={step.number} className="appt-progress-item">
+              <div className={`appt-step-circle${isActive ? " active" : isDone ? " done" : ""}`}>
+                {isDone
+                  ? <svg viewBox="0 0 12 12" fill="none" width={13} height={13}>
+                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  : step.number
+                }
+              </div>
+              {i < STEPS.length - 1 && (
+                <div className={`appt-step-line${isDone ? " done" : ""}`} />
+              )}
             </div>
-            {i < STEPS.length - 1 && (
-              <div className={`appt-step-line${isDone ? " done" : ""}`} />
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+      <div className="appt-progress-labels">
+        {STEPS.map((step) => (
+          <span key={step.number} className={`appt-step-label${step.order === currentOrder ? " active" : step.order < currentOrder ? " done" : ""}`}>
+            {step.label}
+          </span>
+        ))}
+      </div>
     </div>
-    <div className="appt-progress-labels">
-      {STEPS.map((step) => (
-        <span
-          key={step.number}
-          className={`appt-step-label${step.number === currentStep ? " active" : step.number < currentStep ? " done" : ""}`}
-        >
-          {step.label}
-        </span>
-      ))}
-    </div>
-  </div>
-);
+  );
+};
 
 /* ── Single service list row (no icon) ── */
 const ServiceRow = ({ service, isSelected, onSelect }) => (
@@ -701,7 +702,7 @@ export const DynamicServiceModal = ({
         }}
       >
         <ServiceHeader title={categoryName} onBack={handleBack} isSaving={isUpdating} />
-        <ProgressIndicator currentStep={2} />
+        <ProgressIndicator currentStep={1} />
 
         {/* ── Scrollable body ── */}
         <div className="appt-body" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '28px 40px 20px' }}>

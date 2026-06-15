@@ -335,10 +335,10 @@ const BOOKING_MODAL_THEME_CSS = `
 `;
 
 const STEPS = [
-  { number: 1, label: "Schedule" },
-  { number: 2, label: "Service"  },
-  { number: 3, label: "Stylist"  },
-  { number: 4, label: "Confirm"  },
+  { number: 1, label: "Service", order: 1 },
+  { number: 2, label: "Stylist", order: 2 },
+  { number: 3, label: "Schedule", order: 3 },
+  { number: 4, label: "Confirm", order: 4 },
 ];
 
 // Convert 24-hour format (HH:MM) to 12-hour format (H:MM AM/PM)
@@ -383,29 +383,38 @@ const BookingHeader = ({ onBack, onBackClick }) => (
 );
 
 /* ── Progress steps ── */
-const ProgressIndicator = ({ currentStep = 1 }) => (
+const ProgressIndicator = ({ currentStep = 3 }) => {
+  const currentOrder = currentStep;
+
+  return (
   <div className="appt-progress">
     {/* circles + connectors row */}
     <div className="appt-progress-track">
       {STEPS.map((step, i) => (
         <div key={step.number} className="appt-progress-item">
-          <div className={`appt-step-circle${step.number === currentStep ? " active" : ""}`}>
-            {step.number}
+          <div className={`appt-step-circle${step.order === currentOrder ? " active" : step.order < currentOrder ? " done" : ""}`}>
+            {step.order < currentOrder
+              ? <svg viewBox="0 0 12 12" fill="none" width={13} height={13}>
+                  <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              : step.number
+            }
           </div>
-          {i < STEPS.length - 1 && <div className="appt-step-line" />}
+          {i < STEPS.length - 1 && <div className={`appt-step-line${step.order < currentOrder ? " done" : ""}`} />}
         </div>
       ))}
     </div>
     {/* labels row */}
     <div className="appt-progress-labels">
       {STEPS.map((step) => (
-        <span key={step.number} className={`appt-step-label${step.number === currentStep ? " active" : ""}`}>
+        <span key={step.number} className={`appt-step-label${step.order === currentOrder ? " active" : step.order < currentOrder ? " done" : ""}`}>
           {step.label}
         </span>
       ))}
     </div>
   </div>
-);
+  );
+};
 
 // Hardcoded times for display
 const ALL_TIME_SLOTS = [
@@ -622,7 +631,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
           >
             <div className="appt-root" onClick={(e) => e.stopPropagation()} style={{ ...BOOKING_MODAL_THEME_VARS, pointerEvents: 'auto' }}>
               <BookingHeader onBack={onBack} onBackClick={handleBackClick} />
-              <ProgressIndicator currentStep={1} />
+              <ProgressIndicator currentStep={3} />
 
           {/* ── Scrollable body ── */}
           <div className="appt-body">
@@ -697,10 +706,6 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                       <button
                         key={i}
                         onClick={handleDateSelect}
-                        onTouchEnd={(e) => {
-                          e.preventDefault();
-                          handleDateSelect();
-                        }}
                         className={`appt-date-card${selectedDate === i ? " selected" : ""}`}
                         aria-pressed={selectedDate === i}
                       >
@@ -831,10 +836,6 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                   <button
                     key={i}
                     onClick={handleTimeSelect}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      handleTimeSelect();
-                    }}
                     className={`appt-time-chip${selectedTime === i ? " selected" : ""}${isDisabled ? " disabled" : ""}`}
                     aria-pressed={selectedTime === i}
                     disabled={isDisabled}
