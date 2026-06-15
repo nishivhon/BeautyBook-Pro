@@ -790,7 +790,10 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
               <div className="live-queue-number-box">{number}</div>
             )}
             <div className="live-queue-info">
-              <span className="live-queue-name">{name}</span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                <span className="live-queue-name">{name}</span>
+                <span className="live-queue-id" style={{ color: '#988f81', fontSize: 12 }}>#{getQueueItemId(id)}</span>
+              </div>
               <span className="live-queue-service">{service}</span>
             </div>
           </div>
@@ -843,6 +846,11 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
               <div>
                 <span className="dash-detail-label">Service Selected</span>
                 <span className="dash-detail-value">{details.serviceSelected}</span>
+              </div>
+
+              <div>
+                <span className="dash-detail-label">ID</span>
+                <span className="dash-detail-value">{getQueueItemId(id)}</span>
               </div>
 
               <div>
