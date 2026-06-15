@@ -7,29 +7,7 @@ import { StatusUpdateModal } from "../../components/modal/admin/status_update";
 import { ManageServiceModal } from "../../components/modal/admin/manage_service";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import DateRangePicker from "../../components/shared/DateRangePicker";
-import {
-  AdminDashboardNavIcon,
-  AdminServicesNavIcon,
-  AdminLiveStatusNavIcon,
-  AdminStaffStatusNavIcon,
-  AdminLogOutIcon,
-  AdminIconSlot,
-  AdminMetricAvailableIcon,
-  AdminMetricInServiceIcon,
-  AdminMetricOnBreakIcon,
-  AdminMetricOffTodayIcon,
-  AdminAnalyticsIcon,
-  AdminDownloadIcon,
-  AdminQuickActionHistoryIcon,
-  AdminNavLogoIcon,
-} from "../../components/admin/adminDashboardIcons";
-import { LogoMark } from "../../components/public/publicPageIcons";
-import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
-import { useToast } from "../../components/toast";
 
-// ═══════════════════════════════════════════════════════════════════
-// DARK MODE HELPER
-// ═══════════════════════════════════════════════════════════════════
 const isDarkMode = () => {
   if (typeof document === 'undefined') return true;
   const theme = document.documentElement.getAttribute('data-theme');
@@ -903,7 +881,29 @@ const QuickActionsPanel = ({ onCustomerHistory }) => (
 );
 
 /* ── Analytics panel ── */
-const AnalyticsPanel = ({ onDownloadReports, isDownloading, exportPickerOpen, setExportPickerOpen }) => (
+const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, exportPickerOpen, setExportPickerOpen }) => {
+  const [selectedStaffNames, setSelectedStaffNames] = useState([]);
+  const [exportSetupOpen, setExportSetupOpen] = useState(false);
+
+  // If user clicks any staff checkbox, we should switch from "All staff" to specific selection.
+  // The "All staff" checkbox is driven by: !selectedStaffNames.length
+
+  const toggleStaff = (staffName, nextChecked) => {
+    setSelectedStaffNames((prev) => {
+      const already = prev.includes(staffName);
+      if (nextChecked) {
+        return already ? prev : [...prev, staffName];
+      }
+      return already ? prev.filter((n) => n !== staffName) : prev;
+    });
+  };
+
+  const modalTheme = getThemeStyles(
+    { background: '#0b1220', color: '#f3f4f6' },
+    { background: '#ffffff', color: '#111827' }
+  );
+
+  return (
   <div className="dash-sidebar-panel">
     <div className="dash-analytics-header">
       <AdminIconSlot size="analytics-lg">
@@ -914,22 +914,119 @@ const AnalyticsPanel = ({ onDownloadReports, isDownloading, exportPickerOpen, se
         <p className="dash-analytics-sub">View past 7 days detailed report</p>
       </div>
     </div>
-    <div style={{ position: 'relative' }}>
-      <button className="dash-download-btn" onClick={() => setExportPickerOpen(true)} disabled={isDownloading}>
-        {isDownloading ? 'Downloading...' : 'Download Reports'}
-        <AdminIconSlot size="inline">
-          <AdminDownloadIcon />
-        </AdminIconSlot>
-      </button>
+      <div style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+        <button className="dash-download-btn" onClick={() => setExportSetupOpen(true)} disabled={isDownloading}>
+          {isDownloading ? 'Downloading...' : 'Download Reports'}
+          <AdminIconSlot size="inline">
+            <AdminDownloadIcon />
+          </AdminIconSlot>
+        </button>
+      </div>
+
+      {exportSetupOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200
+          }}
+        >
+          <div
+            style={{
+              width: 640,
+              maxWidth: '95%',
+              borderRadius: 8,
+              padding: 18,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+              background: '#0b1220',
+              color: '#f3f4f6'
+            }}
+          >
+            <h3 style={{ margin: 0, marginBottom: 12, color: '#f3f4f6' }}>Choose staff to include</h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ maxHeight: 320, overflow: 'auto', paddingRight: 6 }}>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    cursor: 'pointer',
+                    marginBottom: 10,
+                    userSelect: 'none'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={!selectedStaffNames.length}
+                    onChange={(e) => {
+                      if (e.target.checked) setSelectedStaffNames([]);
+                    }}
+                  />
+                  <span style={{ fontWeight: 700 }}>All staff</span>
+                  <span style={{ opacity: 0.8, fontWeight: 500, fontSize: 12, marginLeft: 6 }}>(export for all)</span>
+                </label>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {staffList.map((s) => {
+                    const checked = selectedStaffNames.includes(s.name);
+                    return (
+                      <label
+                        key={s.id || s.name}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => toggleStaff(s.name, e.target.checked)}
+                        />
+                        <span style={{ color: '#f3f4f6' }}>{s.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Continue at bottom-right */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => {
+                    setExportSetupOpen(false);
+                    setExportPickerOpen(true);
+                  }}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: 6,
+                    background: '#f59e0b',
+                    color: '#0b1220',
+                    border: '1px solid #f59e0b',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                    cursor: 'pointer',
+                    fontWeight: 800
+                  }}
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <DateRangePicker
         open={exportPickerOpen}
         initialRange={null}
         onClose={() => setExportPickerOpen(false)}
-        onConfirm={onDownloadReports}
+        onConfirm={(range) => onDownloadReports(range, selectedStaffNames.length ? selectedStaffNames : null)}
       />
     </div>
   </div>
-);
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // MAIN EXPORT
@@ -1407,13 +1504,18 @@ export const AdminDashboardStaffStatus = ({ date }) => {
     }
   };
 
-  const handleDownloadReports = async (range) => {
+  const handleDownloadReports = async (range, staffNames = null) => {
     try {
       setIsDownloadingReports(true);
 
       const searchParams = new URLSearchParams();
       if (range?.startDate) searchParams.set('fromDate', range.startDate);
       if (range?.endDate) searchParams.set('toDate', range.endDate);
+      if (Array.isArray(staffNames) && staffNames.length > 0) {
+        staffNames.forEach((n) => searchParams.append('staffName', n));
+      } else if (typeof staffNames === 'string' && staffNames) {
+        searchParams.set('staffName', staffNames);
+      }
 
       const response = await fetch(`/api/cron/staff-logs-export?${searchParams.toString()}`);
       if (!response.ok) {
@@ -1522,6 +1624,7 @@ export const AdminDashboardStaffStatus = ({ date }) => {
               onCustomerHistory={() => setIsCustomerHistoryOpen(true)}
             />
             <AnalyticsPanel
+              staffList={staff}
               onDownloadReports={handleDownloadReports}
               isDownloading={isDownloadingReports}
               exportPickerOpen={exportPickerOpen}

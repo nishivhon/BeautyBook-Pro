@@ -57,7 +57,16 @@ export default async function handler(req, res) {
     const startDate = /^\d{4}-\d{2}-\d{2}$/.test(queryStartDate) ? queryStartDate : defaultStartDate;
     const endDate = /^\d{4}-\d{2}-\d{2}$/.test(queryEndDate) ? queryEndDate : today;
 
-    const { data: rows, error } = await supabase
+    // Parse possible multiple staffName query params. Supports repeated params or comma-separated.
+    const rawStaffNames = req.query?.staffName;
+    let staffNames = [];
+    if (Array.isArray(rawStaffNames)) {
+      staffNames = rawStaffNames.map((v) => String(v).trim()).filter(Boolean);
+    } else if (rawStaffNames) {
+      staffNames = String(rawStaffNames).split(',').map((v) => v.trim()).filter(Boolean);
+    }
+
+    let query = supabase
       .from('staff_logs')
       .select('date, staff_name, clock_in, clock_out, total_clients, total_walk_in, done_clients')
       .gte('date', startDate)
@@ -65,32 +74,67 @@ export default async function handler(req, res) {
       .order('date', { ascending: true })
       .order('staff_name', { ascending: true });
 
+    if (staffNames.length > 0) {
+      query = query.in('staff_name', staffNames);
+    }
+
+    const { data: rows, error } = await query;
+
     if (error) {
       return res.status(500).json({ error: 'Failed to fetch staff logs', details: error.message });
     }
 
-    const worksheetRows = (rows || []).map((row) => ({
-      date: row.date || '',
-      staff_name: row.staff_name || '',
-      clock_in: row.clock_in || '',
-      clock_out: row.clock_out || '',
-      total_clients: row.total_clients ?? 0,
-      total_walk_in: row.total_walk_in ?? 0,
-      done_clients: row.done_clients ?? 0,
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(worksheetRows, {
-      header: ['date', 'staff_name', 'clock_in', 'clock_out', 'total_clients', 'total_walk_in', 'done_clients'],
-    });
-
-    const lastRow = Math.max(worksheetRows.length + 1, 2);
-    worksheet['!autofilter'] = { ref: `A1:G${lastRow}` };
-
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Staff Logs');
+
+    // If specific staff names were requested, create one sheet per staff
+    if (staffNames.length > 0) {
+      staffNames.forEach((staffName) => {
+        const rowsForStaff = (rows || []).filter(r => String(r.staff_name || '').trim() === String(staffName).trim());
+        const worksheetRows = (rowsForStaff || []).map((row) => ({
+          date: row.date || '',
+          staff_name: row.staff_name || '',
+          clock_in: row.clock_in || '',
+          clock_out: row.clock_out || '',
+          total_clients: row.total_clients ?? 0,
+          total_walk_in: row.total_walk_in ?? 0,
+          done_clients: row.done_clients ?? 0,
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(worksheetRows, {
+          header: ['date', 'staff_name', 'clock_in', 'clock_out', 'total_clients', 'total_walk_in', 'done_clients'],
+        });
+
+        const lastRow = Math.max(worksheetRows.length + 1, 2);
+        worksheet['!autofilter'] = { ref: `A1:G${lastRow}` };
+
+        // sanitize sheet name (Excel sheet name max 31 chars, cannot contain some chars)
+        const safeName = String(staffName).replace(/[\\/:*?\[\]]/g, '').slice(0, 28) || 'Staff';
+        XLSX.utils.book_append_sheet(workbook, worksheet, safeName);
+      });
+    } else {
+      const worksheetRows = (rows || []).map((row) => ({
+        date: row.date || '',
+        staff_name: row.staff_name || '',
+        clock_in: row.clock_in || '',
+        clock_out: row.clock_out || '',
+        total_clients: row.total_clients ?? 0,
+        total_walk_in: row.total_walk_in ?? 0,
+        done_clients: row.done_clients ?? 0,
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(worksheetRows, {
+        header: ['date', 'staff_name', 'clock_in', 'clock_out', 'total_clients', 'total_walk_in', 'done_clients'],
+      });
+
+      const lastRow = Math.max(worksheetRows.length + 1, 2);
+      worksheet['!autofilter'] = { ref: `A1:G${lastRow}` };
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Staff Logs');
+    }
 
     const xlsxBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-    const filename = `staff_logs_${startDate}_to_${endDate}.xlsx`;
+    const filenameSuffix = staffNames.length > 0 ? staffNames.map(n => n.replace(/\s+/g,'_')).join('__') : `${startDate}_to_${endDate}`;
+    const filename = `staff_logs_${filenameSuffix}.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
