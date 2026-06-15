@@ -448,7 +448,7 @@ const isPastOrCurrentSlotForDate = (dateStr, time24) => {
   return dateStr === getManilaDateStr() && time24 <= getCurrentTime24();
 };
 
-export const AppointmentForm = ({ onBack, onContinue }) => {
+export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
   const [showDateInput, setShowDateInput] = useState(false);
@@ -510,21 +510,50 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
     if (selectedDate !== null && selectedDate < dateOptions.length) {
       setLoadingTimes(true);
       const selectedDateObj = dateOptions[selectedDate];
-      
-      fetch(`/api/appointments/available-slots?date=${selectedDateObj.date}`)
+
+      fetch(`/api/appointments/all-slots?date=${selectedDateObj.date}`)
         .then(res => res.json())
         .then(data => {
-          console.log(`[Phase1] Available slots for ${selectedDateObj.date}:`, data);
-          if (data.success && data.slots && data.slots.length > 0) {
-            // Get times that are available (availability = true)
-            // Strip seconds from time_24 (convert 10:30:00 to 10:30)
-            const availableTimes = data.slots
-              .map(slot => slot.time_24.split(':').slice(0, 2).join(':'))
-              .filter(time => !isPastOrCurrentSlotForDate(selectedDateObj.date, time));
-            console.log(`[Phase1] Available times: ${availableTimes.join(', ')}`);
-            // Unavailable times are ones NOT in the available list
-            const unavailable = ALL_TIME_SLOTS.filter(time => !availableTimes.includes(time));
-            console.log(`[Phase1] Unavailable times: ${unavailable.join(', ')}`);
+          console.log(`[Phase1] All slots for ${selectedDateObj.date}:`, data);
+          if (data.success && Array.isArray(data.slots)) {
+            const slots = data.slots;
+
+            // Build a map by time (HH:MM)
+            const slotsByTime = slots.reduce((m, s) => {
+              const t = String(s.time_24).slice(0,5);
+              if (!m[t]) m[t] = [];
+              m[t].push(s);
+              return m;
+            }, {});
+
+            const stylistObj = initialData?.stylist || null;
+            const selectedStylistValues = [];
+            if (stylistObj) {
+              if (stylistObj.id !== undefined && stylistObj.id !== null) selectedStylistValues.push(String(stylistObj.id).toLowerCase().trim());
+              if (stylistObj.name) selectedStylistValues.push(String(stylistObj.name).toLowerCase().trim());
+            }
+
+            const unavailable = ALL_TIME_SLOTS.filter(time => {
+              // Past or current times are unavailable
+              if (isPastOrCurrentSlotForDate(selectedDateObj.date, time)) return true;
+
+              const rows = slotsByTime[time] || [];
+
+              // If a stylist is selected, block times where that stylist is already assigned
+              if (selectedStylistValues.length > 0) {
+                return rows.some(r => {
+                  const assigned = r.assigned_staff === null || r.assigned_staff === undefined ? "" : String(r.assigned_staff).toLowerCase().trim();
+                  return selectedStylistValues.includes(assigned);
+                });
+              }
+
+              // No stylist selected: if any row is explicitly available, the time is available
+              if (rows.some(r => r.available === true)) return false;
+
+              // Otherwise treat as unavailable
+              return true;
+            });
+
             setUnavailableTimes(unavailable);
           } else {
             console.warn('[Phase1] No slots returned from API');
@@ -540,7 +569,7 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
     } else {
       setUnavailableTimes([]);
     }
-  }, [selectedDate, dateOptions]);
+  }, [selectedDate, dateOptions, initialData?.stylist?.id, initialData?.stylist?.name]);
 
   const handleBackClick = () => {
     setShowBackdropConfirm(true);

@@ -48,26 +48,85 @@ export const bookSlot = async (date, time, customerName = null, customerContact 
       reminder_sent_at: null,
       updated_at: new Date().toISOString() 
     };
-
-    const { data, error } = await supabase
+    // Fetch existing rows for this date/time
+    const { data: existingRows, error: fetchError } = await supabase
       .from('available_slots')
-      .update(updateData)
+      .select('*')
       .eq('date', date)
       .eq('time_slot', time)
-      .select();
+      .order('id', { ascending: true });
 
-    if (error) {
-      console.error('[SlotManager] Error booking slot:', error);
-      throw error;
+    if (fetchError) {
+      console.error('[SlotManager] Error fetching slot rows:', fetchError);
+      throw fetchError;
     }
 
-    if (!data || data.length === 0) {
+    if (!existingRows || existingRows.length === 0) {
       console.warn(`[SlotManager] Slot not found: ${date} ${time}`);
       return false;
     }
 
-    console.log(`[SlotManager] Slot booked successfully: ${date} ${time}`);
-    return true;
+    // Prefer updating an available row if present
+    const availableRow = existingRows.find(r => r.availability === true);
+    if (availableRow) {
+      const { data, error } = await supabase
+        .from('available_slots')
+        .update(updateData)
+        .eq('id', availableRow.id)
+        .select();
+
+      if (error) {
+        console.error('[SlotManager] Error booking slot (update available):', error);
+        throw error;
+      }
+
+      console.log(`[SlotManager] Slot booked successfully (updated id=${availableRow.id}): ${date} ${time}`);
+      return true;
+    }
+
+    // No available rows. If an existing row already has an assigned_staff, create a new row
+    const hasAssignedStaff = existingRows.some(r => r.assigned_staff);
+    if (hasAssignedStaff) {
+      // Insert a new row into available_slots for this booking (allowing multiple rows per date/time)
+      const insertData = {
+        date,
+        time_slot: time,
+        availability: false,
+        assigned_staff: assignedStaff,
+        customer_name: customerName,
+        customer_contact: customerContact,
+        services: services.length > 0 ? services : [],
+        service_est_time: Number(serviceEstTime) || 0,
+        total_price: Number(totalPrice) || 0,
+        status: 'pending',
+        reminder_sent: false,
+        reminder_sent_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      try {
+        const { data: inserted, error: insertError } = await supabase
+          .from('available_slots')
+          .insert(insertData)
+          .select();
+
+        if (insertError) {
+          console.error('[SlotManager] Error inserting new slot row:', insertError);
+          return false;
+        }
+
+        console.log(`[SlotManager] Slot booked successfully (inserted new row): ${date} ${time}`);
+        return true;
+      } catch (insErr) {
+        console.error('[SlotManager] Exception inserting new slot row:', insErr);
+        return false;
+      }
+    }
+
+    // Otherwise, there are rows but none available and none assigned -> cannot book
+    console.warn(`[SlotManager] Slot unavailable and no assigned staff to allow insert: ${date} ${time}`);
+    return false;
   } catch (error) {
     console.error('[SlotManager] Error in bookSlot:', error.message);
     throw error;

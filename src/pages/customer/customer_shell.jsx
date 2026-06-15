@@ -400,7 +400,7 @@ export function CustomerShell({ activeNav, profile, children }) {
           onClick={handleBackdropClick}
         >
           {appointmentPhase === 1 ? (
-            <AppointmentForm onBack={handleBackPhase1} onContinue={handleAppointmentContinue} />
+            <AppointmentForm onBack={handleBackPhase1} onContinue={handleAppointmentContinue} initialData={appointmentData || {}} />
           ) : appointmentPhase === 2 ? (
             <AppointmentFormPhase2
               onBack={handleCancelBooking}
