@@ -7,7 +7,29 @@ import { StatusUpdateModal } from "../../components/modal/admin/status_update";
 import { ManageServiceModal } from "../../components/modal/admin/manage_service";
 import { AdminHeaderActions } from "../../components/admin/AdminHeaderActions";
 import DateRangePicker from "../../components/shared/DateRangePicker";
+import {
+  AdminDashboardNavIcon,
+  AdminServicesNavIcon,
+  AdminLiveStatusNavIcon,
+  AdminStaffStatusNavIcon,
+  AdminLogOutIcon,
+  AdminIconSlot,
+  AdminMetricAvailableIcon,
+  AdminMetricInServiceIcon,
+  AdminMetricOnBreakIcon,
+  AdminMetricOffTodayIcon,
+  AdminAnalyticsIcon,
+  AdminDownloadIcon,
+  AdminQuickActionHistoryIcon,
+  AdminNavLogoIcon,
+} from "../../components/admin/adminDashboardIcons";
+import { LogoMark } from "../../components/public/publicPageIcons";
+import { ConfirmationDialog } from "../../components/modal/customer/confirmation_dialog";
+import { useToast } from "../../components/toast";
 
+// ═══════════════════════════════════════════════════════════════════
+// DARK MODE HELPER
+// ═══════════════════════════════════════════════════════════════════
 const isDarkMode = () => {
   if (typeof document === 'undefined') return true;
   const theme = document.documentElement.getAttribute('data-theme');
@@ -884,20 +906,6 @@ const QuickActionsPanel = ({ onCustomerHistory }) => (
 const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, exportPickerOpen, setExportPickerOpen }) => {
   const [selectedStaffNames, setSelectedStaffNames] = useState([]);
   const [exportSetupOpen, setExportSetupOpen] = useState(false);
-
-  // If user clicks any staff checkbox, we should switch from "All staff" to specific selection.
-  // The "All staff" checkbox is driven by: !selectedStaffNames.length
-
-  const toggleStaff = (staffName, nextChecked) => {
-    setSelectedStaffNames((prev) => {
-      const already = prev.includes(staffName);
-      if (nextChecked) {
-        return already ? prev : [...prev, staffName];
-      }
-      return already ? prev.filter((n) => n !== staffName) : prev;
-    });
-  };
-
   const modalTheme = getThemeStyles(
     { background: '#0b1220', color: '#f3f4f6' },
     { background: '#ffffff', color: '#111827' }
@@ -925,93 +933,30 @@ const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, expo
       </div>
 
       {exportSetupOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1200
-          }}
-        >
-          <div
-            style={{
-              width: 640,
-              maxWidth: '95%',
-              borderRadius: 8,
-              padding: 18,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-              background: '#0b1220',
-              color: '#f3f4f6'
-            }}
-          >
-            <h3 style={{ margin: 0, marginBottom: 12, color: '#f3f4f6' }}>Choose staff to include</h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ maxHeight: 320, overflow: 'auto', paddingRight: 6 }}>
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    cursor: 'pointer',
-                    marginBottom: 10,
-                    userSelect: 'none'
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={!selectedStaffNames.length}
-                    onChange={(e) => {
-                      if (e.target.checked) setSelectedStaffNames([]);
-                    }}
-                  />
-                  <span style={{ fontWeight: 700 }}>All staff</span>
-                  <span style={{ opacity: 0.8, fontWeight: 500, fontSize: 12, marginLeft: 6 }}>(export for all)</span>
-                </label>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {staffList.map((s) => {
-                    const checked = selectedStaffNames.includes(s.name);
-                    return (
-                      <label
-                        key={s.id || s.name}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => toggleStaff(s.name, e.target.checked)}
-                        />
-                        <span style={{ color: '#f3f4f6' }}>{s.name}</span>
-                      </label>
-                    );
-                  })}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
+          <div style={{ width: 640, maxWidth: '95%', borderRadius: 8, padding: 18, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', ...modalTheme }}>
+            <h3 style={{ margin: 0, marginBottom: 12, color: modalTheme.color }}>Choose staff to include</h3>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <select
+                multiple
+                size={8}
+                value={selectedStaffNames}
+                onChange={(e) => {
+                  const opts = Array.from(e.target.selectedOptions || []).map(o => o.value);
+                  setSelectedStaffNames(opts);
+                }}
+                style={{ padding: '8px', borderRadius: '6px', minWidth: '280px', border: `1px solid ${isDarkMode() ? '#374151' : '#cbd5e1'}`, background: isDarkMode() ? '#0b1220' : '#fff', color: modalTheme.color }}
+                title="Hold Ctrl (Windows) or Cmd (Mac) to select multiple staff"
+              >
+                <option value="">All staff</option>
+                {staffList.map((s) => (
+                  <option key={s.id || s.name} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 'auto' }}>
+                  <button onClick={() => { setExportSetupOpen(false); setExportPickerOpen(true); }} style={{ padding: '10px 14px', borderRadius: 6, background: '#2563eb', color: '#fff', border: 'none' }}>Continue</button>
                 </div>
-              </div>
-
-              {/* Continue at bottom-right */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => {
-                    setExportSetupOpen(false);
-                    setExportPickerOpen(true);
-                  }}
-                  style={{
-                    padding: '10px 18px',
-                    borderRadius: 6,
-                    background: '#f59e0b',
-                    color: '#0b1220',
-                    border: '1px solid #f59e0b',
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-                    cursor: 'pointer',
-                    fontWeight: 800
-                  }}
-                >
-                  Continue
-                </button>
               </div>
             </div>
           </div>
