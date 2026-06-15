@@ -333,9 +333,9 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     setCompleteConfirmData({ name: customerName, service, staff });
   };
 
-  const requestCancelWalkIn = (itemId, customerName) => {
+  const requestCancelWalkIn = (itemId, customerName, isWalkIn = false) => {
     setCancelConfirmId(itemId);
-    setCancelConfirmData({ name: customerName });
+    setCancelConfirmData({ name: customerName, isWalkIn });
   };
 
   const getManilaDateString = () => new Intl.DateTimeFormat('en-CA', {
@@ -558,30 +558,27 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
   const handleCancelWalkIn = async (itemId, customerName) => {
     try {
       const normalizedId = getQueueItemId(itemId);
-
-      const response = await fetch('/api/appointments/update/status', {
+      // Call the cancel endpoint which resets the slot and increments cancellations
+      const response = await fetch('/api/appointments/update/cancel', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: normalizedId,
-          status: 'cancelled',
-        }),
+        body: JSON.stringify({ id: normalizedId }),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to cancel walk-in: ${response.status}`);
+        const errText = await response.text().catch(() => response.statusText || String(response.status));
+        throw new Error(`Failed to cancel appointment: ${errText}`);
       }
 
+      // Remove the cancelled item from any local queues
       setWalkInAppointments((prev) => prev.filter((walkIn) => String(walkIn.id) !== normalizedId));
+      setPendingAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
+      setCurrentAppointments((prev) => prev.filter((apt) => String(apt.id) !== normalizedId));
       setExpandedItemId(null);
 
       window.dispatchEvent(new CustomEvent('appointmentsUpdated'));
 
-      showToast({
-        message: `Walk-in for ${customerName} cancelled.`,
-        type: 'success',
-        duration: 2000,
-      });
+      showToast({ message: `Appointment for ${customerName} cancelled.`, type: 'success', duration: 2000 });
     } catch (error) {
       console.error('Error cancelling walk-in:', error);
       showToast({
@@ -777,7 +774,7 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
 
     const handleCancelWalkIn = () => {
       if (onCancelWalkIn) {
-        onCancelWalkIn(id, name);
+        onCancelWalkIn(id, name, isWalkIn);
       }
     };
 
@@ -917,16 +914,14 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
                     Proceed
                   </button>
                 )}
-                {isWalkIn && (
-                  <button
-                    type="button"
-                    onClick={handleCancelWalkIn}
-                    className="live-queue-cancel-btn live-queue-row-btn"
-                  >
-                    <CancelledIcon size={14} color="#ef4444" />
-                    Cancel
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={handleCancelWalkIn}
+                  className="live-queue-cancel-btn live-queue-row-btn"
+                >
+                  <CancelledIcon size={14} color="#ef4444" />
+                  Cancel
+                </button>
               </div>
             )}
           </div>
@@ -1071,10 +1066,10 @@ const LiveQueue = ({ onOpenWalkInModal, onProceedClick }) => {
     {cancelConfirmId && (
       <ConfirmationDialog
         isOpen={true}
-        title="Cancel Walk-in?"
-        message={`Are you sure you want to cancel ${cancelConfirmData?.name}'s walk-in?`}
+        title={cancelConfirmData?.isWalkIn ? "Cancel Walk-in?" : "Cancel Appointment?"}
+        message={cancelConfirmData?.isWalkIn ? `Are you sure you want to cancel ${cancelConfirmData?.name}'s walk-in?` : `Are you sure you want to cancel ${cancelConfirmData?.name}'s appointment?`}
         confirmText="Yes, Cancel"
-        cancelText="Keep Walk-in"
+        cancelText="Keep"
         onConfirm={async () => {
           try {
             await handleCancelWalkIn(cancelConfirmId, cancelConfirmData?.name);

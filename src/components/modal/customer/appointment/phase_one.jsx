@@ -246,8 +246,13 @@ const BOOKING_MODAL_THEME_CSS = `
   }
 
   .booking-modal-theme .appt-time-chip.disabled {
-    background: rgba(17, 16, 13, 0.75) !important;
-    color: rgba(152, 143, 129, 0.55) !important;
+    background: rgba(239, 67, 67, 0.16) !important;
+    border: 1px solid rgba(239, 67, 67, 0.28) !important;
+    color: #ff6b6b !important;
+    box-shadow: inset 0 0 0 1px rgba(239,67,67,0.04) !important;
+  }
+  .booking-modal-theme .appt-time-chip.disabled:hover {
+    background: rgba(239, 67, 67, 0.16) !important;
   }
 
   .booking-modal-theme .appt-cancel-btn {
@@ -840,7 +845,13 @@ export const AppointmentForm = ({ onBack, onContinue }) => {
                     aria-pressed={selectedTime === i}
                     disabled={isDisabled}
                     style={{
-                      ...(isDisabled ? { opacity: 0.6, cursor: "not-allowed", pointerEvents: "none" } : { pointerEvents: "auto" }),
+                      ...(isDisabled ? {
+                        cursor: "not-allowed",
+                        pointerEvents: "none",
+                        backgroundColor: 'rgba(239,67,67,0.16)',
+                        border: '1px solid rgba(239,67,67,0.28)',
+                        color: '#ff6b6b'
+                      } : { pointerEvents: "auto" }),
                       ...(shakingTimeSlot === i ? { animation: "shake 0.6s ease-in-out" } : {}),
                     }}
                   >
