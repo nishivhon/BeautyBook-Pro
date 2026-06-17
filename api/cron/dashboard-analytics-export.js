@@ -131,7 +131,7 @@ export default async function handler(req, res) {
         : Promise.resolve({ data: [], error: null }),
       supabase
         .from('walk_in_logs')
-        .select('date, services, customer_name')
+        .select('date, services, customer_name, assigned_staff')
         .gte('date', startDate)
         .lte('date', endDate),
     ]);
@@ -185,10 +185,12 @@ export default async function handler(req, res) {
       sheets[dateKey].walkInRows.push({
         date: row.date || '',
         customer_name: row.customer_name || '',
+        assigned_staff: row.assigned_staff || '',
         services: Array.isArray(row.services) ? JSON.stringify(row.services) : (row.services || ''),
         total_price: row.total_price ?? getWalkInRevenue(row),
       });
     }
+
 
     // Create workbook with one sheet per day
     const workbook = xlsx.utils.book_new();
@@ -222,64 +224,47 @@ export default async function handler(req, res) {
         };
       };
 
-      // Appointments section as table
-      // Appointment table (will occupy columns A-H)
-      const appointmentTable = [
-        // Title row (row 1) should NOT affect filter header row (row 2)
-        ['Appointments', '', '', '', '', '', '', ''], // 9 columns to match the final merged layout
-        ['type', 'date', 'customer name', 'customer contact', 'assigned staff', 'service categories', 'service names', 'total price'],
-        ...payload.appointmentRows.map((r) => {
-          const { categories, services } = parseServicesForColumns(r.services);
-          return [
-            'appointment',
-            r.date,
-            r.customer_name,
-            r.customer_contact,
-            r.assigned_staff,
-            categories,
-            services,
-            r.total_price,
-          ];
-        }),
-      ];
+      // Single unified table (columns A-H) for both Appointments + Walk-ins
+      // Header row must remain at GLOBAL row 2 for filtering.
 
-      // Walk-ins table (will occupy columns J-Q)
-      const walkInTable = [
-        // Title row placeholders so that filters remain on row 2
-        ['Walk-ins', '', '', '', '', '', '', '', '', ''], // 9 columns to match the final merged layout
-        ['type', 'date', 'customer name', 'customer contact', 'assigned staff', 'service categories', 'service names', 'total price'],
-        ...payload.walkInRows.map((r) => {
-          const { categories, services } = parseServicesForColumns(r.services);
-          return [
-            'walk-in',
-            r.date,
-            r.customer_name,
-            '',
-            '',
-            categories,
-            services,
-            r.total_price,
-          ];
-        }),
-      ];
+      const unifiedTable = [
+      // Row 1: titles (placeholders; should not be filter headers)
+      ['Appointments + Walk-ins', '', '', '', '', '', '', ''],
+      // Row 2: actual column headers
+      ['type', 'date', 'customer name', 'customer contact', 'assigned staff', 'service categories', 'service names', 'total price'],
+    ];
 
-
-
-
-      // Merge into a single sheet array side-by-side.
-      // Requirement: walk-ins MUST start at column J (10th column).
-      // Appointment table has 8 columns, so we insert 1 empty spacer column between them.
-      // Final layout per row: [8 appointment cols] + [1 spacer] + [8 walk-in cols]
-      const maxRows = Math.max(appointmentTable.length, walkInTable.length);
-      const sheetMatrix = Array.from({ length: maxRows }, (_, idx) => {
-        const aRow = appointmentTable[idx] || [];
-        const wRow = walkInTable[idx] || [];
-        const spacer = [''];
-        return [...aRow, ...spacer, ...wRow];
+      const appointmentRows = (payload.appointmentRows || []).map((r) => {
+        const { categories, services } = parseServicesForColumns(r.services);
+        return [
+          'appointment',
+          r.date,
+          r.customer_name,
+          r.customer_contact,
+          r.assigned_staff,
+          categories,
+          services,
+          r.total_price,
+        ];
       });
 
-      // Add computed Total Price at the bottom of the lowest populated row.
-      // Requirement: compute total for appointments and walk-ins.
+      const walkInRows = (payload.walkInRows || []).map((r) => {
+        const { categories, services } = parseServicesForColumns(r.services);
+        return [
+          'walk-in',
+          r.date,
+          r.customer_name,
+          '',
+          r.assigned_staff || '',
+          categories,
+          services,
+          r.total_price,
+        ];
+      });
+
+      // Append data starting at row 3
+      unifiedTable.push(...appointmentRows, ...walkInRows);
+
       const appointmentTotalPrice = (payload.appointmentRows || []).reduce(
         (sum, r) => sum + (Number(r?.total_price || 0) || 0),
         0
@@ -292,22 +277,13 @@ export default async function handler(req, res) {
 
       const grandTotalPrice = appointmentTotalPrice + walkInTotalPrice;
 
-      // Append a summary row. Put appointment total under appointment total price column (H)
-      // and walk-in total under walk-in total price column (Q).
-      // Column mapping: appointment A-H (0..7), spacer I (8), walk-in J-Q (9..16)
-      // Total price indices: appointment total price = H => 7, walk-in total price = Q => 16
-      const summaryRow = Array.from({ length: 17 }, () => '');
-      summaryRow[7] = appointmentTotalPrice;
-      summaryRow[16] = walkInTotalPrice;
+      // Summary rows BELOW the unified table
+      unifiedTable.push(['', '', '', '', '', '', '', '']);
+      unifiedTable.push(['Total Revenue', appointmentTotalPrice, '', '', '', '', '', '']);
+      unifiedTable.push(['Walk-in Total Revenue', walkInTotalPrice, '', '', '', '', '', '']);
+      unifiedTable.push(['Grand Total', grandTotalPrice, '', '', '', '', '', '']);
 
-      sheetMatrix.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
-      sheetMatrix.push(['', '', '', '', '', '', 'Total Revenue', appointmentTotalPrice, '', '', '', '', '', '', '', 'Total Revenue', walkInTotalPrice]);
-      sheetMatrix.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
-      sheetMatrix.push(['Grand Total', grandTotalPrice, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
-
-
-
-      const worksheet = xlsx.utils.aoa_to_sheet(sheetMatrix);
+      const worksheet = xlsx.utils.aoa_to_sheet(unifiedTable);
       xlsx.utils.book_append_sheet(workbook, worksheet, clampSheetName(date));
     }
 
