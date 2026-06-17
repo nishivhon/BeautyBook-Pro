@@ -963,11 +963,10 @@ const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, expo
                   <button
                     type="button"
                     onMouseDown={(e) => e.stopPropagation()}
-                    onClick={() => {
+onClick={() => {
                       const allKeys = (staffList || []).map((s) => s.id ?? s.name).filter(Boolean);
                       const allSelected = allKeys.length > 0 && selectedStaffNames.length === allKeys.length;
-                      if (allSelected) return;
-                      setSelectedStaffNames(allKeys);
+                      setSelectedStaffNames(allSelected ? [] : allKeys);
                     }}
                     style={{
                       pointerEvents: 'auto',
