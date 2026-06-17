@@ -277,13 +277,54 @@ export default async function handler(req, res) {
 
       const grandTotalPrice = appointmentTotalPrice + walkInTotalPrice;
 
-      // Summary rows BELOW the unified table
+      // Summary rows are moved to ROW 2 starting at column J.
+      // Column layout (per row):
+      // - A: type, B: date, C: customer name, D: customer contact,
+      //   E: assigned staff, F: service categories, G: service names, H: total price
+      // - I: blank spacer
+      // - J: Total Revenue (appointments)
+      // - K: Walk-in Total Revenue
+      // - L: Grand Total
+      // Write summary rows into the totals area starting ROW 3.
+      // Layout (as requested):
+      // J3 = "Appointment Revenue" , K3 = value
+      // J4 = "Walk in Revenue"     , K4 = value
+      // J5 = "Grand Total"         , K5 = value
+      // We still keep the unified header row at sheet row 2 (A..H).
+
+      const totalsRow3 = Array.from({ length: 12 }, () => ''); // A..L
+      totalsRow3[9] = 'Appointment Revenue'; // J
+      totalsRow3[10] = appointmentTotalPrice; // K
+
+      const totalsRow4 = Array.from({ length: 12 }, () => '');
+      totalsRow4[9] = 'Walk in Revenue';
+      totalsRow4[10] = walkInTotalPrice; // K
+
+      const totalsRow5 = Array.from({ length: 12 }, () => '');
+      totalsRow5[9] = 'Grand Total';
+      totalsRow5[10] = grandTotalPrice;
+
+      // Ensure the totals rows land at sheet rows 3..5 by adding two empty rows
+      // after the unified table data.
+      // unifiedTable itself is built as an array-of-arrays.
+      // So each push must be a single row array.
       unifiedTable.push(['', '', '', '', '', '', '', '']);
-      unifiedTable.push(['Total Revenue', appointmentTotalPrice, '', '', '', '', '', '']);
-      unifiedTable.push(['Walk-in Total Revenue', walkInTotalPrice, '', '', '', '', '', '']);
-      unifiedTable.push(['Grand Total', grandTotalPrice, '', '', '', '', '', '']);
+      unifiedTable.push(['', '', '', '', '', '', '', '']);
+      unifiedTable.push(totalsRow3);
+      unifiedTable.push(totalsRow4);
+      unifiedTable.push(totalsRow5);
 
       const worksheet = xlsx.utils.aoa_to_sheet(unifiedTable);
+
+      // Enable Excel filtering on the header row (global row 2 => sheet row index 2).
+      // Our table is 8 columns wide (A..H).
+      // Row 2 contains the column headers.
+      const totalRows = unifiedTable.length;
+      const lastDataRow = Math.max(3, totalRows); // ensure at least from A3
+      worksheet['!autofilter'] = {
+        ref: `A2:H${lastDataRow}`,
+      };
+
       xlsx.utils.book_append_sheet(workbook, worksheet, clampSheetName(date));
     }
 
