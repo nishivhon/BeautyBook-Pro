@@ -906,10 +906,13 @@ const QuickActionsPanel = ({ onCustomerHistory }) => (
 const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, exportPickerOpen, setExportPickerOpen }) => {
   const [selectedStaffNames, setSelectedStaffNames] = useState([]);
   const [exportSetupOpen, setExportSetupOpen] = useState(false);
-  const modalTheme = getThemeStyles(
-    { background: '#0b1220', color: '#f3f4f6' },
-    { background: '#ffffff', color: '#111827' }
-  );
+  const modalTheme = {
+  background: isDarkMode() ? '#111111' : '#ffffff', // same as dashboard cards
+  color: isDarkMode() ? '#e5e7eb' : '#111827',
+  border: isDarkMode()
+    ? '1px solid rgba(255,255,255,0.08)'
+    : '1px solid #e5e7eb',
+};
 
   return (
   <div className="dash-sidebar-panel">
@@ -934,25 +937,50 @@ const AnalyticsPanel = ({ staffList = [], onDownloadReports, isDownloading, expo
 
       {exportSetupOpen && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.68)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200
+          }}          
           onMouseDown={(e) => {
             // Only close when user presses on the overlay itself
             if (e.target === e.currentTarget) setExportSetupOpen(false);
           }}
         >
           <div
-            style={{ width: 640, maxWidth: '95%', borderRadius: 8, padding: 18, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', ...modalTheme, pointerEvents: 'auto' }}
+            style={{
+              width: 640,
+              maxWidth: '95%',
+            
+              borderRadius: 14,
+              padding: 20,
+            
+              background: modalTheme.background,
+              color: modalTheme.color,
+              border: modalTheme.border,
+            
+              boxShadow:
+                '0 20px 60px rgba(0,0,0,0.65)',
+            
+              pointerEvents: 'auto',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: 0, marginBottom: 12, color: modalTheme.color }}>Choose staff to download</h3>
+            <h3
+  style={{ margin: 0, marginBottom: 18, color: '#f8fafc', fontWeight: 600, fontSize: 20}}>Choose staff to download</h3>
 
             <div style={{ display: 'flex', gap: 12 }}>
               <div
                 style={{
                   padding: '10px 12px',
                   borderRadius: 6,
-                  border: `1px solid ${isDarkMode() ? '#374151' : '#cbd5e1'}`,
-                  background: isDarkMode() ? '#0b1220' : '#fff',
+                  border: `1px solid ${isDarkMode() ? 'rgba(255,255,255,0.08)' : '#d1d5db'}`,
+                  background: isDarkMode() ? '#181818' : '#ffffff',
                   color: modalTheme.color,
                   minWidth: '280px',
                   maxWidth: 360,
@@ -981,14 +1009,14 @@ onClick={() => {
                       border: `1px solid ${
                         (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length > 0 &&
                         selectedStaffNames.length === (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length
-                          ? '#2563eb'
+                          ? '#dd901d'
                           : 'transparent'
                       }`,
-                      borderRadius: 6,
+                      borderRadius: 10,
                       background: (() => {
                         const allKeys = (staffList || []).map((s) => s.id ?? s.name).filter(Boolean);
                         const allSelected = allKeys.length > 0 && selectedStaffNames.length === allKeys.length;
-                        return allSelected ? 'rgba(37,99,235,0.12)' : 'transparent';
+                        return allSelected ? 'rgba(221,144,29,0.12)' : 'transparent';
                       })(),
                       color: modalTheme.color,
                     }}
@@ -1007,13 +1035,13 @@ onClick={() => {
                         border: `1px solid ${
                           (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length > 0 &&
                           selectedStaffNames.length === (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length
-                            ? '#2563eb'
+                            ? '#dd901d'
                             : (isDarkMode() ? '#374151' : '#cbd5e1')
                         }`,
                         background:
                           (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length > 0 &&
                           selectedStaffNames.length === (staffList || []).map((s) => s.id ?? s.name).filter(Boolean).length
-                            ? '#2563eb'
+                            ? '#dd901d'
                             : 'transparent',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1062,9 +1090,9 @@ onClick={() => {
                           padding: '6px 4px',
                           cursor: 'pointer',
                           userSelect: 'none',
-                          border: `1px solid ${checked ? '#2563eb' : 'transparent'}`,
+                          border: `1px solid ${checked ? '#dd901d' : 'transparent'}`,
                           borderRadius: 6,
-                          background: checked ? 'rgba(37,99,235,0.12)' : 'transparent',
+                          background: checked ? 'rgba(221,144,29,0.12)' : 'transparent',
                           color: modalTheme.color,
                         }}
                         title={name}
@@ -1076,8 +1104,8 @@ onClick={() => {
                             width: 16,
                             height: 16,
                             borderRadius: 4,
-                            border: `1px solid ${checked ? '#2563eb' : (isDarkMode() ? '#374151' : '#cbd5e1')}`,
-                            background: checked ? '#2563eb' : 'transparent',
+                            border: `1px solid ${checked ? '#dd901d' : (isDarkMode() ? '#374151' : '#cbd5e1')}`,
+                            background: checked ? '#dd901d' : 'transparent',
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1104,7 +1132,7 @@ onClick={() => {
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-start', marginTop: 'auto', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => { setExportSetupOpen(false); setExportPickerOpen(true); }}
-                    style={{ padding: '10px 14px', borderRadius: 6, background: '#2563eb', color: '#fff', border: 'none' }}
+                    style={{ padding: '10px 18px', borderRadius: 8, background: 'linear-gradient(180deg,#dd901d,#b87314)', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer'}}
                   >
                     Continue
                   </button>
