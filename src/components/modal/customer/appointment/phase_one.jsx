@@ -589,9 +589,17 @@ export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
 
   const handleDateInputConfirm = () => {
     if (manualDate) {
+      // In this flow, "Custom Date" hides the preset date row and uses manualDate.
       setSelectedDate(null);
       setShowDateInput(false);
     }
+  };
+
+  const handleSelectCustomDate = () => {
+    // Switch to manual date input.
+    setSelectedDate(null);
+    setManualDate("");
+    setShowDateInput(true);
   };
 
 
@@ -613,7 +621,19 @@ export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
   // Generate validation message
   const getValidationMessage = () => {
     if (!isDateSelected || !isTimeSelected) {
-      if (!isDateSelected && !isTimeSelected) return "Please select a date and time";
+      if (!isDateSelected && !isTimeSelected) return (
+        <span style={{ color: "#988f81" }}>
+          Please contact us for custom date booking{" "}
+          <a
+            href="https://facebook.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#dd901d", textDecoration: "underline" }}
+          >
+            Facebook
+          </a>
+        </span>
+      );
       if (!isDateSelected) return "Please select a date";
       return "Please select a time";
     }
@@ -682,13 +702,14 @@ export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
           <div 
             className="appt-picker-label" 
             style={{cursor: "pointer"}}
-            onClick={() => setShowDateInput(!showDateInput)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#dd901d";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "white";
-            }}
+              /*onClick={() => setShowDateInput(!showDateInput)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#dd901d";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "white";
+              }}
+              */
           >
             <BookingModalIconSlot size="picker">
               <BookingCalendarIcon />
@@ -731,12 +752,53 @@ export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
                 </button>
               </div>
             ) : (
-              <div className="appt-date-row">
+                <div className="appt-date-row">
+                {/* When custom date is set (manualDate filled), show time slots even without preset date selection */}
+                {manualDate && (
+                  <div className="appt-time-grid" style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                    {[
+                      '09:00','09:30','10:00','10:30','11:00',
+                      '14:00','14:30','15:00','15:30','16:00','16:30','17:00'
+                    ].map((time24) => {
+                      const selectedIndex = ALL_TIME_SLOTS.indexOf(time24);
+                      const display = time24
+                        .split(':')
+                        .map(Number);
+
+                      const hours24 = Number(time24.split(':')[0]);
+                      const minutes = Number(time24.split(':')[1]);
+                      const period = hours24 >= 12 ? 'PM' : 'AM';
+                      const hours12 = hours24 % 12 || 12;
+                      const label = `${hours12}:${String(minutes).padStart(2,'0')} ${period}`;
+
+                      const isDisabled = false;
+
+                      return (
+                        <button
+                          key={`custom-time-${time24}`}
+                          onClick={() => {
+                            if (isDisabled) return;
+                            setSelectedTime(selectedIndex === selectedTime ? null : selectedIndex);
+                          }}
+                          className={`appt-time-chip${selectedTime === selectedIndex ? ' selected' : ''}${isDisabled ? ' disabled' : ''}`}
+                          aria-pressed={selectedTime === selectedIndex}
+                          disabled={isDisabled}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {dateOptions.length === 0 ? (
                   <p style={{ color: "#988f81", textAlign: "center", padding: "20px" }}>No available dates</p>
                 ) : (
                   dateOptions.map((item, i) => {
-                    const handleDateSelect = () => setSelectedDate(selectedDate === i ? null : i);
+                    const handleDateSelect = () => {
+                      setSelectedDate(selectedDate === i ? null : i);
+                      setManualDate("");
+                    };
                     return (
                       <button
                         key={i}
