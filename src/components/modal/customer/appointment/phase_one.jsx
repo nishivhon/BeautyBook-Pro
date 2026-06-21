@@ -572,7 +572,8 @@ export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
   }, [selectedDate, dateOptions, initialData?.stylist?.id, initialData?.stylist?.name]);
 
   const handleBackClick = () => {
-    setShowBackdropConfirm(true);
+    // Back should navigate to the previous phase, not trigger a cancel prompt.
+    onBack?.();
   };
 
   const handleContinue = () => {
