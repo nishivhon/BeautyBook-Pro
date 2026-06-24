@@ -681,8 +681,14 @@ export const AppointmentFormPhase4 = ({ onBack, onConfirm, onCancel, onClose, bo
       }
       
       // Call the appointment creation API
-      const response = await fetch('/api/appointments/create', {
-        method: 'POST',
+      // Custom-date booking needs a forced insert (bypass past/current validation in /api/appointments/create)
+      const isCustomDateBooking = Boolean(bookingData?.date && bookingData?.date !== booking?.schedule?.dateISO && bookingData?.date !== booking?.dateISO);
+      const endpoint = isCustomDateBooking
+        ? '/api/appointments/update/force-book'
+        : '/api/appointments/create';
+
+      const response = await fetch(endpoint, {
+        method: isCustomDateBooking ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bookingData)
       });
