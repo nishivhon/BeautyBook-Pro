@@ -504,72 +504,82 @@ export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
     setDateOptions(datesData);
   }, []);
 
-  // Fetch time availability when a date is selected
+  // Fetch time availability when a date is selected OR when a custom date is chosen
   useEffect(() => {
     setSelectedTime(null); // Reset time selection when date changes
-    if (selectedDate !== null && selectedDate < dateOptions.length) {
-      setLoadingTimes(true);
-      const selectedDateObj = dateOptions[selectedDate];
 
-      fetch(`/api/appointments/all-slots?date=${selectedDateObj.date}`)
-        .then(res => res.json())
-        .then(data => {
-          console.log(`[Phase1] All slots for ${selectedDateObj.date}:`, data);
-          if (data.success && Array.isArray(data.slots)) {
-            const slots = data.slots;
+    const hasPresetSelection = selectedDate !== null && selectedDate < dateOptions.length;
+    const hasManualSelection = Boolean(manualDate);
 
-            // Build a map by time (HH:MM)
-            const slotsByTime = slots.reduce((m, s) => {
-              const t = String(s.time_24).slice(0,5);
-              if (!m[t]) m[t] = [];
-              m[t].push(s);
-              return m;
-            }, {});
+    const activeDateStr = hasPresetSelection ? dateOptions[selectedDate]?.date : (hasManualSelection ? manualDate : null);
+    const isActive = hasPresetSelection || hasManualSelection;
 
-            const stylistObj = initialData?.stylist || null;
-            const selectedStylistValues = [];
-            if (stylistObj) {
-              if (stylistObj.id !== undefined && stylistObj.id !== null) selectedStylistValues.push(String(stylistObj.id).toLowerCase().trim());
-              if (stylistObj.name) selectedStylistValues.push(String(stylistObj.name).toLowerCase().trim());
+    if (!isActive || !activeDateStr) {
+      setUnavailableTimes([]);
+      return;
+    }
+
+    setLoadingTimes(true);
+
+    fetch(`/api/appointments/all-slots?date=${activeDateStr}`)
+      .then(res => res.json())
+      .then(data => {
+        console.log(`[Phase1] All slots for ${activeDateStr}:`, data);
+
+        if (data.success && Array.isArray(data.slots)) {
+          const slots = data.slots;
+
+          // Build a map by time (HH:MM)
+          const slotsByTime = slots.reduce((m, s) => {
+            const t = String(s.time_24).slice(0, 5);
+            if (!m[t]) m[t] = [];
+            m[t].push(s);
+            return m;
+          }, {});
+
+          const stylistObj = initialData?.stylist || null;
+          const selectedStylistValues = [];
+          if (stylistObj) {
+            if (stylistObj.id !== undefined && stylistObj.id !== null) selectedStylistValues.push(String(stylistObj.id).toLowerCase().trim());
+            if (stylistObj.name) selectedStylistValues.push(String(stylistObj.name).toLowerCase().trim());
+          }
+
+          const unavailable = ALL_TIME_SLOTS.filter(time => {
+            // Past/current times are unavailable (only applies to preset “today” styling; still safe for custom)
+            if (isPastOrCurrentSlotForDate(activeDateStr, time)) return true;
+
+            const rows = slotsByTime[time] || [];
+
+            // If a stylist is selected, block times where that stylist is already assigned
+            if (selectedStylistValues.length > 0) {
+              return rows.some(r => {
+                const assigned = r.assigned_staff === null || r.assigned_staff === undefined ? "" : String(r.assigned_staff).toLowerCase().trim();
+                return selectedStylistValues.includes(assigned);
+              });
             }
 
-            const unavailable = ALL_TIME_SLOTS.filter(time => {
-              // Past or current times are unavailable
-              if (isPastOrCurrentSlotForDate(selectedDateObj.date, time)) return true;
+            // No stylist selected: if any row is explicitly available, the time is available
+            if (rows.some(r => r.available === true)) return false;
 
-              const rows = slotsByTime[time] || [];
+            // Otherwise treat as unavailable
+            return true;
+          });
 
-              // If a stylist is selected, block times where that stylist is already assigned
-              if (selectedStylistValues.length > 0) {
-                return rows.some(r => {
-                  const assigned = r.assigned_staff === null || r.assigned_staff === undefined ? "" : String(r.assigned_staff).toLowerCase().trim();
-                  return selectedStylistValues.includes(assigned);
-                });
-              }
+          setUnavailableTimes(unavailable);
+        } else {
+          console.warn('[Phase1] No slots returned from API');
+          setUnavailableTimes(ALL_TIME_SLOTS);
+        }
+        setLoadingTimes(false);
+      })
+      .catch(err => {
+        console.error('Error fetching time availability:', err);
+        setUnavailableTimes(ALL_TIME_SLOTS);
+        setLoadingTimes(false);
+      });
+  }, [selectedDate, dateOptions, manualDate, initialData?.stylist?.id, initialData?.stylist?.name]);
 
-              // No stylist selected: if any row is explicitly available, the time is available
-              if (rows.some(r => r.available === true)) return false;
 
-              // Otherwise treat as unavailable
-              return true;
-            });
-
-            setUnavailableTimes(unavailable);
-          } else {
-            console.warn('[Phase1] No slots returned from API');
-            setUnavailableTimes(ALL_TIME_SLOTS); // All unavailable if no data
-          }
-          setLoadingTimes(false);
-        })
-        .catch(err => {
-          console.error('Error fetching time availability:', err);
-          setUnavailableTimes(ALL_TIME_SLOTS); // All unavailable on error
-          setLoadingTimes(false);
-        });
-    } else {
-      setUnavailableTimes([]);
-    }
-  }, [selectedDate, dateOptions, initialData?.stylist?.id, initialData?.stylist?.name]);
 
   const handleBackClick = () => {
     // Back should navigate to the previous phase, not trigger a cancel prompt.
@@ -701,6 +711,7 @@ export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
         <div className="appt-picker-group">
           <div 
             className="appt-picker-label" 
+            /*
             style={{cursor: "pointer"}}
               onClick={() => setShowDateInput(!showDateInput)}
               onMouseEnter={(e) => {
@@ -709,6 +720,7 @@ export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
               onMouseLeave={(e) => {
                 e.currentTarget.style.color = "white";
               }}
+            */
           >
             <BookingModalIconSlot size="picker">
               <BookingCalendarIcon />
@@ -755,17 +767,27 @@ export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
                 {/* When custom date is set (manualDate filled), show time slots even without preset date selection */}
                 {manualDate && (
                   <div className="appt-time-grid" style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-                    {[
+                    {[ 
                       '09:00','09:30','10:00','10:30','11:00',
                       '14:00','14:30','15:00','15:30','16:00','16:30','17:00'
                     ].map((time24) => {
+                      const selectedTimeForChip = ALL_TIME_SLOTS.indexOf(time24);
+
                       const selectedIndex = ALL_TIME_SLOTS.indexOf(time24);
+
+                      // For custom date flow, disable chips based on computed unavailableTimes.
+                      // This unavailableTimes is now computed for both preset and manual dates.
+                      const isDisabled = (() => {
+                        if (!manualDate) return false;
+                        // If Any stylist, keep enabled (no stylist filter)
+                        if (!initialData?.stylist?.id) return false;
+                        return unavailableTimes.includes(time24);
+                      })();
 
                       // For custom date flow, show the raw slot times exactly as defined.
                       // (09:00, 09:30, ... 17:00)
                       const label = time24;
 
-                      const isDisabled = false;
 
                       return (
                         <button
@@ -896,7 +918,7 @@ export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
             </BookingModalIconSlot>
             <span>Select Time</span>
           </div>
-          <div className="appt-time-grid">
+                  <div className="appt-time-grid">
             {selectedDate === null && !manualDate ? (
               <p
                 style={{
@@ -924,8 +946,10 @@ export const AppointmentForm = ({ onBack, onContinue, initialData = {} }) => {
                 const isDisabled =
                   selectedDate !== null
                     ? unavailableTimes.includes(time)
-                    : false; // custom date → always enabled
-              
+                    : manualDate
+                      ? unavailableTimes.includes(time)
+                      : false;
+               
                 return (
                   <button
                     key={i}
