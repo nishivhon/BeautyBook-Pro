@@ -115,6 +115,12 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const phoneHasNoSpaces = !/\s/.test(phone);
+const phoneStartsWith09 = normalizePhone(phone).startsWith("09");
+const phoneHas11Digits = normalizePhone(phone).length === 11;
+const emailIsGmail =
+  normalizeEmail(email) === "" ||
+  normalizeEmail(email).endsWith("@gmail.com");
 
   const handleModeChange = (mode) => {
     setVerificationMode(mode);
@@ -370,41 +376,152 @@ export const CreateAccountPanel = ({ theme = defaultTheme, onBackToLogin, onAcco
         </div>
 
         {verificationMode === "email" ? (
-          <div>
-            <label style={labelStyle}>Email Address</label>
-            <div className="login-input-inner" style={{ borderColor: errors.email ? "rgba(239, 67, 67, 0.5)" : undefined }}>
-              <MailIcon />
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => { setEmail(event.target.value); setErrors((prev) => ({ ...prev, email: null })); }}
-                placeholder="you@gmail.com"
-                aria-label="Email address"
-              />
-            </div>
-            <span style={{ display: "block", marginTop: "4px", color: theme.modalText, fontSize: "0.74rem" }}>
-              Please use your Gmail account to verify.
-            </span>
-            {errors.email && <span className="login-error-msg">{errors.email}</span>}
-          </div>
+<div>
+  <label style={labelStyle}>Email Address</label>
+
+  <div
+    className="login-input-inner"
+    style={{
+      borderColor: errors.email
+        ? "rgba(239, 67, 67, 0.5)"
+        : undefined
+    }}
+  >
+    <MailIcon />
+
+    <input
+      type="email"
+      value={email}
+      onChange={(event) => {
+        setEmail(event.target.value);
+        setErrors((prev) => ({
+          ...prev,
+          email: null
+        }));
+      }}
+      placeholder="you@gmail.com"
+      aria-label="Email address"
+    />
+  </div>
+
+  <div
+    style={{
+      marginTop: 8,
+      display: "flex",
+      flexDirection: "column",
+      gap: 6
+    }}
+  >
+    <div
+      style={{
+        fontSize: "0.74rem",
+        color: emailIsGmail
+          ? "#22c55e"
+          : "#ef4343"
+      }}
+    >
+      Email must be @gmail.com
+    </div>
+  </div>
+
+  {errors.email && (
+    <span className="login-error-msg">
+      {errors.email}
+    </span>
+  )}
+</div>
+
         ) : (
-          <div>
-            <label style={labelStyle}>Phone Number</label>
-            <div className="login-input-inner" style={{ borderColor: errors.phone ? "rgba(239, 67, 67, 0.5)" : undefined }}>
-              <PhoneIcon />
-              <input
-                type="tel"
-                value={phone}
-                onChange={(event) => { setPhone(event.target.value); setErrors((prev) => ({ ...prev, phone: null })); }}
-                placeholder="09123456789"
-                aria-label="Phone number"
-              />
-            </div>
-            <span style={{ display: "block", marginTop: "4px", color: theme.modalText, fontSize: "0.74rem" }}>
-              Enter your mobile number to verify.
-            </span>
-            {errors.phone && <span className="login-error-msg">{errors.phone}</span>}
-          </div>
+<div>
+  <label style={labelStyle}>Phone Number</label>
+
+  <div
+    className="login-input-inner"
+    style={{
+      borderColor: errors.phone
+        ? "rgba(239, 67, 67, 0.5)"
+        : undefined
+    }}
+  >
+    <PhoneIcon />
+
+    <input
+      type="tel"
+      value={phone}
+      onChange={(event) => {
+        setPhone(event.target.value);
+        setErrors((prev) => ({
+          ...prev,
+          phone: null
+        }));
+      }}
+      placeholder="09123456789"
+      aria-label="Phone number"
+    />
+  </div>
+
+  <span
+    style={{
+      display: "block",
+      marginTop: "4px",
+      color: theme.modalText,
+      fontSize: "0.74rem"
+    }}
+  >
+  </span>
+
+  {/* PHONE RULES */}
+  <div
+    style={{
+      marginTop: 8,
+      display: "flex",
+      flexDirection: "column",
+      gap: 6
+    }}
+  >
+
+    <div
+      style={{
+        fontSize: "0.74rem",
+        color: phoneHasNoSpaces
+          ? "#22c55e"
+          : "#ef4343"
+      }}
+    >
+      Phone number must not contain spaces
+    </div>
+
+    <div
+      style={{
+        fontSize: "0.74rem",
+        color: phoneStartsWith09
+          ? "#22c55e"
+          : "#ef4343"
+      }}
+    >
+      Phone number must start with 09
+    </div>
+
+    <div
+      style={{
+        fontSize: "0.74rem",
+        color: phoneHas11Digits
+          ? "#22c55e"
+          : "#ef4343"
+      }}
+    >
+      Phone number must be 11 numbers
+    </div>
+
+  </div>
+
+  {errors.phone && (
+    <span className="login-error-msg">
+      {errors.phone}
+    </span>
+  )}
+</div>
+
         )}
 
         <div>

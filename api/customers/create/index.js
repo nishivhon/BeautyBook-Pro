@@ -28,7 +28,26 @@ export default async (req, res) => {
       return res.status(400).json({ error: 'Email or phone is required' });
     }
 
+    // Phone validation: exactly 11 digits and must start with 09
+    if (normalizedPhone) {
+      if (normalizedPhone.length !== 11) {
+        return res.status(400).json({
+          error: 'Invalid phone number',
+          details: 'Phone Number must be 11 digits'
+        });
+      }
+
+      if (!normalizedPhone.startsWith('09')) {
+        return res.status(400).json({
+          error: 'Invalid phone number',
+          details: 'Phone Number starts with 09'
+        });
+      }
+    }
+
+
     // Email validation: only allow gmail.com addresses
+
     if (normalizedEmail) {
       // Require exact domain match (case-insensitive via normalizeEmail)
       const domain = normalizedEmail.split('@')[1] || '';

@@ -1,7 +1,8 @@
-- [ ] Inspect current XLSX export endpoint for staff logs (api/cron/staff-logs-export.js)
-- [ ] Modify the XLSX generator to include appointment_logs rows (not only staff_logs counts)
-- [ ] Verify required DB columns exist (appointment_logs schema)
-- [ ] Add new sheet(s) or extend existing sheet with per-appointment rows
-- [ ] Update any frontend download naming/expectations if needed
-- [ ] Run a local build/lint/test if available
+# TODO
 
+- [ ] Add phone number validation in `api/customers/create/index.js`:
+  - [ ] If phone is provided: after normalization ensure it has exactly 11 digits
+  - [ ] Ensure it starts with `09`
+  - [ ] Return 400 with clear error message when validation fails
+- [ ] Update create account logic so validation happens before OTP lookup/account uniqueness checks
+- [ ] (After edit) Run a quick Node syntax check / lint (if available)
